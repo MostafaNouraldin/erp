@@ -1,15 +1,24 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  size?: "default" | "sm";
+}
+
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
+  TableProps
+>(({ className, size = "default", ...props }, ref) => (
   <div className="relative w-full overflow-auto">
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
+      className={cn(
+        "w-full caption-bottom text-sm",
+        size === "sm" && "text-xs", // Smaller text for "sm" size
+        className
+      )}
       {...props}
     />
   </div>
@@ -66,31 +75,48 @@ const TableRow = React.forwardRef<
 ))
 TableRow.displayName = "TableRow"
 
+interface TableCellProps extends React.TdHTMLAttributes<HTMLTableCellElement> {
+  size?: "default" | "sm";
+}
+
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <th
-    ref={ref}
-    className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      className
-    )}
-    {...props}
-  />
-))
+  TableCellProps // Use TableCellProps for size consistency
+>(({ className, size, ...props }, ref) => {
+  const parentTable = React.useContext(TableContext);
+  const effectiveSize = size || parentTable.size || "default";
+  return (
+    <th
+      ref={ref}
+      className={cn(
+        "h-12 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        effectiveSize === "sm" ? "px-2 py-2" : "px-4", // Adjusted padding for "sm"
+        className
+      )}
+      {...props}
+    />
+  )
+})
 TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
-    {...props}
-  />
-))
+  TableCellProps
+>(({ className, size, ...props }, ref) => {
+  const parentTable = React.useContext(TableContext);
+  const effectiveSize = size || parentTable.size || "default";
+  return (
+    <td
+      ref={ref}
+      className={cn(
+        "align-middle [&:has([role=checkbox])]:pr-0",
+        effectiveSize === "sm" ? "p-2" : "p-4", // Adjusted padding for "sm"
+        className
+      )}
+      {...props}
+    />
+  )
+})
 TableCell.displayName = "TableCell"
 
 const TableCaption = React.forwardRef<
@@ -105,6 +131,16 @@ const TableCaption = React.forwardRef<
 ))
 TableCaption.displayName = "TableCaption"
 
+// Context to pass table size down
+const TableContext = React.createContext<{ size?: "default" | "sm" }>({});
+
+const TableContextProvider = ({ size, children }: { size?: "default" | "sm", children: React.ReactNode }) => (
+  <TableContext.Provider value={{ size }}>
+    {children}
+  </TableContext.Provider>
+);
+
+
 export {
   Table,
   TableHeader,
@@ -114,4 +150,5 @@ export {
   TableRow,
   TableCell,
   TableCaption,
+  TableContextProvider
 }
