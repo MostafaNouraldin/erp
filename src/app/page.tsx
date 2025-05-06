@@ -1,6 +1,8 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Users, Package, TrendingUp, ArrowUpRight, Activity, CreditCard, Percent } from "lucide-react";
+import { DollarSign, Users, Package, TrendingUp, ArrowUpRight, Activity, CreditCard, Percent, FilePlus, FileCheck, FileClock } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
@@ -192,7 +194,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">نسبة الحضور</span>
-              <span className="font-semibold text-green-600">98.5%</span>
+              <span className="font-semibold">98.5%</span> {/* Removed text-green-600 for theme consistency */}
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">طلبات إجازة معلقة</span>
@@ -219,7 +221,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10 text-green-500">
+             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary"> {/* Changed green to primary for theme consistency */}
                 <FileCheck className="h-4 w-4" />
               </div>
               <div>
@@ -228,7 +230,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-500/10 text-yellow-500">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary"> {/* Changed yellow to primary for theme consistency */}
                 <FileClock className="h-4 w-4" />
               </div>
               <div>

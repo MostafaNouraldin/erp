@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -242,7 +244,7 @@ export default function AccountsPayableReceivablePage() {
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <TrendingUp className="me-2 h-6 w-6 text-green-500" /> أعمار الذمم المدينة (العملاء)
+                  <TrendingUp className="me-2 h-6 w-6 text-primary" /> أعمار الذمم المدينة (العملاء)
                 </CardTitle>
                 <CardDescription>تحليل لأعمار المبالغ المستحقة من العملاء.</CardDescription>
               </CardHeader>
@@ -261,7 +263,7 @@ export default function AccountsPayableReceivablePage() {
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <TrendingDown className="me-2 h-6 w-6 text-red-500" /> أعمار الذمم الدائنة (الموردين)
+                  <TrendingDown className="me-2 h-6 w-6 text-destructive" /> أعمار الذمم الدائنة (الموردين)
                 </CardTitle>
                 <CardDescription>تحليل لأعمار المبالغ المستحقة للموردين.</CardDescription>
               </CardHeader>
