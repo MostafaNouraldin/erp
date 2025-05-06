@@ -1,3 +1,4 @@
+"use client"
 
 import * as React from "react"
 
@@ -7,21 +8,27 @@ interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
   size?: "default" | "sm";
 }
 
+const TableContext = React.createContext<{ size?: "default" | "sm" }>({});
+
 const Table = React.forwardRef<
   HTMLTableElement,
   TableProps
->(({ className, size = "default", ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn(
-        "w-full caption-bottom text-sm",
-        size === "sm" && "text-xs", // Smaller text for "sm" size
-        className
-      )}
-      {...props}
-    />
-  </div>
+>(({ className, size = "default", children, ...props }, ref) => (
+  <TableContext.Provider value={{ size }}>
+    <div className="relative w-full overflow-auto">
+      <table
+        ref={ref}
+        className={cn(
+          "w-full caption-bottom text-sm",
+          size === "sm" && "text-xs", // Smaller text for "sm" size
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </table>
+    </div>
+  </TableContext.Provider>
 ))
 Table.displayName = "Table"
 
@@ -131,8 +138,8 @@ const TableCaption = React.forwardRef<
 ))
 TableCaption.displayName = "TableCaption"
 
-// Context to pass table size down
-const TableContext = React.createContext<{ size?: "default" | "sm" }>({});
+// Context to pass table size down - already defined at the top.
+// const TableContext = React.createContext<{ size?: "default" | "sm" }>({});
 
 const TableContextProvider = ({ size, children }: { size?: "default" | "sm", children: React.ReactNode }) => (
   <TableContext.Provider value={{ size }}>
@@ -150,5 +157,6 @@ export {
   TableRow,
   TableCell,
   TableCaption,
-  TableContextProvider
+  TableContextProvider,
+  TableContext
 }
