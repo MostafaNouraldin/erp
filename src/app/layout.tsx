@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Cairo } from "next/font/google"; // Changed from Inter to Cairo
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Briefcase, Building, Printer, BarChart2, Cog, FilePlus, FileOutput, FileCheck, FileClock, Banknote, Warehouse, Truck, Repeat, Search, CircleHelp, Bell, Sun, Moon } from "lucide-react";
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Briefcase, Building, Printer, BarChart2, Cog, FilePlus, FileOutput, FileCheck, FileClock, Banknote, Warehouse, Truck, Repeat, Search, CircleHelp, Bell } from "lucide-react"; // Removed Sun, Moon as ModeToggle handles them
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import AppLogo from "@/components/app-logo";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+const cairo = Cairo({ // Changed from Inter to Cairo
+  subsets: ["arabic", "latin"], // Added 'arabic' subset for Cairo
+  variable: "--font-cairo", // Changed variable name
 });
 
 export const metadata: Metadata = {
@@ -72,7 +72,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className={`${inter.variable} font-inter antialiased bg-secondary/50`}>
+      <body className={`${cairo.variable} font-cairo antialiased bg-secondary/50`}> {/* Changed to cairo.variable and font-cairo */}
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -81,7 +81,7 @@ export default function RootLayout({
         >
           <SidebarProvider>
             <div className="flex min-h-screen w-full">
-              <Sidebar collapsible="icon" className="border-e shadow-sm">
+              <Sidebar collapsible="icon" side="right" className="border-s shadow-sm"> {/* Changed side to right and border-e to border-s */}
                 <SidebarHeader className="p-4 flex items-center justify-between">
                   <AppLogo />
                   <div className="hidden group-data-[collapsible=icon]:hidden">
@@ -95,16 +95,16 @@ export default function RootLayout({
                         {item.subItems ? (
                            <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                               <SidebarMenuButton tooltip={{children: item.label, side: 'right', align: 'center'}} className="w-full justify-start">
+                               <SidebarMenuButton tooltip={{children: item.label, side: 'left', align: 'center'}} className="w-full justify-start"> {/* Changed tooltip side to 'left' */}
                                 <item.icon className="h-5 w-5" />
                                 <span className="truncate">{item.label}</span>
                               </SidebarMenuButton>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent side="right" align="start" className="w-56">
+                            <DropdownMenuContent side="left" align="start" className="w-56"> {/* Changed side to 'left' */}
                               {item.subItems.map(subItem => (
                                 <Link href={subItem.href} key={subItem.label} passHref>
                                   <DropdownMenuItem className="cursor-pointer">
-                                    <subItem.icon className="mr-2 h-4 w-4" />
+                                    <subItem.icon className="ml-2 h-4 w-4" /> {/* Changed mr-2 to ml-2 for RTL */}
                                     {subItem.label}
                                   </DropdownMenuItem>
                                 </Link>
@@ -113,7 +113,7 @@ export default function RootLayout({
                           </DropdownMenu>
                         ) : (
                           <Link href={item.href} passHref>
-                            <SidebarMenuButton tooltip={{children: item.label, side: 'right', align: 'center'}} className="w-full justify-start">
+                            <SidebarMenuButton tooltip={{children: item.label, side: 'left', align: 'center'}} className="w-full justify-start"> {/* Changed tooltip side to 'left' */}
                               <item.icon className="h-5 w-5" />
                               <span className="truncate">{item.label}</span>
                             </SidebarMenuButton>
@@ -125,7 +125,7 @@ export default function RootLayout({
                 </SidebarContent>
                 <SidebarFooter className="p-4 border-t">
                   <Link href="/help" passHref>
-                    <SidebarMenuButton tooltip={{children: "المساعدة والدعم", side: 'right', align: 'center'}} className="w-full justify-start">
+                    <SidebarMenuButton tooltip={{children: "المساعدة والدعم", side: 'left', align: 'center'}} className="w-full justify-start"> {/* Changed tooltip side to 'left' */}
                       <CircleHelp className="h-5 w-5" />
                       <span className="truncate">المساعدة والدعم</span>
                     </SidebarMenuButton>
@@ -135,10 +135,10 @@ export default function RootLayout({
 
               <div className="flex flex-col flex-1">
                 <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 shadow-sm">
-                  <SidebarTrigger className="md:hidden" />
                   <div className="flex-1">
                     {/* Optional: Breadcrumbs or page title can go here */}
                   </div>
+                   <SidebarTrigger className="md:hidden order-last" /> {/* Added order-last to move trigger to the left in RTL */}
                   <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" aria-label="Search">
                       <Search className="h-5 w-5" />
@@ -169,16 +169,16 @@ export default function RootLayout({
                           </DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>
-                            <UserCircle className="mr-2 h-4 w-4" />
+                            <UserCircle className="ml-2 h-4 w-4" /> {/* Changed mr-2 to ml-2 for RTL */}
                             <span>الملف الشخصي</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <Settings className="mr-2 h-4 w-4" />
+                            <Settings className="ml-2 h-4 w-4" /> {/* Changed mr-2 to ml-2 for RTL */}
                             <span>الإعدادات</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>
-                            <LogOut className="mr-2 h-4 w-4" />
+                            <LogOut className="ml-2 h-4 w-4" /> {/* Changed mr-2 to ml-2 for RTL */}
                             <span>تسجيل الخروج</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -198,3 +198,4 @@ export default function RootLayout({
     </html>
   );
 }
+

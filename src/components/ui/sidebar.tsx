@@ -34,6 +34,7 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  side: "left" | "right" // Added side to context
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -115,6 +116,15 @@ const SidebarProvider = React.forwardRef<
     // We add a state so that we can do data-state="expanded" or "collapsed".
     // This makes it easier to style the sidebar with Tailwind classes.
     const state = open ? "expanded" : "collapsed"
+    
+    // Infer side based on dir attribute of html tag for RTL support
+    const [effectiveSide, setEffectiveSide] = React.useState<"left" | "right">("left");
+
+    React.useEffect(() => {
+      const dir = document.documentElement.dir;
+      setEffectiveSide(dir === "rtl" ? "right" : "left");
+    }, []);
+
 
     const contextValue = React.useMemo<SidebarContext>(
       () => ({
@@ -125,8 +135,9 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
+        side: effectiveSide, // Use effectiveSide
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, effectiveSide]
     )
 
     return (
@@ -166,7 +177,7 @@ const Sidebar = React.forwardRef<
 >(
   (
     {
-      side = "left",
+      side: propSide, // Renamed to propSide to avoid conflict
       variant = "sidebar",
       collapsible = "offcanvas",
       className,
@@ -175,7 +186,8 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { isMobile, state, openMobile, setOpenMobile, side: contextSide } = useSidebar()
+    const side = propSide ?? contextSide; // Use propSide if provided, otherwise use contextSide
 
     if (collapsible === "none") {
       return (
@@ -226,7 +238,7 @@ const Sidebar = React.forwardRef<
           className={cn(
             "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
             "group-data-[collapsible=offcanvas]:w-0",
-            "group-data-[side=right]:rotate-180",
+            "group-data-[side=right]:rotate-180", // This might need adjustment for RTL logic if it implies visual rotation
             variant === "floating" || variant === "inset"
               ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
@@ -554,7 +566,7 @@ const SidebarMenuButton = React.forwardRef<
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
-    const { isMobile, state } = useSidebar()
+    const { isMobile, state, side } = useSidebar() // Added side from context
 
     const button = (
       <Comp
@@ -576,12 +588,15 @@ const SidebarMenuButton = React.forwardRef<
         children: tooltip,
       }
     }
+    
+    const tooltipSide = tooltip.side ?? (side === "right" ? "left" : "right");
+
 
     return (
       <Tooltip>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent
-          side="right"
+          side={tooltipSide} // Use determined tooltipSide
           align="center"
           hidden={state !== "collapsed" || isMobile}
           {...tooltip}

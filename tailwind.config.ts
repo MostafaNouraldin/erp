@@ -9,6 +9,9 @@ export default {
   ],
   theme: {
   	extend: {
+      fontFamily: { // Added fontFamily
+        cairo: ["var(--font-cairo)", "sans-serif"], // Added Cairo font
+      },
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

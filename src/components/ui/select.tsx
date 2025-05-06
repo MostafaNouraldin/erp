@@ -20,6 +20,7 @@ const SelectTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "rtl:flex-row-reverse", // Added for RTL icon positioning
       className
     )}
     {...props}
@@ -102,28 +103,46 @@ SelectContent.displayName = SelectPrimitive.Content.displayName
 const SelectLabel = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
->(({ className, ...props }, ref) => (
+>(({ className, ...props }, ref) => {
+  const [dir, setDir] = React.useState<"ltr" | "rtl">("ltr");
+  React.useEffect(() => {
+    const currentDir = document.documentElement.dir as "ltr" | "rtl" | undefined;
+    if (currentDir) {
+      setDir(currentDir);
+    }
+  }, []);
+  return (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn("py-1.5 pl-8 pr-2 text-sm font-semibold", className)}
+    className={cn("py-1.5 pr-2 text-sm font-semibold", dir === "rtl" ? "pl-2 pr-8" : "pl-8 pr-2", className)} // Adjusted for RTL
     {...props}
   />
-))
+  )
+})
 SelectLabel.displayName = SelectPrimitive.Label.displayName
 
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => {
+  const [dir, setDir] = React.useState<"ltr" | "rtl">("ltr");
+  React.useEffect(() => {
+    const currentDir = document.documentElement.dir as "ltr" | "rtl" | undefined;
+    if (currentDir) {
+      setDir(currentDir);
+    }
+  }, []);
+  return (
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      dir === "rtl" ? "pl-2 pr-8" : "pl-8 pr-2", // Adjusted for RTL
       className
     )}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span className={cn("absolute flex h-3.5 w-3.5 items-center justify-center", dir === "rtl" ? "right-2" : "left-2")}> {/* Adjusted for RTL */}
       <SelectPrimitive.ItemIndicator>
         <Check className="h-4 w-4" />
       </SelectPrimitive.ItemIndicator>
@@ -131,7 +150,8 @@ const SelectItem = React.forwardRef<
 
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
   </SelectPrimitive.Item>
-))
+  )
+})
 SelectItem.displayName = SelectPrimitive.Item.displayName
 
 const SelectSeparator = React.forwardRef<
