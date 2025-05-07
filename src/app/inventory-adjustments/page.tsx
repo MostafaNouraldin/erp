@@ -37,7 +37,7 @@ const existingAdjustments = [
 
 export default function InventoryAdjustmentsPage() {
   return (
-    <div className="container mx-auto py-6 space-y-8">
+    <div className="container mx-auto py-6 space-y-8" dir="rtl">
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
@@ -146,7 +146,7 @@ export default function InventoryAdjustmentsPage() {
                     <Filter className="me-2 h-4 w-4" /> تصفية الحالة
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" dir="rtl">
                   <DropdownMenuLabel>تصفية حسب الحالة</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuCheckboxItem>معتمدة</DropdownMenuCheckboxItem>
@@ -212,3 +212,4 @@ export default function InventoryAdjustmentsPage() {
     </div>
   );
 }
+

@@ -32,7 +32,7 @@ const stockMovements = [
 
 export default function InventoryPage() {
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">إدارة المخزون والمستودعات</h1>
         <Button className="shadow-md hover:shadow-lg transition-shadow">
@@ -66,7 +66,7 @@ export default function InventoryPage() {
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث في الأصناف..." className="pr-10 w-full sm:w-64" />
+                  <Input placeholder="بحث في الأصناف..." className="pr-10 w-full sm:w-64 bg-background" />
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <DropdownMenu>
@@ -75,7 +75,7 @@ export default function InventoryPage() {
                         <Filter className="me-2 h-4 w-4" /> تصفية الفئة
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" dir="rtl">
                       <DropdownMenuLabel>تصفية حسب الفئة</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuCheckboxItem>إلكترونيات</DropdownMenuCheckboxItem>
@@ -113,7 +113,7 @@ export default function InventoryPage() {
                         <TableCell>{item.price}</TableCell>
                         <TableCell className="font-semibold">
                           {item.quantity}
-                          {item.quantity <= item.reorderLevel && <AlertTriangle className="inline-block me-2 h-4 w-4 text-destructive" />}
+                          {item.quantity <= item.reorderLevel && <AlertTriangle className="inline me-2 h-4 w-4 text-destructive" />}
                         </TableCell>
                         <TableCell>{item.reorderLevel}</TableCell>
                         <TableCell>{item.location}</TableCell>
@@ -144,7 +144,7 @@ export default function InventoryPage() {
                <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث في حركات المخزون..." className="pr-10 w-full sm:w-64" />
+                  <Input placeholder="بحث في حركات المخزون..." className="pr-10 w-full sm:w-64 bg-background" />
                 </div>
                  <div className="flex gap-2 flex-wrap">
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
@@ -261,3 +261,4 @@ export default function InventoryPage() {
     </div>
   );
 }
+
