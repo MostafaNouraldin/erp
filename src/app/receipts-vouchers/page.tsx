@@ -9,10 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Printer, Search, Filter, FileDown, Banknote, Building, FileText, Wallet } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Printer, Search, Filter, FileDown, Banknote, Building, FileText, Wallet, CheckCircle, Undo } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label"; // Kept for direct use if needed outside forms
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -22,8 +21,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 
-// Mock data - replace with actual data fetching
-const receiptVoucherData = [
+// Mock data initial state
+const initialReceiptVoucherData = [
   { id: "RC001", date: new Date("2024-07-15"), type: "سند قبض" as const, method: "نقدي" as const, partyId: "CUST001", partyName: "عميل أ", amount: 5000, status: "مرحل" as const, branch: "الرئيسي", notes: "دفعة من العميل أ", accountId: "1011" },
   { id: "PV001", date: new Date("2024-07-16"), type: "سند صرف" as const, method: "بنكي" as const, partyId: "SUP001", partyName: "مورد س", amount: 12000, status: "مرحل" as const, branch: "الرياض", notes: "دفعة للمورد س", accountId: "1012" },
   { id: "RC002", date: new Date("2024-07-18"), type: "سند قبض" as const, method: "بنكي" as const, partyId: "CUST002", partyName: "عميل ب", amount: 2500, status: "مسودة" as const, branch: "جدة", notes: "", accountId: "1012" },
@@ -31,19 +30,12 @@ const receiptVoucherData = [
 ];
 
 const mockParties = [
-    { id: "CUST001", name: "عميل أ (شركة الأمل)", type: "customer" },
-    { id: "CUST002", name: "عميل ب (مؤسسة النجاح)", type: "customer" },
-    { id: "SUP001", name: "مورد س (مورد التقنية)", type: "supplier" },
-    { id: "EXP001", name: "مصروفات عامة", type: "expense" },
+    { id: "CUST001", name: "عميل أ (شركة الأمل)", type: "customer" }, { id: "CUST002", name: "عميل ب (مؤسسة النجاح)", type: "customer" },
+    { id: "SUP001", name: "مورد س (مورد التقنية)", type: "supplier" }, { id: "EXP001", name: "مصروفات عامة", type: "expense" },
 ];
+const mockAccounts = [ {id: "1011", name: "صندوق الفرع الرئيسي"}, {id: "1012", name: "حساب البنك الأهلي"}, {id: "5010", name: "مصروفات نثرية"} ];
 
-const mockAccounts = [ // Cash and Bank accounts
-    {id: "1011", name: "صندوق الفرع الرئيسي"},
-    {id: "1012", name: "حساب البنك الأهلي"},
-];
-
-
-const treasuryMovementData = [
+const initialTreasuryMovementData = [
     { date: "2024-07-20", type: "إيداع", description: "إيداع نقدي من مبيعات", amount: 1500, balance: 101500 },
     { date: "2024-07-20", type: "سحب", description: "سند صرف #PV002", amount: 300, balance: 101200 },
     { date: "2024-07-19", type: "إيداع", description: "تحصيل من عميل أ", amount: 2000, balance: 101500 },
@@ -55,18 +47,20 @@ const voucherSchema = z.object({
   type: z.enum(["سند قبض", "سند صرف"]),
   method: z.enum(["نقدي", "بنكي", "شيك"], { required_error: "طريقة الدفع مطلوبة" }),
   partyId: z.string().min(1, "الجهة مطلوبة"),
-  partyName: z.string().optional(), // For display, will be auto-filled
+  partyName: z.string().optional(), 
   accountId: z.string().min(1, "حساب الصندوق/البنك مطلوب"),
   amount: z.coerce.number().min(0.01, "المبلغ يجب أن يكون أكبر من صفر"),
   notes: z.string().optional(),
   status: z.enum(["مسودة", "مرحل"]).default("مسودة"),
   branch: z.string().min(1, "الفرع مطلوب"),
 });
-
 type VoucherFormValues = z.infer<typeof voucherSchema>;
 
 
 export default function ReceiptsVouchersPage() {
+  const [vouchers, setVouchers] = useState(initialReceiptVoucherData);
+  const [treasuryMovements, setTreasuryMovements] = useState(initialTreasuryMovementData);
+
   const [showCreateVoucherDialog, setShowCreateVoucherDialog] = useState(false);
   const [voucherToEdit, setVoucherToEdit] = useState<VoucherFormValues | null>(null);
   const [dialogType, setDialogType] = useState<"سند قبض" | "سند صرف">("سند قبض");
@@ -92,11 +86,10 @@ export default function ReceiptsVouchersPage() {
     const completeValues = {...values, partyName: party?.name || values.partyId };
 
     if (voucherToEdit) {
-      console.log("Updating voucher:", completeValues);
-      // Mock update logic
+      setVouchers(prev => prev.map(v => v.id === voucherToEdit.id ? completeValues : v));
     } else {
-      console.log("Adding new voucher:", completeValues);
-      // Mock add logic
+      const newIdPrefix = values.type === "سند قبض" ? "RC" : "PV";
+      setVouchers(prev => [...prev, { ...completeValues, id: `${newIdPrefix}${Date.now()}` }]);
     }
     setShowCreateVoucherDialog(false);
     setVoucherToEdit(null);
@@ -113,6 +106,38 @@ export default function ReceiptsVouchersPage() {
     setVoucherToEdit(voucherData);
     setShowCreateVoucherDialog(true);
   }
+
+  const handleDeleteVoucher = (voucherId: string) => {
+    setVouchers(prev => prev.filter(v => v.id !== voucherId));
+  };
+
+  const handlePostVoucher = (voucherId: string) => {
+    setVouchers(prev => prev.map(v => v.id === voucherId ? { ...v, status: "مرحل" } : v));
+    // Mock adding to treasury movement for posted vouchers
+    const voucher = vouchers.find(v => v.id === voucherId);
+    if (voucher) {
+        setTreasuryMovements(prev => [
+            { 
+                date: voucher.date.toLocaleDateString('ar-SA'), 
+                type: voucher.type === "سند قبض" ? "إيداع" : "سحب", 
+                description: `${voucher.type} #${voucher.id} - ${voucher.partyName}`, 
+                amount: voucher.amount, 
+                balance: (prev[0]?.balance || 0) + (voucher.type === "سند قبض" ? voucher.amount : -voucher.amount) // Simplified balance calculation
+            },
+            ...prev
+        ]);
+    }
+  };
+
+  const handleUnpostVoucher = (voucherId: string) => {
+     if (voucherId !== "RC001" && voucherId !== "PV001" && voucherId !== "PV002") { // Mock system generated check
+        setVouchers(prev => prev.map(v => v.id === voucherId ? { ...v, status: "مسودة" } : v));
+        // Mock removing from treasury (or creating a reverse entry)
+        setTreasuryMovements(prev => prev.filter(tm => !tm.description.includes(voucherId)));
+     } else {
+        alert("لا يمكن إلغاء ترحيل هذا السند لأنه مرتبط بعمليات نظام أساسية.");
+     }
+  };
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -156,9 +181,7 @@ export default function ReceiptsVouchersPage() {
                         <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                             <FormControl><SelectTrigger id="receiptMethod" className="bg-background"><SelectValue placeholder={`اختر طريقة ${dialogType === "سند قبض" ? "القبض" : "الصرف"}`} /></SelectTrigger></FormControl>
                             <SelectContent>
-                                <SelectItem value="نقدي">نقدي</SelectItem>
-                                <SelectItem value="بنكي">بنكي</SelectItem>
-                                <SelectItem value="شيك">شيك</SelectItem>
+                                <SelectItem value="نقدي">نقدي</SelectItem><SelectItem value="بنكي">بنكي</SelectItem><SelectItem value="شيك">شيك</SelectItem>
                             </SelectContent>
                         </Select><FormMessage /></FormItem>)} />
                      <FormField control={form.control} name="accountId" render={({ field }) => (
@@ -174,10 +197,8 @@ export default function ReceiptsVouchersPage() {
                         <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                             <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفرع" /></SelectTrigger></FormControl>
                             <SelectContent>
-                                <SelectItem value="الرئيسي">الرئيسي</SelectItem>
-                                <SelectItem value="الرياض">الرياض</SelectItem>
-                                <SelectItem value="جدة">جدة</SelectItem>
-                                <SelectItem value="الدمام">الدمام</SelectItem>
+                                <SelectItem value="الرئيسي">الرئيسي</SelectItem><SelectItem value="الرياض">الرياض</SelectItem>
+                                <SelectItem value="جدة">جدة</SelectItem><SelectItem value="الدمام">الدمام</SelectItem>
                             </SelectContent>
                         </Select><FormMessage /></FormItem>)} />
 
@@ -224,96 +245,52 @@ export default function ReceiptsVouchersPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" dir="rtl">
-                      <DropdownMenuLabel>تصفية حسب نوع السند</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuCheckboxItem>سند قبض</DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem>سند صرف</DropdownMenuCheckboxItem>
-                       <DropdownMenuSeparator />
-                      <DropdownMenuLabel>تصفية حسب طريقة الدفع</DropdownMenuLabel>
-                       <DropdownMenuSeparator />
-                       <DropdownMenuCheckboxItem>نقدي</DropdownMenuCheckboxItem>
-                       <DropdownMenuCheckboxItem>بنكي</DropdownMenuCheckboxItem>
-                       <DropdownMenuSeparator />
-                       <DropdownMenuLabel>تصفية حسب الحالة</DropdownMenuLabel>
-                       <DropdownMenuSeparator />
-                       <DropdownMenuCheckboxItem>مرحل</DropdownMenuCheckboxItem>
-                       <DropdownMenuCheckboxItem>مسودة</DropdownMenuCheckboxItem>
+                      <DropdownMenuLabel>تصفية حسب نوع السند</DropdownMenuLabel><DropdownMenuSeparator />
+                      <DropdownMenuCheckboxItem>سند قبض</DropdownMenuCheckboxItem><DropdownMenuCheckboxItem>سند صرف</DropdownMenuCheckboxItem><DropdownMenuSeparator />
+                      <DropdownMenuLabel>تصفية حسب طريقة الدفع</DropdownMenuLabel><DropdownMenuSeparator />
+                       <DropdownMenuCheckboxItem>نقدي</DropdownMenuCheckboxItem><DropdownMenuCheckboxItem>بنكي</DropdownMenuCheckboxItem><DropdownMenuSeparator />
+                       <DropdownMenuLabel>تصفية حسب الحالة</DropdownMenuLabel><DropdownMenuSeparator />
+                       <DropdownMenuCheckboxItem>مرحل</DropdownMenuCheckboxItem><DropdownMenuCheckboxItem>مسودة</DropdownMenuCheckboxItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <DatePickerWithPresets mode="range"/>
-                  <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                    <FileDown className="me-2 h-4 w-4" /> تصدير
-                  </Button>
+                  <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow" onClick={() => alert("تصدير السندات...")}><FileDown className="me-2 h-4 w-4" /> تصدير</Button>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>رقم السند</TableHead>
-                      <TableHead>التاريخ</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>الطريقة</TableHead>
-                      <TableHead>الجهة</TableHead>
-                      <TableHead>المبلغ</TableHead>
-                      <TableHead>الفرع</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead className="text-center">إجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {receiptVoucherData.map((voucher) => (
+                  <TableHeader><TableRow>
+                      <TableHead>رقم السند</TableHead><TableHead>التاريخ</TableHead><TableHead>النوع</TableHead>
+                      <TableHead>الطريقة</TableHead><TableHead>الجهة</TableHead><TableHead>المبلغ</TableHead>
+                      <TableHead>الفرع</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>{vouchers.map((voucher) => (
                       <TableRow key={voucher.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{voucher.id}</TableCell>
-                        <TableCell>{voucher.date.toLocaleDateString('ar-SA')}</TableCell>
-                        <TableCell>
-                          <Badge variant={voucher.type === "سند قبض" ? "default" : "secondary"} className="whitespace-nowrap bg-opacity-80">
-                            {voucher.type === "سند قبض" ? <Banknote className="inline me-1 h-3 w-3"/> : <Building className="inline me-1 h-3 w-3"/>}
-                            {voucher.type}
-                          </Badge>
+                        <TableCell className="font-medium">{voucher.id}</TableCell><TableCell>{voucher.date.toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell><Badge variant={voucher.type === "سند قبض" ? "default" : "secondary"} className="whitespace-nowrap bg-opacity-80">
+                            {voucher.type === "سند قبض" ? <Banknote className="inline me-1 h-3 w-3"/> : <Building className="inline me-1 h-3 w-3"/>}{voucher.type}</Badge>
                         </TableCell>
-                        <TableCell>{voucher.method}</TableCell>
-                        <TableCell>{voucher.partyName}</TableCell>
+                        <TableCell>{voucher.method}</TableCell><TableCell>{voucher.partyName}</TableCell>
                         <TableCell className="whitespace-nowrap">{voucher.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
-                        <TableCell>{voucher.branch}</TableCell>
-                        <TableCell>
-                          <Badge variant={voucher.status === "مرحل" ? "default" : "outline"} className="whitespace-nowrap">
-                            {voucher.status}
-                          </Badge>
-                        </TableCell>
+                        <TableCell>{voucher.branch}</TableCell><TableCell><Badge variant={voucher.status === "مرحل" ? "default" : "outline"} className="whitespace-nowrap">{voucher.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة" onClick={() => handlePrintVoucher(voucher)}>
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => openDialog(voucher.type, voucher)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {voucher.status === "مسودة" && (
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة" onClick={() => handlePrintVoucher(voucher)}><Printer className="h-4 w-4" /></Button>
+                          {voucher.status === "مسودة" && (<>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => openDialog(voucher.type, voucher)}><Edit className="h-4 w-4" /></Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                 <AlertDialogContent dir="rtl">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      سيتم حذف السند "{voucher.id}" نهائياً.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => console.log(`Deleting voucher ${voucher.id}`)}>
-                                      تأكيد الحذف
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
+                                  <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف السند "{voucher.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
+                                  <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteVoucher(voucher.id)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
-                              </AlertDialog>
+                            </AlertDialog>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="ترحيل السند" onClick={() => handlePostVoucher(voucher.id)}><CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" /></Button>
+                          </>)}
+                           {voucher.status === "مرحل" && (
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-100 dark:hover:bg-yellow-900" title="إلغاء الترحيل" onClick={() => handleUnpostVoucher(voucher.id)}><Undo className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></Button>
                           )}
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>))}
                   </TableBody>
                 </Table>
               </div>
@@ -323,39 +300,20 @@ export default function ReceiptsVouchersPage() {
 
         <TabsContent value="treasuryMovement">
           <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle>حركة الخزينة اليومية</CardTitle>
-              <CardDescription>مراجعة يومية لحركة الخزينة والإيداعات والسحوبات.</CardDescription>
-            </CardHeader>
+            <CardHeader><CardTitle>حركة الخزينة اليومية</CardTitle><CardDescription>مراجعة يومية لحركة الخزينة والإيداعات والسحوبات.</CardDescription></CardHeader>
             <CardContent>
-              <div className="mb-4 flex justify-end">
-                <DatePickerWithPresets />
-              </div>
+              <div className="mb-4 flex justify-end"><DatePickerWithPresets /></div>
               <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>التاريخ</TableHead>
-                      <TableHead>نوع الحركة</TableHead>
-                      <TableHead>الوصف</TableHead>
-                      <TableHead>المبلغ</TableHead>
-                      <TableHead>الرصيد</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {treasuryMovementData.map((movement, index) => (
+                  <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>نوع الحركة</TableHead><TableHead>الوصف</TableHead><TableHead>المبلغ</TableHead><TableHead>الرصيد</TableHead></TableRow></TableHeader>
+                  <TableBody>{treasuryMovements.map((movement, index) => (
                       <TableRow key={index} className="hover:bg-muted/50">
                         <TableCell>{movement.date}</TableCell>
-                        <TableCell>
-                            <Badge variant={movement.type === "إيداع" ? "default" : "destructive"} className="bg-opacity-70">
-                                {movement.type}
-                            </Badge>
-                        </TableCell>
+                        <TableCell><Badge variant={movement.type === "إيداع" ? "default" : "destructive"} className="bg-opacity-70">{movement.type}</Badge></TableCell>
                         <TableCell>{movement.description}</TableCell>
                         <TableCell className="whitespace-nowrap">{movement.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
                         <TableCell className="whitespace-nowrap">{movement.balance.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>))}
                   </TableBody>
                 </Table>
               </div>
@@ -364,52 +322,33 @@ export default function ReceiptsVouchersPage() {
         </TabsContent>
       </Tabs>
 
-       {/* Dialog for Printing Voucher */}
-      <Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
+       <Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
         <DialogContent className="sm:max-w-lg" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>طباعة السند: {selectedVoucherForPrint?.id}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>طباعة السند: {selectedVoucherForPrint?.id}</DialogTitle></DialogHeader>
           {selectedVoucherForPrint && (
             <div className="py-4 space-y-3 border rounded-md p-4 my-4">
               <div className="flex justify-between items-center mb-4 pb-2 border-b">
-                <h3 className="text-xl font-semibold">شركة المستقبل ERP</h3>
-                <p className="text-sm">{selectedVoucherForPrint.type}</p>
+                <h3 className="text-xl font-semibold">شركة المستقبل ERP</h3><p className="text-sm">{selectedVoucherForPrint.type}</p>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <p><strong>رقم السند:</strong> {selectedVoucherForPrint.id}</p>
-                <p><strong>التاريخ:</strong> {selectedVoucherForPrint.date.toLocaleDateString('ar-SA')}</p>
-                <p><strong>الجهة:</strong> {selectedVoucherForPrint.partyName}</p>
-                <p><strong>المبلغ:</strong> {selectedVoucherForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
-                <p><strong>طريقة {selectedVoucherForPrint.type === "سند قبض" ? "القبض" : "الصرف"}:</strong> {selectedVoucherForPrint.method}</p>
-                <p><strong>الفرع:</strong> {selectedVoucherForPrint.branch}</p>
-                <p className="col-span-2"><strong>المبلغ كتابة:</strong> {/* Implement proper number to words conversion here */}</p>
+                <p><strong>رقم السند:</strong> {selectedVoucherForPrint.id}</p><p><strong>التاريخ:</strong> {new Date(selectedVoucherForPrint.date).toLocaleDateString('ar-SA')}</p>
+                <p><strong>الجهة:</strong> {selectedVoucherForPrint.partyName}</p><p><strong>المبلغ:</strong> {selectedVoucherForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
+                <p><strong>طريقة {selectedVoucherForPrint.type === "سند قبض" ? "القبض" : "الصرف"}:</strong> {selectedVoucherForPrint.method}</p><p><strong>الفرع:</strong> {selectedVoucherForPrint.branch}</p>
+                <p className="col-span-2"><strong>المبلغ كتابة:</strong> {/* Implement proper number to words conversion here */} {selectedVoucherForPrint.amount.toLocaleString('ar-SA')} ريال سعودي فقط لا غير.</p>
                 <p className="col-span-2"><strong>البيان:</strong> {selectedVoucherForPrint.notes || `${selectedVoucherForPrint.type} لـ ${selectedVoucherForPrint.partyName} بمبلغ ${selectedVoucherForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}`}</p>
                  <p className="col-span-2"><strong>الحساب:</strong> {mockAccounts.find(a=>a.id === selectedVoucherForPrint.accountId)?.name || selectedVoucherForPrint.accountId}</p>
               </div>
                <div className="grid grid-cols-2 gap-4 mt-8 pt-4 border-t">
-                <div className="text-center">
-                    <p className="mb-6">.........................</p>
-                    <p className="text-sm font-semibold">توقيع المحاسب</p>
-                </div>
-                 <div className="text-center">
-                    <p className="mb-6">.........................</p>
-                    <p className="text-sm font-semibold">توقيع المستلم</p>
-                </div>
+                <div className="text-center"><p className="mb-6">.........................</p><p className="text-sm font-semibold">توقيع المحاسب</p></div>
+                 <div className="text-center"><p className="mb-6">.........................</p><p className="text-sm font-semibold">توقيع المستلم</p></div>
               </div>
-            </div>
-          )}
+            </div>)}
           <DialogFooter>
-            <Button onClick={() => { alert(`Printing voucher ${selectedVoucherForPrint?.id}`); setShowPrintDialog(false); }} >
-              <Printer className="me-2 h-4 w-4" /> طباعة
-            </Button>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">إغلاق</Button>
-            </DialogClose>
+            <Button onClick={() => { alert(`Printing voucher ${selectedVoucherForPrint?.id}`); setShowPrintDialog(false); }} ><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-

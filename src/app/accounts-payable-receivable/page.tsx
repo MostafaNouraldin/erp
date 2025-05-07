@@ -9,33 +9,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, FileText, Search, Filter, Users, Briefcase, TrendingUp, TrendingDown, FileWarning, Mail, MinusCircle } from "lucide-react";
+import { PlusCircle, Edit, Trash2, FileText, Search, Filter, Users, Briefcase, TrendingUp, TrendingDown, FileWarning, Mail, MinusCircle, Banknote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label"; // Kept for direct use if needed outside forms
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-// import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // AlertDialog commented out as it is not used
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 
-// Mock data
-const customerInvoicesData = [
-  { id: "INV-C001", customerId: "CUST001", date: new Date("2024-07-01"), dueDate: new Date("2024-07-31"), totalAmount: 15000, paidAmount: 10000, remainingAmount: 5000, status: "جزئي", notes: "دفعة مقدمة لخدمات استشارية", items: [{itemId: 'SERV001', description: 'خدمة استشارية A', quantity: 1, unitPrice: 15000, total: 15000}] },
-  { id: "INV-C002", customerId: "CUST002", date: new Date("2024-06-15"), dueDate: new Date("2024-07-15"), totalAmount: 8200, paidAmount: 8200, remainingAmount: 0, status: "مدفوع", notes: "", items: [] },
-  { id: "INV-C003", customerId: "CUST003", date: new Date("2024-07-10"), dueDate: new Date("2024-08-10"), totalAmount: 22500, paidAmount: 0, remainingAmount: 22500, status: "غير مدفوع", notes: "", items: [] },
-  { id: "INV-C004", customerId: "CUST004", date: new Date("2024-05-20"), dueDate: new Date("2024-06-20"), totalAmount: 12000, paidAmount: 0, remainingAmount: 12000, status: "متأخر", notes: "", items: [] },
+// Mock data initial state
+const initialCustomerInvoicesData = [
+  { id: "INV-C001", customerId: "CUST001", date: new Date("2024-07-01"), dueDate: new Date("2024-07-31"), totalAmount: 15000, paidAmount: 10000, remainingAmount: 5000, status: "جزئي" as const, notes: "دفعة مقدمة لخدمات استشارية", items: [{itemId: 'SERV001', description: 'خدمة استشارية A', quantity: 1, unitPrice: 15000, total: 15000}] },
+  { id: "INV-C002", customerId: "CUST002", date: new Date("2024-06-15"), dueDate: new Date("2024-07-15"), totalAmount: 8200, paidAmount: 8200, remainingAmount: 0, status: "مدفوع" as const, notes: "", items: [{itemId: 'ITEM001', description: 'لابتوب', quantity:1, unitPrice: 8200, total: 8200}] },
+  { id: "INV-C003", customerId: "CUST003", date: new Date("2024-07-10"), dueDate: new Date("2024-08-10"), totalAmount: 22500, paidAmount: 0, remainingAmount: 22500, status: "غير مدفوع" as const, notes: "", items: [{itemId: 'ITEM002', description: 'طابعة', quantity:3, unitPrice: 7500, total: 22500}] },
+  { id: "INV-C004", customerId: "CUST004", date: new Date("2024-05-20"), dueDate: new Date("2024-06-20"), totalAmount: 12000, paidAmount: 0, remainingAmount: 12000, status: "متأخر" as const, notes: "", items: [{itemId: 'SERV001', description: 'خدمة استشارية B', quantity:1, unitPrice: 12000, total: 12000}] },
 ];
 
-const supplierInvoicesData = [
-  { id: "INV-S001", supplierId: "SUP001", date: new Date("2024-07-05"), dueDate: new Date("2024-08-05"), totalAmount: 30000, paidAmount: 15000, remainingAmount: 15000, status: "جزئي", notes: "", items: [] },
-  { id: "INV-S002", supplierId: "SUP002", date: new Date("2024-06-20"), dueDate: new Date("2024-07-20"), totalAmount: 7500, paidAmount: 7500, remainingAmount: 0, status: "مدفوع", notes: "", items: [] },
-  { id: "INV-S003", supplierId: "SUP003", date: new Date("2024-07-12"), dueDate: new Date("2024-08-12"), totalAmount: 18000, paidAmount: 0, remainingAmount: 18000, status: "غير مدفوع", notes: "", items: [] },
+const initialSupplierInvoicesData = [
+  { id: "INV-S001", supplierId: "SUP001", date: new Date("2024-07-05"), dueDate: new Date("2024-08-05"), totalAmount: 30000, paidAmount: 15000, remainingAmount: 15000, status: "جزئي" as const, notes: "", items: [{itemId: 'ITEM001', description: 'لابتوبات', quantity:4, unitPrice: 7500, total: 30000}] },
+  { id: "INV-S002", supplierId: "SUP002", date: new Date("2024-06-20"), dueDate: new Date("2024-07-20"), totalAmount: 7500, paidAmount: 7500, remainingAmount: 0, status: "مدفوع" as const, notes: "", items: [] },
+  { id: "INV-S003", supplierId: "SUP003", date: new Date("2024-07-12"), dueDate: new Date("2024-08-12"), totalAmount: 18000, paidAmount: 0, remainingAmount: 18000, status: "غير مدفوع" as const, notes: "", items: [] },
 ];
 
 const agingReportData = {
@@ -54,24 +53,19 @@ const agingReportData = {
 };
 
 const mockCustomers = [
-    {id: "CUST001", name: "شركة الأمل"},
-    {id: "CUST002", name: "مؤسسة النجاح"},
-    {id: "CUST003", name: "شركة التطور"},
-    {id: "CUST004", name: "مؤسسة الإبداع"},
+    {id: "CUST001", name: "شركة الأمل"}, {id: "CUST002", name: "مؤسسة النجاح"},
+    {id: "CUST003", name: "شركة التطور"}, {id: "CUST004", name: "مؤسسة الإبداع"},
 ];
-
 const mockSuppliers = [
-    {id: "SUP001", name: "مورد التقنية الحديثة"},
-    {id: "SUP002", name: "مورد الخدمات اللوجستية"},
+    {id: "SUP001", name: "مورد التقنية الحديثة"}, {id: "SUP002", name: "مورد الخدمات اللوجستية"},
     {id: "SUP003", name: "مورد المواد الخام"},
 ];
-
 const mockItems = [
-    {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 6500},
-    {id: "SERV001", name: "خدمة استشارية A", price: 15000},
+    {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 6500}, {id: "SERV001", name: "خدمة استشارية A", price: 15000},
     {id: "ITEM002", name: "طابعة HP LaserJet", price: 1200},
 ];
 
+// Schemas
 const invoiceItemSchema = z.object({
   itemId: z.string().min(1, "الصنف مطلوب"),
   description: z.string().optional(),
@@ -80,32 +74,43 @@ const invoiceItemSchema = z.object({
   total: z.coerce.number(),
 });
 
-const customerInvoiceSchema = z.object({
+const baseInvoiceSchema = z.object({
   id: z.string().optional(),
-  customerId: z.string().min(1, "العميل مطلوب"),
   date: z.date({ required_error: "تاريخ الفاتورة مطلوب" }),
   dueDate: z.date({ required_error: "تاريخ الاستحقاق مطلوب" }),
   notes: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
-  status: z.enum(["جزئي", "مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
+  totalAmount: z.coerce.number().default(0),
   paidAmount: z.coerce.number().default(0),
+  remainingAmount: z.coerce.number().default(0),
+});
+
+const customerInvoiceSchema = baseInvoiceSchema.extend({
+  customerId: z.string().min(1, "العميل مطلوب"),
+  status: z.enum(["جزئي", "مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
 });
 type CustomerInvoiceFormValues = z.infer<typeof customerInvoiceSchema>;
 
-const supplierInvoiceSchema = z.object({
-  id: z.string().optional(),
+const supplierInvoiceSchema = baseInvoiceSchema.extend({
   supplierId: z.string().min(1, "المورد مطلوب"),
-  date: z.date({ required_error: "تاريخ الفاتورة مطلوب" }),
-  dueDate: z.date({ required_error: "تاريخ الاستحقاق مطلوب" }),
-  notes: z.string().optional(),
-  items: z.array(invoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   status: z.enum(["جزئي", "مدفوع", "غير مدفوع"]).default("غير مدفوع"),
-  paidAmount: z.coerce.number().default(0),
 });
 type SupplierInvoiceFormValues = z.infer<typeof supplierInvoiceSchema>;
 
+const paymentSchema = z.object({
+  paymentAmount: z.coerce.number().min(0.01, "مبلغ الدفع يجب أن يكون أكبر من صفر."),
+  paymentDate: z.date({ required_error: "تاريخ الدفع مطلوب." }),
+  paymentMethod: z.enum(["نقدي", "بنكي", "شيك"], { required_error: "طريقة الدفع مطلوبة." }),
+});
+type PaymentFormValues = z.infer<typeof paymentSchema>;
+
+type AnyInvoice = CustomerInvoiceFormValues | SupplierInvoiceFormValues;
+
 
 export default function AccountsPayableReceivablePage() {
+  const [customerInvoices, setCustomerInvoices] = useState(initialCustomerInvoicesData);
+  const [supplierInvoices, setSupplierInvoices] = useState(initialSupplierInvoicesData);
+
   const [showAddCustomerInvoiceDialog, setShowAddCustomerInvoiceDialog] = useState(false);
   const [customerInvoiceToEdit, setCustomerInvoiceToEdit] = useState<CustomerInvoiceFormValues | null>(null);
   
@@ -115,9 +120,14 @@ export default function AccountsPayableReceivablePage() {
   const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false);
   const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<any>(null); 
 
+  const [showRecordPaymentDialog, setShowRecordPaymentDialog] = useState(false);
+  const [invoiceToPay, setInvoiceToPay] = useState<AnyInvoice | null>(null);
+  const [invoiceTypeForPayment, setInvoiceTypeForPayment] = useState<'customer' | 'supplier' | null>(null);
+
+
   const customerInvoiceForm = useForm<CustomerInvoiceFormValues>({
     resolver: zodResolver(customerInvoiceSchema),
-    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}] },
+    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0 },
   });
   const { fields: custInvoiceItemsFields, append: appendCustInvoiceItem, remove: removeCustInvoiceItem } = useFieldArray({
     control: customerInvoiceForm.control, name: "items",
@@ -125,32 +135,65 @@ export default function AccountsPayableReceivablePage() {
 
   const supplierInvoiceForm = useForm<SupplierInvoiceFormValues>({
     resolver: zodResolver(supplierInvoiceSchema),
-    defaultValues: { supplierId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}] },
+    defaultValues: { supplierId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0 },
   });
-   const { fields: suppInvoiceItemsFields, append: appendSuppInvoiceItem, remove: removeSuppInvoiceItem } = useFieldArray({
+  const { fields: suppInvoiceItemsFields, append: appendSuppInvoiceItem, remove: removeSuppInvoiceItem } = useFieldArray({
     control: supplierInvoiceForm.control, name: "items",
+  });
+  
+  const paymentForm = useForm<PaymentFormValues>({
+    resolver: zodResolver(paymentSchema),
+    defaultValues: { paymentDate: new Date(), paymentMethod: "نقدي" },
   });
 
   useEffect(() => {
     if (customerInvoiceToEdit) customerInvoiceForm.reset(customerInvoiceToEdit);
-    else customerInvoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}] });
+    else customerInvoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0 });
   }, [customerInvoiceToEdit, customerInvoiceForm, showAddCustomerInvoiceDialog]);
   
   useEffect(() => {
     if (supplierInvoiceToEdit) supplierInvoiceForm.reset(supplierInvoiceToEdit);
-    else supplierInvoiceForm.reset({ supplierId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}] });
+    else supplierInvoiceForm.reset({ supplierId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0 });
   }, [supplierInvoiceToEdit, supplierInvoiceForm, showAddSupplierInvoiceDialog]);
 
+  const calculateInvoiceTotals = (items: any[]) => {
+    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+    return totalAmount;
+  };
+
+  const updateInvoiceStatus = (invoice: AnyInvoice): AnyInvoice['status'] => {
+    if (invoice.paidAmount >= invoice.totalAmount) return "مدفوع";
+    if (invoice.paidAmount > 0) return "جزئي";
+    if ('dueDate' in invoice && invoice.dueDate && invoice.dueDate < new Date() && invoice.paidAmount === 0) return "متأخر";
+    return "غير مدفوع";
+  };
+
   const handleCustomerInvoiceSubmit = (values: CustomerInvoiceFormValues) => {
-    const totalAmount = values.items.reduce((sum, item) => sum + item.total, 0);
-    console.log(customerInvoiceToEdit ? "Updating Customer Invoice:" : "Adding Customer Invoice:", {...values, totalAmount});
+    const totalAmount = calculateInvoiceTotals(values.items);
+    const remainingAmount = totalAmount - (values.paidAmount || 0);
+    const status = updateInvoiceStatus({...values, totalAmount, remainingAmount});
+    const finalValues = {...values, totalAmount, remainingAmount, status};
+
+    if (customerInvoiceToEdit) {
+      setCustomerInvoices(prev => prev.map(inv => inv.id === customerInvoiceToEdit.id ? { ...finalValues, id: customerInvoiceToEdit.id } : inv));
+    } else {
+      setCustomerInvoices(prev => [...prev, { ...finalValues, id: `INV-C${Date.now()}` }]);
+    }
     setShowAddCustomerInvoiceDialog(false);
     setCustomerInvoiceToEdit(null);
   };
 
   const handleSupplierInvoiceSubmit = (values: SupplierInvoiceFormValues) => {
-    const totalAmount = values.items.reduce((sum, item) => sum + item.total, 0);
-    console.log(supplierInvoiceToEdit ? "Updating Supplier Invoice:" : "Adding Supplier Invoice:", {...values, totalAmount});
+    const totalAmount = calculateInvoiceTotals(values.items);
+    const remainingAmount = totalAmount - (values.paidAmount || 0);
+    const status = updateInvoiceStatus({...values, totalAmount, remainingAmount});
+    const finalValues = {...values, totalAmount, remainingAmount, status};
+    
+    if (supplierInvoiceToEdit) {
+      setSupplierInvoices(prev => prev.map(inv => inv.id === supplierInvoiceToEdit.id ? { ...finalValues, id: supplierInvoiceToEdit.id } : inv));
+    } else {
+      setSupplierInvoices(prev => [...prev, { ...finalValues, id: `INV-S${Date.now()}` }]);
+    }
     setShowAddSupplierInvoiceDialog(false);
     setSupplierInvoiceToEdit(null);
   };
@@ -165,7 +208,45 @@ export default function AccountsPayableReceivablePage() {
     const unitPrice = form.getValues(`items.${index}.unitPrice`);
     form.setValue(`items.${index}.total`, quantity * unitPrice);
   };
+  
+  const handleDeleteInvoice = (invoiceId: string, type: 'customer' | 'supplier') => {
+    if (type === 'customer') {
+      setCustomerInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+    } else {
+      setSupplierInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+    }
+  }
 
+  const openRecordPaymentDialog = (invoice: AnyInvoice, type: 'customer' | 'supplier') => {
+    setInvoiceToPay(invoice);
+    setInvoiceTypeForPayment(type);
+    paymentForm.reset({ paymentDate: new Date(), paymentMethod: "نقدي", paymentAmount: invoice.remainingAmount });
+    setShowRecordPaymentDialog(true);
+  };
+
+  const handleRecordPaymentSubmit = (paymentValues: PaymentFormValues) => {
+    if (!invoiceToPay || !invoiceTypeForPayment) return;
+
+    const newPaidAmount = invoiceToPay.paidAmount + paymentValues.paymentAmount;
+    const newRemainingAmount = Math.max(0, invoiceToPay.totalAmount - newPaidAmount);
+    
+    const updatedInvoiceBase = {
+        ...invoiceToPay,
+        paidAmount: newPaidAmount,
+        remainingAmount: newRemainingAmount,
+    };
+    const newStatus = updateInvoiceStatus(updatedInvoiceBase);
+
+    const updatedInvoice = { ...updatedInvoiceBase, status: newStatus };
+
+    if (invoiceTypeForPayment === 'customer') {
+        setCustomerInvoices(prev => prev.map(inv => inv.id === invoiceToPay.id ? updatedInvoice as CustomerInvoiceFormValues : inv));
+    } else {
+        setSupplierInvoices(prev => prev.map(inv => inv.id === invoiceToPay.id ? updatedInvoice as SupplierInvoiceFormValues : inv));
+    }
+    setShowRecordPaymentDialog(false);
+    setInvoiceToPay(null);
+  };
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -203,7 +284,7 @@ export default function AccountsPayableReceivablePage() {
                         <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                             <FormField control={customerInvoiceForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                 <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) customerInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); calculateItemTotal(customerInvoiceForm, index); }} defaultValue={field.value} dir="rtl">
+                                <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { customerInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); customerInvoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotal(customerInvoiceForm, index); }} defaultValue={field.value} dir="rtl">
                                     <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
                                     <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                 </Select><FormMessage className="text-xs"/></FormItem> )} />
@@ -266,7 +347,7 @@ export default function AccountsPayableReceivablePage() {
                         <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                             <FormField control={supplierInvoiceForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                 <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) supplierInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); calculateItemTotal(supplierInvoiceForm, index); }} defaultValue={field.value} dir="rtl">
+                                <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { supplierInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); supplierInvoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotal(supplierInvoiceForm, index); }} defaultValue={field.value} dir="rtl">
                                     <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
                                     <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                 </Select><FormMessage className="text-xs"/></FormItem> )} />
@@ -348,19 +429,13 @@ export default function AccountsPayableReceivablePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>رقم الفاتورة</TableHead>
-                      <TableHead>العميل</TableHead>
-                      <TableHead>تاريخ الفاتورة</TableHead>
-                      <TableHead>تاريخ الاستحقاق</TableHead>
-                      <TableHead>المبلغ الإجمالي</TableHead>
-                      <TableHead>المبلغ المدفوع</TableHead>
-                      <TableHead>المبلغ المتبقي</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead className="text-center">إجراءات</TableHead>
+                      <TableHead>رقم الفاتورة</TableHead><TableHead>العميل</TableHead><TableHead>تاريخ الفاتورة</TableHead>
+                      <TableHead>تاريخ الاستحقاق</TableHead><TableHead>المبلغ الإجمالي</TableHead><TableHead>المدفوع</TableHead>
+                      <TableHead>المتبقي</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {customerInvoicesData.map((invoice) => (
+                    {customerInvoices.map((invoice) => (
                       <TableRow key={invoice.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{invoice.id}</TableCell>
                         <TableCell>{mockCustomers.find(c=>c.id === invoice.customerId)?.name}</TableCell>
@@ -370,27 +445,26 @@ export default function AccountsPayableReceivablePage() {
                         <TableCell>{invoice.paidAmount.toFixed(2)} SAR</TableCell>
                         <TableCell className="font-semibold">{invoice.remainingAmount.toFixed(2)} SAR</TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              invoice.status === "مدفوع" ? "default" :
-                              invoice.status === "جزئي" ? "secondary" :
-                              invoice.status === "متأخر" ? "destructive" : "outline"
-                            }
-                            className="whitespace-nowrap"
-                          >
+                          <Badge variant={ invoice.status === "مدفوع" ? "default" : invoice.status === "جزئي" ? "secondary" : invoice.status === "متأخر" ? "destructive" : "outline" } className="whitespace-nowrap">
                             {invoice.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'customer')}>
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إرسال كشف حساب" onClick={() => alert(`إرسال كشف حساب للعميل: ${invoice.customerId}`)}>
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setCustomerInvoiceToEdit(invoice); setShowAddCustomerInvoiceDialog(true);}}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'customer')}><FileText className="h-4 w-4" /></Button>
+                          {invoice.status !== "مدفوع" && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة" onClick={() => openRecordPaymentDialog(invoice, 'customer')}><Banknote className="h-4 w-4 text-green-600" /></Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إرسال كشف حساب" onClick={() => alert(`إرسال كشف حساب للعميل: ${invoice.customerId}`)}><Mail className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setCustomerInvoiceToEdit(invoice); setShowAddCustomerInvoiceDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                          {invoice.status !== "مدفوع" && invoice.paidAmount === 0 && (
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                <AlertDialogContent dir="rtl">
+                                    <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id, 'customer')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -435,19 +509,13 @@ export default function AccountsPayableReceivablePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>رقم الفاتورة</TableHead>
-                      <TableHead>المورد</TableHead>
-                      <TableHead>تاريخ الفاتورة</TableHead>
-                      <TableHead>تاريخ الاستحقاق</TableHead>
-                      <TableHead>المبلغ الإجمالي</TableHead>
-                      <TableHead>المبلغ المدفوع</TableHead>
-                      <TableHead>المبلغ المتبقي</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead className="text-center">إجراءات</TableHead>
+                      <TableHead>رقم الفاتورة</TableHead><TableHead>المورد</TableHead><TableHead>تاريخ الفاتورة</TableHead>
+                      <TableHead>تاريخ الاستحقاق</TableHead><TableHead>المبلغ الإجمالي</TableHead><TableHead>المدفوع</TableHead>
+                      <TableHead>المتبقي</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {supplierInvoicesData.map((invoice) => (
+                    {supplierInvoices.map((invoice) => (
                       <TableRow key={invoice.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{invoice.id}</TableCell>
                         <TableCell>{mockSuppliers.find(s=>s.id === invoice.supplierId)?.name}</TableCell>
@@ -457,23 +525,25 @@ export default function AccountsPayableReceivablePage() {
                         <TableCell>{invoice.paidAmount.toFixed(2)} SAR</TableCell>
                         <TableCell className="font-semibold">{invoice.remainingAmount.toFixed(2)} SAR</TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              invoice.status === "مدفوع" ? "default" :
-                              invoice.status === "جزئي" ? "secondary" : "outline"
-                            }
-                             className="whitespace-nowrap"
-                          >
+                          <Badge variant={invoice.status === "مدفوع" ? "default" : invoice.status === "جزئي" ? "secondary" : "outline"} className="whitespace-nowrap">
                             {invoice.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'supplier')}>
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setSupplierInvoiceToEdit(invoice); setShowAddSupplierInvoiceDialog(true);}}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'supplier')}><FileText className="h-4 w-4" /></Button>
+                           {invoice.status !== "مدفوع" && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة" onClick={() => openRecordPaymentDialog(invoice, 'supplier')}><Banknote className="h-4 w-4 text-green-600" /></Button>
+                           )}
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setSupplierInvoiceToEdit(invoice); setShowAddSupplierInvoiceDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                          {invoice.status !== "مدفوع" && invoice.paidAmount === 0 && (
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                <AlertDialogContent dir="rtl">
+                                    <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id, 'supplier')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -488,9 +558,7 @@ export default function AccountsPayableReceivablePage() {
           <div className="grid md:grid-cols-2 gap-6">
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="me-2 h-6 w-6 text-primary" /> أعمار الذمم المدينة (العملاء)
-                </CardTitle>
+                <CardTitle className="flex items-center"><TrendingUp className="me-2 h-6 w-6 text-primary" /> أعمار الذمم المدينة (العملاء)</CardTitle>
                 <CardDescription>تحليل لأعمار المبالغ المستحقة من العملاء.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -507,9 +575,7 @@ export default function AccountsPayableReceivablePage() {
             </Card>
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingDown className="me-2 h-6 w-6 text-destructive" /> أعمار الذمم الدائنة (الموردين)
-                </CardTitle>
+                <CardTitle className="flex items-center"><TrendingDown className="me-2 h-6 w-6 text-destructive" /> أعمار الذمم الدائنة (الموردين)</CardTitle>
                 <CardDescription>تحليل لأعمار المبالغ المستحقة للموردين.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -532,9 +598,7 @@ export default function AccountsPayableReceivablePage() {
        <Dialog open={showViewInvoiceDialog} onOpenChange={setShowViewInvoiceDialog}>
         <DialogContent className="sm:max-w-lg" dir="rtl">
           <DialogHeader>
-            <DialogTitle>
-              تفاصيل الفاتورة: {selectedInvoiceForView?.id} ({selectedInvoiceForView?.type === 'customer' ? 'عميل' : 'مورد'})
-            </DialogTitle>
+            <DialogTitle>تفاصيل الفاتورة: {selectedInvoiceForView?.id} ({selectedInvoiceForView?.type === 'customer' ? 'عميل' : 'مورد'})</DialogTitle>
           </DialogHeader>
           {selectedInvoiceForView && (
             <div className="py-4 space-y-2">
@@ -567,14 +631,44 @@ export default function AccountsPayableReceivablePage() {
             </div>
           )}
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button">إغلاق</Button>
-            </DialogClose>
+            <DialogClose asChild><Button type="button">إغلاق</Button></DialogClose>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for Recording Payment */}
+      <Dialog open={showRecordPaymentDialog} onOpenChange={setShowRecordPaymentDialog}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تسجيل دفعة لـ {invoiceTypeForPayment === 'customer' ? 'فاتورة عميل' : 'فاتورة مورد'} رقم: {invoiceToPay?.id}</DialogTitle>
+            <DialogDescription>الفاتورة بمبلغ إجمالي {invoiceToPay?.totalAmount.toFixed(2)} SAR، متبقي منها {invoiceToPay?.remainingAmount.toFixed(2)} SAR.</DialogDescription>
+          </DialogHeader>
+          <Form {...paymentForm}>
+            <form onSubmit={paymentForm.handleSubmit(handleRecordPaymentSubmit)} className="space-y-4 py-4">
+              <FormField control={paymentForm.control} name="paymentAmount" render={({ field }) => (
+                <FormItem><FormLabel>مبلغ الدفعة</FormLabel>
+                  <FormControl><Input type="number" {...field} className="bg-background" max={invoiceToPay?.remainingAmount} /></FormControl>
+                  <FormMessage /></FormItem>)} />
+              <FormField control={paymentForm.control} name="paymentDate" render={({ field }) => (
+                <FormItem className="flex flex-col"><FormLabel>تاريخ الدفعة</FormLabel>
+                  <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+              <FormField control={paymentForm.control} name="paymentMethod" render={({ field }) => (
+                <FormItem><FormLabel>طريقة الدفع</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                    <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر طريقة الدفع" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="نقدي">نقدي</SelectItem><SelectItem value="بنكي">بنكي</SelectItem><SelectItem value="شيك">شيك</SelectItem>
+                    </SelectContent>
+                  </Select><FormMessage /></FormItem>)} />
+              <DialogFooter>
+                <Button type="submit">تسجيل الدفعة</Button>
+                <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
     </div>
   );
 }
-

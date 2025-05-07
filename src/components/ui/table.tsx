@@ -9,7 +9,9 @@ interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
   size?: "default" | "sm";
 }
 
+// Context to pass table size down
 const TableContext = React.createContext<{ size?: "default" | "sm" }>({});
+
 
 const Table = React.forwardRef<
   HTMLTableElement,
@@ -97,7 +99,7 @@ const TableHead = React.forwardRef<
     <th
       ref={ref}
       className={cn(
-        "h-12 text-right align-middle font-medium text-muted-foreground ltr:[&:has([role=checkbox])]:pr-0 rtl:[&:has([role=checkbox])]:pl-0",
+        "h-12 text-right align-middle font-medium text-muted-foreground rtl:[&:has([role=checkbox])]:pl-0 ltr:[&:has([role=checkbox])]:pr-0",
         effectiveSize === "sm" ? "px-2 py-2" : "px-4", 
         className
       )}
@@ -117,7 +119,7 @@ const TableCell = React.forwardRef<
     <td
       ref={ref}
       className={cn(
-        "text-right align-middle ltr:[&:has([role=checkbox])]:pr-0 rtl:[&:has([role=checkbox])]:pl-0",
+        "text-right align-middle rtl:[&:has([role=checkbox])]:pl-0 ltr:[&:has([role=checkbox])]:pr-0",
         effectiveSize === "sm" ? "p-2" : "p-4", 
         className
       )}
@@ -139,12 +141,6 @@ const TableCaption = React.forwardRef<
 ))
 TableCaption.displayName = "TableCaption"
 
-const TableContextProvider = ({ size, children }: { size?: "default" | "sm", children: React.ReactNode }) => (
-  <TableContext.Provider value={{ size }}>
-    {children}
-  </TableContext.Provider>
-);
-
 
 export {
   Table,
@@ -155,7 +151,5 @@ export {
   TableRow,
   TableCell,
   TableCaption,
-  TableContextProvider,
-  TableContext
+  TableContext // Exporting context for potential direct use, though typically not needed by consumers
 }
-

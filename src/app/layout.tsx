@@ -1,22 +1,22 @@
 
 import type { Metadata } from "next";
-import { Cairo } from "next/font/google"; // Changed from Inter to Cairo
+import { Cairo } from "next/font/google"; 
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Briefcase, Building, Printer, BarChart2, Cog, FilePlus, FileOutput, FileCheck, FileClock, Banknote, Warehouse, Truck, Repeat, Search, CircleHelp, Bell, BookUser, BookOpen } from "lucide-react"; // Removed Sun, Moon as ModeToggle handles them
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Briefcase, Building, Printer, BarChart2, Cog, FilePlus, FileOutput, FileCheck, FileClock, Banknote, Warehouse, Truck, Repeat, Search, CircleHelp, Bell, BookUser, BookOpen } from "lucide-react"; 
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import AppLogo from "@/components/app-logo";
 
-const cairo = Cairo({ // Changed from Inter to Cairo
-  subsets: ["arabic", "latin"], // Added 'arabic' subset for Cairo
-  variable: "--font-cairo", // Changed variable name
+const cairo = Cairo({ 
+  subsets: ["arabic", "latin"], 
+  variable: "--font-cairo", 
 });
 
 export const metadata: Metadata = {
@@ -41,7 +41,7 @@ const navItems = [
     module: "Accounting",
     subItems: [
       { href: "/general-ledger", label: "الحسابات العامة", icon: BookOpen }, 
-      { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer },
+      { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer }, // Changed icon from Banknote to Printer
       { href: "/accounts-payable-receivable", label: "الحسابات المدينة والدائنة", icon: Users },
     ],
   },
@@ -63,7 +63,7 @@ const navItems = [
   { href: "/pos", label: "نقاط البيع", icon: DollarSign, module: "POS" },
   { href: "/reports", label: "التقارير والتحليل", icon: BarChart2, module: "BI" },
   { href: "/settings", label: "الإعدادات", icon: Settings, module: "Settings" },
-  { href: "/help", label: "المساعدة", icon: CircleHelp, module: "Help" }, // Added help page
+  { href: "/help", label: "المساعدة", icon: CircleHelp, module: "Help" }, 
 ];
 
 
@@ -87,7 +87,6 @@ export default function RootLayout({
                 <SidebarHeader className="p-4 flex items-center justify-between">
                   <AppLogo />
                   <div className="hidden group-data-[collapsible=icon]:hidden">
-                     {/* Placeholder for potential header content when sidebar expanded */}
                   </div>
                 </SidebarHeader>
                 <SidebarContent>
@@ -125,13 +124,11 @@ export default function RootLayout({
                     ))}
                   </SidebarMenu>
                 </SidebarContent>
-                {/* SidebarFooter is removed as per previous request implicitly by not having help page in navItems, now explicitly removed due to adding help to navItems */}
               </Sidebar>
 
               <div className="flex flex-col flex-1">
                 <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 shadow-sm">
                   <div className="flex-1">
-                    {/* Optional: Breadcrumbs or page title can go here */}
                   </div>
                    <SidebarTrigger className="md:hidden order-first md:order-last" /> 
                   <div className="flex items-center gap-4">
@@ -193,4 +190,3 @@ export default function RootLayout({
     </html>
   );
 }
-
