@@ -129,7 +129,6 @@ export default function POSPage() {
     const updatedRecentTransactions = [newTransaction, ...recentTransactions.slice(0, 4)];
     // If recentTransactions is a state: setRecentTransactions(updatedRecentTransactions);
     // For this example, we assume recentTransactions can be mutated if it's not a state or carefully managed.
-    // A better approach for mock would be to use state for recentTransactions.
     // For simplicity in this isolated change, directly modifying the mock if it were state:
     // setRecentTransactions(updatedRecentTransactions); 
     // Since it's a const, this won't actually update the UI unless recentTransactions is a state.
@@ -191,7 +190,7 @@ export default function POSPage() {
 
 
   return (
-    <div className="container mx-auto py-6 h-[calc(100vh-theme(spacing.24))] flex flex-col">
+    <div className="container mx-auto py-6 h-[calc(100vh-theme(spacing.24))] flex flex-col" dir="rtl">
       <Card className="shadow-lg mb-6">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">

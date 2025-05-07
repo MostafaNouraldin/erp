@@ -45,7 +45,7 @@ const pieChartConfig = {
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6" dir="rtl">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -102,7 +102,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>نظرة عامة على المبيعات</CardTitle>
           </CardHeader>
-          <CardContent className="pr-2">
+          <CardContent className="pe-2"> {/* Changed pr-2 to pe-2 for RTL */}
             <ChartContainer config={chartConfig} className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart accessibilityLayer data={chartData}>

@@ -34,7 +34,7 @@ const faqs = [
 
 export default function HelpPage() {
   return (
-    <div className="container mx-auto py-6 space-y-8">
+    <div className="container mx-auto py-6 space-y-8" dir="rtl">
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
@@ -59,7 +59,7 @@ export default function HelpPage() {
                 <AccordionTrigger className="text-lg hover:no-underline text-right">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-base">
+                <AccordionContent className="text-base text-right"> {/* Added text-right for content */}
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -114,3 +114,4 @@ export default function HelpPage() {
     </div>
   );
 }
+

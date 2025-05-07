@@ -40,11 +40,11 @@ const budgetItems = [
 
 export default function ProjectsPage() {
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">إدارة المشاريع</h1>
         <Button className="shadow-md hover:shadow-lg transition-shadow">
-          <PlusCircle className="ms-2 h-4 w-4" /> إنشاء مشروع جديد
+          <PlusCircle className="me-2 h-4 w-4" /> إنشاء مشروع جديد
         </Button>
       </div>
 
@@ -79,7 +79,7 @@ export default function ProjectsPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                      <Filter className="ms-2 h-4 w-4" /> تصفية الحالة
+                      <Filter className="me-2 h-4 w-4" /> تصفية الحالة
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -152,13 +152,13 @@ export default function ProjectsPage() {
             <CardContent>
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                     <Button className="shadow-md hover:shadow-lg transition-shadow">
-                        <PlusCircle className="ms-2 h-4 w-4" /> إضافة مهمة جديدة
+                        <PlusCircle className="me-2 h-4 w-4" /> إضافة مهمة جديدة
                     </Button>
                     <div className="flex gap-2 flex-wrap">
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                            <Filter className="ms-2 h-4 w-4" /> تصفية المشروع
+                            <Filter className="me-2 h-4 w-4" /> تصفية المشروع
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -168,7 +168,7 @@ export default function ProjectsPage() {
                         </DropdownMenuContent>
                         </DropdownMenu>
                         <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                            <GanttChartSquare className="ms-2 h-4 w-4" /> عرض مخطط جانت
+                            <GanttChartSquare className="me-2 h-4 w-4" /> عرض مخطط جانت
                         </Button>
                     </div>
                 </div>
@@ -232,12 +232,12 @@ export default function ProjectsPage() {
             <CardContent>
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                     <Button className="shadow-md hover:shadow-lg transition-shadow">
-                        <PlusCircle className="ms-2 h-4 w-4" /> تخصيص مورد جديد
+                        <PlusCircle className="me-2 h-4 w-4" /> تخصيص مورد جديد
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                            <Filter className="ms-2 h-4 w-4" /> تصفية المشروع
+                            <Filter className="me-2 h-4 w-4" /> تصفية المشروع
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -292,12 +292,12 @@ export default function ProjectsPage() {
             <CardContent>
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                     <Button className="shadow-md hover:shadow-lg transition-shadow">
-                        <PlusCircle className="ms-2 h-4 w-4" /> إضافة بند ميزانية
+                        <PlusCircle className="me-2 h-4 w-4" /> إضافة بند ميزانية
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                            <Filter className="ms-2 h-4 w-4" /> تصفية المشروع
+                            <Filter className="me-2 h-4 w-4" /> تصفية المشروع
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

@@ -38,11 +38,11 @@ const qualityChecks = [
 
 export default function ProductionPage() {
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">الإنتاج والتصنيع</h1>
         <Button className="shadow-md hover:shadow-lg transition-shadow">
-          <PlusCircle className="ms-2 h-4 w-4" /> إنشاء أمر عمل جديد
+          <PlusCircle className="me-2 h-4 w-4" /> إنشاء أمر عمل جديد
         </Button>
       </div>
 
@@ -77,7 +77,7 @@ export default function ProductionPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                      <Filter className="ms-2 h-4 w-4" /> تصفية الحالة
+                      <Filter className="me-2 h-4 w-4" /> تصفية الحالة
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -169,7 +169,7 @@ export default function ProductionPage() {
             <CardContent>
             <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <Button className="shadow-md hover:shadow-lg transition-shadow">
-                    <PlusCircle className="ms-2 h-4 w-4" /> إنشاء قائمة مواد جديدة
+                    <PlusCircle className="me-2 h-4 w-4" /> إنشاء قائمة مواد جديدة
                 </Button>
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -225,7 +225,7 @@ export default function ProductionPage() {
             <CardContent>
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <Button className="shadow-md hover:shadow-lg transition-shadow">
-                    <PlusCircle className="ms-2 h-4 w-4" /> إنشاء خطة إنتاج جديدة
+                    <PlusCircle className="me-2 h-4 w-4" /> إنشاء خطة إنتاج جديدة
                 </Button>
                 <DatePickerWithPresets mode="range" />
               </div>
@@ -276,12 +276,12 @@ export default function ProductionPage() {
             <CardContent>
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <Button className="shadow-md hover:shadow-lg transition-shadow">
-                    <PlusCircle className="ms-2 h-4 w-4" /> تسجيل فحص جودة جديد
+                    <PlusCircle className="me-2 h-4 w-4" /> تسجيل فحص جودة جديد
                 </Button>
                  <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                      <Filter className="ms-2 h-4 w-4" /> تصفية بنتيجة الفحص
+                      <Filter className="me-2 h-4 w-4" /> تصفية بنتيجة الفحص
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">

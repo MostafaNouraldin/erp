@@ -32,15 +32,15 @@ const receivedItems = [
 
 export default function PurchasesPage() {
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">المشتريات</h1>
         <div className="flex gap-2">
             <Button className="shadow-md hover:shadow-lg transition-shadow">
-                <PlusCircle className="ms-2 h-4 w-4" /> إنشاء أمر شراء جديد
+                <PlusCircle className="me-2 h-4 w-4" /> إنشاء أمر شراء جديد
             </Button>
              <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow">
-                <PlusCircle className="ms-2 h-4 w-4" /> إضافة فاتورة مورد
+                <PlusCircle className="me-2 h-4 w-4" /> إضافة فاتورة مورد
             </Button>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function PurchasesPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                      <Filter className="ms-2 h-4 w-4" /> تصفية الحالة
+                      <Filter className="me-2 h-4 w-4" /> تصفية الحالة
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -164,7 +164,7 @@ export default function PurchasesPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                      <Filter className="ms-2 h-4 w-4" /> تصفية حالة الدفع
+                      <Filter className="me-2 h-4 w-4" /> تصفية حالة الدفع
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">

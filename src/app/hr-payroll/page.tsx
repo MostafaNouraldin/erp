@@ -41,15 +41,15 @@ const leaveRequests = [
 
 export default function HRPayrollPage() {
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">الموارد البشرية والرواتب</h1>
         <div className="flex gap-2">
           <Button className="shadow-md hover:shadow-lg transition-shadow">
-            <PlusCircle className="ms-2 h-4 w-4" /> إضافة موظف جديد
+            <PlusCircle className="me-2 h-4 w-4" /> إضافة موظف جديد
           </Button>
           <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow">
-            <PlusCircle className="ms-2 h-4 w-4" /> إنشاء مسير رواتب
+            <PlusCircle className="me-2 h-4 w-4" /> إنشاء مسير رواتب
           </Button>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function HRPayrollPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                      <Filter className="ms-2 h-4 w-4" /> تصفية القسم
+                      <Filter className="me-2 h-4 w-4" /> تصفية القسم
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -154,7 +154,7 @@ export default function HRPayrollPage() {
                  <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                      <Filter className="ms-2 h-4 w-4" /> تصفية الحالة
+                      <Filter className="me-2 h-4 w-4" /> تصفية الحالة
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -217,7 +217,7 @@ export default function HRPayrollPage() {
             <CardContent>
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                  <DatePickerWithPresets mode="range" />
-                 <Input placeholder="بحث باسم الموظف أو الرقم الوظيفي" className="w-full sm:w-64 pr-4" />
+                 <Input placeholder="بحث باسم الموظف أو الرقم الوظيفي" className="w-full sm:w-64 pe-4" /> {/* Changed pr-4 to pe-4 for RTL */}
               </div>
               <div className="overflow-x-auto">
                 <Table>
@@ -279,7 +279,7 @@ export default function HRPayrollPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                      <Filter className="ms-2 h-4 w-4" /> تصفية حالة الطلب
+                      <Filter className="me-2 h-4 w-4" /> تصفية حالة الطلب
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -291,7 +291,7 @@ export default function HRPayrollPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Button className="shadow-md hover:shadow-lg transition-shadow">
-                    <PlusCircle className="ms-2 h-4 w-4" /> تقديم طلب إجازة بالنيابة
+                    <PlusCircle className="me-2 h-4 w-4" /> تقديم طلب إجازة بالنيابة
                 </Button>
               </div>
               <div className="overflow-x-auto">

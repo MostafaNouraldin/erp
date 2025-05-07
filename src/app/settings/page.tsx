@@ -34,7 +34,7 @@ const permissions = ["عرض", "إنشاء", "تعديل", "حذف", "موافق
 
 export default function SettingsPage() {
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">الإعدادات</h1>
         {/* Optional: Add a global save button or context-specific actions here */}
@@ -193,7 +193,7 @@ export default function SettingsPage() {
                  <div className="grid md:grid-cols-2 gap-6">
                     <div>
                         <h3 className="text-lg font-semibold mb-2">قائمة الأدوار</h3>
-                        <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                        <div className="space-y-2 max-h-96 overflow-y-auto pe-2"> {/* Changed pr-2 to pe-2 for RTL scrollbar */}
                             {roles.map(role => (
                                 <Card key={role.id} className="p-3 hover:shadow-md transition-shadow cursor-pointer bg-muted/30">
                                     <div className="flex justify-between items-center">
@@ -285,3 +285,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+
