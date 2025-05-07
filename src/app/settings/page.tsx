@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCircle, Edit, Trash2, Save, Search, KeyRound } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge"; // Added import for Badge
 
 // Mock data
 const users = [
