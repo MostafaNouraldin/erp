@@ -15,7 +15,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "flex flex-wrap h-auto items-center justify-start rounded-md bg-muted p-1 text-muted-foreground gap-1", // Changed justify-center to justify-start
+      "flex flex-wrap rtl:flex-row-reverse h-auto items-center justify-start rounded-md bg-muted p-1 text-muted-foreground gap-1", // Added rtl:flex-row-reverse
       className
     )}
     {...props}
@@ -54,6 +54,7 @@ const TabsContent = React.forwardRef<
 TabsContent.displayName = TabsPrimitive.Content.displayName
 
 export { Tabs, TabsList, TabsTrigger, TabsContent }
+
 
 
 
