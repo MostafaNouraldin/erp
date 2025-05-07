@@ -51,7 +51,7 @@ const initialChecksData: CheckFormValues[] = [
 
 const convertAmountToWords = (amount: number) => {
   // This is a placeholder. A full implementation is complex.
-  return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
+  return `فقط ${amount.toLocaleString('ar-EG')} ريال سعودي لا غير`; // Using ar-EG for broader compatibility if ar-SA has issues on some systems for toLocaleString with currency
 };
 
 export default function CheckbookRegisterPage() {
@@ -60,6 +60,12 @@ export default function CheckbookRegisterPage() {
   const [checkToEdit, setCheckToEdit] = useState<CheckFormValues | null>(null);
   const [showPrintCheckDialog, setShowPrintCheckDialog] = useState(false);
   const [selectedCheckForPrint, setSelectedCheckForPrint] = useState<CheckFormValues | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const form = useForm<CheckFormValues>({
     resolver: zodResolver(checkSchema),
@@ -102,7 +108,8 @@ export default function CheckbookRegisterPage() {
   };
 
   const handleDeleteCheck = (checkId: string) => {
-    setChecks(prev => prev.filter(chk => chk.id !== checkId));
+    // Add actual deletion logic here, e.g., API call
+    setChecks(prev => prev.filter(chk => chk.id !== checkId && chk.status !== "مسدد")); // Example: prevent deletion if paid
   };
   
   const handleUpdateCheckStatus = (checkId: string, newStatus: CheckFormValues["status"]) => {
@@ -113,6 +120,12 @@ export default function CheckbookRegisterPage() {
     setSelectedCheckForPrint(check);
     setShowPrintCheckDialog(true);
   };
+
+  const formatDate = (date: Date) => {
+    if (!isClient) return ''; // Prevents SSR mismatch
+    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+  };
+
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -136,7 +149,7 @@ export default function CheckbookRegisterPage() {
               <PlusCircle className="me-2 h-4 w-4" /> إصدار شيك جديد
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-lg" dir="rtl">
+          <DialogContent className="sm:max-w-2xl" dir="rtl"> {/* Increased width here */}
             <DialogHeader>
               <DialogTitle>{checkToEdit ? 'تعديل بيانات شيك' : 'إصدار شيك جديد'}</DialogTitle>
             </DialogHeader>
@@ -236,8 +249,8 @@ export default function CheckbookRegisterPage() {
                 {checks.map((check) => (
                   <TableRow key={check.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{check.checkNumber}</TableCell>
-                    <TableCell>{check.issueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
-                    <TableCell>{check.dueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
+                    <TableCell>{isClient ? new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric', calendar: 'gregory' }).format(check.issueDate) : ''}</TableCell>
+                    <TableCell>{isClient ? new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric', calendar: 'gregory' }).format(check.dueDate) : ''}</TableCell>
                     <TableCell>{mockBankAccounts.find(b => b.id === check.bankAccountId)?.name}</TableCell>
                     <TableCell>{check.beneficiaryName}</TableCell>
                     <TableCell>{check.amount.toLocaleString('ar-SA', { style: 'currency', currency: check.currency })}</TableCell>
@@ -264,18 +277,75 @@ export default function CheckbookRegisterPage() {
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setCheckToEdit(check); setShowManageCheckDialog(true); }}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="تسجيل كسداد" onClick={() => handleUpdateCheckStatus(check.id!, "مسدد")}>
-                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10" title="إلغاء الشيك" onClick={() => handleUpdateCheckStatus(check.id!, "ملغي")}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="تسجيل كسداد">
+                                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>تأكيد السداد</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  هل أنت متأكد من تسجيل الشيك رقم "{check.checkNumber}" كـ "مسدد"؟
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleUpdateCheckStatus(check.id!, "مسدد")}>
+                                  تأكيد السداد
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                           <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="إلغاء الشيك">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent dir="rtl">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>تأكيد الإلغاء</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    هل أنت متأكد من إلغاء الشيك رقم "{check.checkNumber}"؟
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>تراجع</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleUpdateCheckStatus(check.id!, "ملغي")}
+                                    className={buttonVariants({ variant: "destructive" })}
+                                  >
+                                    تأكيد الإلغاء
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                         </>
                       )}
-                      {check.status === "مسدد" && (
-                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-100 dark:hover:bg-yellow-900" title="تسجيل كمرتجع" onClick={() => handleUpdateCheckStatus(check.id!, "مرتجع")}>
-                            <Undo className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                         </Button>
+                       {check.status === "مسدد" && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-100 dark:hover:bg-yellow-900" title="تسجيل كمرتجع">
+                                <Undo className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent dir="rtl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>تأكيد الارتجاع</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                هل أنت متأكد من تسجيل الشيك رقم "{check.checkNumber}" كـ "مرتجع"؟
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleUpdateCheckStatus(check.id!, "مرتجع")}>
+                                تأكيد الارتجاع
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </TableCell>
                   </TableRow>
@@ -292,9 +362,8 @@ export default function CheckbookRegisterPage() {
           <DialogHeader className="print-hidden">
             <DialogTitle>طباعة شيك رقم: {selectedCheckForPrint?.checkNumber}</DialogTitle>
           </DialogHeader>
-          {selectedCheckForPrint && (
+          {selectedCheckForPrint && isClient && (
             <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="bank check layout">
-              {/* Simplified Check Layout - A real check layout is complex and bank-specific */}
               <div className="border-2 border-primary p-6 rounded-lg" style={{ width: '100%', aspectRatio: '2.1 / 1' }}> {/* Approx check aspect ratio */}
                 <div className="flex justify-between items-start mb-4">
                   <div>
@@ -302,7 +371,7 @@ export default function CheckbookRegisterPage() {
                     <p className="text-xs text-muted-foreground">فرع: [اسم الفرع هنا]</p> 
                   </div>
                   <div className="text-left">
-                    <p className="text-xs">التاريخ: {new Date(selectedCheckForPrint.issueDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</p>
+                    <p className="text-xs">التاريخ: {new Intl.DateTimeFormat('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' }).format(selectedCheckForPrint.issueDate)}</p>
                     <p className="text-lg font-bold mt-1">رقم الشيك: {selectedCheckForPrint.checkNumber}</p>
                   </div>
                 </div>
@@ -335,7 +404,7 @@ export default function CheckbookRegisterPage() {
             </div>
           )}
           <DialogFooter className="print-hidden pt-4">
-            <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+            <Button onClick={() => window.print()} disabled={!selectedCheckForPrint}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
             <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
