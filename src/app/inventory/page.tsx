@@ -41,7 +41,7 @@ export default function InventoryPage() {
       </div>
 
       <Tabs defaultValue="itemsList" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 bg-muted p-1 rounded-md">
+        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md"> {/* Removed grid classes, rely on default flex from component */}
           <TabsTrigger value="itemsList" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <Package className="inline-block me-2 h-4 w-4" /> قائمة الأصناف
           </TabsTrigger>
