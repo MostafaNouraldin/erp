@@ -63,6 +63,7 @@ const navItems = [
   { href: "/pos", label: "نقاط البيع", icon: DollarSign, module: "POS" },
   { href: "/reports", label: "التقارير والتحليل", icon: BarChart2, module: "BI" },
   { href: "/settings", label: "الإعدادات", icon: Settings, module: "Settings" },
+  { href: "/help", label: "المساعدة", icon: CircleHelp, module: "Help" }, // Added help page
 ];
 
 
@@ -124,14 +125,7 @@ export default function RootLayout({
                     ))}
                   </SidebarMenu>
                 </SidebarContent>
-                <SidebarFooter className="p-4 border-t">
-                  <Link href="/help" passHref>
-                    <SidebarMenuButton tooltip={{children: "المساعدة والدعم", side: 'left', align: 'center'}} className="w-full justify-start"> 
-                      <CircleHelp className="h-5 w-5" />
-                      <span className="truncate">المساعدة والدعم</span>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarFooter>
+                {/* SidebarFooter is removed as per previous request implicitly by not having help page in navItems, now explicitly removed due to adding help to navItems */}
               </Sidebar>
 
               <div className="flex flex-col flex-1">
@@ -199,3 +193,4 @@ export default function RootLayout({
     </html>
   );
 }
+

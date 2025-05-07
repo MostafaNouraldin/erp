@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+// import { Label } from "@/components/ui/label"; // Kept for direct use if needed outside forms
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
 import { Textarea } from '@/components/ui/textarea';
@@ -313,15 +313,15 @@ export default function GeneralLedgerPage() {
         </Dialog>
       </div>
 
-      <Tabs defaultValue="chartOfAccounts" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6 bg-muted p-1 rounded-md">
-          <TabsTrigger value="chartOfAccounts" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+      <Tabs defaultValue="chartOfAccounts" className="w-full" dir="rtl">
+        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
+          <TabsTrigger value="chartOfAccounts" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <BookUser className="inline-block me-2 h-4 w-4" /> شجرة الحسابات
           </TabsTrigger>
-          <TabsTrigger value="journalEntries" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsTrigger value="journalEntries" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <BookOpen className="inline-block me-2 h-4 w-4" /> القيود اليومية
           </TabsTrigger>
-          <TabsTrigger value="financialReports" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsTrigger value="financialReports" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <BarChart3 className="inline-block me-2 h-4 w-4" /> التقارير المالية
           </TabsTrigger>
         </TabsList>
@@ -657,3 +657,4 @@ export default function GeneralLedgerPage() {
     </div>
   );
 }
+

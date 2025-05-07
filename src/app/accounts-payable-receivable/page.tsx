@@ -12,12 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PlusCircle, Edit, Trash2, FileText, Search, Filter, Users, Briefcase, TrendingUp, TrendingDown, FileWarning, Mail, MinusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+// import { Label } from "@/components/ui/label"; // Kept for direct use if needed outside forms
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+// import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // AlertDialog commented out as it is not used
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -300,15 +300,15 @@ export default function AccountsPayableReceivablePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="receivables" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6 bg-muted p-1 rounded-md">
-          <TabsTrigger value="receivables" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+      <Tabs defaultValue="receivables" className="w-full" dir="rtl">
+        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
+          <TabsTrigger value="receivables" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <Users className="inline-block me-2 h-4 w-4" /> الذمم المدينة (العملاء)
           </TabsTrigger>
-          <TabsTrigger value="payables" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsTrigger value="payables" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <Briefcase className="inline-block me-2 h-4 w-4" /> الذمم الدائنة (الموردين)
           </TabsTrigger>
-          <TabsTrigger value="agingReport" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsTrigger value="agingReport" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <FileWarning className="inline-block me-2 h-4 w-4" /> أعمار الذمم
           </TabsTrigger>
         </TabsList>
@@ -348,14 +348,14 @@ export default function AccountsPayableReceivablePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">رقم الفاتورة</TableHead>
-                      <TableHead className="text-right">العميل</TableHead>
-                      <TableHead className="text-right">تاريخ الفاتورة</TableHead>
-                      <TableHead className="text-right">تاريخ الاستحقاق</TableHead>
-                      <TableHead className="text-right">المبلغ الإجمالي</TableHead>
-                      <TableHead className="text-right">المبلغ المدفوع</TableHead>
-                      <TableHead className="text-right">المبلغ المتبقي</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead>رقم الفاتورة</TableHead>
+                      <TableHead>العميل</TableHead>
+                      <TableHead>تاريخ الفاتورة</TableHead>
+                      <TableHead>تاريخ الاستحقاق</TableHead>
+                      <TableHead>المبلغ الإجمالي</TableHead>
+                      <TableHead>المبلغ المدفوع</TableHead>
+                      <TableHead>المبلغ المتبقي</TableHead>
+                      <TableHead>الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -435,14 +435,14 @@ export default function AccountsPayableReceivablePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">رقم الفاتورة</TableHead>
-                      <TableHead className="text-right">المورد</TableHead>
-                      <TableHead className="text-right">تاريخ الفاتورة</TableHead>
-                      <TableHead className="text-right">تاريخ الاستحقاق</TableHead>
-                      <TableHead className="text-right">المبلغ الإجمالي</TableHead>
-                      <TableHead className="text-right">المبلغ المدفوع</TableHead>
-                      <TableHead className="text-right">المبلغ المتبقي</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead>رقم الفاتورة</TableHead>
+                      <TableHead>المورد</TableHead>
+                      <TableHead>تاريخ الفاتورة</TableHead>
+                      <TableHead>تاريخ الاستحقاق</TableHead>
+                      <TableHead>المبلغ الإجمالي</TableHead>
+                      <TableHead>المبلغ المدفوع</TableHead>
+                      <TableHead>المبلغ المتبقي</TableHead>
+                      <TableHead>الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -577,3 +577,4 @@ export default function AccountsPayableReceivablePage() {
     </div>
   );
 }
+

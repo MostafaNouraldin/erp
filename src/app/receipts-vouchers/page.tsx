@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PlusCircle, Edit, Trash2, Printer, Search, Filter, FileDown, Banknote, Building, FileText, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // Kept for direct use if needed outside forms
+// import { Label } from "@/components/ui/label"; // Kept for direct use if needed outside forms
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -194,12 +194,12 @@ export default function ReceiptsVouchersPage() {
       </Dialog>
 
 
-      <Tabs defaultValue="allVouchers" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 mb-6 bg-muted p-1 rounded-md">
-          <TabsTrigger value="allVouchers" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+      <Tabs defaultValue="allVouchers" className="w-full" dir="rtl">
+        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
+          <TabsTrigger value="allVouchers" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <FileText className="inline-block me-2 h-4 w-4" /> جميع السندات
           </TabsTrigger>
-          <TabsTrigger value="treasuryMovement" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsTrigger value="treasuryMovement" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <Wallet className="inline-block me-2 h-4 w-4" /> حركة الخزينة اليومية
           </TabsTrigger>
         </TabsList>
@@ -412,3 +412,4 @@ export default function ReceiptsVouchersPage() {
     </div>
   );
 }
+
