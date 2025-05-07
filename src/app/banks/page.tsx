@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch"; // Added import for Switch
 
 const bankAccountSchema = z.object({
   id: z.string().optional(),
@@ -65,6 +66,7 @@ export default function BanksPage() {
   };
 
   const handleDeleteBankAccount = (accountId: string) => {
+    // In a real app, check if account has transactions or is linked elsewhere before deleting
     setBankAccounts(prev => prev.filter(acc => acc.id !== accountId));
   };
 
