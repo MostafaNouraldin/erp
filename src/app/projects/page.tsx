@@ -73,8 +73,8 @@ export default function ProjectsPage() {
             <CardContent>
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث باسم المشروع أو العميل..." className="pl-10 w-full sm:w-64" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="بحث باسم المشروع أو العميل..." className="pr-10 w-full sm:w-64" />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -344,3 +344,4 @@ export default function ProjectsPage() {
     </div>
   );
 }
+

@@ -71,8 +71,8 @@ export default function ProductionPage() {
             <CardContent>
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث في أوامر العمل..." className="pl-10 w-full sm:w-64" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="بحث في أوامر العمل..." className="pr-10 w-full sm:w-64" />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -172,8 +172,8 @@ export default function ProductionPage() {
                     <PlusCircle className="ms-2 h-4 w-4" /> إنشاء قائمة مواد جديدة
                 </Button>
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث باسم المنتج أو المادة..." className="pl-10 w-full sm:w-64" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="بحث باسم المنتج أو المادة..." className="pr-10 w-full sm:w-64" />
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -339,3 +339,4 @@ export default function ProductionPage() {
     </div>
   );
 }
+

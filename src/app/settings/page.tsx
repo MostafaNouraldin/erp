@@ -126,8 +126,8 @@ export default function SettingsPage() {
                         <PlusCircle className="ms-2 h-4 w-4" /> إضافة مستخدم جديد
                     </Button>
                     <div className="relative w-full sm:w-auto grow sm:grow-0">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="بحث باسم المستخدم أو البريد..." className="pl-10 w-full sm:w-64 bg-background" />
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="بحث باسم المستخدم أو البريد..." className="pr-10 w-full sm:w-64 bg-background" />
                     </div>
                 </div>
               <div className="overflow-x-auto">
@@ -284,3 +284,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

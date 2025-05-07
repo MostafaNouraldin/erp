@@ -79,8 +79,8 @@ export default function HRPayrollPage() {
             <CardContent>
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث في الموظفين..." className="pl-10 w-full sm:w-64" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="بحث في الموظفين..." className="pr-10 w-full sm:w-64" />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -217,7 +217,7 @@ export default function HRPayrollPage() {
             <CardContent>
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                  <DatePickerWithPresets mode="range" />
-                 <Input placeholder="بحث باسم الموظف أو الرقم الوظيفي" className="w-full sm:w-64 pl-4" />
+                 <Input placeholder="بحث باسم الموظف أو الرقم الوظيفي" className="w-full sm:w-64 pr-4" />
               </div>
               <div className="overflow-x-auto">
                 <Table>
@@ -355,3 +355,4 @@ export default function HRPayrollPage() {
     </div>
   );
 }
+

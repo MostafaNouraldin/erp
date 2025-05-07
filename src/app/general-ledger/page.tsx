@@ -26,7 +26,7 @@ export default function GeneralLedgerPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">الحسابات العامة</h1>
         <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> إنشاء قيد يومية جديد
+          <PlusCircle className="ml-2 h-4 w-4" /> إنشاء قيد يومية جديد
         </Button>
       </div>
 
@@ -46,7 +46,7 @@ export default function GeneralLedgerPage() {
             <CardContent>
               <div className="mb-4 flex justify-end">
                 <Button variant="outline">
-                  <PlusCircle className="mr-2 h-4 w-4" /> إضافة حساب جديد
+                  <PlusCircle className="ml-2 h-4 w-4" /> إضافة حساب جديد
                 </Button>
               </div>
               <Table>
@@ -73,7 +73,7 @@ export default function GeneralLedgerPage() {
                       <TableCell>{account.parent || "-"}</TableCell>
                       <TableCell>{account.balance}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="mr-2">
+                        <Button variant="ghost" size="icon" className="ml-2">
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="text-destructive">
@@ -119,10 +119,10 @@ export default function GeneralLedgerPage() {
                         </Badge>
                       </TableCell>
                        <TableCell>
-                        <Button variant="ghost" size="icon" className="mr-2" title="عرض">
+                        <Button variant="ghost" size="icon" className="ml-2" title="عرض">
                           <FileText className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="mr-2" title="تعديل">
+                        <Button variant="ghost" size="icon" className="ml-2" title="تعديل">
                           <Edit className="h-4 w-4" />
                         </Button>
                         {entry.status === "مسودة" && (
@@ -156,7 +156,7 @@ export default function GeneralLedgerPage() {
                   <FileText className="h-12 w-12 text-primary mb-4" />
                   <CardTitle className="text-lg mb-2 text-center">{reportName}</CardTitle>
                   <Button variant="outline" className="w-full">
-                    <Download className="mr-2 h-4 w-4" /> عرض/تحميل
+                    <Download className="ml-2 h-4 w-4" /> عرض/تحميل
                   </Button>
                 </Card>
               ))}
@@ -167,3 +167,4 @@ export default function GeneralLedgerPage() {
     </div>
   );
 }
+

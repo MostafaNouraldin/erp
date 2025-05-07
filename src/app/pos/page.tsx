@@ -115,10 +115,10 @@ export default function POSPage() {
             <CardHeader>
               <div className="flex flex-wrap gap-4 justify-between items-center">
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
                     placeholder="بحث بالاسم أو الباركود..." 
-                    className="pl-10 w-full sm:w-72 bg-background"
+                    className="pr-10 w-full sm:w-72 bg-background"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -322,3 +322,4 @@ export default function POSPage() {
     </div>
   );
 }
+
