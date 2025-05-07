@@ -38,7 +38,7 @@ export default function HelpPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
-            <CircleHelp className="ms-2 h-8 w-8 text-primary" />
+            <CircleHelp className="me-2 h-8 w-8 text-primary" />
             المساعدة والدعم
           </CardTitle>
           <CardDescription>الوصول إلى وثائق المساعدة، الأسئلة الشائعة، ومعلومات الاتصال بالدعم الفني.</CardDescription>
@@ -48,7 +48,7 @@ export default function HelpPage() {
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <MessageSquare className="ms-2 h-6 w-6 text-primary" />
+            <MessageSquare className="me-2 h-6 w-6 text-primary" />
             الأسئلة الشائعة
           </CardTitle>
         </CardHeader>
@@ -71,7 +71,7 @@ export default function HelpPage() {
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Mail className="ms-2 h-6 w-6 text-primary" />
+            <Mail className="me-2 h-6 w-6 text-primary" />
             تواصل مع الدعم الفني
           </CardTitle>
           <CardDescription>إذا لم تجد إجابة لسؤالك، يمكنك مراسلتنا مباشرة.</CardDescription>
@@ -97,7 +97,7 @@ export default function HelpPage() {
               <Textarea id="message" placeholder="اكتب رسالتك هنا..." rows={5} className="bg-background" />
             </div>
             <Button type="submit" className="w-full md:w-auto shadow-md hover:shadow-lg transition-shadow">
-              <Mail className="ms-2 h-4 w-4" /> إرسال الرسالة
+              <Mail className="me-2 h-4 w-4" /> إرسال الرسالة
             </Button>
           </form>
           <div className="mt-8 pt-6 border-t">

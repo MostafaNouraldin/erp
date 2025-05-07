@@ -41,7 +41,7 @@ export default function InventoryAdjustmentsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
-            <Repeat className="ms-2 h-8 w-8 text-primary" />
+            <Repeat className="me-2 h-8 w-8 text-primary" />
             تسويات جردية
           </CardTitle>
           <CardDescription>تسجيل ومتابعة التسويات الجردية لضمان دقة بيانات المخزون (زيادة أو نقص).</CardDescription>
@@ -51,7 +51,7 @@ export default function InventoryAdjustmentsPage() {
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <PlusCircle className="ms-2 h-5 w-5 text-primary" />
+            <PlusCircle className="me-2 h-5 w-5 text-primary" />
             إنشاء تسوية جردية جديدة
           </CardTitle>
         </CardHeader>
@@ -115,7 +115,7 @@ export default function InventoryAdjustmentsPage() {
             </div>
             <div className="flex gap-2">
                 <Button type="submit" className="shadow-md hover:shadow-lg transition-shadow">
-                    <PlusCircle className="ms-2 h-4 w-4" /> حفظ التسوية
+                    <PlusCircle className="me-2 h-4 w-4" /> حفظ التسوية
                 </Button>
                 <Button type="button" variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
                     إلغاء
@@ -128,7 +128,7 @@ export default function InventoryAdjustmentsPage() {
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <FileText className="ms-2 h-5 w-5 text-primary" />
+            <FileText className="me-2 h-5 w-5 text-primary" />
             سجل التسويات الجردية
           </CardTitle>
            <CardDescription>قائمة بجميع التسويات الجردية المسجلة.</CardDescription>
@@ -143,7 +143,7 @@ export default function InventoryAdjustmentsPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                    <Filter className="ms-2 h-4 w-4" /> تصفية الحالة
+                    <Filter className="me-2 h-4 w-4" /> تصفية الحالة
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -212,4 +212,3 @@ export default function InventoryAdjustmentsPage() {
     </div>
   );
 }
-

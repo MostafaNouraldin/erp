@@ -175,7 +175,7 @@ export default function AccountsPayableReceivablePage() {
           <Dialog open={showAddCustomerInvoiceDialog} onOpenChange={(isOpen) => { setShowAddCustomerInvoiceDialog(isOpen); if(!isOpen) setCustomerInvoiceToEdit(null);}}>
             <DialogTrigger asChild>
               <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setCustomerInvoiceToEdit(null); customerInvoiceForm.reset(); setShowAddCustomerInvoiceDialog(true);}}>
-                <PlusCircle className="ml-2 h-4 w-4" /> إضافة فاتورة عميل
+                <PlusCircle className="me-2 h-4 w-4" /> إضافة فاتورة عميل
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-xl" dir="rtl">
@@ -222,7 +222,7 @@ export default function AccountsPayableReceivablePage() {
                             <Button type="button" variant="ghost" size="icon" onClick={() => removeCustInvoiceItem(index)} className="col-span-2 sm:col-span-1 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
                         </div> ))}
                     </ScrollArea>
-                    <Button type="button" variant="outline" onClick={() => appendCustInvoiceItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="ml-1 h-3 w-3" /> إضافة صنف</Button>
+                    <Button type="button" variant="outline" onClick={() => appendCustInvoiceItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
                     <FormField control={customerInvoiceForm.control} name="notes" render={({ field }) => (
                         <FormItem><FormLabel>ملاحظات</FormLabel>
                           <FormControl><Textarea placeholder="أضف ملاحظات (اختياري)" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
@@ -238,7 +238,7 @@ export default function AccountsPayableReceivablePage() {
           <Dialog open={showAddSupplierInvoiceDialog} onOpenChange={(isOpen) => { setShowAddSupplierInvoiceDialog(isOpen); if(!isOpen) setSupplierInvoiceToEdit(null);}}>
             <DialogTrigger asChild>
               <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSupplierInvoiceToEdit(null); supplierInvoiceForm.reset(); setShowAddSupplierInvoiceDialog(true);}}>
-                <PlusCircle className="ml-2 h-4 w-4" /> إضافة فاتورة مورد
+                <PlusCircle className="me-2 h-4 w-4" /> إضافة فاتورة مورد
               </Button>
             </DialogTrigger>
              <DialogContent className="sm:max-w-xl" dir="rtl">
@@ -285,7 +285,7 @@ export default function AccountsPayableReceivablePage() {
                             <Button type="button" variant="ghost" size="icon" onClick={() => removeSuppInvoiceItem(index)} className="col-span-2 sm:col-span-1 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
                         </div> ))}
                     </ScrollArea>
-                    <Button type="button" variant="outline" onClick={() => appendSuppInvoiceItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="ml-1 h-3 w-3" /> إضافة صنف</Button>
+                    <Button type="button" variant="outline" onClick={() => appendSuppInvoiceItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
                      <FormField control={supplierInvoiceForm.control} name="notes" render={({ field }) => (
                         <FormItem><FormLabel>ملاحظات</FormLabel>
                           <FormControl><Textarea placeholder="أضف ملاحظات (اختياري)" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
@@ -303,13 +303,13 @@ export default function AccountsPayableReceivablePage() {
       <Tabs defaultValue="receivables" className="w-full">
         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="receivables" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <Users className="inline-block ml-2 h-4 w-4" /> الذمم المدينة (العملاء)
+            <Users className="inline-block me-2 h-4 w-4" /> الذمم المدينة (العملاء)
           </TabsTrigger>
           <TabsTrigger value="payables" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <Briefcase className="inline-block ml-2 h-4 w-4" /> الذمم الدائنة (الموردين)
+            <Briefcase className="inline-block me-2 h-4 w-4" /> الذمم الدائنة (الموردين)
           </TabsTrigger>
           <TabsTrigger value="agingReport" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <FileWarning className="inline-block ml-2 h-4 w-4" /> أعمار الذمم
+            <FileWarning className="inline-block me-2 h-4 w-4" /> أعمار الذمم
           </TabsTrigger>
         </TabsList>
 
@@ -329,7 +329,7 @@ export default function AccountsPayableReceivablePage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                        <Filter className="ml-2 h-4 w-4" /> تصفية الحالة
+                        <Filter className="me-2 h-4 w-4" /> تصفية الحالة
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" dir="rtl">
@@ -417,7 +417,7 @@ export default function AccountsPayableReceivablePage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                        <Filter className="ml-2 h-4 w-4" /> تصفية الحالة
+                        <Filter className="me-2 h-4 w-4" /> تصفية الحالة
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" dir="rtl">
@@ -489,7 +489,7 @@ export default function AccountsPayableReceivablePage() {
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <TrendingUp className="ml-2 h-6 w-6 text-primary" /> أعمار الذمم المدينة (العملاء)
+                  <TrendingUp className="me-2 h-6 w-6 text-primary" /> أعمار الذمم المدينة (العملاء)
                 </CardTitle>
                 <CardDescription>تحليل لأعمار المبالغ المستحقة من العملاء.</CardDescription>
               </CardHeader>
@@ -508,7 +508,7 @@ export default function AccountsPayableReceivablePage() {
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <TrendingDown className="ml-2 h-6 w-6 text-destructive" /> أعمار الذمم الدائنة (الموردين)
+                  <TrendingDown className="me-2 h-6 w-6 text-destructive" /> أعمار الذمم الدائنة (الموردين)
                 </CardTitle>
                 <CardDescription>تحليل لأعمار المبالغ المستحقة للموردين.</CardDescription>
               </CardHeader>

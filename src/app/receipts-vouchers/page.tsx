@@ -120,10 +120,10 @@ export default function ReceiptsVouchersPage() {
         <h1 className="text-2xl md:text-3xl font-bold">سندات القبض والصرف</h1>
         <div className="flex gap-2">
             <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => openDialog("سند قبض")}>
-                <PlusCircle className="ml-2 h-4 w-4" /> إنشاء سند قبض
+                <PlusCircle className="me-2 h-4 w-4" /> إنشاء سند قبض
             </Button>
             <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => openDialog("سند صرف")}>
-                <PlusCircle className="ml-2 h-4 w-4" /> إنشاء سند صرف
+                <PlusCircle className="me-2 h-4 w-4" /> إنشاء سند صرف
             </Button>
         </div>
       </div>
@@ -197,10 +197,10 @@ export default function ReceiptsVouchersPage() {
       <Tabs defaultValue="allVouchers" className="w-full">
         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="allVouchers" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <FileText className="inline-block ml-2 h-4 w-4" /> جميع السندات
+            <FileText className="inline-block me-2 h-4 w-4" /> جميع السندات
           </TabsTrigger>
           <TabsTrigger value="treasuryMovement" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <Wallet className="inline-block ml-2 h-4 w-4" /> حركة الخزينة اليومية
+            <Wallet className="inline-block me-2 h-4 w-4" /> حركة الخزينة اليومية
           </TabsTrigger>
         </TabsList>
 
@@ -220,7 +220,7 @@ export default function ReceiptsVouchersPage() {
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                        <Filter className="ml-2 h-4 w-4" /> تصفية
+                        <Filter className="me-2 h-4 w-4" /> تصفية
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" dir="rtl">
@@ -242,7 +242,7 @@ export default function ReceiptsVouchersPage() {
                   </DropdownMenu>
                   <DatePickerWithPresets mode="range"/>
                   <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                    <FileDown className="ml-2 h-4 w-4" /> تصدير
+                    <FileDown className="me-2 h-4 w-4" /> تصدير
                   </Button>
                 </div>
               </div>
@@ -250,14 +250,14 @@ export default function ReceiptsVouchersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">رقم السند</TableHead>
-                      <TableHead className="text-right">التاريخ</TableHead>
-                      <TableHead className="text-right">النوع</TableHead>
-                      <TableHead className="text-right">الطريقة</TableHead>
-                      <TableHead className="text-right">الجهة</TableHead>
-                      <TableHead className="text-right">المبلغ</TableHead>
-                      <TableHead className="text-right">الفرع</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead>رقم السند</TableHead>
+                      <TableHead>التاريخ</TableHead>
+                      <TableHead>النوع</TableHead>
+                      <TableHead>الطريقة</TableHead>
+                      <TableHead>الجهة</TableHead>
+                      <TableHead>المبلغ</TableHead>
+                      <TableHead>الفرع</TableHead>
+                      <TableHead>الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -268,7 +268,7 @@ export default function ReceiptsVouchersPage() {
                         <TableCell>{voucher.date.toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell>
                           <Badge variant={voucher.type === "سند قبض" ? "default" : "secondary"} className="whitespace-nowrap bg-opacity-80">
-                            {voucher.type === "سند قبض" ? <Banknote className="inline ml-1 h-3 w-3"/> : <Building className="inline ml-1 h-3 w-3"/>}
+                            {voucher.type === "سند قبض" ? <Banknote className="inline me-1 h-3 w-3"/> : <Building className="inline me-1 h-3 w-3"/>}
                             {voucher.type}
                           </Badge>
                         </TableCell>
@@ -335,11 +335,11 @@ export default function ReceiptsVouchersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">التاريخ</TableHead>
-                      <TableHead className="text-right">نوع الحركة</TableHead>
-                      <TableHead className="text-right">الوصف</TableHead>
-                      <TableHead className="text-right">المبلغ</TableHead>
-                      <TableHead className="text-right">الرصيد</TableHead>
+                      <TableHead>التاريخ</TableHead>
+                      <TableHead>نوع الحركة</TableHead>
+                      <TableHead>الوصف</TableHead>
+                      <TableHead>المبلغ</TableHead>
+                      <TableHead>الرصيد</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -401,7 +401,7 @@ export default function ReceiptsVouchersPage() {
           )}
           <DialogFooter>
             <Button onClick={() => { alert(`Printing voucher ${selectedVoucherForPrint?.id}`); setShowPrintDialog(false); }} >
-              <Printer className="ml-2 h-4 w-4" /> طباعة
+              <Printer className="me-2 h-4 w-4" /> طباعة
             </Button>
             <DialogClose asChild>
               <Button type="button" variant="outline">إغلاق</Button>

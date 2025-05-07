@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCircle, Edit, Trash2, Save, Search, KeyRound } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge"; // Added import for Badge
+import { Badge } from "@/components/ui/badge"; 
 
 // Mock data
 const users = [
@@ -109,7 +109,7 @@ export default function SettingsPage() {
                 <Label htmlFor="autoBackup">تمكين النسخ الاحتياطي التلقائي</Label>
               </div>
               <Button className="shadow-md hover:shadow-lg transition-shadow">
-                <Save className="ms-2 h-4 w-4" /> حفظ الإعدادات العامة
+                <Save className="me-2 h-4 w-4" /> حفظ الإعدادات العامة
               </Button>
             </CardContent>
           </Card>
@@ -124,7 +124,7 @@ export default function SettingsPage() {
             <CardContent>
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                     <Button className="shadow-md hover:shadow-lg transition-shadow">
-                        <PlusCircle className="ms-2 h-4 w-4" /> إضافة مستخدم جديد
+                        <PlusCircle className="me-2 h-4 w-4" /> إضافة مستخدم جديد
                     </Button>
                     <div className="relative w-full sm:w-auto grow sm:grow-0">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -187,7 +187,7 @@ export default function SettingsPage() {
             <CardContent>
                  <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                     <Button className="shadow-md hover:shadow-lg transition-shadow">
-                        <PlusCircle className="ms-2 h-4 w-4" /> إضافة دور جديد
+                        <PlusCircle className="me-2 h-4 w-4" /> إضافة دور جديد
                     </Button>
                  </div>
                  <div className="grid md:grid-cols-2 gap-6">
@@ -229,7 +229,7 @@ export default function SettingsPage() {
                             ))}
                         </div>
                          <Button className="mt-4 shadow-md hover:shadow-lg transition-shadow w-full">
-                            <Save className="ms-2 h-4 w-4" /> حفظ صلاحيات الدور
+                            <Save className="me-2 h-4 w-4" /> حفظ صلاحيات الدور
                         </Button>
                     </div>
                  </div>
@@ -276,7 +276,7 @@ export default function SettingsPage() {
                 <Button variant="secondary" className="shadow-sm hover:shadow-md">إعدادات التكامل</Button>
               </div>
                <Button className="shadow-md hover:shadow-lg transition-shadow">
-                <Save className="ms-2 h-4 w-4" /> حفظ إعدادات التخصيص
+                <Save className="me-2 h-4 w-4" /> حفظ إعدادات التخصيص
               </Button>
             </CardContent>
           </Card>
@@ -285,4 +285,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

@@ -82,7 +82,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent className="mt-auto flex justify-end gap-2 p-4 pt-0">
              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setCurrentReport({...report, group: groupName})}>
-              <Eye className="ms-1.5 h-3.5 w-3.5" /> عرض التقرير
+              <Eye className="me-1.5 h-3.5 w-3.5" /> عرض التقرير
             </Button>
           </CardContent>
         </Card>
@@ -98,7 +98,7 @@ export default function ReportsPage() {
                     <div className="flex justify-between items-center">
                         <div>
                             <CardTitle className="text-2xl flex items-center">
-                                <BarChart2 className="ms-2 h-7 w-7 text-primary" /> {currentReport.name}
+                                <BarChart2 className="me-2 h-7 w-7 text-primary" /> {currentReport.name}
                             </CardTitle>
                             <CardDescription>{currentReport.description}</CardDescription>
                         </div>
@@ -130,10 +130,10 @@ export default function ReportsPage() {
                             </div>
                         )}
                         <Button className="shadow-sm hover:shadow-md">
-                            <Filter className="ms-2 h-4 w-4" /> تطبيق الفلاتر
+                            <Filter className="me-2 h-4 w-4" /> تطبيق الفلاتر
                         </Button>
                         <Button variant="secondary" className="shadow-sm hover:shadow-md">
-                            <Download className="ms-2 h-4 w-4" /> تصدير (Excel/PDF)
+                            <Download className="me-2 h-4 w-4" /> تصدير (Excel/PDF)
                         </Button>
                     </div>
                 </CardHeader>
@@ -174,7 +174,7 @@ export default function ReportsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
-            <BarChart2 className="ms-2 h-8 w-8 text-primary" />
+            <BarChart2 className="me-2 h-8 w-8 text-primary" />
             التقارير والتحليل
           </CardTitle>
           <CardDescription>إنشاء وعرض تقارير مخصصة وتحليلات لجميع وحدات النظام لاتخاذ قرارات مستنيرة.</CardDescription>

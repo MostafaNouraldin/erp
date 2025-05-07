@@ -101,7 +101,7 @@ export default function POSPage() {
       <Card className="shadow-lg mb-6">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
-            <DollarSign className="ms-2 h-8 w-8 text-primary" />
+            <DollarSign className="me-2 h-8 w-8 text-primary" />
             نقطة البيع (POS)
           </CardTitle>
           <CardDescription>إدارة عمليات البيع بالتجزئة، طباعة الإيصالات، وتتبع المبيعات.</CardDescription>
@@ -177,7 +177,7 @@ export default function POSPage() {
         <div className="flex flex-col h-full gap-6">
           <Card className="shadow-md flex-grow flex flex-col overflow-hidden">
             <CardHeader className="flex-row justify-between items-center">
-              <CardTitle className="flex items-center"><ShoppingCart className="ms-2 h-5 w-5 text-primary" /> سلة المشتريات</CardTitle>
+              <CardTitle className="flex items-center"><ShoppingCart className="me-2 h-5 w-5 text-primary" /> سلة المشتريات</CardTitle>
               <Button variant="ghost" size="icon" onClick={clearCart} title="إفراغ السلة">
                 <X className="h-5 w-5 text-destructive" />
               </Button>
@@ -240,7 +240,7 @@ export default function POSPage() {
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button className="w-full shadow-md hover:shadow-lg transition-shadow text-base py-3 h-auto" disabled={cart.length === 0}>
-                        <DollarSign className="ms-2 h-5 w-5" /> الدفع
+                        <DollarSign className="me-2 h-5 w-5" /> الدفع
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
@@ -280,7 +280,7 @@ export default function POSPage() {
                       </div>
                       <DialogFooter className="sm:justify-start">
                         <Button type="button" className="w-full" onClick={() => { /* Process payment logic here */ clearCart(); /* close dialog */ }} disabled={!paymentMethod}>
-                           <Printer className="ms-2 h-4 w-4" /> تأكيد وطباعة الفاتورة
+                           <Printer className="me-2 h-4 w-4" /> تأكيد وطباعة الفاتورة
                         </Button>
                          <DialogClose asChild>
                             <Button type="button" variant="outline" className="w-full sm:w-auto">
@@ -296,7 +296,7 @@ export default function POSPage() {
           </Card>
           <Card className="shadow-md">
             <CardHeader>
-                <CardTitle className="text-md flex items-center"><History className="ms-2 h-4 w-4 text-primary"/> آخر العمليات</CardTitle>
+                <CardTitle className="text-md flex items-center"><History className="me-2 h-4 w-4 text-primary"/> آخر العمليات</CardTitle>
             </CardHeader>
             <CardContent className="p-2">
                 <ScrollArea className="h-24">
@@ -322,4 +322,3 @@ export default function POSPage() {
     </div>
   );
 }
-

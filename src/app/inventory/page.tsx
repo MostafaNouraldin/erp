@@ -36,7 +36,7 @@ export default function InventoryPage() {
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">إدارة المخزون والمستودعات</h1>
         <Button className="shadow-md hover:shadow-lg transition-shadow">
-          <PlusCircle className="ms-2 h-4 w-4" /> إضافة صنف جديد
+          <PlusCircle className="me-2 h-4 w-4" /> إضافة صنف جديد
         </Button>
       </div>
 
@@ -72,7 +72,7 @@ export default function InventoryPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                        <Filter className="ms-2 h-4 w-4" /> تصفية الفئة
+                        <Filter className="me-2 h-4 w-4" /> تصفية الفئة
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -84,7 +84,7 @@ export default function InventoryPage() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                     <AlertTriangle className="ms-2 h-4 w-4 text-destructive" /> عرض أصناف تحت حد الطلب
+                     <AlertTriangle className="me-2 h-4 w-4 text-destructive" /> عرض أصناف تحت حد الطلب
                   </Button>
                 </div>
               </div>
@@ -113,7 +113,7 @@ export default function InventoryPage() {
                         <TableCell>{item.price}</TableCell>
                         <TableCell className="font-semibold">
                           {item.quantity}
-                          {item.quantity <= item.reorderLevel && <AlertTriangle className="inline-block ms-2 h-4 w-4 text-destructive" />}
+                          {item.quantity <= item.reorderLevel && <AlertTriangle className="inline-block me-2 h-4 w-4 text-destructive" />}
                         </TableCell>
                         <TableCell>{item.reorderLevel}</TableCell>
                         <TableCell>{item.location}</TableCell>
@@ -148,7 +148,7 @@ export default function InventoryPage() {
                 </div>
                  <div className="flex gap-2 flex-wrap">
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                        <ArrowRightLeft className="ms-2 h-4 w-4" /> إنشاء تحويل مخزني
+                        <ArrowRightLeft className="me-2 h-4 w-4" /> إنشاء تحويل مخزني
                     </Button>
                     <DatePickerWithPresets mode="range" />
                 </div>
@@ -198,10 +198,10 @@ export default function InventoryPage() {
                 <CardContent className="space-y-6">
                     <div className="flex flex-wrap gap-4 justify-between items-center">
                         <Button className="shadow-md hover:shadow-lg transition-shadow">
-                            <PlusCircle className="ms-2 h-4 w-4" /> بدء جرد جديد
+                            <PlusCircle className="me-2 h-4 w-4" /> بدء جرد جديد
                         </Button>
                         <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                            <Layers className="ms-2 h-4 w-4" /> عرض عمليات الجرد السابقة
+                            <Layers className="me-2 h-4 w-4" /> عرض عمليات الجرد السابقة
                         </Button>
                     </div>
                     <Card>
@@ -220,9 +220,9 @@ export default function InventoryPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {/* Form for stock adjustment could go here */}
-                            <p className="text-muted-foreground">يمكنك هنا إدخال تسويات يدوية لزيادة أو خفض كميات الأصناف بناءً على نتائج الجرد أو لأسباب أخرى (تلف، فقدان، إلخ).</p>
+                            <p className="text-sm text-muted-foreground">يمكنك هنا إدخال تسويات يدوية لزيادة أو خفض كميات الأصناف بناءً على نتائج الجرد أو لأسباب أخرى (تلف، فقدان، إلخ).</p>
                             <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow">
-                               <Settings2 className="ms-2 h-4 w-4" /> إنشاء تسوية
+                               <Settings2 className="me-2 h-4 w-4" /> إنشاء تسوية
                             </Button>
                         </CardContent>
                     </Card>
@@ -261,4 +261,3 @@ export default function InventoryPage() {
     </div>
   );
 }
-

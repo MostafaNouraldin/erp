@@ -37,10 +37,10 @@ const navItems = [
   { href: "/", label: "لوحة التحكم", icon: LayoutDashboard, module: "Dashboard" },
   {
     label: "الحسابات",
-    icon: BookUser, // Changed from FileText for better context
+    icon: BookUser, 
     module: "Accounting",
     subItems: [
-      { href: "/general-ledger", label: "الحسابات العامة", icon: BookOpen }, // Changed icon
+      { href: "/general-ledger", label: "الحسابات العامة", icon: BookOpen }, 
       { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer },
       { href: "/accounts-payable-receivable", label: "الحسابات المدينة والدائنة", icon: Users },
     ],
@@ -73,7 +73,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className={`${cairo.variable} font-cairo antialiased bg-secondary/50`}> {/* Changed to cairo.variable and font-cairo */}
+      <body className={`${cairo.variable} font-cairo antialiased bg-secondary/50`}> 
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -82,7 +82,7 @@ export default function RootLayout({
         >
           <SidebarProvider>
             <div className="flex min-h-screen w-full">
-              <Sidebar collapsible="icon" side="right" className="border-s shadow-sm"> {/* Changed side to right and border-e to border-s */}
+              <Sidebar collapsible="icon" side="right" className="border-s shadow-sm"> 
                 <SidebarHeader className="p-4 flex items-center justify-between">
                   <AppLogo />
                   <div className="hidden group-data-[collapsible=icon]:hidden">
@@ -96,16 +96,16 @@ export default function RootLayout({
                         {item.subItems ? (
                            <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                               <SidebarMenuButton tooltip={{children: item.label, side: 'left', align: 'center'}} className="w-full justify-start"> {/* Changed tooltip side to 'left' */}
+                               <SidebarMenuButton tooltip={{children: item.label, side: 'left', align: 'center'}} className="w-full justify-start"> 
                                 <item.icon className="h-5 w-5" />
                                 <span className="truncate">{item.label}</span>
                               </SidebarMenuButton>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent side="left" align="start" className="w-56" dir="rtl"> {/* Changed side to 'left' and added dir="rtl" */}
+                            <DropdownMenuContent side="left" align="start" className="w-56" dir="rtl"> 
                               {item.subItems.map(subItem => (
                                 <Link href={subItem.href} key={subItem.label} passHref>
                                   <DropdownMenuItem className="cursor-pointer">
-                                    <subItem.icon className="me-2 h-4 w-4" /> {/* Changed ml-2 to me-2 for RTL */}
+                                    <subItem.icon className="me-2 h-4 w-4" /> 
                                     {subItem.label}
                                   </DropdownMenuItem>
                                 </Link>
@@ -114,7 +114,7 @@ export default function RootLayout({
                           </DropdownMenu>
                         ) : (
                           <Link href={item.href} passHref>
-                            <SidebarMenuButton tooltip={{children: item.label, side: 'left', align: 'center'}} className="w-full justify-start"> {/* Changed tooltip side to 'left' */}
+                            <SidebarMenuButton tooltip={{children: item.label, side: 'left', align: 'center'}} className="w-full justify-start"> 
                               <item.icon className="h-5 w-5" />
                               <span className="truncate">{item.label}</span>
                             </SidebarMenuButton>
@@ -126,7 +126,7 @@ export default function RootLayout({
                 </SidebarContent>
                 <SidebarFooter className="p-4 border-t">
                   <Link href="/help" passHref>
-                    <SidebarMenuButton tooltip={{children: "المساعدة والدعم", side: 'left', align: 'center'}} className="w-full justify-start"> {/* Changed tooltip side to 'left' */}
+                    <SidebarMenuButton tooltip={{children: "المساعدة والدعم", side: 'left', align: 'center'}} className="w-full justify-start"> 
                       <CircleHelp className="h-5 w-5" />
                       <span className="truncate">المساعدة والدعم</span>
                     </SidebarMenuButton>
@@ -139,7 +139,7 @@ export default function RootLayout({
                   <div className="flex-1">
                     {/* Optional: Breadcrumbs or page title can go here */}
                   </div>
-                   <SidebarTrigger className="md:hidden order-first md:order-last" /> {/* Adjusted order for RTL */}
+                   <SidebarTrigger className="md:hidden order-first md:order-last" /> 
                   <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" aria-label="Search">
                       <Search className="h-5 w-5" />
@@ -159,9 +159,9 @@ export default function RootLayout({
                             </Avatar>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56" align="end" forceMount dir="rtl"> {/* Added dir="rtl" */}
+                        <DropdownMenuContent className="w-56" align="end" forceMount dir="rtl"> 
                           <DropdownMenuLabel className="font-normal">
-                            <div className="flex flex-col space-y-1 text-right"> {/* Added text-right */}
+                            <div className="flex flex-col space-y-1 text-right"> 
                               <p className="text-sm font-medium leading-none">{user.name}</p>
                               <p className="text-xs leading-none text-muted-foreground">
                                 {user.email}
@@ -170,16 +170,16 @@ export default function RootLayout({
                           </DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>
-                            <UserCircle className="me-2 h-4 w-4" /> {/* Changed ml-2 to me-2 for RTL */}
+                            <UserCircle className="me-2 h-4 w-4" /> 
                             <span>الملف الشخصي</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <Settings className="me-2 h-4 w-4" /> {/* Changed ml-2 to me-2 for RTL */}
+                            <Settings className="me-2 h-4 w-4" /> 
                             <span>الإعدادات</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>
-                            <LogOut className="me-2 h-4 w-4" /> {/* Changed ml-2 to me-2 for RTL */}
+                            <LogOut className="me-2 h-4 w-4" /> 
                             <span>تسجيل الخروج</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>

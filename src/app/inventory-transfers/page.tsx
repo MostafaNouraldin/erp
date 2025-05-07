@@ -39,7 +39,7 @@ export default function InventoryTransfersPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
-            <Truck className="ms-2 h-8 w-8 text-primary" />
+            <Truck className="me-2 h-8 w-8 text-primary" />
             تحويلات المخزون
           </CardTitle>
           <CardDescription>إدارة عمليات تحويل الأصناف بين المستودعات والفروع المختلفة.</CardDescription>
@@ -49,7 +49,7 @@ export default function InventoryTransfersPage() {
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <PlusCircle className="ms-2 h-5 w-5 text-primary" />
+            <PlusCircle className="me-2 h-5 w-5 text-primary" />
             إنشاء طلب تحويل جديد
           </CardTitle>
         </CardHeader>
@@ -61,7 +61,7 @@ export default function InventoryTransfersPage() {
                 <DatePickerWithPresets mode="single" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fromWarehouse" className="flex items-center"><PackageMinus className="ms-1 h-4 w-4 text-destructive"/> من مستودع</Label>
+                <Label htmlFor="fromWarehouse" className="flex items-center"><PackageMinus className="me-1 h-4 w-4 text-destructive"/> من مستودع</Label>
                 <Select dir="rtl">
                   <SelectTrigger id="fromWarehouse" className="bg-background">
                     <SelectValue placeholder="اختر المستودع المصدر" />
@@ -74,7 +74,7 @@ export default function InventoryTransfersPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="toWarehouse" className="flex items-center"><PackagePlus className="ms-1 h-4 w-4 text-green-600"/> إلى مستودع</Label>
+                <Label htmlFor="toWarehouse" className="flex items-center"><PackagePlus className="me-1 h-4 w-4 text-green-600"/> إلى مستودع</Label>
                 <Select dir="rtl">
                   <SelectTrigger id="toWarehouse" className="bg-background">
                     <SelectValue placeholder="اختر المستودع الهدف" />
@@ -114,7 +114,7 @@ export default function InventoryTransfersPage() {
             </div>
              <div className="flex gap-2">
                 <Button type="submit" className="shadow-md hover:shadow-lg transition-shadow">
-                    <Truck className="ms-2 h-4 w-4" /> حفظ طلب التحويل
+                    <Truck className="me-2 h-4 w-4" /> حفظ طلب التحويل
                 </Button>
                 <Button type="button" variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
                     إلغاء
@@ -127,7 +127,7 @@ export default function InventoryTransfersPage() {
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <FileText className="ms-2 h-5 w-5 text-primary" />
+            <FileText className="me-2 h-5 w-5 text-primary" />
             سجل تحويلات المخزون
           </CardTitle>
            <CardDescription>قائمة بجميع عمليات تحويل المخزون المسجلة بين المستودعات.</CardDescription>
@@ -142,7 +142,7 @@ export default function InventoryTransfersPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                    <Filter className="ms-2 h-4 w-4" /> تصفية الحالة
+                    <Filter className="me-2 h-4 w-4" /> تصفية الحالة
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -222,4 +222,3 @@ export default function InventoryTransfersPage() {
     </div>
   );
 }
-

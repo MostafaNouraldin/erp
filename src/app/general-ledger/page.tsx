@@ -185,7 +185,7 @@ export default function GeneralLedgerPage() {
         <Dialog open={showAddJournalEntryDialog} onOpenChange={(isOpen) => { setShowAddJournalEntryDialog(isOpen); if (!isOpen) setJournalEntryToEdit(null); }}>
           <DialogTrigger asChild>
             <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setJournalEntryToEdit(null); journalEntryForm.reset(); setShowAddJournalEntryDialog(true);}}>
-              <FilePlus className="ml-2 h-4 w-4" /> إنشاء قيد يومية جديد
+              <FilePlus className="me-2 h-4 w-4" /> إنشاء قيد يومية جديد
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[700px]" dir="rtl">
@@ -293,7 +293,7 @@ export default function GeneralLedgerPage() {
                     ))}
                 </ScrollArea>
                 <Button type="button" variant="outline" onClick={() => appendJournalLine({ accountId: "", debit: 0, credit: 0, description: "" })} className="text-xs py-1 px-2 h-auto">
-                  <PlusCircle className="ml-1 h-3 w-3" /> إضافة سطر جديد
+                  <PlusCircle className="me-1 h-3 w-3" /> إضافة سطر جديد
                 </Button>
 
                 <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t">
@@ -316,13 +316,13 @@ export default function GeneralLedgerPage() {
       <Tabs defaultValue="chartOfAccounts" className="w-full">
         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="chartOfAccounts" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <BookUser className="inline-block ml-2 h-4 w-4" /> شجرة الحسابات
+            <BookUser className="inline-block me-2 h-4 w-4" /> شجرة الحسابات
           </TabsTrigger>
           <TabsTrigger value="journalEntries" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <BookOpen className="inline-block ml-2 h-4 w-4" /> القيود اليومية
+            <BookOpen className="inline-block me-2 h-4 w-4" /> القيود اليومية
           </TabsTrigger>
           <TabsTrigger value="financialReports" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <BarChart3 className="inline-block ml-2 h-4 w-4" /> التقارير المالية
+            <BarChart3 className="inline-block me-2 h-4 w-4" /> التقارير المالية
           </TabsTrigger>
         </TabsList>
 
@@ -341,7 +341,7 @@ export default function GeneralLedgerPage() {
                 <Dialog open={showAddAccountDialog} onOpenChange={(isOpen) => { setShowAddAccountDialog(isOpen); if (!isOpen) setAccountToEdit(null); }}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow" onClick={() => { setAccountToEdit(null); accountForm.reset(); setShowAddAccountDialog(true); }}>
-                      <PlusCircle className="ml-2 h-4 w-4" /> إضافة حساب جديد
+                      <PlusCircle className="me-2 h-4 w-4" /> إضافة حساب جديد
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md" dir="rtl">
@@ -431,11 +431,11 @@ export default function GeneralLedgerPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">رقم الحساب</TableHead>
-                      <TableHead className="text-right">اسم الحساب</TableHead>
-                      <TableHead className="text-right">النوع</TableHead>
-                      <TableHead className="text-right">الحساب الرئيسي</TableHead>
-                      <TableHead className="text-right">الرصيد الحالي</TableHead>
+                      <TableHead>رقم الحساب</TableHead>
+                      <TableHead>اسم الحساب</TableHead>
+                      <TableHead>النوع</TableHead>
+                      <TableHead>الحساب الرئيسي</TableHead>
+                      <TableHead>الرصيد الحالي</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -504,11 +504,11 @@ export default function GeneralLedgerPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">رقم القيد</TableHead>
-                      <TableHead className="text-right">التاريخ</TableHead>
-                      <TableHead className="text-right">الوصف</TableHead>
-                      <TableHead className="text-right">المبلغ</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead>رقم القيد</TableHead>
+                      <TableHead>التاريخ</TableHead>
+                      <TableHead>الوصف</TableHead>
+                      <TableHead>المبلغ</TableHead>
+                      <TableHead>الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -581,7 +581,7 @@ export default function GeneralLedgerPage() {
                   <FileText className="h-12 w-12 text-primary mb-4" />
                   <CardTitle className="text-lg mb-2 text-center">{reportName}</CardTitle>
                   <Button variant="outline" className="w-full shadow-sm hover:shadow-md transition-shadow" onClick={() => handleViewFinancialReport(reportName)}>
-                    <Download className="ml-2 h-4 w-4" /> عرض/تحميل
+                    <Download className="me-2 h-4 w-4" /> عرض/تحميل
                   </Button>
                 </Card>
               ))}
@@ -607,10 +607,10 @@ export default function GeneralLedgerPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">الحساب</TableHead>
-                      <TableHead className="text-right">مدين</TableHead>
-                      <TableHead className="text-right">دائن</TableHead>
-                      <TableHead className="text-right">الوصف</TableHead>
+                      <TableHead>الحساب</TableHead>
+                      <TableHead>مدين</TableHead>
+                      <TableHead>دائن</TableHead>
+                      <TableHead>الوصف</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -657,4 +657,3 @@ export default function GeneralLedgerPage() {
     </div>
   );
 }
-
