@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast"; // Added for toast notifications
+import { useToast } from "@/hooks/use-toast"; 
 
 // Mock Data
 const mockEmployees = [
@@ -131,67 +131,77 @@ export default function EmployeeSettlementsPage() {
         return;
     }
 
-    // Example Journal Entry Logic based on settlement type and payment method
     let journalLines: Array<{accountId: string, debit: number, credit: number, description: string}> = [];
     const settlementDesc = `تسوية للموظف ${mockEmployees.find(e=>e.id === settlement.employeeId)?.name} - ${settlement.description}`;
+    const employeeName = mockEmployees.find(e=>e.id === settlement.employeeId)?.name || "غير محدد";
 
     if (settlement.settlementType === "سلفة") {
-        // Dr: Employee Advances (Asset)
-        // Cr: Cash/Bank or Accrued Salaries (if deducted from salary)
-        journalLines.push({ accountId: settlement.accountId, debit: settlement.amount, credit: 0, description: settlementDesc });
+        journalLines.push({ accountId: settlement.accountId, debit: settlement.amount, credit: 0, description: `إثبات سلفة لـ ${employeeName}` });
         if (settlement.paymentMethod === "راتب") {
-            journalLines.push({ accountId: "2100", debit: 0, credit: settlement.amount, description: "خصم من الراتب المستحق" }); // رواتب مستحقة
-        } else { // نقدي أو بنكي
-            journalLines.push({ accountId: "1011", debit: 0, credit: settlement.amount, description: "دفع نقدي/بنكي للسلفة" }); // assuming cash for simplicity
+            journalLines.push({ accountId: "2100", debit: 0, credit: settlement.amount, description: `خصم سلفة من راتب ${employeeName}` }); 
+        } else if (settlement.paymentMethod === "نقدي") {
+            journalLines.push({ accountId: "1011", debit: 0, credit: settlement.amount, description: `دفع سلفة نقداً لـ ${employeeName}` }); 
+        } else { // تحويل بنكي
+             journalLines.push({ accountId: "1012", debit: 0, credit: settlement.amount, description: `دفع سلفة بنكية لـ ${employeeName}` }); // Assuming default bank account
         }
     } else if (settlement.settlementType === "مكافأة") {
-        // Dr: Bonus Expense
-        // Cr: Cash/Bank or Accrued Salaries
-        journalLines.push({ accountId: settlement.accountId, debit: settlement.amount, credit: 0, description: settlementDesc }); // e.g. 5100 مصروف مكافآت
+        journalLines.push({ accountId: settlement.accountId, debit: settlement.amount, credit: 0, description: `إثبات مصروف مكافأة لـ ${employeeName}` }); 
          if (settlement.paymentMethod === "راتب") {
-            journalLines.push({ accountId: "2100", debit: 0, credit: settlement.amount, description: "إضافة للراتب المستحق" }); // رواتب مستحقة
-        } else { 
-            journalLines.push({ accountId: "1011", debit: 0, credit: settlement.amount, description: "دفع نقدي/بنكي للمكافأة" });
+            journalLines.push({ accountId: "2100", debit: 0, credit: settlement.amount, description: `إضافة مكافأة لراتب ${employeeName}` }); 
+        } else if (settlement.paymentMethod === "نقدي") {
+            journalLines.push({ accountId: "1011", debit: 0, credit: settlement.amount, description: `دفع مكافأة نقداً لـ ${employeeName}` });
+        } else { // تحويل بنكي
+             journalLines.push({ accountId: "1012", debit: 0, credit: settlement.amount, description: `دفع مكافأة بنكية لـ ${employeeName}` });
         }
     } else if (settlement.settlementType === "خصم") {
-        // Dr: Cash/Bank or Accrued Salaries (if collected from salary)
-        // Cr: Employee Advances (if repaying advance) or Revenue/Other Income
          if (settlement.paymentMethod === "راتب") {
-            journalLines.push({ accountId: "2100", debit: settlement.amount, credit: 0, description: "خصم من الراتب المستحق" }); 
-        } else { 
-            journalLines.push({ accountId: "1011", debit: settlement.amount, credit: 0, description: "تحصيل نقدي/بنكي للخصم" });
+            journalLines.push({ accountId: "2100", debit: settlement.amount, credit: 0, description: `تحصيل خصم من راتب ${employeeName}` }); 
+        } else if (settlement.paymentMethod === "نقدي") { 
+            journalLines.push({ accountId: "1011", debit: settlement.amount, credit: 0, description: `تحصيل خصم نقداً من ${employeeName}` });
+        } else { // تحويل بنكي
+            journalLines.push({ accountId: "1012", debit: settlement.amount, credit: 0, description: `تحصيل خصم بنكي من ${employeeName}` });
         }
-        journalLines.push({ accountId: settlement.accountId, debit: 0, credit: settlement.amount, description: settlementDesc }); // e.g. 1210 سلف (إذا كان الخصم لسداد سلفة)
+        journalLines.push({ accountId: settlement.accountId, debit: 0, credit: settlement.amount, description: `تسوية خصم لـ ${employeeName}` }); 
+    } else if (settlement.settlementType === "تسوية عهدة") {
+         if (settlement.paymentMethod === "راتب") { // Employee returns unspent portion or owes money, deducted from salary
+            journalLines.push({ accountId: "2100", debit: settlement.amount, credit: 0, description: `تسوية عهدة من راتب ${employeeName}` }); 
+        } else if (settlement.paymentMethod === "نقدي") { // Employee returns cash
+            journalLines.push({ accountId: "1011", debit: settlement.amount, credit: 0, description: `إرجاع عهدة نقداً من ${employeeName}` });
+        } else { // تحويل بنكي
+            journalLines.push({ accountId: "1012", debit: settlement.amount, credit: 0, description: `إرجاع عهدة بنكية من ${employeeName}` });
+        }
+        journalLines.push({ accountId: settlement.accountId, debit: 0, credit: settlement.amount, description: `إغلاق/تخفيض رصيد عهدة ${employeeName}` }); // e.g. 1210 سلف/عهد
     }
-    // Add more cases for قرض, تسوية عهدة etc.
+    // TODO: Add case for "قرض" (Loan) which might be more complex (principal, interest, etc.)
+
 
     if (journalLines.length < 2) {
-        toast({ title: "خطأ", description: "لم يتمكن النظام من إنشاء قيد محاسبي لهذه التسوية.", variant: "destructive"});
+        toast({ title: "خطأ", description: "لم يتمكن النظام من إنشاء قيد محاسبي لهذه التسوية. يرجى مراجعة الإعدادات.", variant: "destructive"});
         return;
     }
 
     const journalEntryData = {
         id: `EMP_JV_${settlement.id}_${Date.now()}`,
         date: settlement.date,
-        description: `ترحيل ${settlement.settlementType}: ${settlement.description} (موظف: ${mockEmployees.find(e => e.id === settlement.employeeId)?.name})`,
+        description: `ترحيل ${settlement.settlementType}: ${settlement.description} (الموظف: ${employeeName})`,
         lines: journalLines,
         totalAmount: settlement.amount,
-        status: "مرحل",
-        sourceModule: "EmployeeSettlements",
+        status: "مرحل" as "مرحل",
+        sourceModule: "EmployeeSettlements" as "EmployeeSettlements",
         sourceDocumentId: settlement.id
     };
 
     console.log("Posting Employee Settlement to General Ledger:", journalEntryData);
     
+    // Here you would typically send this `journalEntryData` to your General Ledger module/state.
+    // For now, we'll just log it and show a toast.
+    // Example: (window as any).addExternalJournalEntry(journalEntryData); // If GL page has such a global function
+
     toast({
         title: "تم طلب الترحيل للحسابات العامة",
         description: `سيتم ترحيل قيد تسوية الموظف رقم ${settlement.id} بمبلغ ${settlement.amount.toFixed(2)} SAR.`,
         variant: "default",
     });
-    
-    // Optionally update settlement status to "مسددة بالكامل" or similar if applicable
-    // For simplicity, we'll assume it's "posted" but may still need payment reconciliation
-    // setSettlements(prev => prev.map(s => s.id === settlement.id ? { ...s, status: "مسددة بالكامل"} : s));
   };
 
 
@@ -435,3 +445,4 @@ export default function EmployeeSettlementsPage() {
     </div>
   );
 }
+

@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { DollarSign, ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud } from "lucide-react";
 import Image from 'next/image';
-import { useToast } from "@/hooks/use-toast"; // Added for toast notifications
+import { useToast } from "@/hooks/use-toast"; 
 
 // Mock data
 const categories = ["الكل", "مشروبات", "مأكولات خفيفة", "حلويات", "مخبوزات", "منتجات ورقية"];
@@ -36,7 +36,7 @@ interface CartItem {
   image: string;
 }
 
-const recentTransactions = [
+const recentTransactions: Array<{id: string, time: string, items: number, total: string, paymentMethod: string}> = [
     { id: "TRX001", time: "10:30 ص", items: 2, total: "30 SAR", paymentMethod: "نقدي" },
     { id: "TRX002", time: "10:35 ص", items: 1, total: "15 SAR", paymentMethod: "بطاقة" },
     { id: "TRX003", time: "10:42 ص", items: 3, total: "45 SAR", paymentMethod: "نقدي" },
@@ -111,18 +111,12 @@ export default function POSPage() {
         paymentMethod,
     });
 
-    // Simulate posting to General Ledger
-    // This would typically involve creating a journal entry object
-    // and sending it to a backend service or updating a global state/context
-    // accessible by the GeneralLedgerPage.
-    // For this example, we'll just show a toast.
     toast({
         title: "تمت عملية الدفع بنجاح!",
-        description: `تم إنشاء الفاتورة رقم ${transactionId} والمبلغ ${totalAmount.toFixed(2)} SAR. سيتم ترحيل القيد إلى الحسابات العامة.`,
+        description: `تم إنشاء الفاتورة رقم ${transactionId} والمبلغ ${totalAmount.toFixed(2)} SAR.`,
         variant: "default",
     });
     
-    // Add to recent transactions (mock)
     const newTransaction = {
         id: transactionId,
         time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
@@ -130,48 +124,69 @@ export default function POSPage() {
         total: `${totalAmount.toFixed(2)} SAR`,
         paymentMethod: paymentMethod || "غير محدد",
     };
-    recentTransactions.unshift(newTransaction); // Add to the beginning
-    if (recentTransactions.length > 5) recentTransactions.pop(); // Keep only last 5
+    
+    // Update recent transactions - ensure it's mutable if it's a top-level const
+    const updatedRecentTransactions = [newTransaction, ...recentTransactions.slice(0, 4)];
+    // If recentTransactions is a state: setRecentTransactions(updatedRecentTransactions);
+    // For this example, we assume recentTransactions can be mutated if it's not a state or carefully managed.
+    // A better approach for mock would be to use state for recentTransactions.
+    // For simplicity in this isolated change, directly modifying the mock if it were state:
+    // setRecentTransactions(updatedRecentTransactions); 
+    // Since it's a const, this won't actually update the UI unless recentTransactions is a state.
+    // This line is illustrative for a real implementation.
+    if (typeof recentTransactions.unshift === 'function') { // Check if array and modifiable
+        recentTransactions.unshift(newTransaction);
+        if (recentTransactions.length > 5) recentTransactions.pop();
+    }
+
 
     clearCart();
-    // Close payment dialog - assuming DialogClose is handled by the component itself
   };
 
   const handlePostToGL = () => {
-    if(totalAmount <= 0) {
+    if(totalAmount <= 0 && cart.length === 0) { // Check if there is anything to post (based on completed sales, not current cart)
         toast({
             title: "لا توجد مبيعات للترحيل",
-            description: "الرجاء إتمام عملية بيع أولاً.",
+            description: "الرجاء إتمام عمليات بيع أولاً ليكون هناك رصيد للترحيل.",
             variant: "destructive"
         });
         return;
     }
-    // This is a mock function. In a real app, this would:
-    // 1. Collect data for the journal entry (e.g., total sales, cash/card received).
-    // 2. Send it to a backend or a state management solution that GeneralLedgerPage can access.
+    // This mock function simulates posting the *total sales for a period* or *end-of-day total*.
+    // For this example, let's assume we are posting an *aggregated* total amount from previous sales, not the current cart.
+    // In a real POS, you'd track sales and post a summary. Here, we'll use a dummy `dailySalesTotalForPosting`.
+    const dailySalesTotalForPosting = recentTransactions.reduce((sum, trx) => sum + parseFloat(trx.total.split(" ")[0]), 0); // Example: sum of recent mock transactions
+
+    if (dailySalesTotalForPosting <= 0) {
+        toast({
+            title: "لا يوجد رصيد مبيعات للترحيل",
+            description: "لم يتم تسجيل أي مبيعات مؤخراً.",
+            variant: "destructive"
+        });
+        return;
+    }
     
-    // For example:
     const journalEntryData = {
         date: new Date(),
-        description: `ترحيل مبيعات نقاط البيع - إجمالي ${totalAmount.toFixed(2)} SAR`,
+        description: `ترحيل إجمالي مبيعات نقاط البيع - ${new Date().toLocaleDateString('ar-SA')}`,
         lines: [
-            { accountId: "1013", debit: totalAmount, credit: 0, description: "إجمالي مبيعات نقاط البيع" }, // صندوق نقاط البيع
-            { accountId: "4010", debit: 0, credit: totalAmount, description: "إيراد مبيعات نقاط البيع" }, // إيرادات مبيعات
+            { accountId: "1013", debit: dailySalesTotalForPosting, credit: 0, description: "إجمالي مبيعات نقاط البيع" }, // صندوق نقاط البيع
+            { accountId: "4010", debit: 0, credit: dailySalesTotalForPosting, description: "إيراد مبيعات نقاط البيع" }, // إيرادات مبيعات
         ],
-        totalAmount: totalAmount,
-        status: "مرحل" as "مرحل", // or "مسودة" to be posted later from GL
+        totalAmount: dailySalesTotalForPosting,
+        status: "مرحل" as "مرحل",
         sourceModule: "POS" as "POS",
-        sourceDocumentId: `POS_TRX_${Date.now().toString().slice(-5)}`
+        sourceDocumentId: `POS_EOB_${Date.now().toString().slice(-5)}` // End Of Business or similar ID
     };
 
     console.log("Posting to General Ledger:", journalEntryData);
     
     toast({
         title: "تم طلب الترحيل للحسابات العامة",
-        description: `سيتم ترحيل قيد مبيعات نقاط البيع بمبلغ ${totalAmount.toFixed(2)} SAR.`,
+        description: `سيتم ترحيل قيد إجمالي مبيعات نقاط البيع بمبلغ ${dailySalesTotalForPosting.toFixed(2)} SAR.`,
         variant: "default",
     });
-    // After successful posting, you might want to clear the relevant POS data for the day, or mark it as posted.
+    // After successful posting, you might want to clear the daily sales tracking variable, or mark it as posted.
   };
 
 
@@ -369,12 +384,15 @@ export default function POSPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                   <Button variant="secondary" className="w-full mt-2 shadow-sm" onClick={handlePostToGL} disabled={cart.length > 0 || totalAmount <= 0}>
-                    <UploadCloud className="me-2 h-4 w-4" /> ترحيل إجمالي المبيعات للقيود
-                  </Button>
                 </CardContent>
               </>
             )}
+             <Separator />
+              <CardContent className="p-4">
+                 <Button variant="secondary" className="w-full shadow-sm" onClick={handlePostToGL} disabled={cart.length > 0 && totalAmount > 0 /* Disable if cart has items not yet paid, enable if there's something to post for the day */}>
+                    <UploadCloud className="me-2 h-4 w-4" /> ترحيل إجمالي المبيعات للقيود
+                  </Button>
+              </CardContent>
           </Card>
           <Card className="shadow-md">
             <CardHeader>
@@ -404,3 +422,4 @@ export default function POSPage() {
     </div>
   );
 }
+

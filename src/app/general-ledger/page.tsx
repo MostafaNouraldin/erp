@@ -485,57 +485,7 @@ export default function GeneralLedgerPage() {
           <DialogFooter><Button variant="outline" onClick={() => alert(`Downloading ${selectedFinancialReport}`)}>تحميل PDF</Button><DialogClose asChild><Button type="button">إغلاق</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
-       {/* This button is for simulation purposes to add an external journal entry */}
-       <div className="fixed bottom-4 left-4 space-x-2 rtl:space-x-reverse">
-        <Button 
-            variant="destructive"
-            onClick={() => {
-                const newPosEntry: JournalEntry = {
-                    id: `POS_JV_${Date.now()}`,
-                    date: new Date(),
-                    description: "ترحيل مبيعات نقاط البيع اليومية",
-                    lines: [
-                        { accountId: "1013", debit: 550, credit: 0, description: "إجمالي مبيعات نقاط البيع" },
-                        { accountId: "4010", debit: 0, credit: 550, description: "إيراد مبيعات نقاط البيع" },
-                    ],
-                    totalAmount: 550,
-                    status: "مرحل",
-                    sourceModule: "POS",
-                    sourceDocumentId: `POS_TRX_${Date.now().toString().slice(-5)}`
-                };
-                setExternallyGeneratedJournalEntries(prev => [...prev, newPosEntry]);
-                alert("تم ترحيل قيد من نقاط البيع.");
-            }}
-            title="محاكاة ترحيل من نقاط البيع"
-            className="opacity-50 hover:opacity-100"
-        >
-           محاكاة ترحيل POS
-        </Button>
-        <Button 
-            variant="destructive"
-            onClick={() => {
-                const newEmpSettlementEntry: JournalEntry = {
-                    id: `EMP_JV_${Date.now()}`,
-                    date: new Date(),
-                    description: "ترحيل سلفة موظف",
-                    lines: [
-                        { accountId: "1210", debit: 1000, credit: 0, description: "سلفة للموظف خالد" }, // سلف الموظفين
-                        { accountId: "2100", debit: 0, credit: 1000, description: "اثبات سلفة تخصم من الراتب" }, // رواتب مستحقة (أو صندوق إذا دفعت نقداً)
-                    ],
-                    totalAmount: 1000,
-                    status: "مرحل",
-                    sourceModule: "EmployeeSettlements",
-                    sourceDocumentId: `ESET_${Date.now().toString().slice(-5)}`
-                };
-                 setExternallyGeneratedJournalEntries(prev => [...prev, newEmpSettlementEntry]);
-                alert("تم ترحيل قيد تسوية موظف.");
-            }}
-            title="محاكاة ترحيل تسوية موظف"
-             className="opacity-50 hover:opacity-100"
-        >
-           محاكاة تسوية موظف
-        </Button>
-      </div>
+      
     </div>
   );
 }
