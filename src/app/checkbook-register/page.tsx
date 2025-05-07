@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button"; // Added buttonVariants
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PlusCircle, Edit, Trash2, Search, Printer, CheckCircle, Undo, Filter, BookCopy, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -120,7 +120,7 @@ export default function CheckbookRegisterPage() {
     setShowPrintCheckDialog(true);
   };
 
-  const formatDate = (date: Date | string) => { // Accepts string for initial data
+  const formatDate = (date: Date | string) => {
     if (!isClient) return ''; 
     const d = typeof date === 'string' ? new Date(date) : date;
     return new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric', calendar: 'gregory' }).format(d);
@@ -308,9 +308,9 @@ export default function CheckbookRegisterPage() {
                               <AlertDialogContent dir="rtl">
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>تأكيد الإلغاء</AlertDialogTitle>
-                                  <AlertDialogDescriptionComponent>
+                                  <AlertDialogDescription>
                                     هل أنت متأكد من إلغاء الشيك رقم "{check.checkNumber}"؟
-                                  </AlertDialogDescriptionComponent>
+                                  </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>تراجع</AlertDialogCancel>
@@ -335,9 +335,9 @@ export default function CheckbookRegisterPage() {
                           <AlertDialogContent dir="rtl">
                             <AlertDialogHeader>
                               <AlertDialogTitle>تأكيد الارتجاع</AlertDialogTitle>
-                              <AlertDialogDescriptionComponent>
+                              <AlertDialogDescription>
                                 هل أنت متأكد من تسجيل الشيك رقم "{check.checkNumber}" كـ "مرتجع"؟
-                              </AlertDialogDescriptionComponent>
+                              </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>إلغاء</AlertDialogCancel>
@@ -391,7 +391,7 @@ export default function CheckbookRegisterPage() {
                 <div className="flex justify-between items-center mb-8 text-md">
                     <span>مبلغ وقدره:</span>
                     <span className="text-lg border-b-2 border-dotted border-foreground flex-grow mx-4 text-center py-1" data-ai-hint="amount words">{convertAmountToWords(selectedCheckForPrint.amount)}</span>
-                    <div className="border-2 border-foreground p-2 rounded-md min-w-[150px] text-center"> {/* Increased min-width */}
+                    <div className="border-2 border-foreground p-2 rounded-md min-w-[180px] text-center"> {/* Increased min-width */}
                         <span className="text-xl font-bold">{selectedCheckForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: selectedCheckForPrint.currency, minimumFractionDigits: 2 })}</span>
                     </div>
                 </div>
@@ -412,7 +412,7 @@ export default function CheckbookRegisterPage() {
           )}
           <DialogFooter className="print-hidden pt-4">
             <Button onClick={() => window.print()} disabled={!selectedCheckForPrint || !isClient}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
-            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
+            <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
