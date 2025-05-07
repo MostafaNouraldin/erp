@@ -217,7 +217,7 @@ export default function BankReceiptsPage() {
               <TableBody>
                 {bankReceipts.map((receipt) => (
                   <TableRow key={receipt.id} className="hover:bg-muted/50">
-                    <TableCell>{receipt.date.toLocaleDateString('ar-SA')}</TableCell>
+                    <TableCell>{receipt.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                     <TableCell className="font-medium">{mockBankAccounts.find(b => b.id === receipt.bankAccountId)?.name}</TableCell>
                     <TableCell>{mockRevenueAccounts.find(e => e.id === receipt.revenueAccountId)?.name}</TableCell>
                     <TableCell>{receipt.payerName}</TableCell>

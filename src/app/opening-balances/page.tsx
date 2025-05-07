@@ -164,7 +164,7 @@ export default function OpeningBalancesPage() {
               <TableBody>
                 {openingBalances.map((balance) => (
                   <TableRow key={balance.id} className="hover:bg-muted/50">
-                    <TableCell>{balance.date.toLocaleDateString('ar-SA')}</TableCell>
+                    <TableCell>{balance.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                     <TableCell className="font-medium">{mockChartOfAccounts.find(acc => acc.id === balance.accountId)?.name || balance.accountId}</TableCell>
                     <TableCell>{balance.debit.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
                     <TableCell>{balance.credit.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>

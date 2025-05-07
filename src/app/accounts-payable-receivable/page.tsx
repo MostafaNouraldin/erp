@@ -439,8 +439,8 @@ export default function AccountsPayableReceivablePage() {
                       <TableRow key={invoice.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{invoice.id}</TableCell>
                         <TableCell>{mockCustomers.find(c=>c.id === invoice.customerId)?.name}</TableCell>
-                        <TableCell>{invoice.date.toLocaleDateString('ar-SA')}</TableCell>
-                        <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{invoice.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
+                        <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                         <TableCell>{invoice.totalAmount.toFixed(2)} SAR</TableCell>
                         <TableCell>{invoice.paidAmount.toFixed(2)} SAR</TableCell>
                         <TableCell className="font-semibold">{invoice.remainingAmount.toFixed(2)} SAR</TableCell>
@@ -461,7 +461,7 @@ export default function AccountsPayableReceivablePage() {
                                 <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                 <AlertDialogContent dir="rtl">
                                     <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id, 'customer')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                                    <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id!, 'customer')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                           )}
@@ -519,8 +519,8 @@ export default function AccountsPayableReceivablePage() {
                       <TableRow key={invoice.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{invoice.id}</TableCell>
                         <TableCell>{mockSuppliers.find(s=>s.id === invoice.supplierId)?.name}</TableCell>
-                        <TableCell>{invoice.date.toLocaleDateString('ar-SA')}</TableCell>
-                        <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{invoice.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
+                        <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                         <TableCell>{invoice.totalAmount.toFixed(2)} SAR</TableCell>
                         <TableCell>{invoice.paidAmount.toFixed(2)} SAR</TableCell>
                         <TableCell className="font-semibold">{invoice.remainingAmount.toFixed(2)} SAR</TableCell>
@@ -540,7 +540,7 @@ export default function AccountsPayableReceivablePage() {
                                 <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                 <AlertDialogContent dir="rtl">
                                     <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id, 'supplier')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                                    <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id!, 'supplier')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                           )}
@@ -603,8 +603,8 @@ export default function AccountsPayableReceivablePage() {
           {selectedInvoiceForView && (
             <div className="py-4 space-y-2">
               <p><strong>{selectedInvoiceForView.type === 'customer' ? 'العميل' : 'المورد'}:</strong> {selectedInvoiceForView.type === 'customer' ? selectedInvoiceForView.customer : selectedInvoiceForView.supplier}</p>
-              <p><strong>تاريخ الفاتورة:</strong> {selectedInvoiceForView.date?.toLocaleDateString('ar-SA')}</p>
-              <p><strong>تاريخ الاستحقاق:</strong> {selectedInvoiceForView.dueDate?.toLocaleDateString('ar-SA')}</p>
+              <p><strong>تاريخ الفاتورة:</strong> {selectedInvoiceForView.date?.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
+              <p><strong>تاريخ الاستحقاق:</strong> {selectedInvoiceForView.dueDate?.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
               <p><strong>المبلغ الإجمالي:</strong> {selectedInvoiceForView.totalAmount?.toFixed(2)} SAR</p>
               <p><strong>المبلغ المدفوع:</strong> {selectedInvoiceForView.paidAmount?.toFixed(2)} SAR</p>
               <p><strong>المبلغ المتبقي:</strong> {selectedInvoiceForView.remainingAmount?.toFixed(2)} SAR</p>

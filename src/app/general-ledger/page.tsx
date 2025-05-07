@@ -348,7 +348,7 @@ export default function GeneralLedgerPage() {
                 <Table>
                   <TableHeader><TableRow><TableHead>رقم القيد</TableHead><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>المبلغ</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
                   <TableBody>{journalEntries.map((entry) => (<TableRow key={entry.id} className="hover:bg-muted/50">
-                        <TableCell>{entry.id}</TableCell><TableCell>{entry.date.toLocaleDateString('ar-SA')}</TableCell><TableCell>{entry.description}</TableCell><TableCell>{entry.totalAmount?.toFixed(2)} SAR</TableCell>
+                        <TableCell>{entry.id}</TableCell><TableCell>{entry.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell>{entry.description}</TableCell><TableCell>{entry.totalAmount?.toFixed(2)} SAR</TableCell>
                         <TableCell><Badge variant={entry.status === "مرحل" ? "default" : "outline"}>{entry.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => handleViewJournalEntry(entry)}><FileText className="h-4 w-4" /></Button>
@@ -393,7 +393,7 @@ export default function GeneralLedgerPage() {
         <DialogContent className="sm:max-w-lg" dir="rtl">
           <DialogHeader><DialogTitle>تفاصيل القيد: {selectedJournalEntry?.id}</DialogTitle></DialogHeader>
           {selectedJournalEntry && (<div className="py-4 space-y-3">
-              <p><strong>التاريخ:</strong> {selectedJournalEntry.date.toLocaleDateString('ar-SA')}</p><p><strong>الوصف العام:</strong> {selectedJournalEntry.description}</p>
+              <p><strong>التاريخ:</strong> {selectedJournalEntry.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p><p><strong>الوصف العام:</strong> {selectedJournalEntry.description}</p>
               <p><strong>المبلغ الإجمالي:</strong> {selectedJournalEntry.totalAmount?.toFixed(2)} SAR</p>
               <p><strong>الحالة:</strong> <Badge variant={selectedJournalEntry.status === "مرحل" ? "default" : "outline"}>{selectedJournalEntry.status}</Badge></p>
               <h4 className="font-semibold mt-3">تفاصيل الحركات:</h4>

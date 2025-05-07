@@ -221,7 +221,7 @@ export default function CheckbookRegisterPage() {
                         <TableRow key={cb.id} className="hover:bg-muted/50">
                             <TableCell className="font-medium">{mockBankAccounts.find(b => b.id === cb.bankAccountId)?.name}</TableCell>
                             <TableCell>{cb.startSerial} - {cb.endSerial}</TableCell>
-                            <TableCell>{cb.issueDate.toLocaleDateString('ar-SA')}</TableCell>
+                            <TableCell>{cb.issueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                             <TableCell>{cb.notes || "-"}</TableCell>
                             <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض الشيكات" onClick={() => alert(`عرض شيكات دفتر ${cb.id}`)}>
@@ -319,7 +319,7 @@ export default function CheckbookRegisterPage() {
                         <TableRow key={chk.id} className="hover:bg-muted/50">
                             <TableCell className="font-medium">{chk.checkNumber}</TableCell>
                             <TableCell>{checkbooks.find(cb => cb.id === chk.checkbookId)?.bankAccountId.substring(0,10)}... ({checkbooks.find(cb => cb.id === chk.checkbookId)?.startSerial})</TableCell>
-                            <TableCell>{chk.status !== "متاح" ? chk.issueDate.toLocaleDateString('ar-SA') : "-"}</TableCell>
+                            <TableCell>{chk.status !== "متاح" ? chk.issueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' }) : "-"}</TableCell>
                             <TableCell>{chk.payee || "-"}</TableCell>
                             <TableCell>{chk.amount > 0 ? chk.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' }) : "-"}</TableCell>
                             <TableCell>

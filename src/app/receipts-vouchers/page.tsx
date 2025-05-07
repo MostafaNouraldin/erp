@@ -118,7 +118,7 @@ export default function ReceiptsVouchersPage() {
     if (voucher) {
         setTreasuryMovements(prev => [
             { 
-                date: voucher.date.toLocaleDateString('ar-SA'), 
+                date: voucher.date.toLocaleDateString('ar-SA', { calendar: 'gregory' }), 
                 type: voucher.type === "سند قبض" ? "إيداع" : "سحب", 
                 description: `${voucher.type} #${voucher.id} - ${voucher.partyName}`, 
                 amount: voucher.amount, 
@@ -266,7 +266,7 @@ export default function ReceiptsVouchersPage() {
                   </TableRow></TableHeader>
                   <TableBody>{vouchers.map((voucher) => (
                       <TableRow key={voucher.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{voucher.id}</TableCell><TableCell>{voucher.date.toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell className="font-medium">{voucher.id}</TableCell><TableCell>{voucher.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                         <TableCell><Badge variant={voucher.type === "سند قبض" ? "default" : "secondary"} className="whitespace-nowrap bg-opacity-80">
                             {voucher.type === "سند قبض" ? <Banknote className="inline me-1 h-3 w-3"/> : <Building className="inline me-1 h-3 w-3"/>}{voucher.type}</Badge>
                         </TableCell>
@@ -281,13 +281,13 @@ export default function ReceiptsVouchersPage() {
                                 <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                 <AlertDialogContent dir="rtl">
                                   <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف السند "{voucher.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
-                                  <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteVoucher(voucher.id)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                                  <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteVoucher(voucher.id!)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="ترحيل السند" onClick={() => handlePostVoucher(voucher.id)}><CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="ترحيل السند" onClick={() => handlePostVoucher(voucher.id!)}><CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" /></Button>
                           </>)}
                            {voucher.status === "مرحل" && (
-                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-100 dark:hover:bg-yellow-900" title="إلغاء الترحيل" onClick={() => handleUnpostVoucher(voucher.id)}><Undo className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></Button>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-100 dark:hover:bg-yellow-900" title="إلغاء الترحيل" onClick={() => handleUnpostVoucher(voucher.id!)}><Undo className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></Button>
                           )}
                         </TableCell>
                       </TableRow>))}
@@ -331,7 +331,7 @@ export default function ReceiptsVouchersPage() {
                 <h3 className="text-xl font-semibold">شركة المستقبل ERP</h3><p className="text-sm">{selectedVoucherForPrint.type}</p>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <p><strong>رقم السند:</strong> {selectedVoucherForPrint.id}</p><p><strong>التاريخ:</strong> {new Date(selectedVoucherForPrint.date).toLocaleDateString('ar-SA')}</p>
+                <p><strong>رقم السند:</strong> {selectedVoucherForPrint.id}</p><p><strong>التاريخ:</strong> {new Date(selectedVoucherForPrint.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
                 <p><strong>الجهة:</strong> {selectedVoucherForPrint.partyName}</p><p><strong>المبلغ:</strong> {selectedVoucherForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
                 <p><strong>طريقة {selectedVoucherForPrint.type === "سند قبض" ? "القبض" : "الصرف"}:</strong> {selectedVoucherForPrint.method}</p><p><strong>الفرع:</strong> {selectedVoucherForPrint.branch}</p>
                 <p className="col-span-2"><strong>المبلغ كتابة:</strong> {/* Implement proper number to words conversion here */} {selectedVoucherForPrint.amount.toLocaleString('ar-SA')} ريال سعودي فقط لا غير.</p>

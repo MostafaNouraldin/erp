@@ -208,7 +208,7 @@ export default function CashExpensesPage() {
               <TableBody>
                 {cashExpenses.map((expense) => (
                   <TableRow key={expense.id} className="hover:bg-muted/50">
-                    <TableCell>{expense.date.toLocaleDateString('ar-SA')}</TableCell>
+                    <TableCell>{expense.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                     <TableCell className="font-medium">{mockCashAccounts.find(b => b.id === expense.cashAccountId)?.name}</TableCell>
                     <TableCell>{mockExpenseAccounts.find(e => e.id === expense.expenseAccountId)?.name}</TableCell>
                     <TableCell>{expense.beneficiary}</TableCell>

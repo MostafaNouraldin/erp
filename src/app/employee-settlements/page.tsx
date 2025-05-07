@@ -235,7 +235,7 @@ export default function EmployeeSettlementsPage() {
               <TableBody>
                 {settlements.map((set) => (
                   <TableRow key={set.id} className="hover:bg-muted/50">
-                    <TableCell>{set.date.toLocaleDateString('ar-SA')}</TableCell>
+                    <TableCell>{set.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                     <TableCell className="font-medium">{mockEmployees.find(e => e.id === set.employeeId)?.name}</TableCell>
                     <TableCell>{set.settlementType}</TableCell>
                     <TableCell>{set.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
@@ -299,7 +299,7 @@ export default function EmployeeSettlementsPage() {
           {selectedSettlementForView && (
             <div className="py-4 space-y-3">
               <p><strong>رقم التسوية:</strong> {selectedSettlementForView.id}</p>
-              <p><strong>تاريخ التسوية:</strong> {selectedSettlementForView.date.toLocaleDateString('ar-SA')}</p>
+              <p><strong>تاريخ التسوية:</strong> {selectedSettlementForView.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
               <p><strong>الموظف:</strong> {mockEmployees.find(e => e.id === selectedSettlementForView.employeeId)?.name}</p>
               <p><strong>نوع التسوية:</strong> {selectedSettlementForView.settlementType}</p>
               <p><strong>حساب التسوية:</strong> {mockSettlementAccounts.find(a => a.id === selectedSettlementForView.accountId)?.name}</p>

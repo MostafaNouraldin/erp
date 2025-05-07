@@ -216,7 +216,7 @@ export default function BankExpensesPage() {
               <TableBody>
                 {bankExpenses.map((expense) => (
                   <TableRow key={expense.id} className="hover:bg-muted/50">
-                    <TableCell>{expense.date.toLocaleDateString('ar-SA')}</TableCell>
+                    <TableCell>{expense.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                     <TableCell className="font-medium">{mockBankAccounts.find(b => b.id === expense.bankAccountId)?.name}</TableCell>
                     <TableCell>{mockExpenseAccounts.find(e => e.id === expense.expenseAccountId)?.name}</TableCell>
                     <TableCell>{expense.beneficiary}</TableCell>
@@ -277,7 +277,7 @@ export default function BankExpensesPage() {
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                   <p><strong>رقم الإيصال:</strong> {selectedExpenseForPrint.id}</p>
-                  <p><strong>التاريخ:</strong> {new Date(selectedExpenseForPrint.date).toLocaleDateString('ar-SA')}</p>
+                  <p><strong>التاريخ:</strong> {new Date(selectedExpenseForPrint.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
                   <p><strong>الحساب البنكي:</strong> {mockBankAccounts.find(b => b.id === selectedExpenseForPrint.bankAccountId)?.name}</p>
                   <p><strong>حساب المصروف:</strong> {mockExpenseAccounts.find(e => e.id === selectedExpenseForPrint.expenseAccountId)?.name}</p>
                   <p><strong>المستفيد:</strong> {selectedExpenseForPrint.beneficiary}</p>
@@ -302,4 +302,3 @@ export default function BankExpensesPage() {
     </div>
   );
 }
-
