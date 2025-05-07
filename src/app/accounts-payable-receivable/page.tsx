@@ -164,7 +164,7 @@ export default function AccountsPayableReceivablePage() {
   const updateInvoiceStatus = (invoice: AnyInvoice): AnyInvoice['status'] => {
     if (invoice.paidAmount >= invoice.totalAmount) return "مدفوع";
     if (invoice.paidAmount > 0) return "جزئي";
-    if ('dueDate' in invoice && invoice.dueDate && invoice.dueDate < new Date() && invoice.paidAmount === 0) return "متأخر";
+    if ('dueDate' in invoice && invoice.dueDate && invoice.dueDate < new Date() && invoice.paidAmount === 0 && invoice.status !== "مدفوع") return "متأخر";
     return "غير مدفوع";
   };
 
@@ -602,14 +602,14 @@ export default function AccountsPayableReceivablePage() {
           </DialogHeader>
           {selectedInvoiceForView && (
             <div className="py-4 space-y-2">
-              <p><strong>{selectedInvoiceForView.type === 'customer' ? 'العميل' : 'المورد'}:</strong> {selectedInvoiceForView.type === 'customer' ? selectedInvoiceForView.customer : selectedInvoiceForView.supplier}</p>
-              <p><strong>تاريخ الفاتورة:</strong> {selectedInvoiceForView.date?.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
-              <p><strong>تاريخ الاستحقاق:</strong> {selectedInvoiceForView.dueDate?.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
-              <p><strong>المبلغ الإجمالي:</strong> {selectedInvoiceForView.totalAmount?.toFixed(2)} SAR</p>
-              <p><strong>المبلغ المدفوع:</strong> {selectedInvoiceForView.paidAmount?.toFixed(2)} SAR</p>
-              <p><strong>المبلغ المتبقي:</strong> {selectedInvoiceForView.remainingAmount?.toFixed(2)} SAR</p>
-              <p><strong>الحالة:</strong> <Badge variant={selectedInvoiceForView.status === "مدفوع" ? "default" : selectedInvoiceForView.status === "جزئي" ? "secondary" : selectedInvoiceForView.status === "متأخر" ? "destructive" : "outline"}>{selectedInvoiceForView.status}</Badge></p>
-              <p><strong>ملاحظات:</strong> {selectedInvoiceForView.notes || 'لا يوجد'}</p>
+              <div><strong>{selectedInvoiceForView.type === 'customer' ? 'العميل' : 'المورد'}:</strong> {selectedInvoiceForView.type === 'customer' ? selectedInvoiceForView.customer : selectedInvoiceForView.supplier}</div>
+              <div><strong>تاريخ الفاتورة:</strong> {selectedInvoiceForView.date?.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
+              <div><strong>تاريخ الاستحقاق:</strong> {selectedInvoiceForView.dueDate?.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
+              <div><strong>المبلغ الإجمالي:</strong> {selectedInvoiceForView.totalAmount?.toFixed(2)} SAR</div>
+              <div><strong>المبلغ المدفوع:</strong> {selectedInvoiceForView.paidAmount?.toFixed(2)} SAR</div>
+              <div><strong>المبلغ المتبقي:</strong> {selectedInvoiceForView.remainingAmount?.toFixed(2)} SAR</div>
+              <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedInvoiceForView.status === "مدفوع" ? "default" : selectedInvoiceForView.status === "جزئي" ? "secondary" : selectedInvoiceForView.status === "متأخر" ? "destructive" : "outline"}>{selectedInvoiceForView.status}</Badge></div>
+              <div><strong>ملاحظات:</strong> {selectedInvoiceForView.notes || 'لا يوجد'}</div>
                <h4 className="font-semibold pt-2 border-t mt-3">الأصناف:</h4>
                 {selectedInvoiceForView.items && selectedInvoiceForView.items.length > 0 ? (
                     <Table size="sm">

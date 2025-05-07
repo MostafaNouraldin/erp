@@ -298,23 +298,23 @@ export default function EmployeeSettlementsPage() {
           </DialogHeader>
           {selectedSettlementForView && (
             <div className="py-4 space-y-3">
-              <p><strong>رقم التسوية:</strong> {selectedSettlementForView.id}</p>
-              <p><strong>تاريخ التسوية:</strong> {selectedSettlementForView.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
-              <p><strong>الموظف:</strong> {mockEmployees.find(e => e.id === selectedSettlementForView.employeeId)?.name}</p>
-              <p><strong>نوع التسوية:</strong> {selectedSettlementForView.settlementType}</p>
-              <p><strong>حساب التسوية:</strong> {mockSettlementAccounts.find(a => a.id === selectedSettlementForView.accountId)?.name}</p>
-              <p><strong>المبلغ:</strong> {selectedSettlementForView.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
-              <p><strong>الوصف:</strong> {selectedSettlementForView.description}</p>
-              <p><strong>طريقة الدفع/الاسترداد:</strong> {selectedSettlementForView.paymentMethod}</p>
-              <p><strong>الحالة:</strong> <Badge 
+              <div><strong>رقم التسوية:</strong> {selectedSettlementForView.id}</div>
+              <div><strong>تاريخ التسوية:</strong> {selectedSettlementForView.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
+              <div><strong>الموظف:</strong> {mockEmployees.find(e => e.id === selectedSettlementForView.employeeId)?.name}</div>
+              <div><strong>نوع التسوية:</strong> {selectedSettlementForView.settlementType}</div>
+              <div><strong>حساب التسوية:</strong> {mockSettlementAccounts.find(a => a.id === selectedSettlementForView.accountId)?.name}</div>
+              <div><strong>المبلغ:</strong> {selectedSettlementForView.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</div>
+              <div><strong>الوصف:</strong> {selectedSettlementForView.description}</div>
+              <div><strong>طريقة الدفع/الاسترداد:</strong> {selectedSettlementForView.paymentMethod}</div>
+              <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge 
                   variant={
                       selectedSettlementForView.status === "معتمدة" || selectedSettlementForView.status === "مسددة بالكامل" ? "default" :
                       selectedSettlementForView.status === "ملغاة" ? "destructive" :
                       "outline"
                   }
                   className="whitespace-nowrap"
-              >{selectedSettlementForView.status}</Badge></p>
-              <p><strong>المرجع:</strong> {selectedSettlementForView.reference || "لا يوجد"}</p>
+              >{selectedSettlementForView.status}</Badge></div>
+              <div><strong>المرجع:</strong> {selectedSettlementForView.reference || "لا يوجد"}</div>
             </div>
           )}
           <DialogFooter>

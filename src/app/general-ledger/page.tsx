@@ -393,9 +393,10 @@ export default function GeneralLedgerPage() {
         <DialogContent className="sm:max-w-lg" dir="rtl">
           <DialogHeader><DialogTitle>تفاصيل القيد: {selectedJournalEntry?.id}</DialogTitle></DialogHeader>
           {selectedJournalEntry && (<div className="py-4 space-y-3">
-              <p><strong>التاريخ:</strong> {selectedJournalEntry.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p><p><strong>الوصف العام:</strong> {selectedJournalEntry.description}</p>
-              <p><strong>المبلغ الإجمالي:</strong> {selectedJournalEntry.totalAmount?.toFixed(2)} SAR</p>
-              <p><strong>الحالة:</strong> <Badge variant={selectedJournalEntry.status === "مرحل" ? "default" : "outline"}>{selectedJournalEntry.status}</Badge></p>
+              <div><strong>التاريخ:</strong> {selectedJournalEntry.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
+              <div><strong>الوصف العام:</strong> {selectedJournalEntry.description}</div>
+              <div><strong>المبلغ الإجمالي:</strong> {selectedJournalEntry.totalAmount?.toFixed(2)} SAR</div>
+              <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedJournalEntry.status === "مرحل" ? "default" : "outline"}>{selectedJournalEntry.status}</Badge></div>
               <h4 className="font-semibold mt-3">تفاصيل الحركات:</h4>
               {selectedJournalEntry.lines && selectedJournalEntry.lines.length > 0 ? (<Table>
                   <TableHeader><TableRow><TableHead>الحساب</TableHead><TableHead>مدين</TableHead><TableHead>دائن</TableHead><TableHead>الوصف</TableHead></TableRow></TableHeader>
