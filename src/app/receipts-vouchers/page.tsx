@@ -16,10 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import AppLogo from '@/components/app-logo'; // Assuming AppLogo exists
+import AppLogo from '@/components/app-logo'; 
 
 // Mock data initial state
 const initialReceiptVoucherData = [
@@ -162,6 +162,7 @@ export default function ReceiptsVouchersPage() {
         <DialogContent className="sm:max-w-lg" dir="rtl">
           <DialogHeader>
             <DialogTitle>{voucherToEdit ? `تعديل ${dialogType}` : `إنشاء ${dialogType} جديد`}</DialogTitle>
+            <DialogDescriptionComponent>أدخل تفاصيل السند.</DialogDescriptionComponent>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
@@ -328,16 +329,19 @@ export default function ReceiptsVouchersPage() {
       </Tabs>
 
        <Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
-        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl"> {/* Increased max-width for better A4 preview */}
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl"> 
           <DialogHeader className="print-hidden">
             <DialogTitle>طباعة السند: {selectedVoucherForPrint?.id}</DialogTitle>
+            <DialogDescriptionComponent>
+                معاينة السند قبل الطباعة.
+            </DialogDescriptionComponent>
           </DialogHeader>
           {selectedVoucherForPrint && (
-            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="receipt voucher">
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="voucher layout">
               {/* Header Section */}
               <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
                 <div className='flex items-center gap-2'>
-                  <AppLogo /> {/* Replace with your actual AppLogo component or an img tag */}
+                  <AppLogo />
                   <div>
                     <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2>
                     <p className="text-xs">Al-Mustaqbal IT Co.</p>
@@ -397,3 +401,4 @@ export default function ReceiptsVouchersPage() {
     </div>
   );
 }
+

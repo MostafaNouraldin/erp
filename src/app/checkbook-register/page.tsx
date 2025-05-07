@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button"; // Added buttonVariants
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PlusCircle, Edit, Trash2, Search, Printer, CheckCircle, Undo, Filter, BookCopy, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -51,7 +51,7 @@ const initialChecksData: CheckFormValues[] = [
 
 const convertAmountToWords = (amount: number) => {
   // This is a placeholder. A full implementation is complex.
-  return `فقط ${amount.toLocaleString('ar-EG')} ريال سعودي لا غير`; // Using ar-EG for broader compatibility if ar-SA has issues on some systems for toLocaleString with currency
+  return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`; 
 };
 
 export default function CheckbookRegisterPage() {
@@ -108,8 +108,7 @@ export default function CheckbookRegisterPage() {
   };
 
   const handleDeleteCheck = (checkId: string) => {
-    // Add actual deletion logic here, e.g., API call
-    setChecks(prev => prev.filter(chk => chk.id !== checkId && chk.status !== "مسدد")); // Example: prevent deletion if paid
+    setChecks(prev => prev.filter(chk => chk.id !== checkId && chk.status !== "مسدد")); 
   };
   
   const handleUpdateCheckStatus = (checkId: string, newStatus: CheckFormValues["status"]) => {
@@ -121,9 +120,10 @@ export default function CheckbookRegisterPage() {
     setShowPrintCheckDialog(true);
   };
 
-  const formatDate = (date: Date) => {
-    if (!isClient) return ''; // Prevents SSR mismatch
-    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+  const formatDate = (date: Date | string) => { // Accepts string for initial data
+    if (!isClient) return ''; 
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric', calendar: 'gregory' }).format(d);
   };
 
 
@@ -149,9 +149,10 @@ export default function CheckbookRegisterPage() {
               <PlusCircle className="me-2 h-4 w-4" /> إصدار شيك جديد
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-2xl" dir="rtl"> {/* Increased width here */}
+          <DialogContent className="sm:max-w-2xl" dir="rtl">
             <DialogHeader>
               <DialogTitle>{checkToEdit ? 'تعديل بيانات شيك' : 'إصدار شيك جديد'}</DialogTitle>
+              <DialogDescriptionComponent>أدخل تفاصيل الشيك.</DialogDescriptionComponent>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleCheckSubmit)} className="space-y-4 py-4">
@@ -249,8 +250,8 @@ export default function CheckbookRegisterPage() {
                 {checks.map((check) => (
                   <TableRow key={check.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{check.checkNumber}</TableCell>
-                    <TableCell>{isClient ? new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric', calendar: 'gregory' }).format(check.issueDate) : ''}</TableCell>
-                    <TableCell>{isClient ? new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'long', year: 'numeric', calendar: 'gregory' }).format(check.dueDate) : ''}</TableCell>
+                    <TableCell>{formatDate(check.issueDate)}</TableCell>
+                    <TableCell>{formatDate(check.dueDate)}</TableCell>
                     <TableCell>{mockBankAccounts.find(b => b.id === check.bankAccountId)?.name}</TableCell>
                     <TableCell>{check.beneficiaryName}</TableCell>
                     <TableCell>{check.amount.toLocaleString('ar-SA', { style: 'currency', currency: check.currency })}</TableCell>
@@ -307,9 +308,9 @@ export default function CheckbookRegisterPage() {
                               <AlertDialogContent dir="rtl">
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>تأكيد الإلغاء</AlertDialogTitle>
-                                  <AlertDialogDescription>
+                                  <AlertDialogDescriptionComponent>
                                     هل أنت متأكد من إلغاء الشيك رقم "{check.checkNumber}"؟
-                                  </AlertDialogDescription>
+                                  </AlertDialogDescriptionComponent>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>تراجع</AlertDialogCancel>
@@ -334,9 +335,9 @@ export default function CheckbookRegisterPage() {
                           <AlertDialogContent dir="rtl">
                             <AlertDialogHeader>
                               <AlertDialogTitle>تأكيد الارتجاع</AlertDialogTitle>
-                              <AlertDialogDescription>
+                              <AlertDialogDescriptionComponent>
                                 هل أنت متأكد من تسجيل الشيك رقم "{check.checkNumber}" كـ "مرتجع"؟
-                              </AlertDialogDescription>
+                              </AlertDialogDescriptionComponent>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>إلغاء</AlertDialogCancel>
@@ -358,37 +359,44 @@ export default function CheckbookRegisterPage() {
 
       {/* Dialog for Printing Check */}
       <Dialog open={showPrintCheckDialog} onOpenChange={setShowPrintCheckDialog}>
-        <DialogContent className="sm:max-w-4xl print-hidden" dir="rtl"> {/* Check layout might need wider dialog */}
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl"> 
           <DialogHeader className="print-hidden">
             <DialogTitle>طباعة شيك رقم: {selectedCheckForPrint?.checkNumber}</DialogTitle>
+            <DialogDescriptionComponent>معاينة الشيك قبل الطباعة.</DialogDescriptionComponent>
           </DialogHeader>
           {selectedCheckForPrint && isClient && (
-            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="bank check layout">
-              <div className="border-2 border-primary p-6 rounded-lg" style={{ width: '100%', aspectRatio: '2.1 / 1' }}> {/* Approx check aspect ratio */}
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">{mockBankAccounts.find(b => b.id === selectedCheckForPrint.bankAccountId)?.name}</h3>
-                    <p className="text-xs text-muted-foreground">فرع: [اسم الفرع هنا]</p> 
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs">التاريخ: {new Intl.DateTimeFormat('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' }).format(selectedCheckForPrint.issueDate)}</p>
+             <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="bank check print layout">
+                {/* Header Section */}
+                <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                    <div className='flex items-center gap-2'>
+                    <AppLogo />
+                    <div>
+                        <h2 className="text-lg font-bold">{mockBankAccounts.find(b => b.id === selectedCheckForPrint.bankAccountId)?.name || 'اسم البنك'}</h2>
+                        <p className="text-xs">فرع: [اسم الفرع هنا]</p> 
+                    </div>
+                    </div>
+                    <div className="text-left">
+                    <p className="text-xs">التاريخ: {formatDate(selectedCheckForPrint.issueDate)}</p>
+                    <p className="text-xs mt-1">تاريخ الاستحقاق: {formatDate(selectedCheckForPrint.dueDate)}</p>
                     <p className="text-lg font-bold mt-1">رقم الشيك: {selectedCheckForPrint.checkNumber}</p>
-                  </div>
+                    </div>
                 </div>
 
-                <div className="flex justify-between items-center mb-6">
-                  <span className="text-md">ادفعوا لأمر:</span>
-                  <span className="text-xl font-semibold border-b-2 border-dotted border-foreground flex-grow mx-4 text-center py-1">{selectedCheckForPrint.beneficiaryName}</span>
+                {/* Body Section - Details */}
+                <div className="flex justify-between items-center mb-6 text-md">
+                    <span>ادفعوا لأمر:</span>
+                    <span className="text-xl font-semibold border-b-2 border-dotted border-foreground flex-grow mx-4 text-center py-1">{selectedCheckForPrint.beneficiaryName}</span>
                 </div>
 
-                <div className="flex justify-between items-center mb-8">
-                  <span className="text-md">مبلغ وقدره:</span>
-                  <span className="text-lg border-b-2 border-dotted border-foreground flex-grow mx-4 text-center py-1" data-ai-hint="amount words">{convertAmountToWords(selectedCheckForPrint.amount)}</span>
-                  <div className="border-2 border-foreground p-2 rounded-md min-w-[120px] text-center">
-                     <span className="text-xl font-bold">{selectedCheckForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: selectedCheckForPrint.currency, minimumFractionDigits: 2 })}</span>
-                  </div>
+                <div className="flex justify-between items-center mb-8 text-md">
+                    <span>مبلغ وقدره:</span>
+                    <span className="text-lg border-b-2 border-dotted border-foreground flex-grow mx-4 text-center py-1" data-ai-hint="amount words">{convertAmountToWords(selectedCheckForPrint.amount)}</span>
+                    <div className="border-2 border-foreground p-2 rounded-md min-w-[150px] text-center"> {/* Increased min-width */}
+                        <span className="text-xl font-bold">{selectedCheckForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: selectedCheckForPrint.currency, minimumFractionDigits: 2 })}</span>
+                    </div>
                 </div>
                 
+                {/* Footer Section - Signatures and Purpose */}
                 <div className="flex justify-between items-end mt-10">
                     <div>
                         <p className="text-xs">الغرض: {selectedCheckForPrint.purpose}</p>
@@ -399,12 +407,11 @@ export default function CheckbookRegisterPage() {
                         <p className="text-xs">Authorized Signature</p>
                     </div>
                 </div>
-                 <p className="text-center text-xs text-muted-foreground mt-6 print:block hidden">هذا الشيك خاضع لشروط وأحكام البنك</p>
-              </div>
+                <p className="text-center text-xs text-muted-foreground mt-6 print:block hidden">هذا الشيك خاضع لشروط وأحكام البنك</p>
             </div>
           )}
           <DialogFooter className="print-hidden pt-4">
-            <Button onClick={() => window.print()} disabled={!selectedCheckForPrint}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+            <Button onClick={() => window.print()} disabled={!selectedCheckForPrint || !isClient}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
             <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -412,3 +419,4 @@ export default function CheckbookRegisterPage() {
     </div>
   );
 }
+

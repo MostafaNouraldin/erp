@@ -14,10 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import AppLogo from '@/components/app-logo'; // Added import for AppLogo
 
 // Mock Data
 const mockCashAccounts = [ // Treasury accounts
@@ -51,10 +52,19 @@ const initialCashExpensesData: CashExpenseFormValues[] = [
   { id: "CEXP003", date: new Date("2024-07-18"), cashAccountId: "CASH001", expenseAccountId: "5010", beneficiary: "عامل نظافة", description: "أجرة تنظيف طارئة", amount: 100, voucherNumber: "VN-2024-103", status: "مسودة" },
 ];
 
+// Placeholder for amount to words conversion
+const convertAmountToWords = (amount: number) => {
+  // This is a placeholder. A full implementation is complex.
+  return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
+};
+
+
 export default function CashExpensesPage() {
   const [cashExpenses, setCashExpenses] = useState(initialCashExpensesData);
   const [showManageExpenseDialog, setShowManageExpenseDialog] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<CashExpenseFormValues | null>(null);
+  const [showPrintExpenseDialog, setShowPrintExpenseDialog] = useState(false); // Added state for print dialog
+  const [selectedExpenseForPrint, setSelectedExpenseForPrint] = useState<CashExpenseFormValues | null>(null); // Added state for selected expense
 
   const form = useForm<CashExpenseFormValues>({
     resolver: zodResolver(cashExpenseSchema),
@@ -93,6 +103,11 @@ export default function CashExpensesPage() {
     } else {
         alert("لا يمكن إلغاء ترحيل هذا المصروف.");
     }
+  };
+  
+  const handlePrintExpense = (expense: CashExpenseFormValues) => { // Added print handler
+    setSelectedExpenseForPrint(expense);
+    setShowPrintExpenseDialog(true);
   };
 
 
@@ -217,7 +232,7 @@ export default function CashExpensesPage() {
                     <TableCell>{expense.voucherNumber || "-"}</TableCell>
                     <TableCell><Badge variant={expense.status === "مرحل" ? "default" : "outline"}>{expense.status}</Badge></TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة (مثال)" onClick={() => alert(`طباعة إيصال ${expense.id}`)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة" onClick={() => handlePrintExpense(expense)}>
                         <Printer className="h-4 w-4" />
                       </Button>
                       {expense.status === "مسودة" && (
@@ -254,6 +269,76 @@ export default function CashExpensesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog for Printing Cash Expense Voucher */}
+      <Dialog open={showPrintExpenseDialog} onOpenChange={setShowPrintExpenseDialog}>
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl">
+          <DialogHeader className="print-hidden">
+            <DialogTitle>طباعة إيصال مصروف نقدي: {selectedExpenseForPrint?.id}</DialogTitle>
+          </DialogHeader>
+          {selectedExpenseForPrint && (
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="voucher layout">
+              {/* Header Section */}
+              <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                <div className='flex items-center gap-2'>
+                  <AppLogo />
+                  <div>
+                    <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2>
+                    <p className="text-xs">Al-Mustaqbal IT Co.</p>
+                    <p className="text-xs">الرياض - المملكة العربية السعودية</p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-md font-semibold">إيصال مصروف نقدي</h3>
+                  <p className="text-xs">Cash Expense Voucher</p>
+                  <p className="text-xs mt-1">رقم: {selectedExpenseForPrint.voucherNumber || selectedExpenseForPrint.id}</p>
+                  <p className="text-xs">تاريخ: {new Date(selectedExpenseForPrint.date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</p>
+                </div>
+              </div>
+
+              {/* Body Section - Details */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-6 text-xs">
+                <div><strong>حساب الخزينة:</strong> {mockCashAccounts.find(c => c.id === selectedExpenseForPrint.cashAccountId)?.name}</div>
+                <div><strong>حساب المصروف:</strong> {mockExpenseAccounts.find(e => e.id === selectedExpenseForPrint.expenseAccountId)?.name}</div>
+                <div className="col-span-2"><strong>المستفيد:</strong> {selectedExpenseForPrint.beneficiary}</div>
+              </div>
+              <div className="mb-6 text-xs">
+                <p><strong>الوصف (البيان):</strong> {selectedExpenseForPrint.description}</p>
+              </div>
+              <div className="mb-8 p-3 border border-gray-300 rounded-md bg-muted/30 text-xs">
+                  <p><strong>المبلغ:</strong> <span className="font-bold text-base">{selectedExpenseForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</span></p>
+                  <p data-ai-hint="amount to words function"><strong>المبلغ كتابة:</strong> {convertAmountToWords(selectedExpenseForPrint.amount)}</p>
+              </div>
+
+              {/* Footer Section - Signatures */}
+              <div className="grid grid-cols-3 gap-4 mt-16 pt-6 border-t border-gray-300 text-xs">
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">المحاسب</p>
+                  <p>Accountant</p>
+                </div>
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">أمين الصندوق</p>
+                  <p>Treasurer</p>
+                </div>
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">المستلم</p>
+                  <p>Received by</p>
+                </div>
+              </div>
+              <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
+            </div>
+          )}
+          <DialogFooter className="print-hidden pt-4">
+            <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
+
