@@ -14,10 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog"; // Renamed DialogDescription
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import AppLogo from '@/components/app-logo'; // Assuming AppLogo exists for company logo
 
 // Mock Data
 const mockBankAccounts = [
@@ -54,10 +55,20 @@ const initialBankReceiptsData: BankReceiptFormValues[] = [
   { id: "BREC003", date: new Date("2024-07-19"), bankAccountId: "BANK001", revenueAccountId: "4030", payerName: "جهة خارجية", description: "إيرادات متنوعة", amount: 1200, referenceNumber: "MISC-REV-002", status: "مسودة" },
 ];
 
+// Placeholder for amount to words conversion
+const convertAmountToWords = (amount: number) => {
+  // This is a placeholder. A full implementation is complex.
+  return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
+};
+
+
 export default function BankReceiptsPage() {
   const [bankReceipts, setBankReceipts] = useState(initialBankReceiptsData);
   const [showManageReceiptDialog, setShowManageReceiptDialog] = useState(false);
   const [receiptToEdit, setReceiptToEdit] = useState<BankReceiptFormValues | null>(null);
+  const [showPrintReceiptDialog, setShowPrintReceiptDialog] = useState(false);
+  const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<BankReceiptFormValues | null>(null);
+
 
   const form = useForm<BankReceiptFormValues>({
     resolver: zodResolver(bankReceiptSchema),
@@ -97,6 +108,12 @@ export default function BankReceiptsPage() {
         alert("لا يمكن إلغاء ترحيل هذه المقبوضات لارتباطها بعمليات أخرى.");
     }
   };
+  
+  const handlePrintReceipt = (receipt: BankReceiptFormValues) => {
+    setSelectedReceiptForPrint(receipt);
+    setShowPrintReceiptDialog(true);
+  };
+
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -226,7 +243,7 @@ export default function BankReceiptsPage() {
                     <TableCell>{receipt.referenceNumber || "-"}</TableCell>
                     <TableCell><Badge variant={receipt.status === "مرحل" ? "default" : "outline"}>{receipt.status}</Badge></TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة (مثال)" onClick={() => alert(`طباعة إيصال ${receipt.id}`)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة" onClick={() => handlePrintReceipt(receipt)}>
                         <Printer className="h-4 w-4" />
                       </Button>
                       {receipt.status === "مسودة" && (
@@ -263,6 +280,78 @@ export default function BankReceiptsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog for Printing Receipt */}
+      <Dialog open={showPrintReceiptDialog} onOpenChange={setShowPrintReceiptDialog}>
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl">
+          <DialogHeader className="print-hidden">
+            <DialogTitle>طباعة إيصال مقبوضات بنكية: {selectedReceiptForPrint?.id}</DialogTitle>
+          </DialogHeader>
+          {selectedReceiptForPrint && (
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="receipt voucher">
+              {/* Header Section */}
+              <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                <div className='flex items-center gap-2'>
+                  <AppLogo />
+                  <div>
+                    <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2>
+                    <p className="text-xs">Al-Mustaqbal IT Co.</p>
+                    <p className="text-xs">الرياض - المملكة العربية السعودية</p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-md font-semibold">إيصال مقبوضات بنكية</h3>
+                  <p className="text-xs">Bank Receipt Voucher</p>
+                  <p className="text-xs mt-1">رقم: {selectedReceiptForPrint.id}</p>
+                  <p className="text-xs">تاريخ: {new Date(selectedReceiptForPrint.date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</p>
+                </div>
+              </div>
+
+              {/* Body Section - Details */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-6 text-xs">
+                <div><strong>الحساب البنكي (المستلم فيه):</strong> {mockBankAccounts.find(b => b.id === selectedReceiptForPrint.bankAccountId)?.name}</div>
+                <div><strong>حساب الإيراد:</strong> {mockRevenueAccounts.find(e => e.id === selectedReceiptForPrint.revenueAccountId)?.name}</div>
+                <div className="col-span-2"><strong>الدافع:</strong> {selectedReceiptForPrint.payerName}</div>
+                {selectedReceiptForPrint.customerId && <div className="col-span-2"><strong>العميل:</strong> {mockCustomers.find(c => c.id === selectedReceiptForPrint.customerId)?.name}</div>}
+                <div className="col-span-2"><strong>الرقم المرجعي:</strong> {selectedReceiptForPrint.referenceNumber || "لا يوجد"}</div>
+              </div>
+              <div className="mb-6 text-xs">
+                <p><strong>الوصف (البيان):</strong> {selectedReceiptForPrint.description}</p>
+              </div>
+              <div className="mb-8 p-3 border border-gray-300 rounded-md bg-muted/30 text-xs">
+                  <p><strong>المبلغ:</strong> <span className="font-bold text-base">{selectedReceiptForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</span></p>
+                  <p data-ai-hint="amount words"><strong>المبلغ كتابة:</strong> {convertAmountToWords(selectedReceiptForPrint.amount)}</p>
+              </div>
+
+              {/* Footer Section - Signatures */}
+              <div className="grid grid-cols-3 gap-4 mt-16 pt-6 border-t border-gray-300 text-xs">
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">المحاسب</p>
+                  <p>Accountant</p>
+                </div>
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">أمين الصندوق/المدير المالي</p>
+                  <p>Treasurer/Finance Manager</p>
+                </div>
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">المستلم (الموقع)</p>
+                  <p>Received by (Signature)</p>
+                </div>
+              </div>
+              <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
+            </div>
+          )}
+          <DialogFooter className="print-hidden pt-4">
+            <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
+

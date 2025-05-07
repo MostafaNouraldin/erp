@@ -608,7 +608,19 @@ export default function AccountsPayableReceivablePage() {
               <div><strong>المبلغ الإجمالي:</strong> {selectedInvoiceForView.totalAmount?.toFixed(2)} SAR</div>
               <div><strong>المبلغ المدفوع:</strong> {selectedInvoiceForView.paidAmount?.toFixed(2)} SAR</div>
               <div><strong>المبلغ المتبقي:</strong> {selectedInvoiceForView.remainingAmount?.toFixed(2)} SAR</div>
-              <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedInvoiceForView.status === "مدفوع" ? "default" : selectedInvoiceForView.status === "جزئي" ? "secondary" : selectedInvoiceForView.status === "متأخر" ? "destructive" : "outline"}>{selectedInvoiceForView.status}</Badge></div>
+              <div className="flex items-center gap-2">
+                <strong>الحالة:</strong>{' '}
+                <Badge
+                    variant={
+                        selectedInvoiceForView.status === "مدفوع" ? "default" :
+                        selectedInvoiceForView.status === "جزئي" ? "secondary" :
+                        selectedInvoiceForView.status === "متأخر" ? "destructive" :
+                        "outline"
+                    }
+                >
+                    {selectedInvoiceForView.status}
+                </Badge>
+              </div>
               <div><strong>ملاحظات:</strong> {selectedInvoiceForView.notes || 'لا يوجد'}</div>
                <h4 className="font-semibold pt-2 border-t mt-3">الأصناف:</h4>
                 {selectedInvoiceForView.items && selectedInvoiceForView.items.length > 0 ? (
@@ -672,3 +684,4 @@ export default function AccountsPayableReceivablePage() {
     </div>
   );
 }
+
