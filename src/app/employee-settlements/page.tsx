@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -55,6 +55,9 @@ export default function EmployeeSettlementsPage() {
   const [settlements, setSettlements] = useState(initialSettlementsData);
   const [showManageSettlementDialog, setShowManageSettlementDialog] = useState(false);
   const [settlementToEdit, setSettlementToEdit] = useState<SettlementFormValues | null>(null);
+  const [showViewSettlementDialog, setShowViewSettlementDialog] = useState(false);
+  const [selectedSettlementForView, setSelectedSettlementForView] = useState<SettlementFormValues | null>(null);
+
 
   const form = useForm<SettlementFormValues>({
     resolver: zodResolver(settlementSchema),
@@ -88,14 +91,19 @@ export default function EmployeeSettlementsPage() {
   };
 
   const handleCancelSettlement = (settlementId: string) => {
-     // Check if cancellation is allowed (e.g. not already partially paid)
      const settlement = settlements.find(s => s.id === settlementId);
-     if (settlement && settlement.status === "مسودة") {
+     if (settlement && (settlement.status === "مسودة" || settlement.status === "معتمدة")) { // Allow cancelling if مسودة or معتمدة
         setSettlements(prev => prev.map(set => set.id === settlementId ? { ...set, status: "ملغاة" } : set));
      } else {
-        alert("لا يمكن إلغاء هذه التسوية لأنها ليست في حالة مسودة.");
+        alert("لا يمكن إلغاء هذه التسوية لأنها ليست في حالة مسودة أو معتمدة.");
      }
   };
+
+  const handleViewSettlement = (settlement: SettlementFormValues) => {
+    setSelectedSettlementForView(settlement);
+    setShowViewSettlementDialog(true);
+  };
+
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -243,7 +251,7 @@ export default function EmployeeSettlementsPage() {
                         >{set.status}</Badge>
                     </TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => alert(`عرض تفاصيل تسوية ${set.id}`)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewSettlement(set)}>
                         <FileText className="h-4 w-4" />
                       </Button>
                       {set.status === "مسودة" && (
@@ -267,12 +275,11 @@ export default function EmployeeSettlementsPage() {
                           </Button>
                         </>
                       )}
-                       {set.status === "معتمدة" && (
+                       {(set.status === "معتمدة" || set.status === "مسودة") && set.status !== "ملغاة" && ( // Allow cancelling if معتمدة or مسودة but not already ملغاة
                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 dark:hover:bg-red-800" title="إلغاء التسوية" onClick={() => handleCancelSettlement(set.id!)}>
                             <Undo className="h-4 w-4 text-red-600 dark:text-red-400" />
                          </Button>
                       )}
-                      {/* Add button for recording payment/deduction if applicable */}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -281,6 +288,41 @@ export default function EmployeeSettlementsPage() {
           </div>
         </CardContent>
       </Card>
+
+       {/* Dialog for Viewing Settlement */}
+       <Dialog open={showViewSettlementDialog} onOpenChange={setShowViewSettlementDialog}>
+        <DialogContent className="sm:max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل التسوية: {selectedSettlementForView?.id}</DialogTitle>
+            <DialogDescription>عرض تفاصيل التسوية للموظف.</DialogDescription>
+          </DialogHeader>
+          {selectedSettlementForView && (
+            <div className="py-4 space-y-3">
+              <p><strong>رقم التسوية:</strong> {selectedSettlementForView.id}</p>
+              <p><strong>تاريخ التسوية:</strong> {selectedSettlementForView.date.toLocaleDateString('ar-SA')}</p>
+              <p><strong>الموظف:</strong> {mockEmployees.find(e => e.id === selectedSettlementForView.employeeId)?.name}</p>
+              <p><strong>نوع التسوية:</strong> {selectedSettlementForView.settlementType}</p>
+              <p><strong>حساب التسوية:</strong> {mockSettlementAccounts.find(a => a.id === selectedSettlementForView.accountId)?.name}</p>
+              <p><strong>المبلغ:</strong> {selectedSettlementForView.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
+              <p><strong>الوصف:</strong> {selectedSettlementForView.description}</p>
+              <p><strong>طريقة الدفع/الاسترداد:</strong> {selectedSettlementForView.paymentMethod}</p>
+              <p><strong>الحالة:</strong> <Badge 
+                  variant={
+                      selectedSettlementForView.status === "معتمدة" || selectedSettlementForView.status === "مسددة بالكامل" ? "default" :
+                      selectedSettlementForView.status === "ملغاة" ? "destructive" :
+                      "outline"
+                  }
+                  className="whitespace-nowrap"
+              >{selectedSettlementForView.status}</Badge></p>
+              <p><strong>المرجع:</strong> {selectedSettlementForView.reference || "لا يوجد"}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild><Button type="button">إغلاق</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

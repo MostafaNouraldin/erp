@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog"; // Renamed DialogDescription
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -55,6 +55,9 @@ export default function BankExpensesPage() {
   const [bankExpenses, setBankExpenses] = useState(initialBankExpensesData);
   const [showManageExpenseDialog, setShowManageExpenseDialog] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<BankExpenseFormValues | null>(null);
+  const [showPrintExpenseDialog, setShowPrintExpenseDialog] = useState(false);
+  const [selectedExpenseForPrint, setSelectedExpenseForPrint] = useState<BankExpenseFormValues | null>(null);
+
 
   const form = useForm<BankExpenseFormValues>({
     resolver: zodResolver(bankExpenseSchema),
@@ -88,12 +91,16 @@ export default function BankExpensesPage() {
   };
 
   const handleUnpostExpense = (expenseId: string) => {
-    // Add logic to check if unposting is allowed (e.g., not linked to reconciled bank statement)
-    if(expenseId !== "BEXP001" && expenseId !== "BEXP002"){ // Mock check
+    if(expenseId !== "BEXP001" && expenseId !== "BEXP002"){ 
         setBankExpenses(prev => prev.map(exp => exp.id === expenseId ? { ...exp, status: "مسودة" } : exp));
     } else {
         alert("لا يمكن إلغاء ترحيل هذا المصروف لارتباطه بعمليات أخرى.");
     }
+  };
+
+  const handlePrintExpense = (expense: BankExpenseFormValues) => {
+    setSelectedExpenseForPrint(expense);
+    setShowPrintExpenseDialog(true);
   };
 
 
@@ -218,7 +225,7 @@ export default function BankExpensesPage() {
                     <TableCell>{expense.referenceNumber || "-"}</TableCell>
                     <TableCell><Badge variant={expense.status === "مرحل" ? "default" : "outline"}>{expense.status}</Badge></TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة (مثال)" onClick={() => alert(`طباعة مصروف ${expense.id}`)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة" onClick={() => handlePrintExpense(expense)}>
                         <Printer className="h-4 w-4" />
                       </Button>
                       {expense.status === "مسودة" && (
@@ -255,6 +262,43 @@ export default function BankExpensesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog for Printing Expense */}
+      <Dialog open={showPrintExpenseDialog} onOpenChange={setShowPrintExpenseDialog}>
+        <DialogContent className="sm:max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>طباعة مصروف بنكي: {selectedExpenseForPrint?.id}</DialogTitle>
+          </DialogHeader>
+          {selectedExpenseForPrint && (
+            <div className="py-4 space-y-3 border rounded-md p-4 my-4">
+              <div className="flex justify-between items-center mb-4 pb-2 border-b">
+                  <h3 className="text-xl font-semibold">شركة المستقبل ERP</h3>
+                  <p className="text-sm">إيصال مصروف بنكي</p>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <p><strong>رقم الإيصال:</strong> {selectedExpenseForPrint.id}</p>
+                  <p><strong>التاريخ:</strong> {new Date(selectedExpenseForPrint.date).toLocaleDateString('ar-SA')}</p>
+                  <p><strong>الحساب البنكي:</strong> {mockBankAccounts.find(b => b.id === selectedExpenseForPrint.bankAccountId)?.name}</p>
+                  <p><strong>حساب المصروف:</strong> {mockExpenseAccounts.find(e => e.id === selectedExpenseForPrint.expenseAccountId)?.name}</p>
+                  <p><strong>المستفيد:</strong> {selectedExpenseForPrint.beneficiary}</p>
+                  <p><strong>المبلغ:</strong> {selectedExpenseForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
+                  <p className="col-span-2"><strong>المبلغ كتابة:</strong> {/* TODO: Implement number to words conversion */} {selectedExpenseForPrint.amount.toLocaleString('ar-SA')} ريال سعودي فقط لا غير.</p>
+                  <p className="col-span-2"><strong>الوصف:</strong> {selectedExpenseForPrint.description}</p>
+                  <p><strong>الرقم المرجعي:</strong> {selectedExpenseForPrint.referenceNumber || "لا يوجد"}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-8 pt-4 border-t">
+                  <div className="text-center"><p className="mb-6">.........................</p><p className="text-sm font-semibold">توقيع المحاسب</p></div>
+                  <div className="text-center"><p className="mb-6">.........................</p><p className="text-sm font-semibold">توقيع المدير المالي</p></div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => { alert(`جاري طباعة إيصال ${selectedExpenseForPrint?.id}`); setShowPrintExpenseDialog(false); }}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
