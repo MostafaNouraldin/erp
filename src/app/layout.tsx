@@ -7,7 +7,7 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Briefcase, Building, Printer, BarChart2, Cog, FilePlus, FileOutput, FileCheck, FileClock, Banknote, Warehouse, Truck, Repeat, Search, CircleHelp, Bell, BookUser, BookOpen } from "lucide-react"; 
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Briefcase, Building, Printer, BarChart2, Cog, FilePlus, FileOutput, FileCheck, FileClock, Banknote, Warehouse, Truck, Repeat, Search, CircleHelp, Bell, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy } from "lucide-react"; 
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -41,8 +41,15 @@ const navItems = [
     module: "Accounting",
     subItems: [
       { href: "/general-ledger", label: "الحسابات العامة", icon: BookOpen }, 
-      { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer }, // Changed icon from Banknote to Printer
+      { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer },
       { href: "/accounts-payable-receivable", label: "الحسابات المدينة والدائنة", icon: Users },
+      { href: "/banks", label: "البنوك", icon: Landmark },
+      { href: "/opening-balances", label: "الأرصدة الافتتاحية", icon: FileArchive },
+      { href: "/bank-expenses", label: "المصروفات البنكية", icon: ArrowDownCircle },
+      { href: "/cash-expenses", label: "المصروفات النقدية", icon: ArrowDownSquare },
+      { href: "/bank-receipts", label: "المقبوضات البنكية", icon: ArrowUpCircle },
+      { href: "/employee-settlements", label: "تسوية حسابات الموظفين", icon: UserCheck },
+      { href: "/checkbook-register", label: "دفتر الشيكات", icon: BookCopy },
     ],
   },
   {
