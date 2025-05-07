@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -13,10 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import AppLogo from '@/components/app-logo'; // Assuming AppLogo exists
 
 // Mock Data
 const mockBankAccounts = [
@@ -62,6 +62,12 @@ const initialChecksData: CheckRecord[] = [
     { id: "CHK005", checkbookId: "CHKBOOK002", checkNumber: 201, issueDate: new Date("2024-07-20"), payee: "مصروفات مكتبية", amount: 750, status: "صادر" },
 ];
 
+// Placeholder for amount to words conversion
+const convertAmountToWords = (amount: number) => {
+  // This is a placeholder. A full implementation is complex.
+  return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
+};
+
 
 export default function CheckbookRegisterPage() {
   const [checkbooks, setCheckbooks] = useState(initialCheckbooksData);
@@ -73,7 +79,9 @@ export default function CheckbookRegisterPage() {
   // For managing individual checks (simplified for this example)
   const [showManageCheckDialog, setShowManageCheckDialog] = useState(false);
   const [checkToEdit, setCheckToEdit] = useState<CheckRecord | null>(null);
-  const [selectedCheckbookForNewCheck, setSelectedCheckbookForNewCheck] = useState<string | null>(null);
+  
+  const [showPrintCheckDialog, setShowPrintCheckDialog] = useState(false);
+  const [selectedCheckForPrint, setSelectedCheckForPrint] = useState<CheckRecord | null>(null);
 
 
   const checkbookForm = useForm<CheckbookFormValues>({
@@ -132,6 +140,12 @@ export default function CheckbookRegisterPage() {
   };
 
   const handleDeleteCheckbook = (checkbookId: string) => {
+    // In a real app, ensure no checks are 'صادر' or 'مسحوب'
+    const hasActiveChecks = checks.some(chk => chk.checkbookId === checkbookId && (chk.status === "صادر" || chk.status === "مسحوب"));
+    if (hasActiveChecks) {
+        alert("لا يمكن حذف دفتر شيكات يحتوي على شيكات صادرة أو مسحوبة.");
+        return;
+    }
     setCheckbooks(prev => prev.filter(cb => cb.id !== checkbookId));
     setChecks(prev => prev.filter(chk => chk.checkbookId !== checkbookId)); // Also remove its checks
   };
@@ -148,6 +162,11 @@ export default function CheckbookRegisterPage() {
       setCheckToEdit(check);
       setShowManageCheckDialog(true);
   }
+  
+  const handlePrintCheck = (check: CheckRecord) => {
+    setSelectedCheckForPrint(check);
+    setShowPrintCheckDialog(true);
+  };
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -221,7 +240,7 @@ export default function CheckbookRegisterPage() {
                         <TableRow key={cb.id} className="hover:bg-muted/50">
                             <TableCell className="font-medium">{mockBankAccounts.find(b => b.id === cb.bankAccountId)?.name}</TableCell>
                             <TableCell>{cb.startSerial} - {cb.endSerial}</TableCell>
-                            <TableCell>{cb.issueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
+                            <TableCell>{cb.issueDate.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</TableCell>
                             <TableCell>{cb.notes || "-"}</TableCell>
                             <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض الشيكات" onClick={() => alert(`عرض شيكات دفتر ${cb.id}`)}>
@@ -249,7 +268,6 @@ export default function CheckbookRegisterPage() {
       <div className="my-6">
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">سجل الشيكات</h2>
-            {/* Individual Check Dialog (for issuing/updating status) */}
              <Dialog open={showManageCheckDialog} onOpenChange={(isOpen) => { setShowManageCheckDialog(isOpen); if (!isOpen) setCheckToEdit(null); }}>
                 <DialogContent className="sm:max-w-md" dir="rtl">
                     <DialogHeader><DialogTitle>إدارة الشيك رقم: {checkToEdit?.checkNumber}</DialogTitle></DialogHeader>
@@ -319,7 +337,7 @@ export default function CheckbookRegisterPage() {
                         <TableRow key={chk.id} className="hover:bg-muted/50">
                             <TableCell className="font-medium">{chk.checkNumber}</TableCell>
                             <TableCell>{checkbooks.find(cb => cb.id === chk.checkbookId)?.bankAccountId.substring(0,10)}... ({checkbooks.find(cb => cb.id === chk.checkbookId)?.startSerial})</TableCell>
-                            <TableCell>{chk.status !== "متاح" ? chk.issueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' }) : "-"}</TableCell>
+                            <TableCell>{chk.status !== "متاح" ? chk.issueDate.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' }) : "-"}</TableCell>
                             <TableCell>{chk.payee || "-"}</TableCell>
                             <TableCell>{chk.amount > 0 ? chk.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' }) : "-"}</TableCell>
                             <TableCell>
@@ -328,7 +346,7 @@ export default function CheckbookRegisterPage() {
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                                {chk.status !== "متاح" && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة الشيك (مثال)" onClick={() => alert(`طباعة الشيك ${chk.checkNumber}`)}><Printer className="h-4 w-4" /></Button>}
+                                {chk.status !== "متاح" && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة الشيك" onClick={() => handlePrintCheck(chk)}><Printer className="h-4 w-4" /></Button>}
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title={chk.status === "متاح" ? "إصدار الشيك" : "تعديل/عرض حالة الشيك"} onClick={() => openManageCheckDialog(chk)}>
                                     {chk.status === "متاح" ? <PlusCircle className="h-4 w-4 text-green-600"/> : <Edit className="h-4 w-4" />}
                                 </Button>
@@ -340,6 +358,89 @@ export default function CheckbookRegisterPage() {
             </CardContent>
         </Card>
       </div>
+
+      {/* Dialog for Printing Check */}
+      <Dialog open={showPrintCheckDialog} onOpenChange={setShowPrintCheckDialog}>
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl">
+          <DialogHeader className="print-hidden">
+            <DialogTitle>طباعة شيك رقم: {selectedCheckForPrint?.checkNumber}</DialogTitle>
+          </DialogHeader>
+          {selectedCheckForPrint && (() => {
+            const checkbookDetails = checkbooks.find(cb => cb.id === selectedCheckForPrint.checkbookId);
+            const bankAccountDetails = mockBankAccounts.find(ba => ba.id === checkbookDetails?.bankAccountId);
+            return (
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="cheque layout">
+              {/* Header Section (Company info - optional for a cheque but good for context) */}
+              <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                <div className='flex items-center gap-2'>
+                  <AppLogo />
+                  <div>
+                    <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2>
+                    <p className="text-xs">Al-Mustaqbal IT Co.</p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-md font-semibold">شيك / Cheque</h3>
+                  <p className="text-xs mt-1">رقم الشيك: <span className="font-mono">{selectedCheckForPrint.checkNumber}</span></p>
+                  <p className="text-xs">البنك: {bankAccountDetails?.name || checkbookDetails?.bankAccountId}</p>
+                </div>
+              </div>
+
+              {/* Cheque Body */}
+              <div className="border border-gray-400 rounded-lg p-6 bg-muted/20 font-serif" data-ai-hint="bank cheque">
+                <div className="flex justify-between items-center mb-4">
+                    <span className="text-xs">التاريخ / Date</span>
+                    <span className="border-b-2 border-dotted border-gray-600 px-8 py-1 text-center text-base font-medium tracking-wider">
+                        {new Date(selectedCheckForPrint.issueDate).toLocaleDateString('ar-SA', { day: '2-digit', month: '2-digit', year: 'numeric', calendar: 'gregory' })}
+                    </span>
+                </div>
+
+                <div className="flex items-center mb-4">
+                    <span className="text-xs whitespace-nowrap me-2">ادفعوا لأمر / Pay to the order of</span>
+                    <span className="border-b-2 border-dotted border-gray-600 px-4 py-1 flex-grow text-right text-base font-medium">
+                        {selectedCheckForPrint.payee}
+                    </span>
+                </div>
+
+                <div className="flex items-center mb-6">
+                    <span className="text-xs whitespace-nowrap me-2">مبلغ وقدره / The sum of</span>
+                    <span className="border-b-2 border-dotted border-gray-600 px-4 py-1 flex-grow text-right text-sm">
+                        {convertAmountToWords(selectedCheckForPrint.amount)}
+                    </span>
+                </div>
+                
+                <div className="flex justify-end items-center mb-8">
+                    <span className="text-xs me-2">المبلغ</span>
+                    <span className="border-2 border-gray-500 rounded px-4 py-2 text-lg font-bold tracking-wider bg-white">
+                        SAR {selectedCheckForPrint.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                </div>
+
+                <div className="flex justify-between items-end mt-10">
+                    <div className="text-xs text-muted-foreground w-1/3">
+                        <p>ملاحظات: {selectedCheckForPrint.notes || "لا يوجد"}</p>
+                        {selectedCheckForPrint.status === "ملغي" && <p className="text-destructive font-bold">ملغي</p>}
+                    </div>
+                    <div className="w-1/3 text-center">
+                        <p className="border-t-2 border-dotted border-gray-600 pt-1 text-xs">التوقيع المعتمد / Authorized Signature</p>
+                    </div>
+                     <div className="w-1/3 text-left text-xs text-muted-foreground">
+                        <p>Account No: {bankAccountDetails?.name.split(' ').pop()}</p>
+                    </div>
+                </div>
+                 <p className="text-center text-xs text-muted-foreground mt-6 print:block hidden">
+                    هذا الشيك صادر من نظام المستقبل ERP - شركة المستقبل لتقنية المعلومات
+                 </p>
+              </div>
+            </div>
+          )}}
+          <DialogFooter className="print-hidden pt-4">
+            <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
