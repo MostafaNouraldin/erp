@@ -48,8 +48,8 @@ export default function ProjectsPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 bg-muted p-1 rounded-md">
+      <Tabs defaultValue="overview" className="w-full" dir="rtl">
+        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="overview" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <Building className="inline-block me-2 h-4 w-4" /> نظرة عامة على المشاريع
           </TabsTrigger>

@@ -50,8 +50,8 @@ export default function SalesPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="quotations" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 bg-muted p-1 rounded-md">
+      <Tabs defaultValue="quotations" className="w-full" dir="rtl">
+        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="quotations" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <FileSignature className="inline-block me-2 h-4 w-4" /> عروض الأسعار
           </TabsTrigger>

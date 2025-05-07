@@ -45,8 +45,8 @@ export default function PurchasesPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="purchaseOrders" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6 bg-muted p-1 rounded-md">
+      <Tabs defaultValue="purchaseOrders" className="w-full" dir="rtl">
+        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="purchaseOrders" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <FilePlus className="inline-block me-2 h-4 w-4" /> أوامر الشراء (PO)
           </TabsTrigger>
