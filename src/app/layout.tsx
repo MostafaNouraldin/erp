@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { Cairo } from "next/font/google"; // Changed from Inter to Cairo
 import "./globals.css";
@@ -6,7 +7,7 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Briefcase, Building, Printer, BarChart2, Cog, FilePlus, FileOutput, FileCheck, FileClock, Banknote, Warehouse, Truck, Repeat, Search, CircleHelp, Bell } from "lucide-react"; // Removed Sun, Moon as ModeToggle handles them
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Briefcase, Building, Printer, BarChart2, Cog, FilePlus, FileOutput, FileCheck, FileClock, Banknote, Warehouse, Truck, Repeat, Search, CircleHelp, Bell, BookUser, BookOpen } from "lucide-react"; // Removed Sun, Moon as ModeToggle handles them
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -36,10 +37,10 @@ const navItems = [
   { href: "/", label: "لوحة التحكم", icon: LayoutDashboard, module: "Dashboard" },
   {
     label: "الحسابات",
-    icon: FileText,
+    icon: BookUser, // Changed from FileText for better context
     module: "Accounting",
     subItems: [
-      { href: "/general-ledger", label: "الحسابات العامة", icon: FileText },
+      { href: "/general-ledger", label: "الحسابات العامة", icon: BookOpen }, // Changed icon
       { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer },
       { href: "/accounts-payable-receivable", label: "الحسابات المدينة والدائنة", icon: Users },
     ],
@@ -100,11 +101,11 @@ export default function RootLayout({
                                 <span className="truncate">{item.label}</span>
                               </SidebarMenuButton>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent side="left" align="start" className="w-56"> {/* Changed side to 'left' */}
+                            <DropdownMenuContent side="left" align="start" className="w-56" dir="rtl"> {/* Changed side to 'left' and added dir="rtl" */}
                               {item.subItems.map(subItem => (
                                 <Link href={subItem.href} key={subItem.label} passHref>
                                   <DropdownMenuItem className="cursor-pointer">
-                                    <subItem.icon className="ml-2 h-4 w-4" /> {/* Changed mr-2 to ml-2 for RTL */}
+                                    <subItem.icon className="me-2 h-4 w-4" /> {/* Changed ml-2 to me-2 for RTL */}
                                     {subItem.label}
                                   </DropdownMenuItem>
                                 </Link>
@@ -138,7 +139,7 @@ export default function RootLayout({
                   <div className="flex-1">
                     {/* Optional: Breadcrumbs or page title can go here */}
                   </div>
-                   <SidebarTrigger className="md:hidden order-last" /> {/* Added order-last to move trigger to the left in RTL */}
+                   <SidebarTrigger className="md:hidden order-first md:order-last" /> {/* Adjusted order for RTL */}
                   <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" aria-label="Search">
                       <Search className="h-5 w-5" />
@@ -158,9 +159,9 @@ export default function RootLayout({
                             </Avatar>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuContent className="w-56" align="end" forceMount dir="rtl"> {/* Added dir="rtl" */}
                           <DropdownMenuLabel className="font-normal">
-                            <div className="flex flex-col space-y-1">
+                            <div className="flex flex-col space-y-1 text-right"> {/* Added text-right */}
                               <p className="text-sm font-medium leading-none">{user.name}</p>
                               <p className="text-xs leading-none text-muted-foreground">
                                 {user.email}
@@ -169,16 +170,16 @@ export default function RootLayout({
                           </DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>
-                            <UserCircle className="ml-2 h-4 w-4" /> {/* Changed mr-2 to ml-2 for RTL */}
+                            <UserCircle className="me-2 h-4 w-4" /> {/* Changed ml-2 to me-2 for RTL */}
                             <span>الملف الشخصي</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <Settings className="ml-2 h-4 w-4" /> {/* Changed mr-2 to ml-2 for RTL */}
+                            <Settings className="me-2 h-4 w-4" /> {/* Changed ml-2 to me-2 for RTL */}
                             <span>الإعدادات</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>
-                            <LogOut className="ml-2 h-4 w-4" /> {/* Changed mr-2 to ml-2 for RTL */}
+                            <LogOut className="me-2 h-4 w-4" /> {/* Changed ml-2 to me-2 for RTL */}
                             <span>تسجيل الخروج</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -198,4 +199,3 @@ export default function RootLayout({
     </html>
   );
 }
-

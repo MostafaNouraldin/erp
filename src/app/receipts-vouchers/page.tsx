@@ -1,15 +1,21 @@
 
 "use client";
 
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Printer, Search, Filter, FileDown, Banknote, Building } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Printer, Search, Filter, FileDown, Banknote, Building, FileText, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { DatePickerWithPresets } from "@/components/date-picker-with-presets"; // Assuming this component exists
+import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // Mock data - replace with actual data fetching
 const receiptVoucherData = [
@@ -27,24 +33,129 @@ const treasuryMovementData = [
 
 
 export default function ReceiptsVouchersPage() {
+  const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false);
+  const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [selectedVoucherForPrint, setSelectedVoucherForPrint] = useState<typeof receiptVoucherData[0] | null>(null);
+
+  const handlePrintVoucher = (voucher: typeof receiptVoucherData[0]) => {
+    setSelectedVoucherForPrint(voucher);
+    setShowPrintDialog(true);
+  }
+
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">سندات القبض والصرف</h1>
         <div className="flex gap-2">
-            <Button className="shadow-md hover:shadow-lg transition-shadow">
-                <PlusCircle className="ms-2 h-4 w-4" /> إنشاء سند قبض
-            </Button>
-            <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow">
-                <PlusCircle className="ms-2 h-4 w-4" /> إنشاء سند صرف
-            </Button>
+            <Dialog open={showCreateReceiptDialog} onOpenChange={setShowCreateReceiptDialog}>
+              <DialogTrigger asChild>
+                <Button className="shadow-md hover:shadow-lg transition-shadow">
+                    <PlusCircle className="me-2 h-4 w-4" /> إنشاء سند قبض
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle>إنشاء سند قبض جديد</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  {/* Form fields for new receipt voucher */}
+                  <div className="space-y-1">
+                    <Label htmlFor="receiptDate">التاريخ</Label>
+                    <DatePickerWithPresets mode="single" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="receiptParty">الجهة (العميل)</Label>
+                    <Input id="receiptParty" placeholder="اسم العميل" className="bg-background"/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="receiptAmount">المبلغ</Label>
+                    <Input id="receiptAmount" type="number" placeholder="0.00" className="bg-background"/>
+                  </div>
+                   <div className="space-y-1">
+                    <Label htmlFor="receiptMethod">طريقة القبض</Label>
+                    <Select dir="rtl" defaultValue="cash">
+                        <SelectTrigger id="receiptMethod" className="bg-background">
+                            <SelectValue placeholder="اختر طريقة القبض" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="cash">نقدي</SelectItem>
+                            <SelectItem value="bank">بنكي</SelectItem>
+                            <SelectItem value="cheque">شيك</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="receiptNotes">ملاحظات</Label>
+                    <Textarea id="receiptNotes" placeholder="ملاحظات إضافية" className="bg-background"/>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" onClick={() => setShowCreateReceiptDialog(false)}>حفظ السند</Button>
+                  <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={showCreatePaymentDialog} onOpenChange={setShowCreatePaymentDialog}>
+              <DialogTrigger asChild>
+                 <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow">
+                    <PlusCircle className="me-2 h-4 w-4" /> إنشاء سند صرف
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle>إنشاء سند صرف جديد</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  {/* Form fields for new payment voucher */}
+                   <div className="space-y-1">
+                    <Label htmlFor="paymentDate">التاريخ</Label>
+                    <DatePickerWithPresets mode="single" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="paymentParty">الجهة (المورد/المصروف)</Label>
+                    <Input id="paymentParty" placeholder="اسم المورد أو نوع المصروف" className="bg-background"/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="paymentAmount">المبلغ</Label>
+                    <Input id="paymentAmount" type="number" placeholder="0.00" className="bg-background"/>
+                  </div>
+                   <div className="space-y-1">
+                    <Label htmlFor="paymentMethod">طريقة الصرف</Label>
+                    <Select dir="rtl" defaultValue="cash">
+                        <SelectTrigger id="paymentMethod" className="bg-background">
+                            <SelectValue placeholder="اختر طريقة الصرف" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="cash">نقدي</SelectItem>
+                            <SelectItem value="bank">بنكي</SelectItem>
+                            <SelectItem value="cheque">شيك</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="paymentNotes">ملاحظات</Label>
+                    <Textarea id="paymentNotes" placeholder="ملاحظات إضافية" className="bg-background"/>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" onClick={() => setShowCreatePaymentDialog(false)}>حفظ السند</Button>
+                  <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
         </div>
       </div>
 
       <Tabs defaultValue="allVouchers" className="w-full">
         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 mb-6 bg-muted p-1 rounded-md">
-          <TabsTrigger value="allVouchers" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">جميع السندات</TabsTrigger>
-          <TabsTrigger value="treasuryMovement" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">حركة الخزينة اليومية</TabsTrigger>
+          <TabsTrigger value="allVouchers" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+            <FileText className="inline-block me-2 h-4 w-4" /> جميع السندات
+          </TabsTrigger>
+          <TabsTrigger value="treasuryMovement" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+            <Wallet className="inline-block me-2 h-4 w-4" /> حركة الخزينة اليومية
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="allVouchers">
@@ -56,31 +167,36 @@ export default function ReceiptsVouchersPage() {
             <CardContent>
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث في السندات..." className="pr-10 w-full sm:w-64" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="بحث في السندات..." className="pl-10 w-full sm:w-64 bg-background" />
                 </div>
                 <div className="flex gap-2 flex-wrap">
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                        <Filter className="ms-2 h-4 w-4" /> تصفية النوع
+                        <Filter className="me-2 h-4 w-4" /> تصفية
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" dir="rtl">
                       <DropdownMenuLabel>تصفية حسب نوع السند</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuCheckboxItem checked>سند قبض</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>سند قبض</DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem>سند صرف</DropdownMenuCheckboxItem>
                        <DropdownMenuSeparator />
                       <DropdownMenuLabel>تصفية حسب طريقة الدفع</DropdownMenuLabel>
                        <DropdownMenuSeparator />
                        <DropdownMenuCheckboxItem>نقدي</DropdownMenuCheckboxItem>
                        <DropdownMenuCheckboxItem>بنكي</DropdownMenuCheckboxItem>
+                       <DropdownMenuSeparator />
+                       <DropdownMenuLabel>تصفية حسب الحالة</DropdownMenuLabel>
+                       <DropdownMenuSeparator />
+                       <DropdownMenuCheckboxItem>مرحل</DropdownMenuCheckboxItem>
+                       <DropdownMenuCheckboxItem>مسودة</DropdownMenuCheckboxItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <DatePickerWithPresets />
                   <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                    <FileDown className="ms-2 h-4 w-4" /> تصدير
+                    <FileDown className="me-2 h-4 w-4" /> تصدير
                   </Button>
                 </div>
               </div>
@@ -106,7 +222,7 @@ export default function ReceiptsVouchersPage() {
                         <TableCell>{voucher.date}</TableCell>
                         <TableCell>
                           <Badge variant={voucher.type === "سند قبض" ? "default" : "secondary"} className="whitespace-nowrap bg-opacity-80">
-                            {voucher.type === "سند قبض" ? <Banknote className="inline ms-1 h-3 w-3"/> : <Building className="inline ms-1 h-3 w-3"/>}
+                            {voucher.type === "سند قبض" ? <Banknote className="inline me-1 h-3 w-3"/> : <Building className="inline me-1 h-3 w-3"/>}
                             {voucher.type}
                           </Badge>
                         </TableCell>
@@ -120,16 +236,34 @@ export default function ReceiptsVouchersPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة" onClick={() => handlePrintVoucher(voucher)}>
                             <Printer className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل">
                             <Edit className="h-4 w-4" />
                           </Button>
                           {voucher.status === "مسودة" && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent dir="rtl">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      سيتم حذف السند "{voucher.id}" نهائياً.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => console.log(`Deleting voucher ${voucher.id}`)}>
+                                      تأكيد الحذف
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                           )}
                         </TableCell>
                       </TableRow>
@@ -183,7 +317,51 @@ export default function ReceiptsVouchersPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+       {/* Dialog for Printing Voucher */}
+      <Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
+        <DialogContent className="sm:max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>طباعة السند: {selectedVoucherForPrint?.id}</DialogTitle>
+          </DialogHeader>
+          {selectedVoucherForPrint && (
+            <div className="py-4 space-y-3 border rounded-md p-4 my-4">
+              <div className="flex justify-between items-center mb-4 pb-2 border-b">
+                <h3 className="text-xl font-semibold">شركة المستقبل ERP</h3>
+                <p className="text-sm">{selectedVoucherForPrint.type}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <p><strong>رقم السند:</strong> {selectedVoucherForPrint.id}</p>
+                <p><strong>التاريخ:</strong> {selectedVoucherForPrint.date}</p>
+                <p><strong>الجهة:</strong> {selectedVoucherForPrint.party}</p>
+                <p><strong>المبلغ:</strong> {selectedVoucherForPrint.amount}</p>
+                <p><strong>طريقة {selectedVoucherForPrint.type === "سند قبض" ? "القبض" : "الصرف"}:</strong> {selectedVoucherForPrint.method}</p>
+                <p><strong>الفرع:</strong> {selectedVoucherForPrint.branch}</p>
+                <p className="col-span-2"><strong>المبلغ كتابة:</strong> فقط {selectedVoucherForPrint.amount.split(' ')[0].replace(/,/g, '')} ريال سعودي لا غير.</p> {/* Basic conversion */}
+                <p className="col-span-2"><strong>البيان:</strong> {selectedVoucherForPrint.type} لـ {selectedVoucherForPrint.party} بمبلغ {selectedVoucherForPrint.amount}</p>
+              </div>
+               <div className="grid grid-cols-2 gap-4 mt-8 pt-4 border-t">
+                <div className="text-center">
+                    <p className="mb-6">.........................</p>
+                    <p className="text-sm font-semibold">توقيع المحاسب</p>
+                </div>
+                 <div className="text-center">
+                    <p className="mb-6">.........................</p>
+                    <p className="text-sm font-semibold">توقيع المستلم</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => { alert(`Printing voucher ${selectedVoucherForPrint?.id}`); setShowPrintDialog(false); }} >
+              <Printer className="me-2 h-4 w-4" /> طباعة
+            </Button>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">إغلاق</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
