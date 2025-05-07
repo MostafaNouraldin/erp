@@ -30,21 +30,46 @@ const initialChartOfAccountsData = [
   { id: "1010", name: "النقدية وما في حكمها", type: "فرعي" as const, parentId: "1000", balance: "250,000 SAR" },
   { id: "1011", name: "صندوق الفرع الرئيسي", type: "تفصيلي" as const, parentId: "1010", balance: "100,000 SAR" },
   { id: "1012", name: "حساب البنك الأهلي", type: "تفصيلي" as const, parentId: "1010", balance: "150,000 SAR" },
+  { id: "1013", name: "صندوق نقاط البيع", type: "تفصيلي" as const, parentId: "1010", balance: "0 SAR" },
   { id: "1020", name: "العملاء", type: "فرعي" as const, parentId: "1000", balance: "300,000 SAR"},
+  { id: "1210", name: "سلف الموظفين", type: "تفصيلي" as const, parentId: "1000", balance: "0 SAR" }, // Asset for employee advances
   { id: "2000", name: "الخصوم", type: "رئيسي" as const, parentId: null, balance: "800,000 SAR" },
   { id: "2010", name: "الموردون", type: "فرعي" as const, parentId: "2000", balance: "400,000 SAR"},
+  { id: "2100", name: "رواتب مستحقة", type: "تفصيلي" as const, parentId: "2000", balance: "0 SAR" },
   { id: "3000", name: "حقوق الملكية", type: "رئيسي" as const, parentId: null, balance: "700,000 SAR" },
   { id: "4000", name: "الإيرادات", type: "رئيسي" as const, parentId: null, balance: "1,200,000 SAR"},
-  { id: "4010", name: "إيرادات المبيعات", type: "فرعي" as const, parentId: "4000", balance: "1,200,000 SAR"},
+  { id: "4010", name: "إيرادات مبيعات منتجات", type: "تفصيلي" as const, parentId: "4000", balance: "1,200,000 SAR"},
   { id: "5000", name: "المصروفات", type: "رئيسي" as const, parentId: null, balance: "600,000 SAR"},
   { id: "5010", name: "مصروفات الرواتب", type: "فرعي" as const, parentId: "5000", balance: "300,000 SAR"},
   { id: "5011", name: "مصروف رواتب الشهر", type: "تفصيلي" as const, parentId: "5010", balance: "300,000 SAR"},
+  { id: "5100", name: "مصروف مكافآت", type: "تفصيلي" as const, parentId: "5000", balance: "0 SAR" },
 ];
 
-const initialJournalEntriesData = [
-  { id: "JV001", date: new Date("2024-07-01"), description: "قيد إثبات رأس المال", totalAmount: 500000, status: "مرحل" as const, lines: [{accountId: '1011', debit: 500000, credit: 0, description: 'ايداع رأس المال بالصندوق'}, {accountId: '3000', debit: 0, credit: 500000, description: 'اثبات رأس المال'}] },
-  { id: "JV002", date: new Date("2024-07-05"), description: "شراء أثاث مكتبي", totalAmount: 15000, status: "مرحل" as const, lines: [{accountId: '1000', debit: 15000, credit: 0, description: 'اثاث مكتبي'}, {accountId: '1012', debit: 0, credit: 15000, description: 'دفع من البنك'}] },
-  { id: "JV003", date: new Date("2024-07-10"), description: "مصروفات كهرباء", totalAmount: 1200, status: "مسودة" as const, lines: [{accountId: '5011', debit: 1200, credit: 0, description: 'فاتورة كهرباء يوليو'}, {accountId: '1011', debit: 0, credit: 1200, description: 'دفع من الصندوق'}] },
+type JournalEntryStatus = "مسودة" | "مرحل";
+type JournalEntrySourceModule = "General" | "POS" | "EmployeeSettlements";
+
+interface JournalEntryLine {
+  accountId: string;
+  debit: number;
+  credit: number;
+  description?: string;
+}
+interface JournalEntry {
+  id: string;
+  date: Date;
+  description: string;
+  totalAmount?: number;
+  status: JournalEntryStatus;
+  lines: JournalEntryLine[];
+  sourceModule?: JournalEntrySourceModule;
+  sourceDocumentId?: string;
+}
+
+
+const initialJournalEntriesData: JournalEntry[] = [
+  { id: "JV001", date: new Date("2024-07-01"), description: "قيد إثبات رأس المال", totalAmount: 500000, status: "مرحل" as const, lines: [{accountId: '1011', debit: 500000, credit: 0, description: 'ايداع رأس المال بالصندوق'}, {accountId: '3000', debit: 0, credit: 500000, description: 'اثبات رأس المال'}], sourceModule: "General" },
+  { id: "JV002", date: new Date("2024-07-05"), description: "شراء أثاث مكتبي", totalAmount: 15000, status: "مرحل" as const, lines: [{accountId: '1000', debit: 15000, credit: 0, description: 'اثاث مكتبي'}, {accountId: '1012', debit: 0, credit: 15000, description: 'دفع من البنك'}], sourceModule: "General" },
+  { id: "JV003", date: new Date("2024-07-10"), description: "مصروفات كهرباء", totalAmount: 1200, status: "مسودة" as const, lines: [{accountId: '5011', debit: 1200, credit: 0, description: 'فاتورة كهرباء يوليو'}, {accountId: '1011', debit: 0, credit: 1200, description: 'دفع من الصندوق'}], sourceModule: "General" },
 ];
 
 
@@ -76,6 +101,8 @@ const journalEntrySchema = z.object({
   lines: z.array(journalEntryLineSchema).min(2, "يجب أن يحتوي القيد على حركتين على الأقل."),
   status: z.enum(["مسودة", "مرحل"]).default("مسودة"),
   totalAmount: z.number().optional(), // Will be calculated
+  sourceModule: z.enum(["General", "POS", "EmployeeSettlements"]).optional().default("General"),
+  sourceDocumentId: z.string().optional(),
 }).refine(data => {
     const totalDebit = data.lines.reduce((sum, line) => sum + (line.debit || 0), 0);
     const totalCredit = data.lines.reduce((sum, line) => sum + (line.credit || 0), 0);
@@ -90,7 +117,11 @@ type JournalEntryFormValues = z.infer<typeof journalEntrySchema>;
 
 export default function GeneralLedgerPage() {
   const [chartOfAccounts, setChartOfAccounts] = useState(initialChartOfAccountsData);
-  const [journalEntries, setJournalEntries] = useState(initialJournalEntriesData);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(initialJournalEntriesData);
+  
+  // State to hold journal entries that might be "posted" from other modules (for simulation)
+  const [externallyGeneratedJournalEntries, setExternallyGeneratedJournalEntries] = useState<JournalEntry[]>([]);
+
 
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const [accountToEdit, setAccountToEdit] = useState<AccountFormValues | null>(null);
@@ -99,7 +130,7 @@ export default function GeneralLedgerPage() {
   const [journalEntryToEdit, setJournalEntryToEdit] = useState<JournalEntryFormValues | null>(null);
   
   const [showViewJournalEntryDialog, setShowViewJournalEntryDialog] = useState(false);
-  const [selectedJournalEntry, setSelectedJournalEntry] = useState<typeof journalEntries[0] | null>(null);
+  const [selectedJournalEntry, setSelectedJournalEntry] = useState<JournalEntry | null>(null);
   
   const [showFinancialReportDialog, setShowFinancialReportDialog] = useState(false);
   const [selectedFinancialReport, setSelectedFinancialReport] = useState<string | null>(null);
@@ -112,12 +143,15 @@ export default function GeneralLedgerPage() {
   const journalEntryForm = useForm<JournalEntryFormValues>({
     resolver: zodResolver(journalEntrySchema),
     defaultValues: {
-      date: new Date(), description: "", lines: [{ accountId: "", debit: 0, credit: 0, description: "" }, { accountId: "", debit: 0, credit: 0, description: "" }], status: "مسودة",
+      date: new Date(), description: "", lines: [{ accountId: "", debit: 0, credit: 0, description: "" }, { accountId: "", debit: 0, credit: 0, description: "" }], status: "مسودة", sourceModule: "General"
     },
   });
   const { fields: journalLinesFields, append: appendJournalLine, remove: removeJournalLine, replace: replaceJournalLines } = useFieldArray({
     control: journalEntryForm.control, name: "lines",
   });
+
+  // Combine initial entries with externally generated ones for display
+  const allJournalEntries = React.useMemo(() => [...journalEntries, ...externallyGeneratedJournalEntries], [journalEntries, externallyGeneratedJournalEntries]);
 
 
   useEffect(() => {
@@ -133,7 +167,7 @@ export default function GeneralLedgerPage() {
       });
     } else {
       journalEntryForm.reset({
-        date: new Date(), description: "", lines: [{ accountId: "", debit: 0, credit: 0, description: "" }, { accountId: "", debit: 0, credit: 0, description: "" }], status: "مسودة",
+        date: new Date(), description: "", lines: [{ accountId: "", debit: 0, credit: 0, description: "" }, { accountId: "", debit: 0, credit: 0, description: "" }], status: "مسودة", sourceModule: "General"
       });
     }
   }, [journalEntryToEdit, journalEntryForm, showAddJournalEntryDialog]);
@@ -150,41 +184,73 @@ export default function GeneralLedgerPage() {
   };
   
   const handleDeleteAccount = (accountId: string) => {
+    // Basic check: prevent deleting accounts that are part of initial data or have children
+    const hasChildren = chartOfAccounts.some(acc => acc.parentId === accountId);
+    const isInitialSystemAccount = initialChartOfAccountsData.some(acc => acc.id === accountId && acc.balance !== '0 SAR' && acc.balance !== undefined); // crude check for system accounts
+
+    if (hasChildren) {
+        alert("لا يمكن حذف حساب رئيسي أو فرعي لديه حسابات تابعة.");
+        return;
+    }
+    if (isInitialSystemAccount && !initialChartOfAccountsData.find(acc => acc.id === accountId)?.name.includes("نقاط البيع") && !initialChartOfAccountsData.find(acc => acc.id === accountId)?.name.includes("مكافآت")) { // Allow deleting newly added special accounts
+        alert("لا يمكن حذف الحسابات الأساسية للنظام.");
+        return;
+    }
+    // Add check for transactions later
     setChartOfAccounts(prev => prev.filter(acc => acc.id !== accountId));
   };
 
   const handleJournalEntrySubmit = (values: JournalEntryFormValues) => {
     const totalDebit = values.lines.reduce((sum, line) => sum + (line.debit || 0), 0);
-    const finalValues = { ...values, totalAmount: totalDebit };
+    const finalValues: JournalEntry = { 
+        ...values, 
+        id: values.id || `JV${Date.now()}`, // Ensure ID exists
+        totalAmount: totalDebit,
+        sourceModule: values.sourceModule || "General",
+    };
 
     if (journalEntryToEdit) {
-      setJournalEntries(prev => prev.map(entry => entry.id === journalEntryToEdit.id ? { ...finalValues, id: journalEntryToEdit.id } : entry));
+      setJournalEntries(prev => prev.map(entry => entry.id === journalEntryToEdit.id ? finalValues : entry));
     } else {
-      setJournalEntries(prev => [...prev, { ...finalValues, id: `JV${Date.now()}` }]);
+      setJournalEntries(prev => [...prev, finalValues]);
     }
     setShowAddJournalEntryDialog(false);
     setJournalEntryToEdit(null);
   };
 
-  const handleViewJournalEntry = (entry: typeof journalEntries[0]) => {
+  const handleViewJournalEntry = (entry: JournalEntry) => {
     setSelectedJournalEntry(entry);
     setShowViewJournalEntryDialog(true);
   };
   
   const handlePostJournalEntry = (entryId: string) => {
     setJournalEntries(prev => prev.map(entry => entry.id === entryId ? { ...entry, status: "مرحل" } : entry));
+    // In a real app, this would also update account balances in chartOfAccounts
   };
 
   const handleUnpostJournalEntry = (entryId: string) => {
-     // Add logic to check if it's system generated, for now, allow unposting if not JV001 or JV002
-    if (entryId !== "JV001" && entryId !== "JV002") { 
-        setJournalEntries(prev => prev.map(entry => entry.id === entryId ? { ...entry, status: "مسودة" } : entry));
-    } else {
-        alert("لا يمكن إلغاء ترحيل القيود الآلية أو الأساسية.");
+    const entryToUnpost = allJournalEntries.find(entry => entry.id === entryId);
+    if (entryToUnpost?.sourceModule !== "General" && entryToUnpost?.sourceModule !== undefined) {
+         alert(`لا يمكن إلغاء ترحيل هذا القيد لأنه ناتج عن وحدة ${entryToUnpost.sourceModule}. يرجى إلغاء العملية من الوحدة المصدر.`);
+        return;
     }
+    if (entryId === "JV001" || entryId === "JV002") { 
+        alert("لا يمكن إلغاء ترحيل القيود الآلية أو الأساسية.");
+        return;
+    }
+    setJournalEntries(prev => prev.map(entry => entry.id === entryId ? { ...entry, status: "مسودة" } : entry));
   };
   
   const handleDeleteJournalEntry = (entryId: string) => {
+    const entryToDelete = allJournalEntries.find(entry => entry.id === entryId);
+    if (entryToDelete?.status === "مرحل") {
+        alert("لا يمكن حذف قيد مرحّل. يجب إلغاء ترحيله أولاً.");
+        return;
+    }
+     if (entryToDelete?.sourceModule !== "General" && entryToDelete?.sourceModule !== undefined) {
+        alert(`لا يمكن حذف هذا القيد لأنه ناتج عن وحدة ${entryToDelete.sourceModule}.`);
+        return;
+    }
     setJournalEntries(prev => prev.filter(entry => entry.id !== entryId));
   };
 
@@ -203,7 +269,7 @@ export default function GeneralLedgerPage() {
         <h1 className="text-2xl md:text-3xl font-bold">الحسابات العامة</h1>
         <Dialog open={showAddJournalEntryDialog} onOpenChange={(isOpen) => { setShowAddJournalEntryDialog(isOpen); if (!isOpen) setJournalEntryToEdit(null); }}>
           <DialogTrigger asChild>
-            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setJournalEntryToEdit(null); journalEntryForm.reset({date: new Date(), description: "", lines: [{ accountId: "", debit: 0, credit: 0, description: "" }, { accountId: "", debit: 0, credit: 0, description: "" }], status: "مسودة"}); setShowAddJournalEntryDialog(true);}}>
+            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setJournalEntryToEdit(null); journalEntryForm.reset({date: new Date(), description: "", lines: [{ accountId: "", debit: 0, credit: 0, description: "" }, { accountId: "", debit: 0, credit: 0, description: "" }], status: "مسودة", sourceModule: "General"}); setShowAddJournalEntryDialog(true);}}>
               <FilePlus className="me-2 h-4 w-4" /> إنشاء قيد يومية جديد
             </Button>
           </DialogTrigger>
@@ -346,13 +412,14 @@ export default function GeneralLedgerPage() {
               </div>
               <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader><TableRow><TableHead>رقم القيد</TableHead><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>المبلغ</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                  <TableBody>{journalEntries.map((entry) => (<TableRow key={entry.id} className="hover:bg-muted/50">
+                  <TableHeader><TableRow><TableHead>رقم القيد</TableHead><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>المبلغ</TableHead><TableHead>المصدر</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                  <TableBody>{allJournalEntries.map((entry) => (<TableRow key={entry.id} className="hover:bg-muted/50">
                         <TableCell>{entry.id}</TableCell><TableCell>{entry.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell>{entry.description}</TableCell><TableCell>{entry.totalAmount?.toFixed(2)} SAR</TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{entry.sourceModule === "POS" ? "نقاط البيع" : entry.sourceModule === "EmployeeSettlements" ? "تسويات موظفين" : "عام"}</Badge></TableCell>
                         <TableCell><Badge variant={entry.status === "مرحل" ? "default" : "outline"}>{entry.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => handleViewJournalEntry(entry)}><FileText className="h-4 w-4" /></Button>
-                          {entry.status === "مسودة" && (<>
+                          {entry.status === "مسودة" && entry.sourceModule === "General" && (<>
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setJournalEntryToEdit(entry); setShowAddJournalEntryDialog(true);}}><Edit className="h-4 w-4" /></Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
@@ -363,7 +430,7 @@ export default function GeneralLedgerPage() {
                             </AlertDialog>
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="ترحيل القيد" onClick={() => handlePostJournalEntry(entry.id)}><CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" /></Button>
                           </>)}
-                          {entry.status === "مرحل" && (
+                          {entry.status === "مرحل" && entry.sourceModule === "General" && (
                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-100 dark:hover:bg-yellow-900" title="إلغاء الترحيل" onClick={() => handleUnpostJournalEntry(entry.id)}><Undo className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></Button>
                           )}
                         </TableCell></TableRow>))}
@@ -397,6 +464,8 @@ export default function GeneralLedgerPage() {
               <div><strong>الوصف العام:</strong> {selectedJournalEntry.description}</div>
               <div><strong>المبلغ الإجمالي:</strong> {selectedJournalEntry.totalAmount?.toFixed(2)} SAR</div>
               <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedJournalEntry.status === "مرحل" ? "default" : "outline"}>{selectedJournalEntry.status}</Badge></div>
+              <div><strong>المصدر:</strong> <Badge variant="outline" className="text-xs">{selectedJournalEntry.sourceModule === "POS" ? "نقاط البيع" : selectedJournalEntry.sourceModule === "EmployeeSettlements" ? "تسويات موظفين" : "عام"} {selectedJournalEntry.sourceDocumentId ? `(${selectedJournalEntry.sourceDocumentId})` : ''}</Badge></div>
+
               <h4 className="font-semibold mt-3">تفاصيل الحركات:</h4>
               {selectedJournalEntry.lines && selectedJournalEntry.lines.length > 0 ? (<Table>
                   <TableHeader><TableRow><TableHead>الحساب</TableHead><TableHead>مدين</TableHead><TableHead>دائن</TableHead><TableHead>الوصف</TableHead></TableRow></TableHeader>
@@ -416,6 +485,58 @@ export default function GeneralLedgerPage() {
           <DialogFooter><Button variant="outline" onClick={() => alert(`Downloading ${selectedFinancialReport}`)}>تحميل PDF</Button><DialogClose asChild><Button type="button">إغلاق</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
+       {/* This button is for simulation purposes to add an external journal entry */}
+       <div className="fixed bottom-4 left-4 space-x-2 rtl:space-x-reverse">
+        <Button 
+            variant="destructive"
+            onClick={() => {
+                const newPosEntry: JournalEntry = {
+                    id: `POS_JV_${Date.now()}`,
+                    date: new Date(),
+                    description: "ترحيل مبيعات نقاط البيع اليومية",
+                    lines: [
+                        { accountId: "1013", debit: 550, credit: 0, description: "إجمالي مبيعات نقاط البيع" },
+                        { accountId: "4010", debit: 0, credit: 550, description: "إيراد مبيعات نقاط البيع" },
+                    ],
+                    totalAmount: 550,
+                    status: "مرحل",
+                    sourceModule: "POS",
+                    sourceDocumentId: `POS_TRX_${Date.now().toString().slice(-5)}`
+                };
+                setExternallyGeneratedJournalEntries(prev => [...prev, newPosEntry]);
+                alert("تم ترحيل قيد من نقاط البيع.");
+            }}
+            title="محاكاة ترحيل من نقاط البيع"
+            className="opacity-50 hover:opacity-100"
+        >
+           محاكاة ترحيل POS
+        </Button>
+        <Button 
+            variant="destructive"
+            onClick={() => {
+                const newEmpSettlementEntry: JournalEntry = {
+                    id: `EMP_JV_${Date.now()}`,
+                    date: new Date(),
+                    description: "ترحيل سلفة موظف",
+                    lines: [
+                        { accountId: "1210", debit: 1000, credit: 0, description: "سلفة للموظف خالد" }, // سلف الموظفين
+                        { accountId: "2100", debit: 0, credit: 1000, description: "اثبات سلفة تخصم من الراتب" }, // رواتب مستحقة (أو صندوق إذا دفعت نقداً)
+                    ],
+                    totalAmount: 1000,
+                    status: "مرحل",
+                    sourceModule: "EmployeeSettlements",
+                    sourceDocumentId: `ESET_${Date.now().toString().slice(-5)}`
+                };
+                 setExternallyGeneratedJournalEntries(prev => [...prev, newEmpSettlementEntry]);
+                alert("تم ترحيل قيد تسوية موظف.");
+            }}
+            title="محاكاة ترحيل تسوية موظف"
+             className="opacity-50 hover:opacity-100"
+        >
+           محاكاة تسوية موظف
+        </Button>
+      </div>
     </div>
   );
 }
+

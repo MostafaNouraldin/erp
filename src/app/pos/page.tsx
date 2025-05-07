@@ -11,8 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { DollarSign, ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign } from "lucide-react";
+import { DollarSign, ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud } from "lucide-react";
 import Image from 'next/image';
+import { useToast } from "@/hooks/use-toast"; // Added for toast notifications
 
 // Mock data
 const categories = ["الكل", "مشروبات", "مأكولات خفيفة", "حلويات", "مخبوزات", "منتجات ورقية"];
@@ -50,6 +51,7 @@ export default function POSPage() {
   const [discount, setDiscount] = useState(0);
   const [customerName, setCustomerName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -95,6 +97,83 @@ export default function POSPage() {
   );
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const handleProcessPayment = () => {
+    // Simulate payment processing
+    const transactionId = `TRX${Date.now().toString().slice(-5)}`;
+    console.log("Processing payment for:", {
+        transactionId,
+        customerName,
+        cart,
+        subtotal,
+        discount,
+        totalAmount,
+        paymentMethod,
+    });
+
+    // Simulate posting to General Ledger
+    // This would typically involve creating a journal entry object
+    // and sending it to a backend service or updating a global state/context
+    // accessible by the GeneralLedgerPage.
+    // For this example, we'll just show a toast.
+    toast({
+        title: "تمت عملية الدفع بنجاح!",
+        description: `تم إنشاء الفاتورة رقم ${transactionId} والمبلغ ${totalAmount.toFixed(2)} SAR. سيتم ترحيل القيد إلى الحسابات العامة.`,
+        variant: "default",
+    });
+    
+    // Add to recent transactions (mock)
+    const newTransaction = {
+        id: transactionId,
+        time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+        items: cart.reduce((sum, item) => sum + item.quantity, 0),
+        total: `${totalAmount.toFixed(2)} SAR`,
+        paymentMethod: paymentMethod || "غير محدد",
+    };
+    recentTransactions.unshift(newTransaction); // Add to the beginning
+    if (recentTransactions.length > 5) recentTransactions.pop(); // Keep only last 5
+
+    clearCart();
+    // Close payment dialog - assuming DialogClose is handled by the component itself
+  };
+
+  const handlePostToGL = () => {
+    if(totalAmount <= 0) {
+        toast({
+            title: "لا توجد مبيعات للترحيل",
+            description: "الرجاء إتمام عملية بيع أولاً.",
+            variant: "destructive"
+        });
+        return;
+    }
+    // This is a mock function. In a real app, this would:
+    // 1. Collect data for the journal entry (e.g., total sales, cash/card received).
+    // 2. Send it to a backend or a state management solution that GeneralLedgerPage can access.
+    
+    // For example:
+    const journalEntryData = {
+        date: new Date(),
+        description: `ترحيل مبيعات نقاط البيع - إجمالي ${totalAmount.toFixed(2)} SAR`,
+        lines: [
+            { accountId: "1013", debit: totalAmount, credit: 0, description: "إجمالي مبيعات نقاط البيع" }, // صندوق نقاط البيع
+            { accountId: "4010", debit: 0, credit: totalAmount, description: "إيراد مبيعات نقاط البيع" }, // إيرادات مبيعات
+        ],
+        totalAmount: totalAmount,
+        status: "مرحل" as "مرحل", // or "مسودة" to be posted later from GL
+        sourceModule: "POS" as "POS",
+        sourceDocumentId: `POS_TRX_${Date.now().toString().slice(-5)}`
+    };
+
+    console.log("Posting to General Ledger:", journalEntryData);
+    
+    toast({
+        title: "تم طلب الترحيل للحسابات العامة",
+        description: `سيتم ترحيل قيد مبيعات نقاط البيع بمبلغ ${totalAmount.toFixed(2)} SAR.`,
+        variant: "default",
+    });
+    // After successful posting, you might want to clear the relevant POS data for the day, or mark it as posted.
+  };
+
 
   return (
     <div className="container mx-auto py-6 h-[calc(100vh-theme(spacing.24))] flex flex-col">
@@ -279,7 +358,7 @@ export default function POSPage() {
                         )}
                       </div>
                       <DialogFooter className="sm:justify-start">
-                        <Button type="button" className="w-full" onClick={() => { /* Process payment logic here */ clearCart(); /* close dialog */ }} disabled={!paymentMethod}>
+                        <Button type="button" className="w-full" onClick={handleProcessPayment} disabled={!paymentMethod}>
                            <Printer className="me-2 h-4 w-4" /> تأكيد وطباعة الفاتورة
                         </Button>
                          <DialogClose asChild>
@@ -290,6 +369,9 @@ export default function POSPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
+                   <Button variant="secondary" className="w-full mt-2 shadow-sm" onClick={handlePostToGL} disabled={cart.length > 0 || totalAmount <= 0}>
+                    <UploadCloud className="me-2 h-4 w-4" /> ترحيل إجمالي المبيعات للقيود
+                  </Button>
                 </CardContent>
               </>
             )}

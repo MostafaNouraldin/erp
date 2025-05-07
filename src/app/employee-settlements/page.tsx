@@ -8,7 +8,7 @@ import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, UserCheck, Printer, CheckCircle, FileText, Filter, Undo } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, UserCheck, Printer, CheckCircle, FileText, Filter, Undo, UploadCloud } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast"; // Added for toast notifications
 
 // Mock Data
 const mockEmployees = [
@@ -27,7 +28,9 @@ const mockEmployees = [
 ];
 const mockSettlementAccounts = [ // Could be specific liability/asset accounts for employee advances/loans
   { id: "1210", name: "سلف الموظفين" }, // Asset
-  { id: "2210", name: "قروض الموظفين" }, // Liability if company gives loan
+  { id: "2100", name: "رواتب مستحقة" }, // Liability for deductions from salary
+  { id: "5100", name: "مصروف مكافآت" }, // Expense for bonuses
+  { id: "1011", name: "صندوق الفرع الرئيسي" }, // Cash account for cash payments/receipts
 ];
 
 const settlementSchema = z.object({
@@ -57,6 +60,7 @@ export default function EmployeeSettlementsPage() {
   const [settlementToEdit, setSettlementToEdit] = useState<SettlementFormValues | null>(null);
   const [showViewSettlementDialog, setShowViewSettlementDialog] = useState(false);
   const [selectedSettlementForView, setSelectedSettlementForView] = useState<SettlementFormValues | null>(null);
+  const { toast } = useToast();
 
 
   const form = useForm<SettlementFormValues>({
@@ -83,25 +87,111 @@ export default function EmployeeSettlementsPage() {
   };
 
   const handleDeleteSettlement = (settlementId: string) => {
+    const settlement = settlements.find(s => s.id === settlementId);
+    if (settlement && settlement.status !== "مسودة") {
+        toast({ title: "خطأ", description: "لا يمكن حذف تسوية ليست في حالة مسودة.", variant: "destructive" });
+        return;
+    }
     setSettlements(prev => prev.filter(set => set.id !== settlementId));
+    toast({ title: "نجاح", description: "تم حذف التسوية بنجاح." });
   };
   
   const handleApproveSettlement = (settlementId: string) => {
-    setSettlements(prev => prev.map(set => set.id === settlementId ? { ...set, status: "معتمدة" } : set));
+    setSettlements(prev => prev.map(set => {
+      if (set.id === settlementId && set.status === "مسودة") {
+        toast({ title: "نجاح", description: `تم اعتماد التسوية رقم ${settlementId}. يمكن الآن ترحيلها للحسابات.` });
+        return { ...set, status: "معتمدة" };
+      }
+      return set;
+    }));
   };
 
   const handleCancelSettlement = (settlementId: string) => {
      const settlement = settlements.find(s => s.id === settlementId);
-     if (settlement && (settlement.status === "مسودة" || settlement.status === "معتمدة")) { // Allow cancelling if مسودة or معتمدة
+     if (settlement && (settlement.status === "مسودة" || settlement.status === "معتمدة")) { 
         setSettlements(prev => prev.map(set => set.id === settlementId ? { ...set, status: "ملغاة" } : set));
+        toast({ title: "نجاح", description: `تم إلغاء التسوية رقم ${settlementId}.` });
      } else {
-        alert("لا يمكن إلغاء هذه التسوية لأنها ليست في حالة مسودة أو معتمدة.");
+        toast({ title: "خطأ", description: "لا يمكن إلغاء هذه التسوية لأنها ليست في حالة مسودة أو معتمدة.", variant: "destructive"});
      }
   };
 
   const handleViewSettlement = (settlement: SettlementFormValues) => {
     setSelectedSettlementForView(settlement);
     setShowViewSettlementDialog(true);
+  };
+
+  const handlePostSettlementToGL = (settlement: SettlementFormValues) => {
+    if (settlement.status !== "معتمدة") {
+        toast({
+            title: "خطأ في الترحيل",
+            description: "لا يمكن ترحيل تسوية ليست في حالة 'معتمدة'.",
+            variant: "destructive",
+        });
+        return;
+    }
+
+    // Example Journal Entry Logic based on settlement type and payment method
+    let journalLines: Array<{accountId: string, debit: number, credit: number, description: string}> = [];
+    const settlementDesc = `تسوية للموظف ${mockEmployees.find(e=>e.id === settlement.employeeId)?.name} - ${settlement.description}`;
+
+    if (settlement.settlementType === "سلفة") {
+        // Dr: Employee Advances (Asset)
+        // Cr: Cash/Bank or Accrued Salaries (if deducted from salary)
+        journalLines.push({ accountId: settlement.accountId, debit: settlement.amount, credit: 0, description: settlementDesc });
+        if (settlement.paymentMethod === "راتب") {
+            journalLines.push({ accountId: "2100", debit: 0, credit: settlement.amount, description: "خصم من الراتب المستحق" }); // رواتب مستحقة
+        } else { // نقدي أو بنكي
+            journalLines.push({ accountId: "1011", debit: 0, credit: settlement.amount, description: "دفع نقدي/بنكي للسلفة" }); // assuming cash for simplicity
+        }
+    } else if (settlement.settlementType === "مكافأة") {
+        // Dr: Bonus Expense
+        // Cr: Cash/Bank or Accrued Salaries
+        journalLines.push({ accountId: settlement.accountId, debit: settlement.amount, credit: 0, description: settlementDesc }); // e.g. 5100 مصروف مكافآت
+         if (settlement.paymentMethod === "راتب") {
+            journalLines.push({ accountId: "2100", debit: 0, credit: settlement.amount, description: "إضافة للراتب المستحق" }); // رواتب مستحقة
+        } else { 
+            journalLines.push({ accountId: "1011", debit: 0, credit: settlement.amount, description: "دفع نقدي/بنكي للمكافأة" });
+        }
+    } else if (settlement.settlementType === "خصم") {
+        // Dr: Cash/Bank or Accrued Salaries (if collected from salary)
+        // Cr: Employee Advances (if repaying advance) or Revenue/Other Income
+         if (settlement.paymentMethod === "راتب") {
+            journalLines.push({ accountId: "2100", debit: settlement.amount, credit: 0, description: "خصم من الراتب المستحق" }); 
+        } else { 
+            journalLines.push({ accountId: "1011", debit: settlement.amount, credit: 0, description: "تحصيل نقدي/بنكي للخصم" });
+        }
+        journalLines.push({ accountId: settlement.accountId, debit: 0, credit: settlement.amount, description: settlementDesc }); // e.g. 1210 سلف (إذا كان الخصم لسداد سلفة)
+    }
+    // Add more cases for قرض, تسوية عهدة etc.
+
+    if (journalLines.length < 2) {
+        toast({ title: "خطأ", description: "لم يتمكن النظام من إنشاء قيد محاسبي لهذه التسوية.", variant: "destructive"});
+        return;
+    }
+
+    const journalEntryData = {
+        id: `EMP_JV_${settlement.id}_${Date.now()}`,
+        date: settlement.date,
+        description: `ترحيل ${settlement.settlementType}: ${settlement.description} (موظف: ${mockEmployees.find(e => e.id === settlement.employeeId)?.name})`,
+        lines: journalLines,
+        totalAmount: settlement.amount,
+        status: "مرحل",
+        sourceModule: "EmployeeSettlements",
+        sourceDocumentId: settlement.id
+    };
+
+    console.log("Posting Employee Settlement to General Ledger:", journalEntryData);
+    
+    toast({
+        title: "تم طلب الترحيل للحسابات العامة",
+        description: `سيتم ترحيل قيد تسوية الموظف رقم ${settlement.id} بمبلغ ${settlement.amount.toFixed(2)} SAR.`,
+        variant: "default",
+    });
+    
+    // Optionally update settlement status to "مسددة بالكامل" or similar if applicable
+    // For simplicity, we'll assume it's "posted" but may still need payment reconciliation
+    // setSettlements(prev => prev.map(s => s.id === settlement.id ? { ...s, status: "مسددة بالكامل"} : s));
   };
 
 
@@ -159,7 +249,7 @@ export default function EmployeeSettlementsPage() {
                     <FormItem><FormLabel>حساب التسوية</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                         <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحساب المرتبط" /></SelectTrigger></FormControl>
-                        <SelectContent>{mockSettlementAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}</SelectContent>
+                        <SelectContent>{mockSettlementAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name} ({acc.id})</SelectItem>)}</SelectContent>
                         </Select><FormMessage /></FormItem>
                     )} />
                 <FormField control={form.control} name="amount" render={({ field }) => (
@@ -275,10 +365,29 @@ export default function EmployeeSettlementsPage() {
                           </Button>
                         </>
                       )}
-                       {(set.status === "معتمدة" || set.status === "مسودة") && set.status !== "ملغاة" && ( // Allow cancelling if معتمدة or مسودة but not already ملغاة
+                       {(set.status === "معتمدة" || set.status === "مسودة") && set.status !== "ملغاة" && ( 
                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-100 dark:hover:bg-red-800" title="إلغاء التسوية" onClick={() => handleCancelSettlement(set.id!)}>
                             <Undo className="h-4 w-4 text-red-600 dark:text-red-400" />
                          </Button>
+                      )}
+                       {set.status === "معتمدة" && (
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-100 dark:hover:bg-blue-800" title="ترحيل للحسابات العامة">
+                                    <UploadCloud className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>تأكيد الترحيل</AlertDialogTitle>
+                                    <AlertDialogDescription>هل أنت متأكد من ترحيل التسوية رقم "{set.id}" للحسابات العامة؟</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handlePostSettlementToGL(set)}>تأكيد الترحيل</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                         </AlertDialog>
                       )}
                     </TableCell>
                   </TableRow>
