@@ -1,12 +1,15 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, FileText, Search, Filter, Users, Briefcase, TrendingUp, TrendingDown, FileWarning, Mail } from "lucide-react";
+import { PlusCircle, Edit, Trash2, FileText, Search, Filter, Users, Briefcase, TrendingUp, TrendingDown, FileWarning, Mail, MinusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,34 +20,36 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 // Mock data
-const customerInvoices = [
-  { id: "INV-C001", customer: "شركة الأمل", date: "2024-07-01", dueDate: "2024-07-31", amount: "15,000 SAR", paid: "10,000 SAR", remaining: "5,000 SAR", status: "جزئي" },
-  { id: "INV-C002", customer: "مؤسسة النجاح", date: "2024-06-15", dueDate: "2024-07-15", amount: "8,200 SAR", paid: "8,200 SAR", remaining: "0 SAR", status: "مدفوع" },
-  { id: "INV-C003", customer: "شركة التطور", date: "2024-07-10", dueDate: "2024-08-10", amount: "22,500 SAR", paid: "0 SAR", remaining: "22,500 SAR", status: "غير مدفوع" },
-  { id: "INV-C004", customer: "مؤسسة الإبداع", date: "2024-05-20", dueDate: "2024-06-20", amount: "12,000 SAR", paid: "0 SAR", remaining: "12,000 SAR", status: "متأخر" },
+const customerInvoicesData = [
+  { id: "INV-C001", customerId: "CUST001", date: new Date("2024-07-01"), dueDate: new Date("2024-07-31"), totalAmount: 15000, paidAmount: 10000, remainingAmount: 5000, status: "جزئي", notes: "دفعة مقدمة لخدمات استشارية", items: [{itemId: 'SERV001', description: 'خدمة استشارية A', quantity: 1, unitPrice: 15000, total: 15000}] },
+  { id: "INV-C002", customerId: "CUST002", date: new Date("2024-06-15"), dueDate: new Date("2024-07-15"), totalAmount: 8200, paidAmount: 8200, remainingAmount: 0, status: "مدفوع", notes: "", items: [] },
+  { id: "INV-C003", customerId: "CUST003", date: new Date("2024-07-10"), dueDate: new Date("2024-08-10"), totalAmount: 22500, paidAmount: 0, remainingAmount: 22500, status: "غير مدفوع", notes: "", items: [] },
+  { id: "INV-C004", customerId: "CUST004", date: new Date("2024-05-20"), dueDate: new Date("2024-06-20"), totalAmount: 12000, paidAmount: 0, remainingAmount: 12000, status: "متأخر", notes: "", items: [] },
 ];
 
-const supplierInvoices = [
-  { id: "INV-S001", supplier: "مورد التقنية الحديثة", date: "2024-07-05", dueDate: "2024-08-05", amount: "30,000 SAR", paid: "15,000 SAR", remaining: "15,000 SAR", status: "جزئي" },
-  { id: "INV-S002", supplier: "مورد الخدمات اللوجستية", date: "2024-06-20", dueDate: "2024-07-20", amount: "7,500 SAR", paid: "7,500 SAR", remaining: "0 SAR", status: "مدفوع" },
-  { id: "INV-S003", supplier: "مورد المواد الخام", date: "2024-07-12", dueDate: "2024-08-12", amount: "18,000 SAR", paid: "0 SAR", remaining: "18,000 SAR", status: "غير مدفوع" },
+const supplierInvoicesData = [
+  { id: "INV-S001", supplierId: "SUP001", date: new Date("2024-07-05"), dueDate: new Date("2024-08-05"), totalAmount: 30000, paidAmount: 15000, remainingAmount: 15000, status: "جزئي", notes: "", items: [] },
+  { id: "INV-S002", supplierId: "SUP002", date: new Date("2024-06-20"), dueDate: new Date("2024-07-20"), totalAmount: 7500, paidAmount: 7500, remainingAmount: 0, status: "مدفوع", notes: "", items: [] },
+  { id: "INV-S003", supplierId: "SUP003", date: new Date("2024-07-12"), dueDate: new Date("2024-08-12"), totalAmount: 18000, paidAmount: 0, remainingAmount: 18000, status: "غير مدفوع", notes: "", items: [] },
 ];
 
 const agingReportData = {
   receivables: [
-    { range: "0-30 يوم", amount: "25,000 SAR", percent: 40 },
-    { range: "31-60 يوم", amount: "15,000 SAR", percent: 25 },
-    { range: "61-90 يوم", amount: "10,000 SAR", percent: 15 },
-    { range: ">90 يوم", amount: "12,500 SAR", percent: 20 },
+    { range: "0-30 يوم", amount: 25000, percent: 40 },
+    { range: "31-60 يوم", amount: 15000, percent: 25 },
+    { range: "61-90 يوم", amount: 10000, percent: 15 },
+    { range: ">90 يوم", amount: 12500, percent: 20 },
   ],
   payables: [
-    { range: "0-30 يوم", amount: "20,000 SAR", percent: 50 },
-    { range: "31-60 يوم", amount: "12,000 SAR", percent: 30 },
-    { range: "61-90 يوم", amount: "5,000 SAR", percent: 12.5 },
-    { range: ">90 يوم", amount: "3,000 SAR", percent: 7.5 },
+    { range: "0-30 يوم", amount: 20000, percent: 50 },
+    { range: "31-60 يوم", amount: 12000, percent: 30 },
+    { range: "61-90 يوم", amount: 5000, percent: 12.5 },
+    { range: ">90 يوم", amount: 3000, percent: 7.5 },
   ],
 };
 
@@ -61,17 +66,105 @@ const mockSuppliers = [
     {id: "SUP003", name: "مورد المواد الخام"},
 ];
 
+const mockItems = [
+    {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 6500},
+    {id: "SERV001", name: "خدمة استشارية A", price: 15000},
+    {id: "ITEM002", name: "طابعة HP LaserJet", price: 1200},
+];
+
+const invoiceItemSchema = z.object({
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().optional(),
+  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+  unitPrice: z.coerce.number().min(0, "سعر الوحدة إيجابي"),
+  total: z.coerce.number(),
+});
+
+const customerInvoiceSchema = z.object({
+  id: z.string().optional(),
+  customerId: z.string().min(1, "العميل مطلوب"),
+  date: z.date({ required_error: "تاريخ الفاتورة مطلوب" }),
+  dueDate: z.date({ required_error: "تاريخ الاستحقاق مطلوب" }),
+  notes: z.string().optional(),
+  items: z.array(invoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  status: z.enum(["جزئي", "مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
+  paidAmount: z.coerce.number().default(0),
+});
+type CustomerInvoiceFormValues = z.infer<typeof customerInvoiceSchema>;
+
+const supplierInvoiceSchema = z.object({
+  id: z.string().optional(),
+  supplierId: z.string().min(1, "المورد مطلوب"),
+  date: z.date({ required_error: "تاريخ الفاتورة مطلوب" }),
+  dueDate: z.date({ required_error: "تاريخ الاستحقاق مطلوب" }),
+  notes: z.string().optional(),
+  items: z.array(invoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  status: z.enum(["جزئي", "مدفوع", "غير مدفوع"]).default("غير مدفوع"),
+  paidAmount: z.coerce.number().default(0),
+});
+type SupplierInvoiceFormValues = z.infer<typeof supplierInvoiceSchema>;
+
 
 export default function AccountsPayableReceivablePage() {
   const [showAddCustomerInvoiceDialog, setShowAddCustomerInvoiceDialog] = useState(false);
+  const [customerInvoiceToEdit, setCustomerInvoiceToEdit] = useState<CustomerInvoiceFormValues | null>(null);
+  
   const [showAddSupplierInvoiceDialog, setShowAddSupplierInvoiceDialog] = useState(false);
+  const [supplierInvoiceToEdit, setSupplierInvoiceToEdit] = useState<SupplierInvoiceFormValues | null>(null);
+
   const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false);
-  const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<any>(null); // Can be customer or supplier invoice
+  const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<any>(null); 
+
+  const customerInvoiceForm = useForm<CustomerInvoiceFormValues>({
+    resolver: zodResolver(customerInvoiceSchema),
+    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}] },
+  });
+  const { fields: custInvoiceItemsFields, append: appendCustInvoiceItem, remove: removeCustInvoiceItem } = useFieldArray({
+    control: customerInvoiceForm.control, name: "items",
+  });
+
+  const supplierInvoiceForm = useForm<SupplierInvoiceFormValues>({
+    resolver: zodResolver(supplierInvoiceSchema),
+    defaultValues: { supplierId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}] },
+  });
+   const { fields: suppInvoiceItemsFields, append: appendSuppInvoiceItem, remove: removeSuppInvoiceItem } = useFieldArray({
+    control: supplierInvoiceForm.control, name: "items",
+  });
+
+  useEffect(() => {
+    if (customerInvoiceToEdit) customerInvoiceForm.reset(customerInvoiceToEdit);
+    else customerInvoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}] });
+  }, [customerInvoiceToEdit, customerInvoiceForm, showAddCustomerInvoiceDialog]);
+  
+  useEffect(() => {
+    if (supplierInvoiceToEdit) supplierInvoiceForm.reset(supplierInvoiceToEdit);
+    else supplierInvoiceForm.reset({ supplierId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}] });
+  }, [supplierInvoiceToEdit, supplierInvoiceForm, showAddSupplierInvoiceDialog]);
+
+  const handleCustomerInvoiceSubmit = (values: CustomerInvoiceFormValues) => {
+    const totalAmount = values.items.reduce((sum, item) => sum + item.total, 0);
+    console.log(customerInvoiceToEdit ? "Updating Customer Invoice:" : "Adding Customer Invoice:", {...values, totalAmount});
+    setShowAddCustomerInvoiceDialog(false);
+    setCustomerInvoiceToEdit(null);
+  };
+
+  const handleSupplierInvoiceSubmit = (values: SupplierInvoiceFormValues) => {
+    const totalAmount = values.items.reduce((sum, item) => sum + item.total, 0);
+    console.log(supplierInvoiceToEdit ? "Updating Supplier Invoice:" : "Adding Supplier Invoice:", {...values, totalAmount});
+    setShowAddSupplierInvoiceDialog(false);
+    setSupplierInvoiceToEdit(null);
+  };
   
   const handleViewInvoice = (invoice: any, type: 'customer' | 'supplier') => {
-    setSelectedInvoiceForView({...invoice, type});
+    setSelectedInvoiceForView({...invoice, type, customer: mockCustomers.find(c=>c.id === invoice.customerId)?.name, supplier: mockSuppliers.find(s=>s.id === invoice.supplierId)?.name});
     setShowViewInvoiceDialog(true);
   }
+
+  const calculateItemTotal = (form: any, index: number) => {
+    const quantity = form.getValues(`items.${index}.quantity`);
+    const unitPrice = form.getValues(`items.${index}.unitPrice`);
+    form.setValue(`items.${index}.total`, quantity * unitPrice);
+  };
 
 
   return (
@@ -79,95 +172,129 @@ export default function AccountsPayableReceivablePage() {
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">الحسابات المدينة والدائنة</h1>
         <div className="flex gap-2">
-          <Dialog open={showAddCustomerInvoiceDialog} onOpenChange={setShowAddCustomerInvoiceDialog}>
+          <Dialog open={showAddCustomerInvoiceDialog} onOpenChange={(isOpen) => { setShowAddCustomerInvoiceDialog(isOpen); if(!isOpen) setCustomerInvoiceToEdit(null);}}>
             <DialogTrigger asChild>
-              <Button className="shadow-md hover:shadow-lg transition-shadow">
-                <PlusCircle className="me-2 h-4 w-4" /> إضافة فاتورة عميل
+              <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setCustomerInvoiceToEdit(null); customerInvoiceForm.reset(); setShowAddCustomerInvoiceDialog(true);}}>
+                <PlusCircle className="ml-2 h-4 w-4" /> إضافة فاتورة عميل
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md" dir="rtl">
+            <DialogContent className="sm:max-w-xl" dir="rtl">
               <DialogHeader>
-                <DialogTitle>إضافة فاتورة عميل جديدة</DialogTitle>
+                <DialogTitle>{customerInvoiceToEdit ? 'تعديل فاتورة عميل' : 'إضافة فاتورة عميل جديدة'}</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-1">
-                  <Label htmlFor="customerName">اسم العميل</Label>
-                  <Select dir="rtl">
-                    <SelectTrigger id="customerName" className="bg-background">
-                      <SelectValue placeholder="اختر العميل" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockCustomers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="customerInvoiceDate">تاريخ الفاتورة</Label>
-                  <DatePickerWithPresets mode="single" />
-                </div>
-                 <div className="space-y-1">
-                  <Label htmlFor="customerInvoiceDueDate">تاريخ الاستحقاق</Label>
-                  <DatePickerWithPresets mode="single" />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="customerInvoiceAmount">المبلغ الإجمالي</Label>
-                  <Input id="customerInvoiceAmount" type="number" placeholder="0.00 SAR" className="bg-background"/>
-                </div>
-                 <div className="space-y-1">
-                  <Label htmlFor="customerInvoiceNotes">ملاحظات</Label>
-                  <Textarea id="customerInvoiceNotes" placeholder="أضف ملاحظات (اختياري)" className="bg-background"/>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" onClick={() => setShowAddCustomerInvoiceDialog(false)}>حفظ الفاتورة</Button>
-                <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-              </DialogFooter>
+              <Form {...customerInvoiceForm}>
+                <form onSubmit={customerInvoiceForm.handleSubmit(handleCustomerInvoiceSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={customerInvoiceForm.control} name="customerId" render={({ field }) => (
+                        <FormItem><FormLabel>اسم العميل</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                            <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
+                            <SelectContent>{mockCustomers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}</SelectContent>
+                          </Select><FormMessage /></FormItem> )} />
+                    <FormField control={customerInvoiceForm.control} name="date" render={({ field }) => (
+                        <FormItem className="flex flex-col"><FormLabel>تاريخ الفاتورة</FormLabel>
+                          <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                    <FormField control={customerInvoiceForm.control} name="dueDate" render={({ field }) => (
+                        <FormItem className="flex flex-col"><FormLabel>تاريخ الاستحقاق</FormLabel>
+                          <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                  </div>
+                   <ScrollArea className="h-[200px] border rounded-md p-2">
+                        {custInvoiceItemsFields.map((item, index) => (
+                        <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
+                            <FormField control={customerInvoiceForm.control} name={`items.${index}.itemId`} render={({ field }) => (
+                                <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
+                                <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) customerInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); calculateItemTotal(customerInvoiceForm, index); }} defaultValue={field.value} dir="rtl">
+                                    <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
+                                    <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                </Select><FormMessage className="text-xs"/></FormItem> )} />
+                            <FormField control={customerInvoiceForm.control} name={`items.${index}.quantity`} render={({ field }) => (
+                                <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
+                                <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotal(customerInvoiceForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                <FormMessage className="text-xs"/></FormItem> )} />
+                            <FormField control={customerInvoiceForm.control} name={`items.${index}.unitPrice`} render={({ field }) => (
+                                <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">السعر</FormLabel>
+                                <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotal(customerInvoiceForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                <FormMessage className="text-xs"/></FormItem> )} />
+                            <FormField control={customerInvoiceForm.control} name={`items.${index}.total`} render={({ field }) => (
+                                <FormItem className="col-span-4 sm:col-span-3"><FormLabel className="text-xs">الإجمالي</FormLabel>
+                                <FormControl><Input type="number" {...field} readOnly className="bg-muted h-9 text-xs" /></FormControl>
+                                <FormMessage className="text-xs"/></FormItem> )} />
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeCustInvoiceItem(index)} className="col-span-2 sm:col-span-1 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
+                        </div> ))}
+                    </ScrollArea>
+                    <Button type="button" variant="outline" onClick={() => appendCustInvoiceItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="ml-1 h-3 w-3" /> إضافة صنف</Button>
+                    <FormField control={customerInvoiceForm.control} name="notes" render={({ field }) => (
+                        <FormItem><FormLabel>ملاحظات</FormLabel>
+                          <FormControl><Textarea placeholder="أضف ملاحظات (اختياري)" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
+                  <DialogFooter>
+                    <Button type="submit">{customerInvoiceToEdit ? 'حفظ التعديلات' : 'حفظ الفاتورة'}</Button>
+                    <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                  </DialogFooter>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
 
-          <Dialog open={showAddSupplierInvoiceDialog} onOpenChange={setShowAddSupplierInvoiceDialog}>
+          <Dialog open={showAddSupplierInvoiceDialog} onOpenChange={(isOpen) => { setShowAddSupplierInvoiceDialog(isOpen); if(!isOpen) setSupplierInvoiceToEdit(null);}}>
             <DialogTrigger asChild>
-              <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow">
-                <PlusCircle className="me-2 h-4 w-4" /> إضافة فاتورة مورد
+              <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSupplierInvoiceToEdit(null); supplierInvoiceForm.reset(); setShowAddSupplierInvoiceDialog(true);}}>
+                <PlusCircle className="ml-2 h-4 w-4" /> إضافة فاتورة مورد
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md" dir="rtl">
+             <DialogContent className="sm:max-w-xl" dir="rtl">
               <DialogHeader>
-                <DialogTitle>إضافة فاتورة مورد جديدة</DialogTitle>
+                <DialogTitle>{supplierInvoiceToEdit ? 'تعديل فاتورة مورد' : 'إضافة فاتورة مورد جديدة'}</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                 <div className="space-y-1">
-                  <Label htmlFor="supplierName">اسم المورد</Label>
-                  <Select dir="rtl">
-                    <SelectTrigger id="supplierName" className="bg-background">
-                      <SelectValue placeholder="اختر المورد" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockSuppliers.map(sup => <SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="supplierInvoiceDate">تاريخ الفاتورة</Label>
-                  <DatePickerWithPresets mode="single" />
-                </div>
-                 <div className="space-y-1">
-                  <Label htmlFor="supplierInvoiceDueDate">تاريخ الاستحقاق</Label>
-                  <DatePickerWithPresets mode="single" />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="supplierInvoiceAmount">المبلغ الإجمالي</Label>
-                  <Input id="supplierInvoiceAmount" type="number" placeholder="0.00 SAR" className="bg-background"/>
-                </div>
-                 <div className="space-y-1">
-                  <Label htmlFor="supplierInvoiceNotes">ملاحظات</Label>
-                  <Textarea id="supplierInvoiceNotes" placeholder="أضف ملاحظات (اختياري)" className="bg-background"/>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" onClick={() => setShowAddSupplierInvoiceDialog(false)}>حفظ الفاتورة</Button>
-                <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-              </DialogFooter>
+              <Form {...supplierInvoiceForm}>
+                <form onSubmit={supplierInvoiceForm.handleSubmit(handleSupplierInvoiceSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={supplierInvoiceForm.control} name="supplierId" render={({ field }) => (
+                        <FormItem><FormLabel>اسم المورد</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                            <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المورد" /></SelectTrigger></FormControl>
+                            <SelectContent>{mockSuppliers.map(sup => <SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>)}</SelectContent>
+                          </Select><FormMessage /></FormItem> )} />
+                     <FormField control={supplierInvoiceForm.control} name="date" render={({ field }) => (
+                        <FormItem className="flex flex-col"><FormLabel>تاريخ الفاتورة</FormLabel>
+                          <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                    <FormField control={supplierInvoiceForm.control} name="dueDate" render={({ field }) => (
+                        <FormItem className="flex flex-col"><FormLabel>تاريخ الاستحقاق</FormLabel>
+                          <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                  </div>
+                  <ScrollArea className="h-[200px] border rounded-md p-2">
+                        {suppInvoiceItemsFields.map((item, index) => (
+                        <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
+                            <FormField control={supplierInvoiceForm.control} name={`items.${index}.itemId`} render={({ field }) => (
+                                <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
+                                <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) supplierInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); calculateItemTotal(supplierInvoiceForm, index); }} defaultValue={field.value} dir="rtl">
+                                    <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
+                                    <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                </Select><FormMessage className="text-xs"/></FormItem> )} />
+                            <FormField control={supplierInvoiceForm.control} name={`items.${index}.quantity`} render={({ field }) => (
+                                <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
+                                <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotal(supplierInvoiceForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                <FormMessage className="text-xs"/></FormItem> )} />
+                            <FormField control={supplierInvoiceForm.control} name={`items.${index}.unitPrice`} render={({ field }) => (
+                                <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">السعر</FormLabel>
+                                <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotal(supplierInvoiceForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                <FormMessage className="text-xs"/></FormItem> )} />
+                            <FormField control={supplierInvoiceForm.control} name={`items.${index}.total`} render={({ field }) => (
+                                <FormItem className="col-span-4 sm:col-span-3"><FormLabel className="text-xs">الإجمالي</FormLabel>
+                                <FormControl><Input type="number" {...field} readOnly className="bg-muted h-9 text-xs" /></FormControl>
+                                <FormMessage className="text-xs"/></FormItem> )} />
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeSuppInvoiceItem(index)} className="col-span-2 sm:col-span-1 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
+                        </div> ))}
+                    </ScrollArea>
+                    <Button type="button" variant="outline" onClick={() => appendSuppInvoiceItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="ml-1 h-3 w-3" /> إضافة صنف</Button>
+                     <FormField control={supplierInvoiceForm.control} name="notes" render={({ field }) => (
+                        <FormItem><FormLabel>ملاحظات</FormLabel>
+                          <FormControl><Textarea placeholder="أضف ملاحظات (اختياري)" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
+                  <DialogFooter>
+                    <Button type="submit">{supplierInvoiceToEdit ? 'حفظ التعديلات' : 'حفظ الفاتورة'}</Button>
+                    <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                  </DialogFooter>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
@@ -176,13 +303,13 @@ export default function AccountsPayableReceivablePage() {
       <Tabs defaultValue="receivables" className="w-full">
         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="receivables" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <Users className="inline-block me-2 h-4 w-4" /> الذمم المدينة (العملاء)
+            <Users className="inline-block ml-2 h-4 w-4" /> الذمم المدينة (العملاء)
           </TabsTrigger>
           <TabsTrigger value="payables" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <Briefcase className="inline-block me-2 h-4 w-4" /> الذمم الدائنة (الموردين)
+            <Briefcase className="inline-block ml-2 h-4 w-4" /> الذمم الدائنة (الموردين)
           </TabsTrigger>
           <TabsTrigger value="agingReport" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <FileWarning className="inline-block me-2 h-4 w-4" /> أعمار الذمم
+            <FileWarning className="inline-block ml-2 h-4 w-4" /> أعمار الذمم
           </TabsTrigger>
         </TabsList>
 
@@ -195,14 +322,14 @@ export default function AccountsPayableReceivablePage() {
             <CardContent>
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث في فواتير العملاء..." className="pl-10 w-full sm:w-64 bg-background" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="بحث في فواتير العملاء..." className="pr-10 w-full sm:w-64 bg-background" />
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                        <Filter className="me-2 h-4 w-4" /> تصفية الحالة
+                        <Filter className="ml-2 h-4 w-4" /> تصفية الحالة
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" dir="rtl">
@@ -221,27 +348,27 @@ export default function AccountsPayableReceivablePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>رقم الفاتورة</TableHead>
-                      <TableHead>العميل</TableHead>
-                      <TableHead>تاريخ الفاتورة</TableHead>
-                      <TableHead>تاريخ الاستحقاق</TableHead>
-                      <TableHead>المبلغ الإجمالي</TableHead>
-                      <TableHead>المبلغ المدفوع</TableHead>
-                      <TableHead>المبلغ المتبقي</TableHead>
-                      <TableHead>الحالة</TableHead>
+                      <TableHead className="text-right">رقم الفاتورة</TableHead>
+                      <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">تاريخ الفاتورة</TableHead>
+                      <TableHead className="text-right">تاريخ الاستحقاق</TableHead>
+                      <TableHead className="text-right">المبلغ الإجمالي</TableHead>
+                      <TableHead className="text-right">المبلغ المدفوع</TableHead>
+                      <TableHead className="text-right">المبلغ المتبقي</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {customerInvoices.map((invoice) => (
+                    {customerInvoicesData.map((invoice) => (
                       <TableRow key={invoice.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{invoice.id}</TableCell>
-                        <TableCell>{invoice.customer}</TableCell>
-                        <TableCell>{invoice.date}</TableCell>
-                        <TableCell>{invoice.dueDate}</TableCell>
-                        <TableCell>{invoice.amount}</TableCell>
-                        <TableCell>{invoice.paid}</TableCell>
-                        <TableCell className="font-semibold">{invoice.remaining}</TableCell>
+                        <TableCell>{mockCustomers.find(c=>c.id === invoice.customerId)?.name}</TableCell>
+                        <TableCell>{invoice.date.toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{invoice.totalAmount.toFixed(2)} SAR</TableCell>
+                        <TableCell>{invoice.paidAmount.toFixed(2)} SAR</TableCell>
+                        <TableCell className="font-semibold">{invoice.remainingAmount.toFixed(2)} SAR</TableCell>
                         <TableCell>
                           <Badge
                             variant={
@@ -258,10 +385,10 @@ export default function AccountsPayableReceivablePage() {
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'customer')}>
                             <FileText className="h-4 w-4" />
                           </Button>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إرسال كشف حساب" onClick={() => alert(`إرسال كشف حساب للعميل: ${invoice.customer}`)}>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إرسال كشف حساب" onClick={() => alert(`إرسال كشف حساب للعميل: ${invoice.customerId}`)}>
                             <Mail className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setCustomerInvoiceToEdit(invoice); setShowAddCustomerInvoiceDialog(true);}}>
                             <Edit className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -283,14 +410,14 @@ export default function AccountsPayableReceivablePage() {
             <CardContent>
                <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <div className="relative w-full sm:w-auto grow sm:grow-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث في فواتير الموردين..." className="pl-10 w-full sm:w-64 bg-background" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="بحث في فواتير الموردين..." className="pr-10 w-full sm:w-64 bg-background" />
                 </div>
                  <div className="flex gap-2 flex-wrap">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                        <Filter className="me-2 h-4 w-4" /> تصفية الحالة
+                        <Filter className="ml-2 h-4 w-4" /> تصفية الحالة
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" dir="rtl">
@@ -308,27 +435,27 @@ export default function AccountsPayableReceivablePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>رقم الفاتورة</TableHead>
-                      <TableHead>المورد</TableHead>
-                      <TableHead>تاريخ الفاتورة</TableHead>
-                      <TableHead>تاريخ الاستحقاق</TableHead>
-                      <TableHead>المبلغ الإجمالي</TableHead>
-                      <TableHead>المبلغ المدفوع</TableHead>
-                      <TableHead>المبلغ المتبقي</TableHead>
-                      <TableHead>الحالة</TableHead>
+                      <TableHead className="text-right">رقم الفاتورة</TableHead>
+                      <TableHead className="text-right">المورد</TableHead>
+                      <TableHead className="text-right">تاريخ الفاتورة</TableHead>
+                      <TableHead className="text-right">تاريخ الاستحقاق</TableHead>
+                      <TableHead className="text-right">المبلغ الإجمالي</TableHead>
+                      <TableHead className="text-right">المبلغ المدفوع</TableHead>
+                      <TableHead className="text-right">المبلغ المتبقي</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {supplierInvoices.map((invoice) => (
+                    {supplierInvoicesData.map((invoice) => (
                       <TableRow key={invoice.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{invoice.id}</TableCell>
-                        <TableCell>{invoice.supplier}</TableCell>
-                        <TableCell>{invoice.date}</TableCell>
-                        <TableCell>{invoice.dueDate}</TableCell>
-                        <TableCell>{invoice.amount}</TableCell>
-                        <TableCell>{invoice.paid}</TableCell>
-                        <TableCell className="font-semibold">{invoice.remaining}</TableCell>
+                        <TableCell>{mockSuppliers.find(s=>s.id === invoice.supplierId)?.name}</TableCell>
+                        <TableCell>{invoice.date.toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{invoice.totalAmount.toFixed(2)} SAR</TableCell>
+                        <TableCell>{invoice.paidAmount.toFixed(2)} SAR</TableCell>
+                        <TableCell className="font-semibold">{invoice.remainingAmount.toFixed(2)} SAR</TableCell>
                         <TableCell>
                           <Badge
                             variant={
@@ -344,7 +471,7 @@ export default function AccountsPayableReceivablePage() {
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'supplier')}>
                             <FileText className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setSupplierInvoiceToEdit(invoice); setShowAddSupplierInvoiceDialog(true);}}>
                             <Edit className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -362,7 +489,7 @@ export default function AccountsPayableReceivablePage() {
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <TrendingUp className="me-2 h-6 w-6 text-primary" /> أعمار الذمم المدينة (العملاء)
+                  <TrendingUp className="ml-2 h-6 w-6 text-primary" /> أعمار الذمم المدينة (العملاء)
                 </CardTitle>
                 <CardDescription>تحليل لأعمار المبالغ المستحقة من العملاء.</CardDescription>
               </CardHeader>
@@ -371,7 +498,7 @@ export default function AccountsPayableReceivablePage() {
                   <div key={item.range}>
                     <div className="flex justify-between mb-1">
                       <span>{item.range}</span>
-                      <span className="font-semibold">{item.amount} ({item.percent}%)</span>
+                      <span className="font-semibold">{item.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })} ({item.percent}%)</span>
                     </div>
                     <Progress value={item.percent} aria-label={`${item.percent}% للعملاء في نطاق ${item.range}`} className="h-2" />
                   </div>
@@ -381,7 +508,7 @@ export default function AccountsPayableReceivablePage() {
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <TrendingDown className="me-2 h-6 w-6 text-destructive" /> أعمار الذمم الدائنة (الموردين)
+                  <TrendingDown className="ml-2 h-6 w-6 text-destructive" /> أعمار الذمم الدائنة (الموردين)
                 </CardTitle>
                 <CardDescription>تحليل لأعمار المبالغ المستحقة للموردين.</CardDescription>
               </CardHeader>
@@ -390,7 +517,7 @@ export default function AccountsPayableReceivablePage() {
                   <div key={item.range}>
                     <div className="flex justify-between mb-1">
                       <span>{item.range}</span>
-                      <span className="font-semibold">{item.amount} ({item.percent}%)</span>
+                       <span className="font-semibold">{item.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })} ({item.percent}%)</span>
                     </div>
                     <Progress value={item.percent} aria-label={`${item.percent}% للموردين في نطاق ${item.range}`} className="h-2" />
                   </div>
@@ -403,7 +530,7 @@ export default function AccountsPayableReceivablePage() {
 
       {/* Dialog for Viewing Invoice */}
        <Dialog open={showViewInvoiceDialog} onOpenChange={setShowViewInvoiceDialog}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogContent className="sm:max-w-lg" dir="rtl">
           <DialogHeader>
             <DialogTitle>
               تفاصيل الفاتورة: {selectedInvoiceForView?.id} ({selectedInvoiceForView?.type === 'customer' ? 'عميل' : 'مورد'})
@@ -412,12 +539,31 @@ export default function AccountsPayableReceivablePage() {
           {selectedInvoiceForView && (
             <div className="py-4 space-y-2">
               <p><strong>{selectedInvoiceForView.type === 'customer' ? 'العميل' : 'المورد'}:</strong> {selectedInvoiceForView.type === 'customer' ? selectedInvoiceForView.customer : selectedInvoiceForView.supplier}</p>
-              <p><strong>تاريخ الفاتورة:</strong> {selectedInvoiceForView.date}</p>
-              <p><strong>تاريخ الاستحقاق:</strong> {selectedInvoiceForView.dueDate}</p>
-              <p><strong>المبلغ الإجمالي:</strong> {selectedInvoiceForView.amount}</p>
-              <p><strong>المبلغ المدفوع:</strong> {selectedInvoiceForView.paid}</p>
-              <p><strong>المبلغ المتبقي:</strong> {selectedInvoiceForView.remaining}</p>
+              <p><strong>تاريخ الفاتورة:</strong> {selectedInvoiceForView.date?.toLocaleDateString('ar-SA')}</p>
+              <p><strong>تاريخ الاستحقاق:</strong> {selectedInvoiceForView.dueDate?.toLocaleDateString('ar-SA')}</p>
+              <p><strong>المبلغ الإجمالي:</strong> {selectedInvoiceForView.totalAmount?.toFixed(2)} SAR</p>
+              <p><strong>المبلغ المدفوع:</strong> {selectedInvoiceForView.paidAmount?.toFixed(2)} SAR</p>
+              <p><strong>المبلغ المتبقي:</strong> {selectedInvoiceForView.remainingAmount?.toFixed(2)} SAR</p>
               <p><strong>الحالة:</strong> <Badge variant={selectedInvoiceForView.status === "مدفوع" ? "default" : selectedInvoiceForView.status === "جزئي" ? "secondary" : selectedInvoiceForView.status === "متأخر" ? "destructive" : "outline"}>{selectedInvoiceForView.status}</Badge></p>
+              <p><strong>ملاحظات:</strong> {selectedInvoiceForView.notes || 'لا يوجد'}</p>
+               <h4 className="font-semibold pt-2 border-t mt-3">الأصناف:</h4>
+                {selectedInvoiceForView.items && selectedInvoiceForView.items.length > 0 ? (
+                    <Table size="sm">
+                        <TableHeader>
+                            <TableRow><TableHead>الصنف</TableHead><TableHead>الكمية</TableHead><TableHead>السعر</TableHead><TableHead>الإجمالي</TableHead></TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {selectedInvoiceForView.items.map((it: any, idx: number) => (
+                                <TableRow key={idx}>
+                                    <TableCell>{mockItems.find(i => i.id === it.itemId)?.name || it.description || it.itemId}</TableCell>
+                                    <TableCell>{it.quantity}</TableCell>
+                                    <TableCell>{it.unitPrice.toFixed(2)}</TableCell>
+                                    <TableCell>{it.total.toFixed(2)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : <p className="text-muted-foreground">لا توجد أصناف في هذه الفاتورة.</p>}
             </div>
           )}
           <DialogFooter>
