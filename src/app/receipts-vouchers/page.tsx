@@ -19,7 +19,7 @@ import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-
+import AppLogo from '@/components/app-logo'; // Assuming AppLogo exists
 
 // Mock data initial state
 const initialReceiptVoucherData = [
@@ -55,6 +55,11 @@ const voucherSchema = z.object({
   branch: z.string().min(1, "الفرع مطلوب"),
 });
 type VoucherFormValues = z.infer<typeof voucherSchema>;
+
+// Placeholder for amount to words conversion
+const convertAmountToWords = (amount: number) => {
+  return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
+};
 
 
 export default function ReceiptsVouchersPage() {
@@ -323,28 +328,68 @@ export default function ReceiptsVouchersPage() {
       </Tabs>
 
        <Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
-        <DialogContent className="sm:max-w-lg" dir="rtl">
-          <DialogHeader><DialogTitle>طباعة السند: {selectedVoucherForPrint?.id}</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl"> {/* Increased max-width for better A4 preview */}
+          <DialogHeader className="print-hidden">
+            <DialogTitle>طباعة السند: {selectedVoucherForPrint?.id}</DialogTitle>
+          </DialogHeader>
           {selectedVoucherForPrint && (
-            <div className="py-4 space-y-3 border rounded-md p-4 my-4">
-              <div className="flex justify-between items-center mb-4 pb-2 border-b">
-                <h3 className="text-xl font-semibold">شركة المستقبل ERP</h3><p className="text-sm">{selectedVoucherForPrint.type}</p>
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="receipt voucher">
+              {/* Header Section */}
+              <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                <div className='flex items-center gap-2'>
+                  <AppLogo /> {/* Replace with your actual AppLogo component or an img tag */}
+                  <div>
+                    <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2>
+                    <p className="text-xs">Al-Mustaqbal IT Co.</p>
+                    <p className="text-xs">الرياض - المملكة العربية السعودية</p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-md font-semibold">{selectedVoucherForPrint.type}</h3>
+                  <p className="text-xs">{selectedVoucherForPrint.type === "سند قبض" ? "Receipt Voucher" : "Payment Voucher"}</p>
+                  <p className="text-xs mt-1">رقم: {selectedVoucherForPrint.id}</p>
+                  <p className="text-xs">تاريخ: {new Date(selectedVoucherForPrint.date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</p>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <p><strong>رقم السند:</strong> {selectedVoucherForPrint.id}</p><p><strong>التاريخ:</strong> {new Date(selectedVoucherForPrint.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
-                <p><strong>الجهة:</strong> {selectedVoucherForPrint.partyName}</p><p><strong>المبلغ:</strong> {selectedVoucherForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
-                <p><strong>طريقة {selectedVoucherForPrint.type === "سند قبض" ? "القبض" : "الصرف"}:</strong> {selectedVoucherForPrint.method}</p><p><strong>الفرع:</strong> {selectedVoucherForPrint.branch}</p>
-                <p className="col-span-2"><strong>المبلغ كتابة:</strong> {/* Implement proper number to words conversion here */} {selectedVoucherForPrint.amount.toLocaleString('ar-SA')} ريال سعودي فقط لا غير.</p>
-                <p className="col-span-2"><strong>البيان:</strong> {selectedVoucherForPrint.notes || `${selectedVoucherForPrint.type} لـ ${selectedVoucherForPrint.partyName} بمبلغ ${selectedVoucherForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}`}</p>
-                 <p className="col-span-2"><strong>الحساب:</strong> {mockAccounts.find(a=>a.id === selectedVoucherForPrint.accountId)?.name || selectedVoucherForPrint.accountId}</p>
+
+              {/* Body Section - Details */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-6 text-xs">
+                <div><strong>الفرع:</strong> {selectedVoucherForPrint.branch}</div>
+                <div><strong>طريقة {selectedVoucherForPrint.type === "سند قبض" ? "القبض" : "الصرف"}:</strong> {selectedVoucherForPrint.method}</div>
+                <div className="col-span-2"><strong>{selectedVoucherForPrint.type === "سند قبض" ? "استلمنا من السيد/السادة:" : "ادفعوا لأمر السيد/السادة:"}</strong> {selectedVoucherForPrint.partyName}</div>
+                <div><strong>الحساب النقدي/البنكي:</strong> {mockAccounts.find(a=>a.id === selectedVoucherForPrint.accountId)?.name || selectedVoucherForPrint.accountId}</div>
               </div>
-               <div className="grid grid-cols-2 gap-4 mt-8 pt-4 border-t">
-                <div className="text-center"><p className="mb-6">.........................</p><p className="text-sm font-semibold">توقيع المحاسب</p></div>
-                 <div className="text-center"><p className="mb-6">.........................</p><p className="text-sm font-semibold">توقيع المستلم</p></div>
+              <div className="mb-6 text-xs">
+                <p><strong>وذلك عن (البيان):</strong> {selectedVoucherForPrint.notes || `${selectedVoucherForPrint.type} لـ ${selectedVoucherForPrint.partyName} بمبلغ ${selectedVoucherForPrint.amount.toLocaleString('ar-SA')}`}</p>
               </div>
-            </div>)}
-          <DialogFooter>
-            <Button onClick={() => { alert(`Printing voucher ${selectedVoucherForPrint?.id}`); setShowPrintDialog(false); }} ><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+              <div className="mb-8 p-3 border border-gray-300 rounded-md bg-muted/30 text-xs">
+                  <p><strong>المبلغ:</strong> <span className="font-bold text-base">{selectedVoucherForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</span></p>
+                  <p data-ai-hint="amount words"><strong>المبلغ كتابة:</strong> {convertAmountToWords(selectedVoucherForPrint.amount)}</p>
+              </div>
+
+              {/* Footer Section - Signatures */}
+              <div className="grid grid-cols-3 gap-4 mt-16 pt-6 border-t border-gray-300 text-xs">
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">المحاسب</p>
+                  <p>Accountant</p>
+                </div>
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">المدير المالي</p>
+                  <p>Finance Manager</p>
+                </div>
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">{selectedVoucherForPrint.type === "سند قبض" ? "المستلم منه" : "المستلم"}</p>
+                  <p>{selectedVoucherForPrint.type === "سند قبض" ? "Received From" : "Received by"}</p>
+                </div>
+              </div>
+              <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
+            </div>
+          )}
+          <DialogFooter className="print-hidden pt-4">
+            <Button onClick={() => window.print()} ><Printer className="me-2 h-4 w-4" /> طباعة</Button>
             <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -352,3 +397,4 @@ export default function ReceiptsVouchersPage() {
     </div>
   );
 }
+

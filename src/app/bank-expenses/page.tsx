@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import AppLogo from '@/components/app-logo'; // Assuming AppLogo exists for company logo
 
 // Mock Data
 const mockBankAccounts = [
@@ -50,6 +51,13 @@ const initialBankExpensesData: BankExpenseFormValues[] = [
   { id: "BEXP002", date: new Date("2024-07-15"), bankAccountId: "BANK002", expenseAccountId: "5040", beneficiary: "بنك الرياض", description: "رسوم خدمات بنكية", amount: 150, referenceNumber: "FEE-JULY24", status: "مرحل" },
   { id: "BEXP003", date: new Date("2024-07-20"), bankAccountId: "BANK001", expenseAccountId: "5010", beneficiary: "مورد خدمات عامة", description: "فاتورة خدمات تنظيف", amount: 800, referenceNumber: "INV-CLN-07", status: "مسودة" },
 ];
+
+// Placeholder for amount to words conversion
+const convertAmountToWords = (amount: number) => {
+  // This is a placeholder. A full implementation is complex.
+  return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
+};
+
 
 export default function BankExpensesPage() {
   const [bankExpenses, setBankExpenses] = useState(initialBankExpensesData);
@@ -265,35 +273,68 @@ export default function BankExpensesPage() {
 
       {/* Dialog for Printing Expense */}
       <Dialog open={showPrintExpenseDialog} onOpenChange={setShowPrintExpenseDialog}>
-        <DialogContent className="sm:max-w-lg" dir="rtl">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl">
+          <DialogHeader className="print-hidden">
             <DialogTitle>طباعة مصروف بنكي: {selectedExpenseForPrint?.id}</DialogTitle>
           </DialogHeader>
           {selectedExpenseForPrint && (
-            <div className="py-4 space-y-3 border rounded-md p-4 my-4">
-              <div className="flex justify-between items-center mb-4 pb-2 border-b">
-                  <h3 className="text-xl font-semibold">شركة المستقبل ERP</h3>
-                  <p className="text-sm">إيصال مصروف بنكي</p>
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="voucher layout">
+              {/* Header Section */}
+              <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                <div className='flex items-center gap-2'>
+                  <AppLogo />
+                  <div>
+                    <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2>
+                    <p className="text-xs">Al-Mustaqbal IT Co.</p>
+                    <p className="text-xs">الرياض - المملكة العربية السعودية</p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-md font-semibold">إيصال مصروف بنكي</h3>
+                  <p className="text-xs">Bank Expense Voucher</p>
+                  <p className="text-xs mt-1">رقم: {selectedExpenseForPrint.id}</p>
+                  <p className="text-xs">تاريخ: {new Date(selectedExpenseForPrint.date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</p>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <p><strong>رقم الإيصال:</strong> {selectedExpenseForPrint.id}</p>
-                  <p><strong>التاريخ:</strong> {new Date(selectedExpenseForPrint.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
-                  <p><strong>الحساب البنكي:</strong> {mockBankAccounts.find(b => b.id === selectedExpenseForPrint.bankAccountId)?.name}</p>
-                  <p><strong>حساب المصروف:</strong> {mockExpenseAccounts.find(e => e.id === selectedExpenseForPrint.expenseAccountId)?.name}</p>
-                  <p><strong>المستفيد:</strong> {selectedExpenseForPrint.beneficiary}</p>
-                  <p><strong>المبلغ:</strong> {selectedExpenseForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
-                  <p className="col-span-2"><strong>المبلغ كتابة:</strong> {/* TODO: Implement number to words conversion */} {selectedExpenseForPrint.amount.toLocaleString('ar-SA')} ريال سعودي فقط لا غير.</p>
-                  <p className="col-span-2"><strong>الوصف:</strong> {selectedExpenseForPrint.description}</p>
-                  <p><strong>الرقم المرجعي:</strong> {selectedExpenseForPrint.referenceNumber || "لا يوجد"}</p>
+
+              {/* Body Section - Details */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-6 text-xs">
+                <div><strong>الحساب البنكي:</strong> {mockBankAccounts.find(b => b.id === selectedExpenseForPrint.bankAccountId)?.name}</div>
+                <div><strong>حساب المصروف:</strong> {mockExpenseAccounts.find(e => e.id === selectedExpenseForPrint.expenseAccountId)?.name}</div>
+                <div className="col-span-2"><strong>المستفيد:</strong> {selectedExpenseForPrint.beneficiary}</div>
+                <div className="col-span-2"><strong>الرقم المرجعي:</strong> {selectedExpenseForPrint.referenceNumber || "لا يوجد"}</div>
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-8 pt-4 border-t">
-                  <div className="text-center"><p className="mb-6">.........................</p><p className="text-sm font-semibold">توقيع المحاسب</p></div>
-                  <div className="text-center"><p className="mb-6">.........................</p><p className="text-sm font-semibold">توقيع المدير المالي</p></div>
+              <div className="mb-6 text-xs">
+                <p><strong>الوصف (البيان):</strong> {selectedExpenseForPrint.description}</p>
               </div>
+              <div className="mb-8 p-3 border border-gray-300 rounded-md bg-muted/30 text-xs">
+                  <p><strong>المبلغ:</strong> <span className="font-bold text-base">{selectedExpenseForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</span></p>
+                  <p data-ai-hint="amount to words function"><strong>المبلغ كتابة:</strong> {convertAmountToWords(selectedExpenseForPrint.amount)}</p>
+              </div>
+
+              {/* Footer Section - Signatures */}
+              <div className="grid grid-cols-3 gap-4 mt-16 pt-6 border-t border-gray-300 text-xs">
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">المحاسب</p>
+                  <p>Accountant</p>
+                </div>
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">المدير المالي</p>
+                  <p>Finance Manager</p>
+                </div>
+                <div className="text-center">
+                  <p className="mb-10">.........................</p>
+                  <p className="font-semibold">المستلم</p>
+                  <p>Received by</p>
+                </div>
+              </div>
+              <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
             </div>
           )}
-          <DialogFooter>
-            <Button onClick={() => { alert(`جاري طباعة إيصال ${selectedExpenseForPrint?.id}`); setShowPrintExpenseDialog(false); }}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+          <DialogFooter className="print-hidden pt-4">
+            <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
             <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -302,3 +343,4 @@ export default function BankExpensesPage() {
     </div>
   );
 }
+

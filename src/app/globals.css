@@ -87,3 +87,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 15mm; /* A4-like margins */
+    box-shadow: none !important;
+    border: none !important;
+    font-family: var(--font-cairo), sans-serif; /* Ensure Cairo font for printing */
+    font-size: 10pt; /* Standard print font size */
+    line-height: 1.4;
+  }
+  .print-hidden {
+    display: none !important;
+  }
+  .printable-area .text-primary {
+    color: #000 !important; /* Print primary colors as black for better readability */
+  }
+  .printable-area .bg-muted\/50 { /* Example of overriding specific background */
+    background-color: transparent !important;
+  }
+  /* Add more print-specific overrides as needed */
+}
