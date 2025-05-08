@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, PackagePlus, Upload, CalendarCheck, UserCog } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, PackagePlus, Upload, CalendarCheck, UserCog, Printer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -784,3 +784,4 @@ export default function InventoryPage() {
     </div>
   );
 }
+
