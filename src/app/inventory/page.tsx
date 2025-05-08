@@ -9,13 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, BarChartBig, PieChart, LineChart, PackagePlus } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, PackagePlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
@@ -39,6 +39,9 @@ const productSchema = z.object({
   location: z.string().optional(),
   barcode: z.string().optional(),
   supplierId: z.string().optional(), // Mock supplier ID
+  itemsPerParentUnit: z.coerce.number().positive("العدد يجب أن يكون أكبر من صفر").optional(),
+  subUnit: z.enum(["قطعة", "حبة", "متر", "سنتيمتر"]).optional(),
+  subUnitSellingPrice: z.coerce.number().min(0, "سعر الوحدة الفرعية يجب أن يكون إيجابياً").optional(),
 });
 type ProductFormValues = z.infer<typeof productSchema>;
 
@@ -46,7 +49,7 @@ type ProductFormValues = z.infer<typeof productSchema>;
 const initialProductsData: ProductFormValues[] = [
   { id: "ITEM001", sku: "DELL-XPS15-LAP", name: "لابتوب Dell XPS 15", description: "لابتوب عالي الأداء بشاشة 15 بوصة", category: "إلكترونيات", unit: "قطعة", costPrice: 5800, sellingPrice: 6500, quantity: 50, reorderLevel: 10, location: "مستودع A - رف 3", barcode: "1234567890123", supplierId: "SUP001" },
   { id: "ITEM002", sku: "HP-LASER-PRO", name: "طابعة HP LaserJet Pro", description: "طابعة ليزر أحادية اللون", category: "إلكترونيات", unit: "قطعة", costPrice: 1000, sellingPrice: 1200, quantity: 5, reorderLevel: 5, location: "مستودع A - رف 1", barcode: "2345678901234", supplierId: "SUP001" },
-  { id: "ITEM003", sku: "A4-PAPER-BOX", name: "ورق طباعة A4 (صندوق)", description: "صندوق ورق طباعة A4 عالي الجودة", category: "قرطاسية", unit: "صندوق", costPrice: 120, sellingPrice: 150, quantity: 200, reorderLevel: 50, location: "مستودع B - قسم 2", barcode: "3456789012345", supplierId: "SUP002" },
+  { id: "ITEM003", sku: "A4-PAPER-BOX", name: "ورق طباعة A4 (صندوق)", description: "صندوق ورق طباعة A4 عالي الجودة", category: "قرطاسية", unit: "صندوق", costPrice: 120, sellingPrice: 150, quantity: 200, reorderLevel: 50, location: "مستودع B - قسم 2", barcode: "3456789012345", supplierId: "SUP002", itemsPerParentUnit: 500, subUnit: "قطعة", subUnitSellingPrice: 0.30 },
   { id: "ITEM004", sku: "WOOD-DESK", name: "مكاتب خشبية", description: "مكتب خشبي أنيق للمكاتب", category: "أثاث مكتبي", unit: "قطعة", costPrice: 650, sellingPrice: 800, quantity: 15, reorderLevel: 5, location: "مستودع C - منطقة 1", barcode: "4567890123456", supplierId: "SUP003" },
   { id: "ITEM005", sku: "BLUE-PEN-BOX", name: "أقلام حبر أزرق (علبة)", description: "علبة أقلام حبر زرقاء، 12 قلم", category: "قرطاسية", unit: "علبة", costPrice: 20, sellingPrice: 25, quantity: 500, reorderLevel: 100, location: "مستودع B - قسم 1", barcode: "5678901234567", supplierId: "SUP002" },
 ];
@@ -60,7 +63,8 @@ const mockSuppliers = [
 
 // Mock categories for dropdown
 const mockCategories = ["إلكترونيات", "قرطاسية", "أثاث مكتبي", "مواد خام", "أخرى"];
-const mockUnits = ["قطعة", "صندوق", "علبة", "كيلوجرام", "متر", "لتر"];
+const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة", "سنتيمتر"];
+const mockSubUnits = ["قطعة", "حبة", "متر", "سنتيمتر"];
 
 
 const stockMovements = [
@@ -104,7 +108,7 @@ export default function InventoryPage() {
   const productForm = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: ""
+      sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined
     },
   });
 
@@ -112,7 +116,7 @@ export default function InventoryPage() {
     if (productToEdit) {
       productForm.reset(productToEdit);
     } else {
-      productForm.reset({ sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "" });
+      productForm.reset({ sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined });
     }
   }, [productToEdit, productForm, showManageProductDialog]);
 
@@ -129,6 +133,8 @@ export default function InventoryPage() {
   const handleDeleteProduct = (productId: string) => {
     setProductsData(prev => prev.filter(p => p.id !== productId));
   };
+
+  const selectedUnit = productForm.watch("unit");
 
 
   if (currentReport) {
@@ -236,7 +242,7 @@ export default function InventoryPage() {
           <DialogContent className="sm:max-w-2xl" dir="rtl">
             <DialogHeader>
               <DialogTitle>{productToEdit ? 'تعديل بيانات المنتج' : 'إضافة منتج/صنف جديد'}</DialogTitle>
-              <CardDescription>أدخل تفاصيل المنتج أو الصنف.</CardDescription>
+              <DialogDescriptionComponent>أدخل تفاصيل المنتج أو الصنف.</DialogDescriptionComponent>
             </DialogHeader>
             <Form {...productForm}>
               <form onSubmit={productForm.handleSubmit(handleProductSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-2">
@@ -247,29 +253,43 @@ export default function InventoryPage() {
                 <FormField control={productForm.control} name="description" render={({ field }) => ( <FormItem><FormLabel>الوصف</FormLabel><FormControl><Textarea placeholder="وصف تفصيلي للمنتج (اختياري)" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={productForm.control} name="category" render={({ field }) => ( <FormItem><FormLabel>الفئة</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                        <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                             <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفئة" /></SelectTrigger></FormControl>
                             <SelectContent>{mockCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
                         </Select><FormMessage /></FormItem> )} />
-                    <FormField control={productForm.control} name="unit" render={({ field }) => ( <FormItem><FormLabel>الوحدة</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                    <FormField control={productForm.control} name="unit" render={({ field }) => ( <FormItem><FormLabel>الوحدة الرئيسية</FormLabel>
+                         <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                             <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الوحدة" /></SelectTrigger></FormControl>
                             <SelectContent>{mockUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
                         </Select><FormMessage /></FormItem> )} />
                 </div>
+                 {(selectedUnit === "صندوق" || selectedUnit === "كرتون") && (
+                    <Card className="p-4 bg-muted/50">
+                        <CardTitle className="text-base mb-3">تفاصيل محتويات الوحدة الرئيسية ({selectedUnit})</CardTitle>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <FormField control={productForm.control} name="itemsPerParentUnit" render={({ field }) => ( <FormItem><FormLabel>عدد الوحدات الفرعية</FormLabel><FormControl><Input type="number" placeholder="مثال: 12" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={productForm.control} name="subUnit" render={({ field }) => ( <FormItem><FormLabel>نوع الوحدة الفرعية</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                    <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl>
+                                    <SelectContent>{mockSubUnits.map(sub => <SelectItem key={sub} value={sub}>{sub}</SelectItem>)}</SelectContent>
+                                </Select><FormMessage /></FormItem> )} />
+                            <FormField control={productForm.control} name="subUnitSellingPrice" render={({ field }) => ( <FormItem><FormLabel>سعر بيع الوحدة الفرعية</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                        </div>
+                    </Card>
+                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={productForm.control} name="costPrice" render={({ field }) => ( <FormItem><FormLabel>سعر التكلفة</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={productForm.control} name="sellingPrice" render={({ field }) => ( <FormItem><FormLabel>سعر البيع</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={productForm.control} name="costPrice" render={({ field }) => ( <FormItem><FormLabel>سعر تكلفة الوحدة الرئيسية</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={productForm.control} name="sellingPrice" render={({ field }) => ( <FormItem><FormLabel>سعر بيع الوحدة الرئيسية</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <FormField control={productForm.control} name="quantity" render={({ field }) => ( <FormItem><FormLabel>الكمية الحالية</FormLabel><FormControl><Input type="number" placeholder="0" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={productForm.control} name="reorderLevel" render={({ field }) => ( <FormItem><FormLabel>حد إعادة الطلب</FormLabel><FormControl><Input type="number" placeholder="0" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                     <FormField control={productForm.control} name="quantity" render={({ field }) => ( <FormItem><FormLabel>الكمية الحالية (بالوحدة الرئيسية)</FormLabel><FormControl><Input type="number" placeholder="0" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={productForm.control} name="reorderLevel" render={({ field }) => ( <FormItem><FormLabel>حد إعادة الطلب (بالوحدة الرئيسية)</FormLabel><FormControl><Input type="number" placeholder="0" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <FormField control={productForm.control} name="location" render={({ field }) => ( <FormItem><FormLabel>موقع التخزين</FormLabel><FormControl><Input placeholder="مثال: مستودع أ - رف 5" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <FormField control={productForm.control} name="barcode" render={({ field }) => ( <FormItem><FormLabel>الباركود</FormLabel><FormControl><Input placeholder="أدخل الباركود (اختياري)" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={productForm.control} name="supplierId" render={({ field }) => ( <FormItem><FormLabel>المورد الأساسي (اختياري)</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                        <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                             <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المورد" /></SelectTrigger></FormControl>
                             <SelectContent>{mockSuppliers.map(sup => <SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>)}</SelectContent>
                         </Select><FormMessage /></FormItem> )} />
@@ -518,3 +538,4 @@ export default function InventoryPage() {
     </div>
   );
 }
+
