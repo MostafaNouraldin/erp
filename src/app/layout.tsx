@@ -90,7 +90,7 @@ export default function RootLayout({
         >
           <SidebarProvider>
             <div className="flex min-h-screen w-full">
-              <Sidebar collapsible="icon" side="right" className="border-s shadow-sm"> 
+              <Sidebar collapsible="icon" side="right" className="shadow-sm"> 
                 <SidebarHeader className="p-4 flex items-center justify-between">
                   <AppLogo />
                   <div className="hidden group-data-[collapsible=icon]:hidden">

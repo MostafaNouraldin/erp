@@ -35,7 +35,7 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
-  side: "left" | "right" // Added side to context
+  side: "left" | "right" 
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -119,7 +119,7 @@ const SidebarProvider = React.forwardRef<
     const state = open ? "expanded" : "collapsed"
     
     // Infer side based on dir attribute of html tag for RTL support
-    const [effectiveSide, setEffectiveSide] = React.useState<"left" | "right">("left");
+    const [effectiveSide, setEffectiveSide] = React.useState<"left" | "right">("right"); // Default to right for RTL
 
     React.useEffect(() => {
       const dir = document.documentElement.dir;
@@ -136,7 +136,7 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
-        side: effectiveSide, // Use effectiveSide
+        side: effectiveSide, 
       }),
       [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, effectiveSide]
     )
@@ -178,7 +178,7 @@ const Sidebar = React.forwardRef<
 >(
   (
     {
-      side: propSide, // Renamed to propSide to avoid conflict
+      side: propSide, 
       variant = "sidebar",
       collapsible = "offcanvas",
       className,
@@ -188,13 +188,14 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile, side: contextSide } = useSidebar()
-    const side = propSide ?? contextSide; // Use propSide if provided, otherwise use contextSide
+    const side = propSide ?? contextSide; 
 
     if (collapsible === "none") {
       return (
         <div
           className={cn(
             "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
+             side === "left" ? "border-r" : "border-l", // Add border based on side
             className
           )}
           ref={ref}
@@ -211,7 +212,10 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            className={cn(
+                "w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+                side === "left" ? "border-r" : "border-l" 
+            )}
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -239,7 +243,6 @@ const Sidebar = React.forwardRef<
           className={cn(
             "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
             "group-data-[collapsible=offcanvas]:w-0",
-            // "group-data-[side=right]:rotate-180", // This might need adjustment for RTL logic if it implies visual rotation. This was likely incorrect.
             variant === "floating" || variant === "inset"
               ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
@@ -251,17 +254,22 @@ const Sidebar = React.forwardRef<
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
             variant === "floating" || variant === "inset"
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              : cn(
+                  "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
+                  side === "left" ? "border-r" : "border-l" 
+                ),
             className
           )}
           {...props}
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            className={cn(
+                "flex h-full w-full flex-col bg-sidebar", 
+                "group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            )}
           >
             {children}
           </div>
@@ -567,7 +575,7 @@ const SidebarMenuButton = React.forwardRef<
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
-    const { isMobile, state, side } = useSidebar() // Added side from context
+    const { isMobile, state, side } = useSidebar() 
 
     const button = (
       <Comp
@@ -597,7 +605,7 @@ const SidebarMenuButton = React.forwardRef<
       <Tooltip>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent
-          side={tooltipSide} // Use determined tooltipSide
+          side={tooltipSide} 
           align="center"
           hidden={state !== "collapsed" || isMobile}
           {...tooltip}
