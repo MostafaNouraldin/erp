@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, PackagePlus } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, PackagePlus, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -23,6 +23,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import type { ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Image from 'next/image';
 
 // Product Schema
 const productSchema = z.object({
@@ -42,26 +43,26 @@ const productSchema = z.object({
   itemsPerParentUnit: z.coerce.number().positive("العدد يجب أن يكون أكبر من صفر").optional(),
   subUnit: z.enum(["قطعة", "حبة", "متر", "سنتيمتر"]).optional(),
   subUnitSellingPrice: z.coerce.number().min(0, "سعر الوحدة الفرعية يجب أن يكون إيجابياً").optional(),
+  image: z.string().optional(),
+  dataAiHint: z.string().max(20, "الكلمات المفتاحية يجب ألا تتجاوز 20 حرفًا").optional(),
 });
 type ProductFormValues = z.infer<typeof productSchema>;
 
 // Mock data for products (enhanced inventoryItems)
 const initialProductsData: ProductFormValues[] = [
-  { id: "ITEM001", sku: "DELL-XPS15-LAP", name: "لابتوب Dell XPS 15", description: "لابتوب عالي الأداء بشاشة 15 بوصة", category: "إلكترونيات", unit: "قطعة", costPrice: 5800, sellingPrice: 6500, quantity: 50, reorderLevel: 10, location: "مستودع A - رف 3", barcode: "1234567890123", supplierId: "SUP001" },
-  { id: "ITEM002", sku: "HP-LASER-PRO", name: "طابعة HP LaserJet Pro", description: "طابعة ليزر أحادية اللون", category: "إلكترونيات", unit: "قطعة", costPrice: 1000, sellingPrice: 1200, quantity: 5, reorderLevel: 5, location: "مستودع A - رف 1", barcode: "2345678901234", supplierId: "SUP001" },
-  { id: "ITEM003", sku: "A4-PAPER-BOX", name: "ورق طباعة A4 (صندوق)", description: "صندوق ورق طباعة A4 عالي الجودة", category: "قرطاسية", unit: "صندوق", costPrice: 120, sellingPrice: 150, quantity: 200, reorderLevel: 50, location: "مستودع B - قسم 2", barcode: "3456789012345", supplierId: "SUP002", itemsPerParentUnit: 500, subUnit: "قطعة", subUnitSellingPrice: 0.30 },
-  { id: "ITEM004", sku: "WOOD-DESK", name: "مكاتب خشبية", description: "مكتب خشبي أنيق للمكاتب", category: "أثاث مكتبي", unit: "قطعة", costPrice: 650, sellingPrice: 800, quantity: 15, reorderLevel: 5, location: "مستودع C - منطقة 1", barcode: "4567890123456", supplierId: "SUP003" },
-  { id: "ITEM005", sku: "BLUE-PEN-BOX", name: "أقلام حبر أزرق (علبة)", description: "علبة أقلام حبر زرقاء، 12 قلم", category: "قرطاسية", unit: "علبة", costPrice: 20, sellingPrice: 25, quantity: 500, reorderLevel: 100, location: "مستودع B - قسم 1", barcode: "5678901234567", supplierId: "SUP002" },
+  { id: "ITEM001", sku: "DELL-XPS15-LAP", name: "لابتوب Dell XPS 15", description: "لابتوب عالي الأداء بشاشة 15 بوصة", category: "إلكترونيات", unit: "قطعة", costPrice: 5800, sellingPrice: 6500, quantity: 50, reorderLevel: 10, location: "مستودع A - رف 3", barcode: "1234567890123", supplierId: "SUP001", image: "https://picsum.photos/200/200?random=1", dataAiHint: "laptop computer" },
+  { id: "ITEM002", sku: "HP-LASER-PRO", name: "طابعة HP LaserJet Pro", description: "طابعة ليزر أحادية اللون", category: "إلكترونيات", unit: "قطعة", costPrice: 1000, sellingPrice: 1200, quantity: 5, reorderLevel: 5, location: "مستودع A - رف 1", barcode: "2345678901234", supplierId: "SUP001", image: "https://picsum.photos/200/200?random=2", dataAiHint: "printer office" },
+  { id: "ITEM003", sku: "A4-PAPER-BOX", name: "ورق طباعة A4 (صندوق)", description: "صندوق ورق طباعة A4 عالي الجودة", category: "قرطاسية", unit: "صندوق", costPrice: 120, sellingPrice: 150, quantity: 200, reorderLevel: 50, location: "مستودع B - قسم 2", barcode: "3456789012345", supplierId: "SUP002", itemsPerParentUnit: 500, subUnit: "قطعة", subUnitSellingPrice: 0.30, image: "https://picsum.photos/200/200?random=3", dataAiHint: "paper stationery" },
+  { id: "ITEM004", sku: "WOOD-DESK", name: "مكاتب خشبية", description: "مكتب خشبي أنيق للمكاتب", category: "أثاث مكتبي", unit: "قطعة", costPrice: 650, sellingPrice: 800, quantity: 15, reorderLevel: 5, location: "مستودع C - منطقة 1", barcode: "4567890123456", supplierId: "SUP003", image: "https://picsum.photos/200/200?random=4", dataAiHint: "desk furniture" },
+  { id: "ITEM005", sku: "BLUE-PEN-BOX", name: "أقلام حبر أزرق (علبة)", description: "علبة أقلام حبر زرقاء، 12 قلم", category: "قرطاسية", unit: "علبة", costPrice: 20, sellingPrice: 25, quantity: 500, reorderLevel: 100, location: "مستودع B - قسم 1", barcode: "5678901234567", supplierId: "SUP002", image: "https://picsum.photos/200/200?random=5", dataAiHint: "pens stationery" },
 ];
 
-// Mock suppliers for dropdown
 const mockSuppliers = [
     { id: "SUP001", name: "مورد الإلكترونيات الحديثة" },
     { id: "SUP002", name: "شركة القرطاسية المتحدة" },
     { id: "SUP003", name: "مصنع الأثاث العصري" },
 ];
 
-// Mock categories for dropdown
 const mockCategories = ["إلكترونيات", "قرطاسية", "أثاث مكتبي", "مواد خام", "أخرى"];
 const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة", "سنتيمتر"];
 const mockSubUnits = ["قطعة", "حبة", "متر", "سنتيمتر"];
@@ -102,21 +103,34 @@ export default function InventoryPage() {
   const [productsData, setProductsData] = useState(initialProductsData);
   const [showManageProductDialog, setShowManageProductDialog] = useState(false);
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const [currentReport, setCurrentReport] = useState<{name: string, description: string, icon: React.ElementType} | null>(null);
 
   const productForm = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined
+      sku: "", name: "", description: "", category: "", unit: "", 
+      costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, 
+      location: "", barcode: "", supplierId: "", 
+      itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined,
+      image: "", dataAiHint: ""
     },
   });
 
   useEffect(() => {
     if (productToEdit) {
       productForm.reset(productToEdit);
+      setImagePreview(productToEdit.image || null);
     } else {
-      productForm.reset({ sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined });
+      productForm.reset({ 
+        sku: "", name: "", description: "", category: "", unit: "", 
+        costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, 
+        location: "", barcode: "", supplierId: "", 
+        itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined,
+        image: "", dataAiHint: ""
+      });
+      setImagePreview(null);
     }
   }, [productToEdit, productForm, showManageProductDialog]);
 
@@ -128,10 +142,30 @@ export default function InventoryPage() {
     }
     setShowManageProductDialog(false);
     setProductToEdit(null);
+    setImagePreview(null);
   };
 
   const handleDeleteProduct = (productId: string) => {
     setProductsData(prev => prev.filter(p => p.id !== productId));
+  };
+
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const dataUri = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        setImagePreview(dataUri);
+        productForm.setValue('image', dataUri);
+      } catch (error) {
+        console.error("Error converting file to data URI:", error);
+        // TODO: Add user feedback, e.g., toast notification
+      }
+    }
   };
 
   const selectedUnit = productForm.watch("unit");
@@ -233,9 +267,9 @@ export default function InventoryPage() {
     <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">إدارة المخزون والمستودعات</h1>
-        <Dialog open={showManageProductDialog} onOpenChange={(isOpen) => { setShowManageProductDialog(isOpen); if (!isOpen) setProductToEdit(null); }}>
+        <Dialog open={showManageProductDialog} onOpenChange={(isOpen) => { setShowManageProductDialog(isOpen); if (!isOpen) {setProductToEdit(null); setImagePreview(null);} }}>
           <DialogTrigger asChild>
-            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setProductToEdit(null); productForm.reset(); setShowManageProductDialog(true); }}>
+            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setProductToEdit(null); productForm.reset(); setImagePreview(null); setShowManageProductDialog(true); }}>
               <PackagePlus className="me-2 h-4 w-4" /> إضافة منتج/صنف
             </Button>
           </DialogTrigger>
@@ -250,6 +284,24 @@ export default function InventoryPage() {
                     <FormField control={productForm.control} name="sku" render={({ field }) => ( <FormItem><FormLabel>SKU / كود المنتج</FormLabel><FormControl><Input placeholder="أدخل SKU" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={productForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم المنتج/الصنف</FormLabel><FormControl><Input placeholder="اسم المنتج" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
                 </div>
+                <FormItem>
+                  <FormLabel>صورة المنتج</FormLabel>
+                  <FormControl>
+                    <Input type="file" accept="image/*" onChange={handleImageChange} className="bg-background" />
+                  </FormControl>
+                  {imagePreview && (
+                    <div className="mt-2 w-32 h-32 relative border rounded-md overflow-hidden">
+                      <Image src={imagePreview} alt="معاينة المنتج" layout="fill" objectFit="cover" />
+                    </div>
+                  )}
+                  <FormMessage />
+                </FormItem>
+                 <FormField control={productForm.control} name="dataAiHint" render={({ field }) => (
+                    <FormItem><FormLabel>كلمات مفتاحية للصورة (AI Hint)</FormLabel>
+                        <FormControl><Input placeholder="مثال: قهوة مشروب (كلمتين كحد أقصى)" {...field} className="bg-background" /></FormControl>
+                        <FormDescription className="text-xs">كلمة أو كلمتين لوصف الصورة (للبحث).</FormDescription>
+                        <FormMessage />
+                    </FormItem> )} />
                 <FormField control={productForm.control} name="description" render={({ field }) => ( <FormItem><FormLabel>الوصف</FormLabel><FormControl><Textarea placeholder="وصف تفصيلي للمنتج (اختياري)" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={productForm.control} name="category" render={({ field }) => ( <FormItem><FormLabel>الفئة</FormLabel>
@@ -354,6 +406,7 @@ export default function InventoryPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>صورة المنتج</TableHead>
                       <TableHead>SKU</TableHead>
                       <TableHead>اسم المنتج</TableHead>
                       <TableHead>الفئة</TableHead>
@@ -369,6 +422,15 @@ export default function InventoryPage() {
                   <TableBody>
                     {productsData.map((product) => (
                       <TableRow key={product.id} className={`hover:bg-muted/50 ${product.quantity <= product.reorderLevel ? 'bg-destructive/10' : ''}`}>
+                        <TableCell>
+                          {product.image ? (
+                            <div className="w-16 h-16 relative rounded-md overflow-hidden">
+                              <Image src={product.image} alt={product.name} layout="fill" objectFit="cover" data-ai-hint={product.dataAiHint || product.name.split(' ').slice(0,2).join(' ')} />
+                            </div>
+                          ) : (
+                            <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground">لا توجد صورة</div>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">{product.sku}</TableCell>
                         <TableCell>{product.name}</TableCell>
                         <TableCell>{product.category}</TableCell>
@@ -538,4 +600,3 @@ export default function InventoryPage() {
     </div>
   );
 }
-
