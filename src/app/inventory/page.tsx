@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, PackagePlus, Upload } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, PackagePlus, Upload, CalendarCheck, UserCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -24,6 +24,7 @@ import type { ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Image from 'next/image';
+import { useToast } from "@/hooks/use-toast";
 
 // Product Schema
 const productSchema = z.object({
@@ -48,6 +49,15 @@ const productSchema = z.object({
 });
 type ProductFormValues = z.infer<typeof productSchema>;
 
+// Stocktake Initiation Schema
+const stocktakeInitiationSchema = z.object({
+  stocktakeDate: z.date({ required_error: "تاريخ الجرد مطلوب" }),
+  warehouseId: z.string().min(1, "المستودع مطلوب"),
+  responsiblePerson: z.string().min(1, "المسؤول عن الجرد مطلوب"),
+  notes: z.string().optional(),
+});
+type StocktakeInitiationFormValues = z.infer<typeof stocktakeInitiationSchema>;
+
 // Mock data for products (enhanced inventoryItems)
 const initialProductsData: ProductFormValues[] = [
   { id: "ITEM001", sku: "DELL-XPS15-LAP", name: "لابتوب Dell XPS 15", description: "لابتوب عالي الأداء بشاشة 15 بوصة", category: "إلكترونيات", unit: "قطعة", costPrice: 5800, sellingPrice: 6500, quantity: 50, reorderLevel: 10, location: "مستودع A - رف 3", barcode: "1234567890123", supplierId: "SUP001", image: "https://picsum.photos/200/200?random=1", dataAiHint: "laptop computer" },
@@ -66,6 +76,8 @@ const mockSuppliers = [
 const mockCategories = ["إلكترونيات", "قرطاسية", "أثاث مكتبي", "مواد خام", "أخرى"];
 const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة", "سنتيمتر"];
 const mockSubUnits = ["قطعة", "حبة", "متر", "سنتيمتر"];
+const mockWarehouses = [{ id: "WH001", name: "المستودع الرئيسي" }, { id: "WH002", name: "مستودع فرعي أ" }];
+const mockUsers = [{ id: "USR001", name: "فريق الجرد أ" }, { id: "USR002", name: "أحمد المسؤول" }];
 
 
 const stockMovements = [
@@ -107,6 +119,9 @@ export default function InventoryPage() {
   
   const [currentReport, setCurrentReport] = useState<{name: string, description: string, icon: React.ElementType} | null>(null);
 
+  const [showStartStocktakeDialog, setShowStartStocktakeDialog] = useState(false);
+  const { toast } = useToast();
+
   const productForm = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -115,6 +130,16 @@ export default function InventoryPage() {
       location: "", barcode: "", supplierId: "", 
       itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined,
       image: "", dataAiHint: ""
+    },
+  });
+
+  const stocktakeInitiationForm = useForm<StocktakeInitiationFormValues>({
+    resolver: zodResolver(stocktakeInitiationSchema),
+    defaultValues: {
+      stocktakeDate: new Date(),
+      warehouseId: "",
+      responsiblePerson: "",
+      notes: "",
     },
   });
 
@@ -137,8 +162,10 @@ export default function InventoryPage() {
   const handleProductSubmit = (values: ProductFormValues) => {
     if (productToEdit) {
       setProductsData(prev => prev.map(p => p.id === productToEdit.id ? { ...values, id: productToEdit.id } : p));
+      toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." });
     } else {
       setProductsData(prev => [...prev, { ...values, id: `ITEM${Date.now()}` }]);
+      toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." });
     }
     setShowManageProductDialog(false);
     setProductToEdit(null);
@@ -147,6 +174,7 @@ export default function InventoryPage() {
 
   const handleDeleteProduct = (productId: string) => {
     setProductsData(prev => prev.filter(p => p.id !== productId));
+    toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
   };
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,9 +191,21 @@ export default function InventoryPage() {
         productForm.setValue('image', dataUri);
       } catch (error) {
         console.error("Error converting file to data URI:", error);
-        // TODO: Add user feedback, e.g., toast notification
+        toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" });
       }
     }
+  };
+
+  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => {
+    console.log("Starting new stocktake with values:", values);
+    // Here, you would typically initiate a new stocktake record in your backend/state
+    // For example, create a new stocktake ID, set its status to "in-progress", etc.
+    toast({
+      title: "تم بدء عملية جرد جديدة",
+      description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`,
+    });
+    setShowStartStocktakeDialog(false);
+    stocktakeInitiationForm.reset();
   };
 
   const selectedUnit = productForm.watch("unit");
@@ -299,7 +339,7 @@ export default function InventoryPage() {
                  <FormField control={productForm.control} name="dataAiHint" render={({ field }) => (
                     <FormItem><FormLabel>كلمات مفتاحية للصورة (AI Hint)</FormLabel>
                         <FormControl><Input placeholder="مثال: قهوة مشروب (كلمتين كحد أقصى)" {...field} className="bg-background" /></FormControl>
-                        <FormDescription className="text-xs">كلمة أو كلمتين لوصف الصورة (للبحث).</FormDescription>
+                        <DialogDescriptionComponent className="text-xs">كلمة أو كلمتين لوصف الصورة (للبحث).</DialogDescriptionComponent>
                         <FormMessage />
                     </FormItem> )} />
                 <FormField control={productForm.control} name="description" render={({ field }) => ( <FormItem><FormLabel>الوصف</FormLabel><FormControl><Textarea placeholder="وصف تفصيلي للمنتج (اختياري)" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
@@ -536,9 +576,62 @@ export default function InventoryPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex flex-wrap gap-4 justify-between items-center">
-                        <Button className="shadow-md hover:shadow-lg transition-shadow">
-                            <PlusCircle className="me-2 h-4 w-4" /> بدء جرد جديد
-                        </Button>
+                        <Dialog open={showStartStocktakeDialog} onOpenChange={setShowStartStocktakeDialog}>
+                          <DialogTrigger asChild>
+                            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { stocktakeInitiationForm.reset({stocktakeDate: new Date()}); setShowStartStocktakeDialog(true);}}>
+                                <PlusCircle className="me-2 h-4 w-4" /> بدء جرد جديد
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-lg" dir="rtl">
+                            <DialogHeader>
+                                <DialogTitle>بدء عملية جرد جديدة</DialogTitle>
+                                <DialogDescriptionComponent>أدخل تفاصيل عملية الجرد الجديدة.</DialogDescriptionComponent>
+                            </DialogHeader>
+                            <Form {...stocktakeInitiationForm}>
+                                <form onSubmit={stocktakeInitiationForm.handleSubmit(handleStartStocktakeSubmit)} className="space-y-4 py-4">
+                                    <FormField control={stocktakeInitiationForm.control} name="stocktakeDate" render={({ field }) => (
+                                        <FormItem className="flex flex-col">
+                                            <FormLabel>تاريخ الجرد</FormLabel>
+                                            <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} />
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={stocktakeInitiationForm.control} name="warehouseId" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>المستودع</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                                <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المستودع" /></SelectTrigger></FormControl>
+                                                <SelectContent>{mockWarehouses.map(wh => <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>)}</SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={stocktakeInitiationForm.control} name="responsiblePerson" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>المسؤول عن الجرد</FormLabel>
+                                             <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                                <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المسؤول" /></SelectTrigger></FormControl>
+                                                <SelectContent>{mockUsers.map(user => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}</SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={stocktakeInitiationForm.control} name="notes" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>ملاحظات (اختياري)</FormLabel>
+                                            <FormControl><Textarea placeholder="أية ملاحظات إضافية حول عملية الجرد" {...field} className="bg-background"/></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <DialogFooter>
+                                        <Button type="submit"> بدء الجرد</Button>
+                                        <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                                    </DialogFooter>
+                                </form>
+                            </Form>
+                          </DialogContent>
+                        </Dialog>
+                        
                         <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
                             <Layers className="me-2 h-4 w-4" /> عرض عمليات الجرد السابقة
                         </Button>
