@@ -45,7 +45,7 @@ const productSchema = z.object({
   subUnit: z.enum(["قطعة", "حبة", "متر", "سنتيمتر"]).optional(),
   subUnitSellingPrice: z.coerce.number().min(0, "سعر الوحدة الفرعية يجب أن يكون إيجابياً").optional(),
   image: z.string().optional(),
-  dataAiHint: z.string().max(20, "الكلمات المفتاحية يجب ألا تتجاوز 20 حرفًا").optional(),
+  dataAiHint: z.string().max(30, "الكلمات المفتاحية يجب ألا تتجاوز 30 حرفًا").optional(),
 });
 type ProductFormValues = z.infer<typeof productSchema>;
 
@@ -57,6 +57,25 @@ const stocktakeInitiationSchema = z.object({
   notes: z.string().optional(),
 });
 type StocktakeInitiationFormValues = z.infer<typeof stocktakeInitiationSchema>;
+
+interface StocktakeItemDetail {
+  productId: string;
+  productName: string;
+  expectedQuantity: number;
+  countedQuantity: number;
+  difference: number;
+}
+interface StocktakeDetails {
+  id: string;
+  date: string;
+  warehouse: string;
+  status: string;
+  responsible: string;
+  itemsCounted: number;
+  discrepanciesFound: number;
+  notes?: string;
+  items: StocktakeItemDetail[];
+}
 
 // Mock data for products (enhanced inventoryItems)
 const initialProductsData: ProductFormValues[] = [
@@ -110,6 +129,22 @@ const chartConfig = {
   "ITEM002": { label: "طابعة HP LaserJet Pro", color: "hsl(var(--chart-2))" },
 } satisfies ChartConfig;
 
+const mockStocktakeDetail: StocktakeDetails = {
+  id: "STK-2024-06-30-A",
+  date: "2024-06-30",
+  warehouse: "مستودع A",
+  status: "مكتمل",
+  responsible: "فريق الجرد ألف",
+  itemsCounted: 3, // Updated based on items array length for consistency
+  discrepanciesFound: 2, // Updated based on items array
+  notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.",
+  items: [
+    { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0 },
+    { productId: "ITEM002", productName: "طابعة HP LaserJet Pro", expectedQuantity: 7, countedQuantity: 6, difference: -1 },
+    { productId: "ITEM003", productName: "ورق طباعة A4 (صندوق)", expectedQuantity: 195, countedQuantity: 198, difference: 3 },
+  ],
+};
+
 
 export default function InventoryPage() {
   const [productsData, setProductsData] = useState(initialProductsData);
@@ -120,6 +155,8 @@ export default function InventoryPage() {
   const [currentReport, setCurrentReport] = useState<{name: string, description: string, icon: React.ElementType} | null>(null);
 
   const [showStartStocktakeDialog, setShowStartStocktakeDialog] = useState(false);
+  const [showViewStocktakeDetailsDialog, setShowViewStocktakeDetailsDialog] = useState(false);
+  const [selectedStocktakeForView, setSelectedStocktakeForView] = useState<StocktakeDetails | null>(null);
   const { toast } = useToast();
 
   const productForm = useForm<ProductFormValues>({
@@ -198,14 +235,17 @@ export default function InventoryPage() {
 
   const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => {
     console.log("Starting new stocktake with values:", values);
-    // Here, you would typically initiate a new stocktake record in your backend/state
-    // For example, create a new stocktake ID, set its status to "in-progress", etc.
     toast({
       title: "تم بدء عملية جرد جديدة",
       description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`,
     });
     setShowStartStocktakeDialog(false);
     stocktakeInitiationForm.reset();
+  };
+
+  const handleViewStocktakeDetails = () => {
+    setSelectedStocktakeForView(mockStocktakeDetail); // Use mock data
+    setShowViewStocktakeDetailsDialog(true);
   };
 
   const selectedUnit = productForm.watch("unit");
@@ -339,7 +379,7 @@ export default function InventoryPage() {
                  <FormField control={productForm.control} name="dataAiHint" render={({ field }) => (
                     <FormItem><FormLabel>كلمات مفتاحية للصورة (AI Hint)</FormLabel>
                         <FormControl><Input placeholder="مثال: قهوة مشروب (كلمتين كحد أقصى)" {...field} className="bg-background" /></FormControl>
-                        <DialogDescriptionComponent className="text-xs">كلمة أو كلمتين لوصف الصورة (للبحث).</DialogDescriptionComponent>
+                        <DialogDescriptionComponent className="text-xs text-muted-foreground">كلمة أو كلمتين لوصف الصورة (للبحث).</DialogDescriptionComponent>
                         <FormMessage />
                     </FormItem> )} />
                 <FormField control={productForm.control} name="description" render={({ field }) => ( <FormItem><FormLabel>الوصف</FormLabel><FormControl><Textarea placeholder="وصف تفصيلي للمنتج (اختياري)" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
@@ -359,13 +399,13 @@ export default function InventoryPage() {
                     <Card className="p-4 bg-muted/50">
                         <CardTitle className="text-base mb-3">تفاصيل محتويات الوحدة الرئيسية ({selectedUnit})</CardTitle>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <FormField control={productForm.control} name="itemsPerParentUnit" render={({ field }) => ( <FormItem><FormLabel>عدد الوحدات الفرعية</FormLabel><FormControl><Input type="number" placeholder="مثال: 12" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={productForm.control} name="itemsPerParentUnit" render={({ field }) => ( <FormItem><FormLabel>عدد الوحدات الفرعية</FormLabel><FormControl><Input type="number" placeholder="مثال: 12" {...field} className="bg-background" onChange={e => field.onChange(parseInt(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={productForm.control} name="subUnit" render={({ field }) => ( <FormItem><FormLabel>نوع الوحدة الفرعية</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                                     <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl>
                                     <SelectContent>{mockSubUnits.map(sub => <SelectItem key={sub} value={sub}>{sub}</SelectItem>)}</SelectContent>
                                 </Select><FormMessage /></FormItem> )} />
-                            <FormField control={productForm.control} name="subUnitSellingPrice" render={({ field }) => ( <FormItem><FormLabel>سعر بيع الوحدة الفرعية</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={productForm.control} name="subUnitSellingPrice" render={({ field }) => ( <FormItem><FormLabel>سعر بيع الوحدة الفرعية</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} className="bg-background" onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem> )} />
                         </div>
                     </Card>
                  )}
@@ -639,11 +679,11 @@ export default function InventoryPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-lg">آخر عملية جرد</CardTitle>
-                            <CardDescription>تاريخ: 2024-06-30 - المستودع: مستودع A - الحالة: مكتمل</CardDescription>
+                            <CardDescription>تاريخ: {mockStocktakeDetail.date} - المستودع: {mockStocktakeDetail.warehouse} - الحالة: {mockStocktakeDetail.status}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p>تم جرد 500 صنف، تم العثور على فروقات في 15 صنفًا.</p>
-                            <Button variant="link" className="px-0">عرض تفاصيل الجرد</Button>
+                            <p>تم جرد {mockStocktakeDetail.itemsCounted} صنف، تم العثور على فروقات في {mockStocktakeDetail.discrepanciesFound} صنفًا.</p>
+                            <Button variant="link" className="px-0" onClick={handleViewStocktakeDetails}>عرض تفاصيل الجرد</Button>
                         </CardContent>
                     </Card>
                      <Card>
@@ -690,6 +730,57 @@ export default function InventoryPage() {
             </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog for Viewing Stocktake Details */}
+      <Dialog open={showViewStocktakeDetailsDialog} onOpenChange={setShowViewStocktakeDetailsDialog}>
+        <DialogContent className="sm:max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل الجرد: {selectedStocktakeForView?.id}</DialogTitle>
+            <DialogDescriptionComponent>
+              تاريخ الجرد: {selectedStocktakeForView?.date} | المستودع: {selectedStocktakeForView?.warehouse} | المسؤول: {selectedStocktakeForView?.responsible}
+            </DialogDescriptionComponent>
+          </DialogHeader>
+          {selectedStocktakeForView && (
+            <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div><strong>الحالة:</strong> <Badge>{selectedStocktakeForView.status}</Badge></div>
+              <div><strong>ملاحظات الجرد:</strong> {selectedStocktakeForView.notes || "لا يوجد"}</div>
+              <div><strong>إجمالي الأصناف المجردة:</strong> {selectedStocktakeForView.itemsCounted}</div>
+              <div><strong>إجمالي الفروقات:</strong> {selectedStocktakeForView.discrepanciesFound}</div>
+              
+              <h4 className="font-semibold pt-2 border-t mt-3">تفاصيل الأصناف:</h4>
+              {selectedStocktakeForView.items && selectedStocktakeForView.items.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>اسم الصنف</TableHead>
+                      <TableHead>الكمية المتوقعة</TableHead>
+                      <TableHead>الكمية الفعلية</TableHead>
+                      <TableHead>الفرق</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedStocktakeForView.items.map((item, idx) => (
+                      <TableRow key={idx} className={item.difference !== 0 ? (item.difference > 0 ? "bg-green-100/50 dark:bg-green-900/30" : "bg-red-100/50 dark:bg-red-900/30") : ""}>
+                        <TableCell>{item.productName}</TableCell>
+                        <TableCell>{item.expectedQuantity}</TableCell>
+                        <TableCell>{item.countedQuantity}</TableCell>
+                        <TableCell className={item.difference !== 0 ? (item.difference > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400") : ""}>
+                          {item.difference > 0 ? `+${item.difference}` : item.difference}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : <p className="text-muted-foreground">لا توجد أصناف في هذا الجرد.</p>}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => alert("طباعة تقرير الجرد...")}><Printer className="me-2 h-4 w-4"/> طباعة التقرير</Button>
+            <DialogClose asChild><Button type="button">إغلاق</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
