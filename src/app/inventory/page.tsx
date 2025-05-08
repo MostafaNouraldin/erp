@@ -1,16 +1,21 @@
 
 "use client";
 
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, BarChartBig, PieChart, LineChart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Progress } from "@/components/ui/progress";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import type { ChartConfig } from "@/components/ui/chart";
+import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 // Mock data
@@ -29,8 +34,127 @@ const stockMovements = [
   { id: "MV004", date: "2024-07-23", type: "تعديل جرد (زيادة)", item: "ITEM005", quantity: 5, fromTo: "جرد سنوي", reference: "ADJ-001" },
 ];
 
+const inventoryReportTypes = [
+    { name: "تقرير حركة صنف", icon: Package, description: "تتبع حركة صنف معين خلال فترة." },
+    { name: "تقرير تقييم المخزون", icon: Layers, description: "عرض قيمة المخزون الحالي بالتكلفة والسعر." },
+    { name: "تقرير الجرد والفروقات", icon: Repeat, description: "مقارنة الكميات الفعلية بالمسجلة وكشف الفروقات." },
+    { name: "تقرير الأصناف الراكدة", icon: AlertTriangle, description: "تحديد الأصناف التي لم تشهد حركة لفترة." },
+    { name: "تقرير مواقع التخزين", icon: Warehouse, description: "عرض الأصناف وكمياتها في كل موقع تخزين." },
+    { name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },
+];
+
+const sampleChartData = [
+  { month: "يناير", "ITEM001": 100, "ITEM002": 50 },
+  { month: "فبراير", "ITEM001": 120, "ITEM002": 60 },
+  { month: "مارس", "ITEM001": 80, "ITEM002": 40 },
+  { month: "ابريل", "ITEM001": 150, "ITEM002": 70 },
+  { month: "مايو", "ITEM001": 110, "ITEM002": 55 },
+  { month: "يونيو", "ITEM001": 130, "ITEM002": 65 },
+];
+
+const chartConfig = {
+  "ITEM001": { label: "لابتوب Dell XPS 15", color: "hsl(var(--chart-1))" },
+  "ITEM002": { label: "طابعة HP LaserJet Pro", color: "hsl(var(--chart-2))" },
+} satisfies ChartConfig;
+
 
 export default function InventoryPage() {
+  const [currentReport, setCurrentReport] = useState<{name: string, description: string, icon: React.ElementType} | null>(null);
+
+  if (currentReport) {
+    return (
+         <div className="container mx-auto py-6 space-y-6" dir="rtl">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle className="text-2xl flex items-center">
+                                <currentReport.icon className="me-2 h-7 w-7 text-primary" /> {currentReport.name}
+                            </CardTitle>
+                            <CardDescription>{currentReport.description}</CardDescription>
+                        </div>
+                        <Button variant="outline" onClick={() => setCurrentReport(null)}>العودة لقائمة التقارير</Button>
+                    </div>
+                </CardHeader>
+            </Card>
+            <Card className="shadow-md">
+                <CardHeader>
+                    <CardTitle className="text-xl">خيارات التقرير</CardTitle>
+                    <div className="mt-4 flex flex-wrap gap-4 items-end">
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="text-sm font-medium mb-1 block">النطاق الزمني</label>
+                            <DatePickerWithPresets mode="range" />
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="text-sm font-medium mb-1 block">الصنف/المستودع</label>
+                            <Select dir="rtl">
+                                <SelectTrigger className="bg-background">
+                                    <SelectValue placeholder="الكل" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">الكل</SelectItem>
+                                    {inventoryItems.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                                    {/* Add warehouses if needed */}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button className="shadow-sm hover:shadow-md">
+                            <Filter className="me-2 h-4 w-4" /> تطبيق الفلاتر
+                        </Button>
+                        <Button variant="secondary" className="shadow-sm hover:shadow-md">
+                            <Download className="me-2 h-4 w-4" /> تصدير (Excel/PDF)
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <CardTitle className="text-lg mb-4">عرض التقرير: {currentReport.name}</CardTitle>
+                    {/* Placeholder for report content */}
+                    {currentReport.name === "تقرير حركة صنف" ? (
+                         <div className="h-[400px] p-4 border rounded-md bg-muted/30 flex items-center justify-center">
+                            <ChartContainer config={chartConfig} className="h-full w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RechartsBarChart data={sampleChartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
+                                    <YAxis />
+                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                    <ChartLegend content={<ChartLegendContent />} />
+                                    <Bar dataKey="ITEM001" fill="var(--color-ITEM001)" radius={4} />
+                                    <Bar dataKey="ITEM002" fill="var(--color-ITEM002)" radius={4} />
+                                    </RechartsBarChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
+                        </div>
+                    ) : (
+                         <div className="overflow-x-auto border rounded-md">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>البيان</TableHead>
+                                        <TableHead>القيمة</TableHead>
+                                        <TableHead>تفاصيل إضافية</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow><TableCell>إجمالي قيمة المخزون</TableCell><TableCell>550,000 SAR</TableCell><TableCell>حسب سعر التكلفة</TableCell></TableRow>
+                                    <TableRow><TableCell>عدد الأصناف تحت حد الطلب</TableCell><TableCell>2</TableCell><TableCell>ITEM002, ITEM004</TableCell></TableRow>
+                                    <TableRow><TableCell>أكثر الأصناف حركة</TableCell><TableCell>ITEM005</TableCell><TableCell>500 حركة الشهر الماضي</TableCell></TableRow>
+                                </TableBody>
+                            </Table>
+                        </div>
+                    )}
+                     <div className="mt-6">
+                        <h3 className="text-md font-semibold mb-2">ملاحظات/ملخص التقرير:</h3>
+                        <p className="text-sm text-muted-foreground">
+                            هنا يتم عرض ملخص للبيانات المعروضة في تقرير "{currentReport.name}".
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
@@ -237,20 +361,22 @@ export default function InventoryPage() {
                     <CardDescription>تقارير متنوعة لتحليل أداء المخزون وقيمته وحركته.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {[
-                        { name: "تقرير حركة صنف", icon: Package },
-                        { name: "تقرير تقييم المخزون", icon: Layers },
-                        { name: "تقرير الجرد والفروقات", icon: Repeat },
-                        { name: "تقرير الأصناف الراكدة", icon: AlertTriangle },
-                        { name: "تقرير مواقع التخزين", icon: Warehouse },
-                        { name: "تقرير الأصناف حسب المورد", icon: Truck },
-                    ].map((report) => (
-                        <Card key={report.name} className="flex flex-col items-center justify-center p-6 hover:shadow-xl transition-shadow duration-300 shadow-md rounded-lg">
-                            <report.icon className="h-10 w-10 text-primary mb-3" />
-                            <CardTitle className="text-md mb-3 text-center">{report.name}</CardTitle>
-                            <Button variant="outline" className="w-full shadow-sm hover:shadow-md transition-shadow">
-                                عرض التقرير
+                    {inventoryReportTypes.map((report) => (
+                        <Card key={report.name} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
+                          <CardHeader className="flex-row items-start gap-3 space-y-0">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <report.icon className="h-6 w-6" />
+                            </div>
+                            <div className="flex-1">
+                                <CardTitle className="text-lg">{report.name}</CardTitle>
+                                <CardDescription className="text-xs mt-1">{report.description}</CardDescription>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="mt-auto flex justify-end gap-2 p-4 pt-0">
+                             <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setCurrentReport(report)}>
+                              <Eye className="me-1.5 h-3.5 w-3.5" /> عرض التقرير
                             </Button>
+                          </CardContent>
                         </Card>
                     ))}
                 </CardContent>
@@ -261,4 +387,5 @@ export default function InventoryPage() {
     </div>
   );
 }
+
 
