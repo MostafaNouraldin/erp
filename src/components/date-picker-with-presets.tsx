@@ -70,7 +70,7 @@ export function DatePickerWithPresets({ className, onDateChange, selectedDate, m
               !date && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" /> {/* Changed ml-2 to mr-2 for RTL */}
+            <CalendarIcon className="me-2 h-4 w-4" /> {/* Changed from mr-2 to me-2 */}
             {formatSelectedDate()}
           </Button>
         </PopoverTrigger>
@@ -126,3 +126,4 @@ export function DatePickerWithPresets({ className, onDateChange, selectedDate, m
     </div>
   )
 }
+
