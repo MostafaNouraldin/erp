@@ -2,6 +2,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,8 +14,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
-import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer } from "lucide-react";
+import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle } from "lucide-react";
 import AppLogo from '@/components/app-logo';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data
 const quotations = [
@@ -21,16 +29,35 @@ const quotations = [
   { id: "QT003", customer: "شركة التطور", date: new Date("2024-07-10"), expiryDate: new Date("2024-07-25"), totalAmount: 22000, status: "مسودة" as const },
 ];
 
-const salesOrders = [
-  { id: "SO001", quoteId: "QT002", customer: "مؤسسة النجاح", date: new Date("2024-07-06"), deliveryDate: new Date("2024-07-20"), totalAmount: 8200, status: "قيد التنفيذ" as const },
-  { id: "SO002", customer: "مؤسسة الإبداع", date: new Date("2024-07-12"), deliveryDate: new Date("2024-07-28"), totalAmount: 12000, status: "مؤكد" as const },
+interface SalesOrderItem {
+  itemId: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+interface SalesOrder {
+  id: string;
+  quoteId?: string;
+  customerId: string;
+  date: Date;
+  deliveryDate: Date;
+  numericTotalAmount: number;
+  status: "مؤكد" | "قيد التنفيذ" | "ملغي" | "مكتمل";
+  items: SalesOrderItem[];
+  notes?: string;
+}
+
+const initialSalesOrdersData: SalesOrder[] = [
+  { id: "SO001", quoteId: "QT002", customerId: "CUST002", date: new Date("2024-07-06"), deliveryDate: new Date("2024-07-20"), numericTotalAmount: 8200, status: "قيد التنفيذ" as const, items: [{itemId: "SERV001", description: "خدمة استشارية", quantity: 1, unitPrice: 8200, total: 8200}] },
+  { id: "SO002", customerId: "CUST004", date: new Date("2024-07-12"), deliveryDate: new Date("2024-07-28"), numericTotalAmount: 12000, status: "مؤكد" as const, items: [{itemId: "ITEM001", description: "لابتوب", quantity: 1, unitPrice: 12000, total: 12000}], notes: "تسليم عاجل" },
 ];
 
 interface InvoiceItem {
   description: string;
   quantity: number;
-  unitPrice: number; // Price excluding VAT
-  total: number;    // quantity * unitPrice
+  unitPrice: number; 
+  total: number;    
 }
 interface Invoice {
   id: string;
@@ -38,7 +65,7 @@ interface Invoice {
   customerId: string;
   date: Date;
   dueDate: Date;
-  numericTotalAmount: number; // Grand total (including VAT)
+  numericTotalAmount: number; 
   status: "مدفوع" | "غير مدفوع" | "متأخر";
   items: InvoiceItem[];
 }
@@ -50,10 +77,10 @@ const initialInvoicesData: Invoice[] = [
     customerId: "CUST002",
     date: new Date("2024-07-20"),
     dueDate: new Date("2024-08-20"),
-    numericTotalAmount: 8200, // This is the total including VAT
+    numericTotalAmount: 8200, 
     status: "مدفوع",
     items: [
-      { description: "خدمة استشارية لتطوير الأعمال", quantity: 1, unitPrice: 7130.43, total: 7130.43 }, // 8200 / 1.15
+      { description: "خدمة استشارية لتطوير الأعمال", quantity: 1, unitPrice: 7130.43, total: 7130.43 }, 
     ],
   },
   {
@@ -65,7 +92,7 @@ const initialInvoicesData: Invoice[] = [
     status: "غير مدفوع",
     items: [
       { description: "تطوير واجهة مستخدم لتطبيق موبايل", quantity: 1, unitPrice: 10000, total: 10000 },
-      { description: "تصميم شعار وهوية بصرية", quantity: 1, unitPrice: 3478.26, total: 3478.26 }, // Subtotal for this item (15500/1.15 - 10000)
+      { description: "تصميم شعار وهوية بصرية", quantity: 1, unitPrice: 3478.26, total: 3478.26 }, 
     ],
   },
 ];
@@ -75,6 +102,12 @@ const customers = [
   { id: "CUST001", name: "شركة الأمل", email: "contact@alamal.com", phone: "0501234567", type: "شركة", balance: "15,500 SAR", address: "طريق الملك فهد، الرياض، المملكة العربية السعودية", vatNumber: "300123456700003" },
   { id: "CUST002", name: "مؤسسة النجاح", email: "info@najjsuccess.org", phone: "0559876543", type: "مؤسسة", balance: "0 SAR", address: "شارع الأمير سلطان، جدة، المملكة العربية السعودية", vatNumber: "300765432100003" },
   { id: "CUST003", name: "أحمد خالد (فرد)", email: "ahmed.k@mail.com", phone: "0533332222", type: "فرد", balance: "0 SAR", address: "حي النزهة، الدمام، المملكة العربية السعودية", vatNumber: null },
+  { id: "CUST004", name: "مؤسسة الإبداع", email: "info@ibdaa.com", phone: "0551112222", type: "مؤسسة", balance: "12,000 SAR", address: "شارع التحلية، الرياض", vatNumber: "30099988800003" },
+];
+
+const mockItems = [
+    {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 6500}, {id: "SERV001", name: "خدمة استشارية A", price: 15000},
+    {id: "ITEM002", name: "طابعة HP LaserJet", price: 1200},
 ];
 
 interface PrintableInvoice extends Invoice {
@@ -85,26 +118,66 @@ interface PrintableInvoice extends Invoice {
     vatAmountForPrint: number;
 }
 
+const salesOrderItemSchema = z.object({
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().optional(),
+  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+  unitPrice: z.coerce.number().min(0, "سعر الوحدة إيجابي"),
+  total: z.coerce.number(),
+});
+
+const salesOrderSchema = z.object({
+  id: z.string().optional(),
+  customerId: z.string().min(1, "العميل مطلوب"),
+  date: z.date({ required_error: "تاريخ الأمر مطلوب" }),
+  deliveryDate: z.date({ required_error: "تاريخ التسليم المتوقع مطلوب" }),
+  items: z.array(salesOrderItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  numericTotalAmount: z.coerce.number().default(0),
+  status: z.enum(["مؤكد", "قيد التنفيذ", "ملغي", "مكتمل"]).default("مؤكد"),
+  quoteId: z.string().optional(),
+});
+type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
+
 // Placeholder for amount to words conversion
 const convertAmountToWords = (amount: number) => {
-  // This is a placeholder. A full implementation is complex.
   return `فقط ${amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 2, maximumFractionDigits: 2 })} لا غير`;
 };
 
 
 export default function SalesPage() {
   const [invoices, setInvoicesData] = useState<Invoice[]>(initialInvoicesData);
+  const [salesOrders, setSalesOrdersData] = useState<SalesOrder[]>(initialSalesOrdersData);
   const [showPrintInvoiceDialog, setShowPrintInvoiceDialog] = useState(false);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<PrintableInvoice | null>(null);
   const [isClient, setIsClient] = useState(false);
+
+  const [showCreateSalesOrderDialog, setShowCreateSalesOrderDialog] = useState(false);
+  const [salesOrderToEdit, setSalesOrderToEdit] = useState<SalesOrderFormValues | null>(null);
+  const { toast } = useToast();
+
+  const salesOrderForm = useForm<SalesOrderFormValues>({
+    resolver: zodResolver(salesOrderSchema),
+    defaultValues: { customerId: '', date: new Date(), deliveryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مؤكد", numericTotalAmount: 0 },
+  });
+  const { fields: salesOrderItemsFields, append: appendSalesOrderItem, remove: removeSalesOrderItem } = useFieldArray({
+    control: salesOrderForm.control, name: "items",
+  });
+
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  useEffect(() => {
+    if (salesOrderToEdit) salesOrderForm.reset(salesOrderToEdit);
+    else salesOrderForm.reset({ customerId: '', date: new Date(), deliveryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مؤكد", numericTotalAmount: 0 });
+  }, [salesOrderToEdit, salesOrderForm, showCreateSalesOrderDialog]);
+
+
   const handlePrintInvoice = (invoice: Invoice) => {
     const customer = customers.find(c => c.id === invoice.customerId);
-    const subTotal = invoice.numericTotalAmount / 1.15; // Assuming 15% VAT
+    const subTotal = invoice.numericTotalAmount / 1.15; 
     const vatAmount = invoice.numericTotalAmount - subTotal;
 
     setSelectedInvoiceForPrint({
@@ -124,6 +197,32 @@ export default function SalesPage() {
     return new Intl.DateTimeFormat('ar-SA', { day: '2-digit', month: '2-digit', year: 'numeric', calendar: 'gregory' }).format(d);
   };
 
+  const calculateSalesOrderTotals = (items: any[]) => {
+    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+    return totalAmount;
+  };
+
+  const calculateSalesOrderItemTotal = (index: number) => {
+    const quantity = salesOrderForm.getValues(`items.${index}.quantity`);
+    const unitPrice = salesOrderForm.getValues(`items.${index}.unitPrice`);
+    salesOrderForm.setValue(`items.${index}.total`, quantity * unitPrice);
+  };
+
+  const handleSalesOrderSubmit = (values: SalesOrderFormValues) => {
+    const totalAmount = calculateSalesOrderTotals(values.items);
+    const finalValues = {...values, numericTotalAmount: totalAmount};
+
+    if (salesOrderToEdit) {
+      setSalesOrdersData(prev => prev.map(so => so.id === salesOrderToEdit.id ? { ...finalValues, id: salesOrderToEdit.id! } : so));
+      toast({ title: "تم التعديل", description: "تم تعديل أمر البيع بنجاح." });
+    } else {
+      setSalesOrdersData(prev => [...prev, { ...finalValues, id: `SO${Date.now()}` }]);
+      toast({ title: "تم الإنشاء", description: "تم إنشاء أمر البيع بنجاح." });
+    }
+    setShowCreateSalesOrderDialog(false);
+    setSalesOrderToEdit(null);
+  };
+
   return (
     <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
@@ -132,9 +231,68 @@ export default function SalesPage() {
             <Button className="shadow-md hover:shadow-lg transition-shadow">
                 <PlusCircle className="me-2 h-4 w-4" /> إنشاء عرض سعر جديد
             </Button>
-             <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow">
-                <PlusCircle className="me-2 h-4 w-4" /> إنشاء فاتورة مبيعات
-            </Button>
+            <Dialog open={showCreateSalesOrderDialog} onOpenChange={(isOpen) => { setShowCreateSalesOrderDialog(isOpen); if(!isOpen) setSalesOrderToEdit(null); }}>
+              <DialogTrigger asChild>
+                <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSalesOrderToEdit(null); salesOrderForm.reset(); setShowCreateSalesOrderDialog(true);}}>
+                    <PlusCircle className="me-2 h-4 w-4" /> إنشاء أمر بيع مباشر
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-xl" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle>{salesOrderToEdit ? 'تعديل أمر بيع' : 'إنشاء أمر بيع مباشر'}</DialogTitle>
+                </DialogHeader>
+                <Form {...salesOrderForm}>
+                  <form onSubmit={salesOrderForm.handleSubmit(handleSalesOrderSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={salesOrderForm.control} name="customerId" render={({ field }) => (
+                          <FormItem><FormLabel>اسم العميل</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                              <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
+                              <SelectContent>{customers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}</SelectContent>
+                            </Select><FormMessage /></FormItem> )} />
+                      <FormField control={salesOrderForm.control} name="date" render={({ field }) => (
+                          <FormItem className="flex flex-col"><FormLabel>تاريخ الأمر</FormLabel>
+                            <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                      <FormField control={salesOrderForm.control} name="deliveryDate" render={({ field }) => (
+                          <FormItem className="flex flex-col"><FormLabel>تاريخ التسليم المتوقع</FormLabel>
+                            <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                    </div>
+                    <ScrollArea className="h-[200px] border rounded-md p-2">
+                          {salesOrderItemsFields.map((item, index) => (
+                          <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
+                              <FormField control={salesOrderForm.control} name={`items.${index}.itemId`} render={({ field }) => (
+                                  <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { salesOrderForm.setValue(`items.${index}.unitPrice`, selectedItem.price); salesOrderForm.setValue(`items.${index}.description`, selectedItem.name); } calculateSalesOrderItemTotal(index); }} defaultValue={field.value} dir="rtl">
+                                      <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
+                                      <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                  </Select><FormMessage className="text-xs"/></FormItem> )} />
+                              <FormField control={salesOrderForm.control} name={`items.${index}.quantity`} render={({ field }) => (
+                                  <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
+                                  <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateSalesOrderItemTotal(index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                  <FormMessage className="text-xs"/></FormItem> )} />
+                              <FormField control={salesOrderForm.control} name={`items.${index}.unitPrice`} render={({ field }) => (
+                                  <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">السعر</FormLabel>
+                                  <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateSalesOrderItemTotal(index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                  <FormMessage className="text-xs"/></FormItem> )} />
+                              <FormField control={salesOrderForm.control} name={`items.${index}.total`} render={({ field }) => (
+                                  <FormItem className="col-span-4 sm:col-span-3"><FormLabel className="text-xs">الإجمالي</FormLabel>
+                                  <FormControl><Input type="number" {...field} readOnly className="bg-muted h-9 text-xs" /></FormControl>
+                                  <FormMessage className="text-xs"/></FormItem> )} />
+                              <Button type="button" variant="ghost" size="icon" onClick={() => removeSalesOrderItem(index)} className="col-span-2 sm:col-span-1 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
+                          </div> ))}
+                      </ScrollArea>
+                      <Button type="button" variant="outline" onClick={() => appendSalesOrderItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
+                      <FormField control={salesOrderForm.control} name="notes" render={({ field }) => (
+                          <FormItem><FormLabel>ملاحظات</FormLabel>
+                            <FormControl><Textarea placeholder="أضف ملاحظات (اختياري)" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
+                    <DialogFooter>
+                      <Button type="submit">{salesOrderToEdit ? 'حفظ التعديلات' : 'حفظ أمر البيع'}</Button>
+                      <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
         </div>
       </div>
 
@@ -253,9 +411,7 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
                  <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
-                    <Button className="shadow-md hover:shadow-lg transition-shadow">
-                        <PlusCircle className="me-2 h-4 w-4" /> إنشاء أمر بيع مباشر
-                    </Button>
+                    {/* Button moved to main header */}
                     <div className="relative w-full sm:w-auto grow sm:grow-0">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث في أوامر البيع..." className="pr-10 w-full sm:w-64 bg-background" />
@@ -280,10 +436,10 @@ export default function SalesPage() {
                       <TableRow key={so.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{so.id}</TableCell>
                         <TableCell>{so.quoteId || "-"}</TableCell>
-                        <TableCell>{so.customer}</TableCell>
+                        <TableCell>{customers.find(c => c.id === so.customerId)?.name || so.customerId}</TableCell>
                         <TableCell>{formatDate(so.date)}</TableCell>
                         <TableCell>{formatDate(so.deliveryDate)}</TableCell>
-                        <TableCell>{so.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                        <TableCell>{so.numericTotalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
                         <TableCell>
                             <Badge variant={so.status === "مؤكد" ? "default" : "secondary"} className="whitespace-nowrap">{so.status}</Badge>
                         </TableCell>
@@ -293,6 +449,9 @@ export default function SalesPage() {
                             </Button>
                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إنشاء فاتورة">
                                 <FilePlus className="h-4 w-4 text-primary" />
+                            </Button>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل أمر البيع" onClick={() => {setSalesOrderToEdit(so); setShowCreateSalesOrderDialog(true); }}>
+                                <Edit className="h-4 w-4" />
                             </Button>
                         </TableCell>
                       </TableRow>
