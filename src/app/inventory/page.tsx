@@ -25,6 +25,7 @@ import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Respons
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
+import AppLogo from '@/components/app-logo';
 
 // Product Schema
 const productSchema = z.object({
@@ -733,23 +734,46 @@ export default function InventoryPage() {
 
       {/* Dialog for Viewing Stocktake Details */}
       <Dialog open={showViewStocktakeDetailsDialog} onOpenChange={setShowViewStocktakeDetailsDialog}>
-        <DialogContent className="sm:max-w-2xl" dir="rtl">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl">
+          <DialogHeader className="print-hidden">
             <DialogTitle>تفاصيل الجرد: {selectedStocktakeForView?.id}</DialogTitle>
             <DialogDescriptionComponent>
               تاريخ الجرد: {selectedStocktakeForView?.date} | المستودع: {selectedStocktakeForView?.warehouse} | المسؤول: {selectedStocktakeForView?.responsible}
             </DialogDescriptionComponent>
           </DialogHeader>
           {selectedStocktakeForView && (
-            <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
-              <div><strong>الحالة:</strong> <Badge>{selectedStocktakeForView.status}</Badge></div>
-              <div><strong>ملاحظات الجرد:</strong> {selectedStocktakeForView.notes || "لا يوجد"}</div>
-              <div><strong>إجمالي الأصناف المجردة:</strong> {selectedStocktakeForView.itemsCounted}</div>
-              <div><strong>إجمالي الفروقات:</strong> {selectedStocktakeForView.discrepanciesFound}</div>
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4 max-h-[70vh] overflow-y-auto" data-ai-hint="stocktake report">
+              {/* Header Section for Print */}
+              <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                <div className='flex items-center gap-2'>
+                  <AppLogo />
+                  <div>
+                    <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2>
+                    <p className="text-xs">Al-Mustaqbal IT Co.</p>
+                    <p className="text-xs">الرياض - المملكة العربية السعودية</p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-md font-semibold">تقرير تفاصيل الجرد</h3>
+                  <p className="text-xs">Stocktake Details Report</p>
+                  <p className="text-xs mt-1">رقم الجرد: {selectedStocktakeForView.id}</p>
+                  <p className="text-xs">تاريخ الجرد: {selectedStocktakeForView.date}</p>
+                </div>
+              </div>
+
+              {/* Body Section - Details for Print */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-6 text-xs">
+                <div><strong>المستودع:</strong> {selectedStocktakeForView.warehouse}</div>
+                <div><strong>المسؤول:</strong> {selectedStocktakeForView.responsible}</div>
+                <div><strong>الحالة:</strong> <Badge variant="outline" className="text-xs">{selectedStocktakeForView.status}</Badge></div>
+                <div className="col-span-2"><strong>ملاحظات الجرد:</strong> {selectedStocktakeForView.notes || "لا يوجد"}</div>
+                <div><strong>إجمالي الأصناف المجردة:</strong> {selectedStocktakeForView.itemsCounted}</div>
+                <div><strong>إجمالي الفروقات:</strong> {selectedStocktakeForView.discrepanciesFound}</div>
+              </div>
               
-              <h4 className="font-semibold pt-2 border-t mt-3">تفاصيل الأصناف:</h4>
+              <h4 className="font-semibold text-base pt-2 border-t mt-4 mb-2">تفاصيل الأصناف:</h4>
               {selectedStocktakeForView.items && selectedStocktakeForView.items.length > 0 ? (
-                <Table>
+                <Table size="sm">
                   <TableHeader>
                     <TableRow>
                       <TableHead>اسم الصنف</TableHead>
@@ -760,11 +784,11 @@ export default function InventoryPage() {
                   </TableHeader>
                   <TableBody>
                     {selectedStocktakeForView.items.map((item, idx) => (
-                      <TableRow key={idx} className={item.difference !== 0 ? (item.difference > 0 ? "bg-green-100/50 dark:bg-green-900/30" : "bg-red-100/50 dark:bg-red-900/30") : ""}>
+                      <TableRow key={idx} className={item.difference !== 0 ? (item.difference > 0 ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20") : ""}>
                         <TableCell>{item.productName}</TableCell>
                         <TableCell>{item.expectedQuantity}</TableCell>
                         <TableCell>{item.countedQuantity}</TableCell>
-                        <TableCell className={item.difference !== 0 ? (item.difference > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400") : ""}>
+                        <TableCell className={item.difference !== 0 ? (item.difference > 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400") : ""}>
                           {item.difference > 0 ? `+${item.difference}` : item.difference}
                         </TableCell>
                       </TableRow>
@@ -772,10 +796,11 @@ export default function InventoryPage() {
                   </TableBody>
                 </Table>
               ) : <p className="text-muted-foreground">لا توجد أصناف في هذا الجرد.</p>}
+               <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => alert("طباعة تقرير الجرد...")}><Printer className="me-2 h-4 w-4"/> طباعة التقرير</Button>
+          <DialogFooter className="print-hidden pt-4">
+            <Button variant="outline" onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/> طباعة التقرير</Button>
             <DialogClose asChild><Button type="button">إغلاق</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
