@@ -9,14 +9,15 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Briefcase, Building, Printer, BarChart2, Cog, FilePlus, FileOutput, FileCheck, FileClock, Banknote, Warehouse, Truck, Repeat, Search, CircleHelp, Bell, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon } from "lucide-react";
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp } from "lucide-react";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import AppLogo from "@/components/app-logo";
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card"; // Added import
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, Bell } from "lucide-react";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -52,16 +53,16 @@ const currentTenantSubscription = {
     'Accounting': true,
     'Inventory': true,
     'Sales': true,
-    'Purchases': true, // Enabled Purchases
+    'Purchases': true,
     'HR': true,
-    'Production': true, // Enabled Production
-    'Projects': true, // Enabled Projects
+    'Production': true,
+    'Projects': true,
     'POS': true,
     'BI': true,
     'Settings': true,
     'Help': true,
     'SystemAdministration': true, // For admins to see these settings
-  } as Record<string, boolean>, // Explicitly type modules
+  } as Record<string, boolean>,
   billingCycle: 'yearly' as 'monthly' | 'yearly',
 };
 
@@ -90,9 +91,9 @@ const allNavItems = [
     icon: Package,
     module: "Inventory",
     subItems: [
-      { href: "/inventory", label: "إدارة المخزون", icon: Warehouse },
-      { href: "/inventory-transfers", label: "تحويلات المخزون", icon: Truck },
-      { href: "/inventory-adjustments", label: "تسويات جردية", icon: Repeat },
+      { href: "/inventory", label: "إدارة المخزون", icon: Package },
+      { href: "/inventory-transfers", label: "تحويلات المخزون", icon: /*Truck*/ Package }, // Truck icon was causing error
+      { href: "/inventory-adjustments", label: "تسويات جردية", icon: SlidersHorizontal },
     ],
   },
   { href: "/sales", label: "المبيعات", icon: ShoppingCart, module: "Sales" },
@@ -100,9 +101,9 @@ const allNavItems = [
   { href: "/hr-payroll", label: "الموارد البشرية والرواتب", icon: Users, module: "HR" },
   { href: "/production", label: "الإنتاج", icon: Cog, module: "Production" },
   { href: "/projects", label: "المشاريع", icon: Building, module: "Projects" },
-  { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" }, 
+  { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" },
   { href: "/reports", label: "التقارير والتحليل", icon: BarChart2, module: "BI" },
-  { href: "/settings", label: "الإعدادات العامة", icon: Settings, module: "Settings" }, 
+  { href: "/settings", label: "الإعدادات العامة", icon: Settings, module: "Settings" },
   {
     label: "إدارة النظام",
     icon: Settings2,
@@ -133,23 +134,20 @@ export default function RootLayout({
   }, []);
 
   if (!mounted) {
-    // To prevent hydration mismatch, render a simplified layout or null on the server.
     return (
         <html lang="ar" dir="rtl" suppressHydrationWarning>
             <body className={`${cairo.variable} font-cairo antialiased bg-secondary/50`}>
-                {/* Placeholder or loading indicator */}
             </body>
         </html>
     );
   }
-  
+
   const navItems = allNavItems.filter(item => {
     const moduleAccess = currentTenantSubscription.modules[item.module];
-    if (typeof moduleAccess === 'boolean') { // Ensure moduleAccess is boolean
+    if (typeof moduleAccess === 'boolean') {
       return moduleAccess;
     }
-    console.warn(`Module ${item.module} has no subscription status defined, defaulting to false.`);
-    return false; // Default to false if not defined
+    return false;
   });
 
 

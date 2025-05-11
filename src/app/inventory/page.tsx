@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, Repeat, History, BarChart3, Settings2, Eye, Download, PackagePlus, Upload, CalendarCheck, UserCog, Printer } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, History, BarChart3, Settings2, Eye, Download, PackagePlus, Upload, Printer, SlidersHorizontal } from "lucide-react"; // Changed Repeat to SlidersHorizontal
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -110,7 +110,7 @@ const stockMovements = [
 const inventoryReportTypes = [
     { name: "تقرير حركة صنف", icon: Package, description: "تتبع حركة صنف معين خلال فترة." },
     { name: "تقرير تقييم المخزون", icon: Layers, description: "عرض قيمة المخزون الحالي بالتكلفة والسعر." },
-    { name: "تقرير الجرد والفروقات", icon: Repeat, description: "مقارنة الكميات الفعلية بالمسجلة وكشف الفروقات." },
+    { name: "تقرير الجرد والفروقات", icon: SlidersHorizontal, description: "مقارنة الكميات الفعلية بالمسجلة وكشف الفروقات." }, // Icon changed
     { name: "تقرير الأصناف الراكدة", icon: AlertTriangle, description: "تحديد الأصناف التي لم تشهد حركة لفترة." },
     { name: "تقرير مواقع التخزين", icon: Warehouse, description: "عرض الأصناف وكمياتها في كل موقع تخزين." },
     { name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },
@@ -136,8 +136,8 @@ const mockStocktakeDetail: StocktakeDetails = {
   warehouse: "مستودع A",
   status: "مكتمل",
   responsible: "فريق الجرد ألف",
-  itemsCounted: 3, // Updated based on items array length for consistency
-  discrepanciesFound: 2, // Updated based on items array
+  itemsCounted: 3, 
+  discrepanciesFound: 2, 
   notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.",
   items: [
     { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0 },
@@ -245,7 +245,7 @@ export default function InventoryPage() {
   };
 
   const handleViewStocktakeDetails = () => {
-    setSelectedStocktakeForView(mockStocktakeDetail); // Use mock data
+    setSelectedStocktakeForView(mockStocktakeDetail); 
     setShowViewStocktakeDetailsDialog(true);
   };
 
@@ -446,7 +446,7 @@ export default function InventoryPage() {
             <History className="inline-block me-2 h-4 w-4" /> حركة المخزون
           </TabsTrigger>
           <TabsTrigger value="stocktaking" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <Repeat className="inline-block me-2 h-4 w-4" /> الجرد والتسويات
+            <SlidersHorizontal className="inline-block me-2 h-4 w-4" /> الجرد والتسويات {/* Icon changed */}
           </TabsTrigger>
           <TabsTrigger value="reports" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <BarChart3 className="inline-block me-2 h-4 w-4" /> تقارير المخزون
@@ -694,7 +694,7 @@ export default function InventoryPage() {
                         <CardContent className="space-y-4">
                             <p className="text-sm text-muted-foreground">يمكنك هنا إدخال تسويات يدوية لزيادة أو خفض كميات الأصناف بناءً على نتائج الجرد أو لأسباب أخرى (تلف، فقدان، إلخ).</p>
                             <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow">
-                               <Settings2 className="me-2 h-4 w-4" /> إنشاء تسوية
+                               <SlidersHorizontal className="me-2 h-4 w-4" /> إنشاء تسوية {/* Icon changed */}
                             </Button>
                         </CardContent>
                     </Card>

@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Label } from "@/components/ui/label";
-import { Repeat, PlusCircle, Search, Edit, Trash2, FileText, Filter } from "lucide-react";
+import { SlidersHorizontal, PlusCircle, Search, Edit, Trash2, FileText, Filter } from "lucide-react"; // Changed Repeat to SlidersHorizontal
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -41,7 +41,7 @@ export default function InventoryAdjustmentsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
-            <Repeat className="me-2 h-8 w-8 text-primary" />
+            <SlidersHorizontal className="me-2 h-8 w-8 text-primary" /> {/* Changed Icon */}
             تسويات جردية
           </CardTitle>
           <CardDescription>تسجيل ومتابعة التسويات الجردية لضمان دقة بيانات المخزون (زيادة أو نقص).</CardDescription>
