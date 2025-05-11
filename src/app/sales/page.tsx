@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -21,12 +20,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
 
 // Mock data
-const quotations = [
-  { id: "QT001", customer: "شركة الأمل", date: new Date("2024-07-01"), expiryDate: new Date("2024-07-15"), totalAmount: 15500, status: "مرسل" as const },
-  { id: "QT002", customer: "مؤسسة النجاح", date: new Date("2024-07-05"), expiryDate: new Date("2024-07-20"), totalAmount: 8200, status: "مقبول" as const },
-  { id: "QT003", customer: "شركة التطور", date: new Date("2024-07-10"), expiryDate: new Date("2024-07-25"), totalAmount: 22000, status: "مسودة" as const },
+const initialQuotationsData = [
+  { id: "QT001", customerId: "CUST001", date: new Date("2024-07-01"), expiryDate: new Date("2024-07-15"), numericTotalAmount: 15500, status: "مرسل" as const, items: [{itemId: "ITEM001", description: "لابتوب", quantity:1, unitPrice:15500, total:15500}] },
+  { id: "QT002", customerId: "CUST002", date: new Date("2024-07-05"), expiryDate: new Date("2024-07-20"), numericTotalAmount: 8200, status: "مقبول" as const, items: [] },
+  { id: "QT003", customerId: "CUST003", date: new Date("2024-07-10"), expiryDate: new Date("2024-07-25"), numericTotalAmount: 22000, status: "مسودة" as const, items: [] },
 ];
 
 interface SalesOrderItem {
@@ -54,6 +55,7 @@ const initialSalesOrdersData: SalesOrder[] = [
 ];
 
 interface InvoiceItem {
+  itemId: string;
   description: string;
   quantity: number;
   unitPrice: number; 
@@ -68,6 +70,7 @@ interface Invoice {
   numericTotalAmount: number; 
   status: "مدفوع" | "غير مدفوع" | "متأخر";
   items: InvoiceItem[];
+  notes?: string;
 }
 
 const initialInvoicesData: Invoice[] = [
@@ -80,7 +83,7 @@ const initialInvoicesData: Invoice[] = [
     numericTotalAmount: 8200, 
     status: "مدفوع",
     items: [
-      { description: "خدمة استشارية لتطوير الأعمال", quantity: 1, unitPrice: 7130.43, total: 7130.43 }, 
+      {itemId: "SERV001", description: "خدمة استشارية لتطوير الأعمال", quantity: 1, unitPrice: 7130.43, total: 7130.43 }, 
     ],
   },
   {
@@ -91,8 +94,8 @@ const initialInvoicesData: Invoice[] = [
     numericTotalAmount: 15500,
     status: "غير مدفوع",
     items: [
-      { description: "تطوير واجهة مستخدم لتطبيق موبايل", quantity: 1, unitPrice: 10000, total: 10000 },
-      { description: "تصميم شعار وهوية بصرية", quantity: 1, unitPrice: 3478.26, total: 3478.26 }, 
+      {itemId: "ITEM001", description: "تطوير واجهة مستخدم لتطبيق موبايل", quantity: 1, unitPrice: 10000, total: 10000 },
+      {itemId: "ITEM002", description: "تصميم شعار وهوية بصرية", quantity: 1, unitPrice: 3478.26, total: 3478.26 }, 
     ],
   },
 ];
@@ -118,6 +121,27 @@ interface PrintableInvoice extends Invoice {
     vatAmountForPrint: number;
 }
 
+const quotationItemSchema = z.object({
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().optional(),
+  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+  unitPrice: z.coerce.number().min(0, "سعر الوحدة إيجابي"),
+  total: z.coerce.number(),
+});
+
+const quotationSchema = z.object({
+  id: z.string().optional(),
+  customerId: z.string().min(1, "العميل مطلوب"),
+  date: z.date({ required_error: "تاريخ العرض مطلوب" }),
+  expiryDate: z.date({ required_error: "تاريخ انتهاء العرض مطلوب" }),
+  items: z.array(quotationItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  numericTotalAmount: z.coerce.number().default(0),
+  status: z.enum(["مسودة", "مرسل", "مقبول", "مرفوض", "منتهي الصلاحية"]).default("مسودة"),
+});
+type QuotationFormValues = z.infer<typeof quotationSchema>;
+
+
 const salesOrderItemSchema = z.object({
   itemId: z.string().min(1, "الصنف مطلوب"),
   description: z.string().optional(),
@@ -139,6 +163,29 @@ const salesOrderSchema = z.object({
 });
 type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
 
+
+const invoiceItemSchema = z.object({
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().min(1, "الوصف مطلوب"),
+  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+  unitPrice: z.coerce.number().min(0, "سعر الوحدة إيجابي"),
+  total: z.coerce.number(),
+});
+
+const invoiceSchema = z.object({
+  id: z.string().optional(),
+  customerId: z.string().min(1, "العميل مطلوب"),
+  date: z.date({ required_error: "تاريخ الفاتورة مطلوب" }),
+  dueDate: z.date({ required_error: "تاريخ الاستحقاق مطلوب" }),
+  items: z.array(invoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  numericTotalAmount: z.coerce.number().default(0),
+  status: z.enum(["مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
+  orderId: z.string().optional(),
+});
+type InvoiceFormValues = z.infer<typeof invoiceSchema>;
+
+
 // Placeholder for amount to words conversion
 const convertAmountToWords = (amount: number) => {
   return `فقط ${amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 2, maximumFractionDigits: 2 })} لا غير`;
@@ -146,15 +193,32 @@ const convertAmountToWords = (amount: number) => {
 
 
 export default function SalesPage() {
+  const [quotations, setQuotationsData] = useState<QuotationFormValues[]>(initialQuotationsData);
   const [invoices, setInvoicesData] = useState<Invoice[]>(initialInvoicesData);
   const [salesOrders, setSalesOrdersData] = useState<SalesOrder[]>(initialSalesOrdersData);
+  
   const [showPrintInvoiceDialog, setShowPrintInvoiceDialog] = useState(false);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<PrintableInvoice | null>(null);
   const [isClient, setIsClient] = useState(false);
 
+  const [showCreateQuotationDialog, setShowCreateQuotationDialog] = useState(false);
+  const [quotationToEdit, setQuotationToEdit] = useState<QuotationFormValues | null>(null);
+  
   const [showCreateSalesOrderDialog, setShowCreateSalesOrderDialog] = useState(false);
   const [salesOrderToEdit, setSalesOrderToEdit] = useState<SalesOrderFormValues | null>(null);
+
+  const [showCreateInvoiceDialog, setShowCreateInvoiceDialog] = useState(false);
+  const [invoiceToEdit, setInvoiceToEdit] = useState<InvoiceFormValues | null>(null);
+
   const { toast } = useToast();
+
+  const quotationForm = useForm<QuotationFormValues>({
+    resolver: zodResolver(quotationSchema),
+    defaultValues: { customerId: '', date: new Date(), expiryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مسودة", numericTotalAmount: 0 },
+  });
+  const { fields: quotationItemsFields, append: appendQuotationItem, remove: removeQuotationItem } = useFieldArray({
+    control: quotationForm.control, name: "items",
+  });
 
   const salesOrderForm = useForm<SalesOrderFormValues>({
     resolver: zodResolver(salesOrderSchema),
@@ -164,15 +228,33 @@ export default function SalesPage() {
     control: salesOrderForm.control, name: "items",
   });
 
+  const invoiceForm = useForm<InvoiceFormValues>({
+    resolver: zodResolver(invoiceSchema),
+    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0 },
+  });
+  const { fields: invoiceItemsFields, append: appendInvoiceItem, remove: removeInvoiceItem } = useFieldArray({
+    control: invoiceForm.control, name: "items",
+  });
+
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
+    if (quotationToEdit) quotationForm.reset(quotationToEdit);
+    else quotationForm.reset({ customerId: '', date: new Date(), expiryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مسودة", numericTotalAmount: 0 });
+  }, [quotationToEdit, quotationForm, showCreateQuotationDialog]);
+
+  useEffect(() => {
     if (salesOrderToEdit) salesOrderForm.reset(salesOrderToEdit);
     else salesOrderForm.reset({ customerId: '', date: new Date(), deliveryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مؤكد", numericTotalAmount: 0 });
   }, [salesOrderToEdit, salesOrderForm, showCreateSalesOrderDialog]);
+
+  useEffect(() => {
+    if (invoiceToEdit) invoiceForm.reset(invoiceToEdit);
+    else invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0 });
+  }, [invoiceToEdit, invoiceForm, showCreateInvoiceDialog]);
 
 
   const handlePrintInvoice = (invoice: Invoice) => {
@@ -197,19 +279,34 @@ export default function SalesPage() {
     return new Intl.DateTimeFormat('ar-SA', { day: '2-digit', month: '2-digit', year: 'numeric', calendar: 'gregory' }).format(d);
   };
 
-  const calculateSalesOrderTotals = (items: any[]) => {
-    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
-    return totalAmount;
+  const calculateItemTotals = (items: any[]) => {
+    return items.reduce((sum, item) => sum + (item.total || 0), 0);
+  };
+  
+  const calculateItemTotalForForm = (form: any, index: number) => {
+    const quantity = form.getValues(`items.${index}.quantity`);
+    const unitPrice = form.getValues(`items.${index}.unitPrice`);
+    form.setValue(`items.${index}.total`, quantity * unitPrice);
   };
 
-  const calculateSalesOrderItemTotal = (index: number) => {
-    const quantity = salesOrderForm.getValues(`items.${index}.quantity`);
-    const unitPrice = salesOrderForm.getValues(`items.${index}.unitPrice`);
-    salesOrderForm.setValue(`items.${index}.total`, quantity * unitPrice);
+
+  const handleQuotationSubmit = (values: QuotationFormValues) => {
+    const totalAmount = calculateItemTotals(values.items);
+    const finalValues = {...values, numericTotalAmount: totalAmount};
+
+    if (quotationToEdit) {
+      setQuotationsData(prev => prev.map(q => q.id === quotationToEdit.id ? { ...finalValues, id: quotationToEdit.id! } : q));
+      toast({ title: "تم التعديل", description: "تم تعديل عرض السعر بنجاح." });
+    } else {
+      setQuotationsData(prev => [...prev, { ...finalValues, id: `QT${Date.now()}` }]);
+      toast({ title: "تم الإنشاء", description: "تم إنشاء عرض السعر بنجاح." });
+    }
+    setShowCreateQuotationDialog(false);
+    setQuotationToEdit(null);
   };
 
   const handleSalesOrderSubmit = (values: SalesOrderFormValues) => {
-    const totalAmount = calculateSalesOrderTotals(values.items);
+    const totalAmount = calculateItemTotals(values.items);
     const finalValues = {...values, numericTotalAmount: totalAmount};
 
     if (salesOrderToEdit) {
@@ -223,14 +320,89 @@ export default function SalesPage() {
     setSalesOrderToEdit(null);
   };
 
+  const handleInvoiceSubmit = (values: InvoiceFormValues) => {
+    const totalAmount = calculateItemTotals(values.items);
+    const finalValues = {...values, numericTotalAmount: totalAmount};
+
+    if (invoiceToEdit) {
+      setInvoicesData(prev => prev.map(inv => inv.id === invoiceToEdit.id ? { ...finalValues, id: invoiceToEdit.id! } : inv));
+      toast({ title: "تم التعديل", description: "تم تعديل الفاتورة بنجاح." });
+    } else {
+      setInvoicesData(prev => [...prev, { ...finalValues, id: `INV-C${Date.now()}` }]);
+      toast({ title: "تم الإنشاء", description: "تم إنشاء الفاتورة بنجاح." });
+    }
+    setShowCreateInvoiceDialog(false);
+    setInvoiceToEdit(null);
+  };
+
   return (
     <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">المبيعات</h1>
         <div className="flex gap-2">
-            <Button className="shadow-md hover:shadow-lg transition-shadow">
-                <PlusCircle className="me-2 h-4 w-4" /> إنشاء عرض سعر جديد
-            </Button>
+            <Dialog open={showCreateQuotationDialog} onOpenChange={(isOpen) => { setShowCreateQuotationDialog(isOpen); if(!isOpen) setQuotationToEdit(null); }}>
+              <DialogTrigger asChild>
+                <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setQuotationToEdit(null); quotationForm.reset(); setShowCreateQuotationDialog(true);}}>
+                    <PlusCircle className="me-2 h-4 w-4" /> إنشاء عرض سعر جديد
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-xl" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle>{quotationToEdit ? 'تعديل عرض سعر' : 'إنشاء عرض سعر جديد'}</DialogTitle>
+                </DialogHeader>
+                <Form {...quotationForm}>
+                  <form onSubmit={quotationForm.handleSubmit(handleQuotationSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={quotationForm.control} name="customerId" render={({ field }) => (
+                          <FormItem><FormLabel>اسم العميل</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                              <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
+                              <SelectContent>{customers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}</SelectContent>
+                            </Select><FormMessage /></FormItem> )} />
+                      <FormField control={quotationForm.control} name="date" render={({ field }) => (
+                          <FormItem className="flex flex-col"><FormLabel>تاريخ العرض</FormLabel>
+                            <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                      <FormField control={quotationForm.control} name="expiryDate" render={({ field }) => (
+                          <FormItem className="flex flex-col"><FormLabel>تاريخ انتهاء العرض</FormLabel>
+                            <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                    </div>
+                    <ScrollArea className="h-[200px] border rounded-md p-2">
+                          {quotationItemsFields.map((item, index) => (
+                          <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
+                              <FormField control={quotationForm.control} name={`items.${index}.itemId`} render={({ field }) => (
+                                  <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { quotationForm.setValue(`items.${index}.unitPrice`, selectedItem.price); quotationForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(quotationForm, index); }} defaultValue={field.value} dir="rtl">
+                                      <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
+                                      <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                  </Select><FormMessage className="text-xs"/></FormItem> )} />
+                              <FormField control={quotationForm.control} name={`items.${index}.quantity`} render={({ field }) => (
+                                  <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
+                                  <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotalForForm(quotationForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                  <FormMessage className="text-xs"/></FormItem> )} />
+                              <FormField control={quotationForm.control} name={`items.${index}.unitPrice`} render={({ field }) => (
+                                  <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">السعر</FormLabel>
+                                  <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotalForForm(quotationForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                  <FormMessage className="text-xs"/></FormItem> )} />
+                              <FormField control={quotationForm.control} name={`items.${index}.total`} render={({ field }) => (
+                                  <FormItem className="col-span-4 sm:col-span-3"><FormLabel className="text-xs">الإجمالي</FormLabel>
+                                  <FormControl><Input type="number" {...field} readOnly className="bg-muted h-9 text-xs" /></FormControl>
+                                  <FormMessage className="text-xs"/></FormItem> )} />
+                              <Button type="button" variant="ghost" size="icon" onClick={() => removeQuotationItem(index)} className="col-span-2 sm:col-span-1 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
+                          </div> ))}
+                      </ScrollArea>
+                      <Button type="button" variant="outline" onClick={() => appendQuotationItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
+                      <FormField control={quotationForm.control} name="notes" render={({ field }) => (
+                          <FormItem><FormLabel>ملاحظات</FormLabel>
+                            <FormControl><Textarea placeholder="أضف ملاحظات (اختياري)" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
+                    <DialogFooter>
+                      <Button type="submit">{quotationToEdit ? 'حفظ التعديلات' : 'حفظ عرض السعر'}</Button>
+                      <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={showCreateSalesOrderDialog} onOpenChange={(isOpen) => { setShowCreateSalesOrderDialog(isOpen); if(!isOpen) setSalesOrderToEdit(null); }}>
               <DialogTrigger asChild>
                 <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSalesOrderToEdit(null); salesOrderForm.reset(); setShowCreateSalesOrderDialog(true);}}>
@@ -262,17 +434,17 @@ export default function SalesPage() {
                           <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                               <FormField control={salesOrderForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                   <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { salesOrderForm.setValue(`items.${index}.unitPrice`, selectedItem.price); salesOrderForm.setValue(`items.${index}.description`, selectedItem.name); } calculateSalesOrderItemTotal(index); }} defaultValue={field.value} dir="rtl">
+                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { salesOrderForm.setValue(`items.${index}.unitPrice`, selectedItem.price); salesOrderForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(salesOrderForm, index); }} defaultValue={field.value} dir="rtl">
                                       <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
                                       <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                   </Select><FormMessage className="text-xs"/></FormItem> )} />
                               <FormField control={salesOrderForm.control} name={`items.${index}.quantity`} render={({ field }) => (
                                   <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
-                                  <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateSalesOrderItemTotal(index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                  <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotalForForm(salesOrderForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
                                   <FormMessage className="text-xs"/></FormItem> )} />
                               <FormField control={salesOrderForm.control} name={`items.${index}.unitPrice`} render={({ field }) => (
                                   <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">السعر</FormLabel>
-                                  <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateSalesOrderItemTotal(index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                  <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotalForForm(salesOrderForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
                                   <FormMessage className="text-xs"/></FormItem> )} />
                               <FormField control={salesOrderForm.control} name={`items.${index}.total`} render={({ field }) => (
                                   <FormItem className="col-span-4 sm:col-span-3"><FormLabel className="text-xs">الإجمالي</FormLabel>
@@ -358,10 +530,10 @@ export default function SalesPage() {
                     {quotations.map((qt) => (
                       <TableRow key={qt.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{qt.id}</TableCell>
-                        <TableCell>{qt.customer}</TableCell>
+                        <TableCell>{customers.find(c => c.id === qt.customerId)?.name || qt.customerId}</TableCell>
                         <TableCell>{formatDate(qt.date)}</TableCell>
                         <TableCell>{formatDate(qt.expiryDate)}</TableCell>
-                        <TableCell>{qt.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                        <TableCell>{qt.numericTotalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
                         <TableCell>
                           <Badge
                             variant={
@@ -380,7 +552,7 @@ export default function SalesPage() {
                           </Button>
                           {qt.status === "مسودة" && (
                             <>
-                               <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل">
+                               <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setQuotationToEdit(qt); setShowCreateQuotationDialog(true);}}>
                                 <Edit className="h-4 w-4" />
                                </Button>
                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إرسال للعميل">
@@ -411,7 +583,6 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
                  <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
-                    {/* Button moved to main header */}
                     <div className="relative w-full sm:w-auto grow sm:grow-0">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث في أوامر البيع..." className="pr-10 w-full sm:w-64 bg-background" />
@@ -471,6 +642,69 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
+                    <Dialog open={showCreateInvoiceDialog} onOpenChange={(isOpen) => { setShowCreateInvoiceDialog(isOpen); if(!isOpen) setInvoiceToEdit(null); }}>
+                      <DialogTrigger asChild>
+                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setInvoiceToEdit(null); invoiceForm.reset(); setShowCreateInvoiceDialog(true);}}>
+                            <PlusCircle className="me-2 h-4 w-4" /> إنشاء فاتورة مبيعات جديدة
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-xl" dir="rtl">
+                        <DialogHeader>
+                          <DialogTitle>{invoiceToEdit ? 'تعديل فاتورة مبيعات' : 'إنشاء فاتورة مبيعات جديدة'}</DialogTitle>
+                        </DialogHeader>
+                        <Form {...invoiceForm}>
+                          <form onSubmit={invoiceForm.handleSubmit(handleInvoiceSubmit)} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <FormField control={invoiceForm.control} name="customerId" render={({ field }) => (
+                                  <FormItem><FormLabel>اسم العميل</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                      <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
+                                      <SelectContent>{customers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}</SelectContent>
+                                    </Select><FormMessage /></FormItem> )} />
+                              <FormField control={invoiceForm.control} name="date" render={({ field }) => (
+                                  <FormItem className="flex flex-col"><FormLabel>تاريخ الفاتورة</FormLabel>
+                                    <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                              <FormField control={invoiceForm.control} name="dueDate" render={({ field }) => (
+                                  <FormItem className="flex flex-col"><FormLabel>تاريخ الاستحقاق</FormLabel>
+                                    <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                            </div>
+                            <ScrollArea className="h-[200px] border rounded-md p-2">
+                                  {invoiceItemsFields.map((item, index) => (
+                                  <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
+                                      <FormField control={invoiceForm.control} name={`items.${index}.itemId`} render={({ field }) => (
+                                          <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
+                                          <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { invoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); invoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(invoiceForm, index); }} defaultValue={field.value} dir="rtl">
+                                              <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
+                                              <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                          </Select><FormMessage className="text-xs"/></FormItem> )} />
+                                      <FormField control={invoiceForm.control} name={`items.${index}.quantity`} render={({ field }) => (
+                                          <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
+                                          <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotalForForm(invoiceForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                          <FormMessage className="text-xs"/></FormItem> )} />
+                                      <FormField control={invoiceForm.control} name={`items.${index}.unitPrice`} render={({ field }) => (
+                                          <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">السعر</FormLabel>
+                                          <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotalForForm(invoiceForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                          <FormMessage className="text-xs"/></FormItem> )} />
+                                      <FormField control={invoiceForm.control} name={`items.${index}.total`} render={({ field }) => (
+                                          <FormItem className="col-span-4 sm:col-span-3"><FormLabel className="text-xs">الإجمالي</FormLabel>
+                                          <FormControl><Input type="number" {...field} readOnly className="bg-muted h-9 text-xs" /></FormControl>
+                                          <FormMessage className="text-xs"/></FormItem> )} />
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => removeInvoiceItem(index)} className="col-span-2 sm:col-span-1 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
+                                  </div> ))}
+                              </ScrollArea>
+                              <Button type="button" variant="outline" onClick={() => appendInvoiceItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
+                              <FormField control={invoiceForm.control} name="notes" render={({ field }) => (
+                                  <FormItem><FormLabel>ملاحظات</FormLabel>
+                                    <FormControl><Textarea placeholder="أضف ملاحظات (اختياري)" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
+                            <DialogFooter>
+                              <Button type="submit">{invoiceToEdit ? 'حفظ التعديلات' : 'حفظ الفاتورة'}</Button>
+                              <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                            </DialogFooter>
+                          </form>
+                        </Form>
+                      </DialogContent>
+                    </Dialog>
+
                     <div className="relative w-full sm:w-auto grow sm:grow-0">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث في الفواتير..." className="pr-10 w-full sm:w-64 bg-background" />
@@ -512,6 +746,9 @@ export default function SalesPage() {
                                     <CheckCircle className="h-4 w-4 text-green-600" />
                                 </Button>
                              )}
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل الفاتورة" onClick={() => {setInvoiceToEdit(inv); setShowCreateInvoiceDialog(true);}}>
+                                <Edit className="h-4 w-4" />
+                             </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -670,6 +907,7 @@ export default function SalesPage() {
                   <h5 className="font-semibold text-foreground mb-1">الشروط والأحكام:</h5>
                   <p>- يجب دفع الفاتورة خلال 30 يوماً من تاريخ الاستحقاق.</p>
                   <p>- جميع الأسعار بالريال السعودي شاملة ضريبة القيمة المضافة.</p>
+                  {selectedInvoiceForPrint.notes && <p className="mt-2"><strong>ملاحظات إضافية:</strong> {selectedInvoiceForPrint.notes}</p>}
               </div>
 
               {/* Footer */}
@@ -698,4 +936,3 @@ export default function SalesPage() {
     </div>
   );
 }
-
