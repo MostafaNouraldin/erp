@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -14,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
-import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle } from "lucide-react";
+import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle, Tag } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,14 +31,14 @@ const initialQuotationsData = [
   { id: "QT003", customerId: "CUST003", date: new Date("2024-07-10"), expiryDate: new Date("2024-07-25"), numericTotalAmount: 22000, status: "مسودة" as const, items: [] },
 ];
 
-interface SalesOrderItem {
+export interface SalesOrderItem {
   itemId: string;
   description?: string;
   quantity: number;
   unitPrice: number;
   total: number;
 }
-interface SalesOrder {
+export interface SalesOrder {
   id: string;
   quoteId?: string;
   customerId: string;
@@ -56,14 +55,14 @@ const initialSalesOrdersData: SalesOrder[] = [
   { id: "SO002", customerId: "CUST004", date: new Date("2024-07-12"), deliveryDate: new Date("2024-07-28"), numericTotalAmount: 12000, status: "مؤكد" as const, items: [{itemId: "ITEM001", description: "لابتوب", quantity: 1, unitPrice: 12000, total: 12000}], notes: "تسليم عاجل" },
 ];
 
-interface InvoiceItem {
+export interface InvoiceItem {
   itemId: string;
   description: string;
   quantity: number;
   unitPrice: number; 
   total: number;    
 }
-interface Invoice {
+export interface Invoice {
   id: string;
   orderId?: string;
   customerId: string;
@@ -74,6 +73,7 @@ interface Invoice {
   items: InvoiceItem[];
   notes?: string;
   isDeferredPayment?: boolean;
+  source?: "POS" | "Manual";
 }
 
 const initialInvoicesData: Invoice[] = [
@@ -89,6 +89,7 @@ const initialInvoicesData: Invoice[] = [
       {itemId: "SERV001", description: "خدمة استشارية لتطوير الأعمال", quantity: 1, unitPrice: 7130.43, total: 7130.43 }, 
     ],
     isDeferredPayment: false,
+    source: "Manual",
   },
   {
     id: "INV-C002",
@@ -102,6 +103,22 @@ const initialInvoicesData: Invoice[] = [
       {itemId: "ITEM002", description: "تصميم شعار وهوية بصرية", quantity: 1, unitPrice: 3478.26, total: 3478.26 }, 
     ],
     isDeferredPayment: true,
+    source: "Manual",
+  },
+  {
+    id: "INV-POS-12345", // Sample POS invoice
+    customerId: "__cash_customer__", // Cash customer
+    date: new Date("2024-07-28"),
+    dueDate: new Date("2024-07-28"),
+    numericTotalAmount: 35,
+    status: "مدفوع",
+    items: [
+      {itemId: "PROD001", description: "قهوة سوداء", quantity: 2, unitPrice: 10, total: 20 },
+      {itemId: "PROD003", description: "كرواسون بالجبنة", quantity: 1, unitPrice: 12, total: 12 },
+    ],
+    isDeferredPayment: false,
+    notes: "فاتورة من نقطة البيع للعميل: عميل نقدي - طريقة الدفع: cash",
+    source: "POS",
   },
 ];
 
@@ -188,6 +205,7 @@ const invoiceSchema = z.object({
   status: z.enum(["مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
   orderId: z.string().optional(),
   isDeferredPayment: z.boolean().optional().default(false),
+  source: z.enum(["POS", "Manual"]).optional().default("Manual"),
 });
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
@@ -236,7 +254,7 @@ export default function SalesPage() {
 
   const invoiceForm = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
-    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false },
+    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual" },
   });
   const { fields: invoiceItemsFields, append: appendInvoiceItem, remove: removeInvoiceItem } = useFieldArray({
     control: invoiceForm.control, name: "items",
@@ -259,7 +277,7 @@ export default function SalesPage() {
 
   useEffect(() => {
     if (invoiceToEdit) invoiceForm.reset(invoiceToEdit);
-    else invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false });
+    else invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual" });
   }, [invoiceToEdit, invoiceForm, showCreateInvoiceDialog]);
 
 
@@ -270,7 +288,7 @@ export default function SalesPage() {
 
     setSelectedInvoiceForPrint({
         ...invoice,
-        customerName: customer?.name || 'عميل غير محدد',
+        customerName: customer?.name || (invoice.customerId === "__cash_customer__" ? "عميل نقدي" : "عميل غير محدد"),
         customerAddress: customer?.address,
         customerVatNumber: customer?.vatNumber,
         subTotalForPrint: subTotal,
@@ -738,8 +756,9 @@ export default function SalesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>رقم الفاتورة</TableHead>
-                      <TableHead>أمر البيع (إن وجد)</TableHead>
+                      <TableHead>أمر البيع</TableHead>
                       <TableHead>العميل</TableHead>
+                      <TableHead>المصدر</TableHead>
                       <TableHead>تاريخ الفاتورة</TableHead>
                       <TableHead>تاريخ الاستحقاق</TableHead>
                       <TableHead>المبلغ الإجمالي</TableHead>
@@ -752,7 +771,14 @@ export default function SalesPage() {
                       <TableRow key={inv.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{inv.id}</TableCell>
                         <TableCell>{inv.orderId || "-"}</TableCell>
-                        <TableCell>{customers.find(c => c.id === inv.customerId)?.name || inv.customerId}</TableCell>
+                        <TableCell>{inv.customerId === "__cash_customer__" ? "عميل نقدي" : (customers.find(c => c.id === inv.customerId)?.name || inv.customerId)}</TableCell>
+                        <TableCell>
+                            {inv.source === "POS" ? (
+                                <Badge variant="secondary" className="whitespace-nowrap"><Tag className="h-3 w-3 me-1"/> نقاط البيع</Badge>
+                            ) : (
+                                <Badge variant="outline" className="whitespace-nowrap">يدوي</Badge>
+                            )}
+                        </TableCell>
                         <TableCell>{formatDate(inv.date)}</TableCell>
                         <TableCell>{formatDate(inv.dueDate)}</TableCell>
                         <TableCell>{inv.numericTotalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
@@ -964,3 +990,4 @@ export default function SalesPage() {
     </div>
   );
 }
+

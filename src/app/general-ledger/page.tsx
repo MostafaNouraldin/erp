@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -32,7 +31,7 @@ const initialChartOfAccountsData = [
   { id: "1012", name: "حساب البنك الأهلي", type: "تفصيلي" as const, parentId: "1010", balance: "150,000 SAR" },
   { id: "1013", name: "صندوق نقاط البيع", type: "تفصيلي" as const, parentId: "1010", balance: "0 SAR" },
   { id: "1020", name: "العملاء", type: "فرعي" as const, parentId: "1000", balance: "300,000 SAR"},
-  { id: "1210", name: "سلف الموظفين", type: "تفصيلي" as const, parentId: "1000", balance: "0 SAR" }, // Asset for employee advances
+  { id: "1210", name: "سلف الموظفين", type: "تفصيلي" as const, parentId: "1000", balance: "0 SAR" }, 
   { id: "2000", name: "الخصوم", type: "رئيسي" as const, parentId: null, balance: "800,000 SAR" },
   { id: "2010", name: "الموردون", type: "فرعي" as const, parentId: "2000", balance: "400,000 SAR"},
   { id: "2100", name: "رواتب مستحقة", type: "تفصيلي" as const, parentId: "2000", balance: "0 SAR" },
@@ -54,7 +53,7 @@ interface JournalEntryLine {
   credit: number;
   description?: string;
 }
-interface JournalEntry {
+export interface JournalEntry { // Exporting for POS page
   id: string;
   date: Date;
   description: string;
@@ -80,7 +79,7 @@ const accountSchema = z.object({
   name: z.string().min(1, "اسم الحساب مطلوب"),
   type: z.enum(["رئيسي", "فرعي", "تفصيلي"], { required_error: "نوع الحساب مطلوب" }),
   parentId: z.string().nullable().optional(),
-  balance: z.string().optional(), // Balance might not be set initially
+  balance: z.string().optional(), 
 });
 type AccountFormValues = z.infer<typeof accountSchema>;
 
@@ -91,7 +90,7 @@ const journalEntryLineSchema = z.object({
   description: z.string().optional(),
 }).refine(data => data.debit > 0 || data.credit > 0, {
   message: "يجب إدخال مبلغ مدين أو دائن",
-  path: ["debit"], // can also be "credit"
+  path: ["debit"], 
 });
 
 
@@ -101,7 +100,7 @@ const journalEntrySchema = z.object({
   description: z.string().min(1, "الوصف مطلوب"),
   lines: z.array(journalEntryLineSchema).min(2, "يجب أن يحتوي القيد على حركتين على الأقل."),
   status: z.enum(["مسودة", "مرحل"]).default("مسودة"),
-  totalAmount: z.number().optional(), // Will be calculated
+  totalAmount: z.number().optional(), 
   sourceModule: z.enum(["General", "POS", "EmployeeSettlements"]).optional().default("General"),
   sourceDocumentId: z.string().optional(),
 }).refine(data => {
@@ -120,8 +119,21 @@ export default function GeneralLedgerPage() {
   const [chartOfAccounts, setChartOfAccounts] = useState(initialChartOfAccountsData);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(initialJournalEntriesData);
   
-  // State to hold journal entries that might be "posted" from other modules (for simulation)
   const [externallyGeneratedJournalEntries, setExternallyGeneratedJournalEntries] = useState<JournalEntry[]>([]);
+
+  useEffect(() => {
+    // Expose a function to add journal entries from other modules (POS, Employee Settlements)
+    if (typeof window !== 'undefined') {
+        (window as any).addExternalJournalEntry = (entry: JournalEntry) => {
+            setExternallyGeneratedJournalEntries(prev => [...prev, entry]);
+        };
+    }
+    return () => {
+        if (typeof window !== 'undefined') {
+            delete (window as any).addExternalJournalEntry;
+        }
+    };
+  }, []);
 
 
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
@@ -151,8 +163,7 @@ export default function GeneralLedgerPage() {
     control: journalEntryForm.control, name: "lines",
   });
 
-  // Combine initial entries with externally generated ones for display
-  const allJournalEntries = React.useMemo(() => [...journalEntries, ...externallyGeneratedJournalEntries], [journalEntries, externallyGeneratedJournalEntries]);
+  const allJournalEntries = React.useMemo(() => [...journalEntries, ...externallyGeneratedJournalEntries].sort((a,b) => b.date.getTime() - a.date.getTime()), [journalEntries, externallyGeneratedJournalEntries]);
 
 
   useEffect(() => {
@@ -180,7 +191,7 @@ export default function GeneralLedgerPage() {
       parentId: values.parentId === NO_PARENT_ID_VALUE ? null : values.parentId,
     };
     if (accountToEdit) {
-      setChartOfAccounts(prev => prev.map(acc => acc.id === accountToEdit.id ? { ...finalValues, balance: acc.balance } : acc)); // Keep original balance on edit for simplicity
+      setChartOfAccounts(prev => prev.map(acc => acc.id === accountToEdit.id ? { ...finalValues, balance: acc.balance } : acc)); 
     } else {
       setChartOfAccounts(prev => [...prev, { ...finalValues, balance: '0 SAR' }]);
     }
@@ -189,19 +200,17 @@ export default function GeneralLedgerPage() {
   };
   
   const handleDeleteAccount = (accountId: string) => {
-    // Basic check: prevent deleting accounts that are part of initial data or have children
     const hasChildren = chartOfAccounts.some(acc => acc.parentId === accountId);
-    const isInitialSystemAccount = initialChartOfAccountsData.some(acc => acc.id === accountId && acc.balance !== '0 SAR' && acc.balance !== undefined); // crude check for system accounts
+    const isInitialSystemAccount = initialChartOfAccountsData.some(acc => acc.id === accountId && acc.balance !== '0 SAR' && acc.balance !== undefined); 
 
     if (hasChildren) {
         alert("لا يمكن حذف حساب رئيسي أو فرعي لديه حسابات تابعة.");
         return;
     }
-    if (isInitialSystemAccount && !initialChartOfAccountsData.find(acc => acc.id === accountId)?.name.includes("نقاط البيع") && !initialChartOfAccountsData.find(acc => acc.id === accountId)?.name.includes("مكافآت")) { // Allow deleting newly added special accounts
+    if (isInitialSystemAccount && !initialChartOfAccountsData.find(acc => acc.id === accountId)?.name.includes("نقاط البيع") && !initialChartOfAccountsData.find(acc => acc.id === accountId)?.name.includes("مكافآت")) { 
         alert("لا يمكن حذف الحسابات الأساسية للنظام.");
         return;
     }
-    // Add check for transactions later
     setChartOfAccounts(prev => prev.filter(acc => acc.id !== accountId));
   };
 
@@ -209,7 +218,7 @@ export default function GeneralLedgerPage() {
     const totalDebit = values.lines.reduce((sum, line) => sum + (line.debit || 0), 0);
     const finalValues: JournalEntry = { 
         ...values, 
-        id: values.id || `JV${Date.now()}`, // Ensure ID exists
+        id: values.id || `JV${Date.now()}`, 
         totalAmount: totalDebit,
         sourceModule: values.sourceModule || "General",
     };
@@ -230,7 +239,6 @@ export default function GeneralLedgerPage() {
   
   const handlePostJournalEntry = (entryId: string) => {
     setJournalEntries(prev => prev.map(entry => entry.id === entryId ? { ...entry, status: "مرحل" } : entry));
-    // In a real app, this would also update account balances in chartOfAccounts
   };
 
   const handleUnpostJournalEntry = (entryId: string) => {

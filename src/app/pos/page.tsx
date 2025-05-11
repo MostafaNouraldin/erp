@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -14,7 +13,9 @@ import { Label } from "@/components/ui/label";
 import { DollarSign, ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud, UserCheck } from "lucide-react";
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast"; 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Assuming Select component exists for customers
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; 
+import type { InvoiceItem as SalesInvoiceItem, Invoice as SalesInvoice } from '@/app/sales/page'; // Import types from sales page
+import type { JournalEntry as GLJournalEntry } from '@/app/general-ledger/page'; // Import types from GL page
 
 // Mock data
 const categories = ["الكل", "مشروبات", "مأكولات خفيفة", "حلويات", "مخبوزات", "منتجات ورقية"];
@@ -28,7 +29,7 @@ const products = [
   { id: "PROD007", name: "عصير برتقال طازج", category: "مشروبات", price: 18, stock: 40, image: "https://picsum.photos/200/200?random=7", dataAiHint: "orange juice" },
   { id: "PROD008", name: "ساندويتش دجاج", category: "مأكولات خفيفة", price: 22, stock: 25, image: "https://picsum.photos/200/200?random=8", dataAiHint: "chicken sandwich" },
 ];
-const mockCustomers = [ // Re-using from other pages for consistency
+const mockCustomers = [ 
   { id: "CUST001", name: "شركة الأمل" },
   { id: "CUST002", name: "مؤسسة النجاح" },
   { id: "CUST003", name: "أحمد خالد (فرد)" },
@@ -120,6 +121,7 @@ export default function POSPage() {
   const handleProcessPayment = () => {
     const transactionId = `TRX${Date.now().toString().slice(-5)}`;
     const customer = mockCustomers.find(c => c.id === selectedCustomerId);
+    const customerNameForInvoice = selectedCustomerId === CASH_CUSTOMER_ID ? 'عميل نقدي' : (customer?.name || 'عميل غير محدد');
 
     if (paymentMethod === 'deferred') {
         if (!selectedCustomerId || selectedCustomerId === CASH_CUSTOMER_ID) {
@@ -130,45 +132,58 @@ export default function POSPage() {
             });
             return;
         }
-        // Simulate creating a deferred sales invoice
-        const deferredInvoice = {
+        
+        const deferredInvoice: SalesInvoice = {
             id: `INV-POS-${Date.now().toString().slice(-5)}`,
             customerId: selectedCustomerId,
-            customerName: customer?.name || 'عميل غير محدد',
             date: new Date(),
             dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days later
-            items: cart.map(item => ({ ...item, unitPrice: item.price, description: item.name })), 
+            items: cart.map(item => ({ 
+                itemId: item.id, 
+                description: item.name, 
+                quantity: item.quantity, 
+                unitPrice: item.price, 
+                total: item.price * item.quantity 
+            })), 
             numericTotalAmount: totalAmount,
-            status: "غير مدفوع" as "غير مدفوع" | "مدفوع" | "متأخر",
+            status: "غير مدفوع",
             isDeferredPayment: true,
-            notes: `فاتورة آجلة من نقطة البيع للعميل: ${customer?.name || selectedCustomerId}`,
+            notes: `فاتورة آجلة من نقطة البيع للعميل: ${customerNameForInvoice}`,
+            source: "POS",
         };
-        console.log("Simulating creation of deferred invoice:", deferredInvoice);
-        // In a real app, this `deferredInvoice` would be saved to the invoicing system/database.
-        // For example, you might call a function like:
-        // addDeferredInvoiceToSystem(deferredInvoice);
+        console.log("محاكاة إنشاء فاتورة آجلة (سيتم إضافتها لقسم فواتير المبيعات):", deferredInvoice);
         
         toast({
             title: "تم تسجيل البيع الآجل بنجاح!",
-            description: `تم إنشاء فاتورة آجلة رقم ${deferredInvoice.id} للعميل ${deferredInvoice.customerName} بمبلغ ${totalAmount.toFixed(2)} SAR.`,
+            description: `تم إنشاء فاتورة آجلة رقم ${deferredInvoice.id} للعميل ${customerNameForInvoice} بمبلغ ${totalAmount.toFixed(2)} SAR.`,
             variant: "default",
         });
 
     } else {
         // Standard payment processing
-        console.log("Processing payment for:", {
-            transactionId,
-            customerId: selectedCustomerId,
-            customerName: selectedCustomerId === CASH_CUSTOMER_ID ? 'عميل نقدي' : customer?.name,
-            cart,
-            subtotal,
-            discount,
-            totalAmount,
-            paymentMethod,
-        });
+        const settledInvoice: SalesInvoice = {
+            id: `INV-POS-${transactionId}`,
+            customerId: selectedCustomerId || CASH_CUSTOMER_ID,
+            date: new Date(),
+            dueDate: new Date(), // Due immediately for cash/card
+            items: cart.map(item => ({ 
+                itemId: item.id, 
+                description: item.name, 
+                quantity: item.quantity, 
+                unitPrice: item.price, 
+                total: item.price * item.quantity 
+            })),
+            numericTotalAmount: totalAmount,
+            status: "مدفوع",
+            isDeferredPayment: false,
+            notes: `فاتورة من نقطة البيع للعميل: ${customerNameForInvoice} - طريقة الدفع: ${paymentMethod}`,
+            source: "POS",
+        };
+        console.log("محاكاة إنشاء فاتورة مسددة (سيتم إضافتها لقسم فواتير المبيعات):", settledInvoice);
+
         toast({
             title: "تمت عملية الدفع بنجاح!",
-            description: `تم إنشاء الفاتورة رقم ${transactionId} والمبلغ ${totalAmount.toFixed(2)} SAR.`,
+            description: `تم إنشاء الفاتورة رقم ${settledInvoice.id} والمبلغ ${totalAmount.toFixed(2)} SAR.`,
             variant: "default",
         });
     }
@@ -186,10 +201,8 @@ export default function POSPage() {
   };
 
   const handlePostToGL = () => {
-    // This mock function posts an aggregated total of *settled* sales (cash/card) for the day/period.
-    // Deferred sales are handled by creating an invoice, which has its own accounting implications (A/R).
     const settledSalesTotal = recentTransactions
-        .filter(trx => trx.paymentMethod === "نقدي" || trx.paymentMethod === "بطاقة" || trx.paymentMethod === "تحويل") // Added "تحويل"
+        .filter(trx => trx.paymentMethod === "نقدي" || trx.paymentMethod === "بطاقة" || trx.paymentMethod === "تحويل")
         .reduce((sum, trx) => sum + parseFloat(trx.total.split(" ")[0]), 0);
 
     if (settledSalesTotal <= 0) {
@@ -201,22 +214,27 @@ export default function POSPage() {
         return;
     }
     
-    const journalEntryData = {
+    const journalEntryData: GLJournalEntry = {
         id: `POS_JV_${Date.now().toString().slice(-5)}`,
         date: new Date(),
         description: `ترحيل إجمالي مبيعات نقاط البيع (نقدية/بطاقة/تحويل) - ${new Date().toLocaleDateString('ar-SA')}`,
         lines: [
-            { accountId: "1013", debit: settledSalesTotal, credit: 0, description: "إجمالي مبيعات نقاط البيع (نقدية/بطاقة/تحويل)" }, // صندوق نقاط البيع
-            { accountId: "4010", debit: 0, credit: settledSalesTotal, description: "إيراد مبيعات نقاط البيع" }, // إيرادات مبيعات
+            { accountId: "1013", debit: settledSalesTotal, credit: 0, description: "إجمالي مبيعات نقاط البيع (نقدية/بطاقة/تحويل)" }, 
+            { accountId: "4010", debit: 0, credit: settledSalesTotal, description: "إيراد مبيعات نقاط البيع" }, 
         ],
         totalAmount: settledSalesTotal,
-        status: "مرحل" as "مرحل",
-        sourceModule: "POS" as "POS",
+        status: "مرحل",
+        sourceModule: "POS",
         sourceDocumentId: `POS_SETTLED_${Date.now().toString().slice(-5)}`
     };
 
-    console.log("Posting to General Ledger (Settled Sales):", journalEntryData);
+    console.log("ترحيل إجمالي المبيعات المسددة للحسابات العامة:", journalEntryData);
     
+    // Simulate adding to GL page (in a real app, this would be an API call or shared state update)
+    if (typeof window !== 'undefined' && (window as any).addExternalJournalEntry) {
+        (window as any).addExternalJournalEntry(journalEntryData);
+    }
+
     toast({
         title: "تم طلب ترحيل المبيعات المسددة",
         description: `سيتم ترحيل قيد إجمالي المبيعات النقدية/بالبطاقة/تحويل بمبلغ ${settledSalesTotal.toFixed(2)} SAR.`,
@@ -438,7 +456,7 @@ export default function POSPage() {
             )}
              <Separator />
               <CardContent className="p-4">
-                 <Button variant="secondary" className="w-full shadow-sm" onClick={handlePostToGL} disabled={cart.length > 0 && totalAmount > 0 /* Disable if cart has items not yet paid, enable if there's something to post for the day */}>
+                 <Button variant="secondary" className="w-full shadow-sm" onClick={handlePostToGL} disabled={recentTransactions.filter(trx => trx.paymentMethod !== "آجل").length === 0 /* Disable if no settled transactions to post*/}>
                     <UploadCloud className="me-2 h-4 w-4" /> ترحيل إجمالي المبيعات للقيود
                   </Button>
               </CardContent>
