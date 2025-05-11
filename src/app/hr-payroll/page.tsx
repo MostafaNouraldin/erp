@@ -31,7 +31,7 @@ const employeeAllowanceSchema = z.object({
   id: z.string().optional(),
   description: z.string().min(1, "وصف البدل مطلوب"),
   amount: z.coerce.number().min(0, "المبلغ يجب أن يكون إيجابياً"),
-  type: z.enum(["ثابت", "متغير", "مرة واحدة"]).default("ثابت"), 
+  type: z.enum(["ثابت", "متغير", "مرة واحدة"]).default("ثابت"),
 });
 
 const employeeDelegationSchema = z.object({
@@ -57,30 +57,30 @@ const employeeSchema = z.object({
   name: z.string().min(1, "اسم الموظف مطلوب"),
   jobTitle: z.string().min(1, "المسمى الوظيفي مطلوب"),
   department: z.string().min(1, "القسم مطلوب"),
-  
+
   // Contract Information
   contractStartDate: z.date({ required_error: "تاريخ بداية العقد مطلوب" }),
   contractEndDate: z.date({ required_error: "تاريخ نهاية العقد مطلوب" }),
-  contractDuration: z.string().optional(), 
+  contractDuration: z.string().optional(),
   probationEndDate: z.date().optional().nullable(),
   canRenewContract: z.boolean().default(true),
   employmentType: z.enum(["دوام كامل", "دوام جزئي", "عقد محدد", "مستقل"], { required_error: "نوع التوظيف مطلوب" }).default("دوام كامل"),
   contractType: z.enum(["فردي", "عائلي"], { required_error: "نوع العقد مطلوب" }).default("فردي"),
-  
+
   // Personal Information
   email: z.string().email("بريد إلكتروني غير صالح").optional().or(z.literal('')),
   phone: z.string().optional(),
   avatarUrl: z.string().url("رابط الصورة غير صالح").optional().or(z.literal('')),
   dataAiHint: z.string().max(30, "الكلمات المفتاحية يجب ألا تتجاوز 30 حرفًا").optional(),
   nationality: z.string().optional(),
-  idNumber: z.string().optional(), 
+  idNumber: z.string().optional(),
   workLocation: z.string().optional(),
 
   // Financial Information
   basicSalary: z.coerce.number().min(0, "الراتب الأساسي يجب أن يكون إيجابياً"),
   bankName: z.string().optional(),
   iban: z.string().optional(),
-  socialInsuranceNumber: z.string().optional(), 
+  socialInsuranceNumber: z.string().optional(),
   allowances: z.array(employeeAllowanceSchema).optional().default([]), // Replaced housing & transportation with general allowances
 
   // Medical Insurance
@@ -91,7 +91,7 @@ const employeeSchema = z.object({
   // Emergency Contact
   emergencyContactName: z.string().optional(),
   emergencyContactPhone: z.string().optional(),
-  
+
   status: z.enum(["نشط", "في إجازة", "منتهية خدمته", "متوقف مؤقتاً"]).default("نشط"),
 
   // New Fields
@@ -113,7 +113,7 @@ const payrollSchema = z.object({
   deductions: z.array(payrollItemSchema).optional().default([]),
   notes: z.string().optional(),
   status: z.enum(["مسودة", "قيد المعالجة", "مدفوع", "ملغي"]).default("مسودة"),
-  netSalary: z.coerce.number().optional(), 
+  netSalary: z.coerce.number().optional(),
 });
 type PayrollFormValues = z.infer<typeof payrollSchema>;
 
@@ -125,7 +125,7 @@ const attendanceSchema = z.object({
   checkOut: z.string().optional().nullable(),
   notes: z.string().optional(),
   status: z.enum(["حاضر", "غائب", "حاضر (متأخر)", "حاضر (مغادرة مبكرة)", "إجازة"]).default("حاضر"),
-  hours: z.string().optional(), 
+  hours: z.string().optional(),
 });
 type AttendanceFormValues = z.infer<typeof attendanceSchema>;
 
@@ -137,7 +137,7 @@ const leaveRequestSchema = z.object({
   endDate: z.date({ required_error: "تاريخ الانتهاء مطلوب" }),
   reason: z.string().optional(),
   status: z.enum(["مقدمة", "موافق عليها", "مرفوضة", "ملغاة"]).default("مقدمة"),
-  days: z.coerce.number().optional(), 
+  days: z.coerce.number().optional(),
 });
 type LeaveRequestFormValues = z.infer<typeof leaveRequestSchema>;
 
@@ -170,7 +170,7 @@ const initialLeaveRequestsData = [
   { id: "LR003", employeeId: "EMP001", type: "إجازة عارضة", startDate: new Date("2024-09-05"), endDate: new Date("2024-09-05"), days: 1, status: "مرفوضة" as const, reason: "ظرف طارئ" },
 ];
 const mockDepartments = ["قسم المبيعات", "قسم التسويق", "قسم المالية", "قسم الموارد البشرية", "قسم التشغيل", "الإدارة"];
-const mockPositions = ["مدير", "أخصائي", "محاسب", "مسؤول", "فني", "مساعد إداري"];
+const mockJobTitles = ["مدير مبيعات", "أخصائية تسويق", "محاسب أول", "مسؤول موارد بشرية", "فني صيانة", "مدير قسم", "مساعد إداري"];
 const mockEmploymentTypes = ["دوام كامل", "دوام جزئي", "عقد محدد", "مستقل"];
 const mockContractTypes = ["فردي", "عائلي"];
 
@@ -196,7 +196,7 @@ export default function HRPayrollPage() {
   const [employeeToEdit, setEmployeeToEdit] = useState<EmployeeFormValues | null>(null);
   const [showViewEmployeeDialog, setShowViewEmployeeDialog] = useState(false);
   const [selectedEmployeeForView, setSelectedEmployeeForView] = useState<EmployeeFormValues | null>(null);
-  
+
   const [showCreatePayrollDialog, setShowCreatePayrollDialog] = useState(false);
   const [payrollToEdit, setPayrollToEdit] = useState<PayrollFormValues | null>(null);
   const [showViewPayrollDialog, setShowViewPayrollDialog] = useState(false);
@@ -223,7 +223,7 @@ export default function HRPayrollPage() {
   const payrollForm = useForm<PayrollFormValues>({ resolver: zodResolver(payrollSchema) });
   const { fields: payrollAllowanceFields, append: appendPayrollAllowance, remove: removePayrollAllowance } = useFieldArray({ control: payrollForm.control, name: "allowances" });
   const { fields: payrollDeductionFields, append: appendPayrollDeduction, remove: removePayrollDeduction } = useFieldArray({ control: payrollForm.control, name: "deductions" });
-  
+
   const attendanceForm = useForm<AttendanceFormValues>({ resolver: zodResolver(attendanceSchema) });
   const leaveRequestForm = useForm<LeaveRequestFormValues>({ resolver: zodResolver(leaveRequestSchema) });
 
@@ -237,7 +237,7 @@ export default function HRPayrollPage() {
         const emp = employees.find(e => e.id === payrollToEdit.employeeId);
         payrollForm.reset({
             ...payrollToEdit,
-            basicSalary: payrollToEdit.basicSalary || emp?.basicSalary || 0, 
+            basicSalary: payrollToEdit.basicSalary || emp?.basicSalary || 0,
         });
     } else {
         const currentMonthYear = `${new Date().toLocaleString('ar-SA', { month: 'long' })} ${new Date().getFullYear()}`;
@@ -266,12 +266,12 @@ export default function HRPayrollPage() {
     setShowAddEmployeeDialog(false);
     setEmployeeToEdit(null);
   };
-  
+
   const handleTerminateEmployee = (employeeId: string) => {
       setEmployeesData(prev => prev.map(emp => emp.id === employeeId ? { ...emp, status: "منتهية خدمته" } : emp));
       toast({ title: "إنهاء خدمة", description: `تم إنهاء خدمة الموظف ${employeeId}.`, variant: "destructive" });
   };
-  
+
   const handleViewEmployee = (employee: EmployeeFormValues) => {
       setSelectedEmployeeForView(employee);
       setShowViewEmployeeDialog(true);
@@ -345,7 +345,7 @@ export default function HRPayrollPage() {
     setShowCreateLeaveDialog(false);
     setLeaveRequestToEdit(null);
   };
-  
+
   const handleLeaveAction = (leaveId: string, newStatus: "موافق عليها" | "مرفوضة") => {
       setLeaveRequestsData(prev => prev.map(lr => lr.id === leaveId ? { ...lr, status: newStatus } : lr));
       toast({ title: "تم تحديث الطلب", description: `تم ${newStatus === "موافق عليها" ? "الموافقة على" : "رفض"} طلب الإجازة.` });
@@ -387,7 +387,7 @@ export default function HRPayrollPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <FormField control={employeeForm.control} name="jobTitle" render={({ field }) => (<FormItem><FormLabel>المسمى الوظيفي</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر المسمى" /></SelectTrigger></FormControl>
-                                        <SelectContent>{mockPositions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                        <SelectContent>{mockJobTitles.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                     <FormField control={employeeForm.control} name="department" render={({ field }) => (<FormItem><FormLabel>القسم</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر القسم" /></SelectTrigger></FormControl>
                                         <SelectContent>{mockDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
@@ -518,7 +518,7 @@ export default function HRPayrollPage() {
                             </Select><FormMessage /></FormItem>)} />
                         <FormField control={payrollForm.control} name="monthYear" render={({ field }) => (<FormItem><FormLabel>الشهر والسنة</FormLabel><FormControl><Input {...field} placeholder="مثال: يوليو 2024" /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={payrollForm.control} name="basicSalary" render={({ field }) => (<FormItem><FormLabel>الراتب الأساسي</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        
+
                         <Card><CardHeader><CardTitle className="text-sm">البدلات</CardTitle></CardHeader><CardContent>
                             <ScrollArea className="h-[100px]">{payrollAllowanceFields.map((item, index) => (
                                 <div key={item.id} className="flex gap-2 items-end mb-2"><FormField control={payrollForm.control} name={`allowances.${index}.description`} render={({ field }) => (<FormItem className="flex-1"><FormLabel className="text-xs">الوصف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -526,7 +526,7 @@ export default function HRPayrollPage() {
                                 <Button type="button" variant="ghost" size="icon" onClick={() => removePayrollAllowance(index)} className="h-9 w-9 text-destructive"><MinusCircle className="h-4 w-4" /></Button></div>))}
                             </ScrollArea><Button type="button" variant="outline" size="sm" onClick={() => appendPayrollAllowance({description: '', amount: 0})}><PlusCircle className="me-1 h-3 w-3" /> إضافة بدل</Button>
                         </CardContent></Card>
-                        
+
                         <Card><CardHeader><CardTitle className="text-sm">الخصومات</CardTitle></CardHeader><CardContent>
                              <ScrollArea className="h-[100px]">{payrollDeductionFields.map((item, index) => (
                                 <div key={item.id} className="flex gap-2 items-end mb-2"><FormField control={payrollForm.control} name={`deductions.${index}.description`} render={({ field }) => (<FormItem className="flex-1"><FormLabel className="text-xs">الوصف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -765,7 +765,7 @@ export default function HRPayrollPage() {
                         <TableCell>{att.checkOut || "--:--"}</TableCell>
                         <TableCell>{att.hours}</TableCell>
                         <TableCell>
-                          <Badge 
+                          <Badge
                             variant={
                                 att.status === "حاضر" ? "default" :
                                 att.status === "غائب" ? "destructive" :
@@ -910,7 +910,7 @@ export default function HRPayrollPage() {
                     <ScrollArea className="max-h-[70vh] p-1">
                     <div className="py-4 space-y-3 text-sm">
                         <div className="flex justify-center mb-4">
-                            <Avatar className="h-24 w-24"><AvatarImage src={selectedEmployeeForView.avatarUrl} alt={selectedEmployeeForView.name} data-ai-hint={selectedEmployeeForView.dataAiHint || selectedEmployeeForView.name.split(' ').slice(0,2).join(' ')} /><AvatarFallback>{selectedEmployeeForView.name?.substring(0,1)}</AvatarFallback></Avatar>
+                            <Avatar className="h-24 w-24"><AvatarImage src={selectedEmployeeForView.avatarUrl} alt={selectedEmployeeForView.name} data-ai-hint={selectedEmployeeForView.dataAiHint || selectedEmployeeForView.name.split(' ').slice(0,2).join(' ') } /><AvatarFallback>{selectedEmployeeForView.name?.substring(0,1)}</AvatarFallback></Avatar>
                         </div>
                         <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><UserCog className="me-2 h-4 w-4 text-primary" /> معلومات أساسية</CardTitle></CardHeader>
                           <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
@@ -978,7 +978,7 @@ export default function HRPayrollPage() {
                                 ) : <p className="text-muted-foreground">لا توجد انتدابات مسجلة.</p>}
                             </CardContent>
                         </Card>
-                        
+
                         <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><Shield className="me-2 h-4 w-4 text-primary" /> التأمين والاتصال بالطوارئ</CardTitle></CardHeader>
                             <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
                                 <p><strong>شركة التأمين:</strong> {selectedEmployeeForView.medicalInsuranceProvider || "-"}</p>
@@ -1005,7 +1005,7 @@ export default function HRPayrollPage() {
                 {selectedPayrollForView && (
                     <div className="py-4 space-y-3 text-sm">
                         <p><strong>الراتب الأساسي:</strong> {(selectedPayrollForView.basicSalary || 0).toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</p>
-                        
+
                         <h4 className="font-semibold mt-2">البدلات:</h4>
                         {selectedPayrollForView.allowances && selectedPayrollForView.allowances.length > 0 ? (
                             <ul className="list-disc ps-5 text-xs">
@@ -1021,7 +1021,7 @@ export default function HRPayrollPage() {
                                  <li className="font-bold">إجمالي الخصومات: {(selectedPayrollForView.deductions.reduce((sum, item) => sum + item.amount, 0) || 0).toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</li>
                             </ul>
                         ) : <p className="text-xs text-muted-foreground">لا توجد خصومات.</p>}
-                        
+
                         <p className="font-bold text-primary mt-3 border-t pt-2"><strong>صافي الراتب:</strong> {(selectedPayrollForView.netSalary || 0).toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</p>
                         <div className="flex items-center gap-1"><strong>الحالة:</strong> <span className="inline-block"><Badge variant={selectedPayrollForView.status === "مدفوع" ? "default" : "outline"}>{selectedPayrollForView.status}</Badge></span></div>
                         <p><strong>ملاحظات:</strong> {selectedPayrollForView.notes || "لا يوجد"}</p>
@@ -1056,5 +1056,6 @@ export default function HRPayrollPage() {
   );
 }
 
-    
+
+
 
