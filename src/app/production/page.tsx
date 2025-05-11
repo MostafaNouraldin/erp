@@ -6,7 +6,7 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button"; // Import buttonVariants
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -455,7 +455,7 @@ export default function ProductionPage() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>تراجع</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleCancelWorkOrder(wo.id!)} className={Button({variant:"destructive"})}>تأكيد الإلغاء</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => handleCancelWorkOrder(wo.id!)} className={buttonVariants({variant:"destructive"})}>تأكيد الإلغاء</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -567,7 +567,7 @@ export default function ProductionPage() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>تراجع</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteBom(bom.id!)} className={Button({variant:"destructive"})}>تأكيد الحذف</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => handleDeleteBom(bom.id!)} className={buttonVariants({variant:"destructive"})}>تأكيد الحذف</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
