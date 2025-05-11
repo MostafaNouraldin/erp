@@ -16,6 +16,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import AppLogo from "@/components/app-logo";
 import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card"; // Added import
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -51,10 +52,10 @@ const currentTenantSubscription = {
     'Accounting': true,
     'Inventory': true,
     'Sales': true,
-    'Purchases': false,
+    'Purchases': true, // Enabled Purchases
     'HR': true,
-    'Production': false,
-    'Projects': false,
+    'Production': true, // Enabled Production
+    'Projects': true, // Enabled Projects
     'POS': true,
     'BI': true,
     'Settings': true,
@@ -99,9 +100,9 @@ const allNavItems = [
   { href: "/hr-payroll", label: "الموارد البشرية والرواتب", icon: Users, module: "HR" },
   { href: "/production", label: "الإنتاج", icon: Cog, module: "Production" },
   { href: "/projects", label: "المشاريع", icon: Building, module: "Projects" },
-  { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" }, // Updated icon from DollarSign
+  { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" }, 
   { href: "/reports", label: "التقارير والتحليل", icon: BarChart2, module: "BI" },
-  { href: "/settings", label: "الإعدادات العامة", icon: Settings, module: "Settings" }, // Changed label for clarity
+  { href: "/settings", label: "الإعدادات العامة", icon: Settings, module: "Settings" }, 
   {
     label: "إدارة النظام",
     icon: Settings2,
@@ -142,7 +143,15 @@ export default function RootLayout({
     );
   }
   
-  const navItems = allNavItems.filter(item => currentTenantSubscription.modules[item.module]);
+  const navItems = allNavItems.filter(item => {
+    const moduleAccess = currentTenantSubscription.modules[item.module];
+    if (typeof moduleAccess === 'boolean') { // Ensure moduleAccess is boolean
+      return moduleAccess;
+    }
+    console.warn(`Module ${item.module} has no subscription status defined, defaulting to false.`);
+    return false; // Default to false if not defined
+  });
+
 
 
   return (
