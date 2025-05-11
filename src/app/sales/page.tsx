@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -593,7 +594,7 @@ export default function SalesPage() {
       </div>
 
       <Tabs defaultValue="quotations" className="w-full" dir="rtl">
-        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
+        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md" dir="rtl">
           <TabsTrigger value="quotations" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <FileSignature className="inline-block me-2 h-4 w-4" /> عروض الأسعار
           </TabsTrigger>
@@ -1067,7 +1068,7 @@ export default function SalesPage() {
                     <p className="font-semibold">استلمت بواسطة (العميل)</p>
                 </div>
               </div>
-              <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
+              <p className="text-center text-xs text-muted-foreground mt-10 print-block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
             </div>
           )}
           <DialogFooter className="print-hidden pt-4">
@@ -1087,7 +1088,7 @@ export default function SalesPage() {
             <DialogDescriptionComponent>عرض بيانات العميل، فواتيره، وكشف حسابه.</DialogDescriptionComponent>
           </DialogHeader>
           {selectedCustomerForDetails && isClient && (
-            <div id="printable-customer-statement" className="printable-area bg-background text-foreground font-cairo text-sm p-4 max-h-[80vh] overflow-y-auto">
+            <div id="printable-customer-statement" className="printable-area bg-background text-foreground font-cairo text-sm p-4 max-h-[80vh] overflow-y-auto" dir="rtl">
               {/* Print Header */}
               <div className="print-only flex justify-between items-start pb-4 mb-6 border-b">
                 <div className="flex items-center gap-2"> <AppLogo />
@@ -1096,8 +1097,8 @@ export default function SalesPage() {
                 <div className="text-left"> <h3 className="text-xl font-semibold text-primary">كشف حساب عميل</h3> <p className="text-xs">Customer Statement</p> <p className="text-sm mt-1"><strong>العميل:</strong> {selectedCustomerForDetails.name}</p> <p className="text-sm"><strong>التاريخ:</strong> {new Date().toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p> </div>
               </div>
 
-              <Tabs defaultValue="info" className="w-full">
-                <TabsList className="w-full mb-4 print-hidden">
+              <Tabs defaultValue="info" className="w-full" dir="rtl">
+                <TabsList className="w-full mb-4 print-hidden" dir="rtl">
                   <TabsTrigger value="info">بيانات العميل</TabsTrigger>
                   <TabsTrigger value="invoicesList">قائمة الفواتير</TabsTrigger>
                   <TabsTrigger value="statement">كشف الحساب</TabsTrigger>

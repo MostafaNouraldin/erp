@@ -112,6 +112,12 @@
   .print-hidden {
     display: none !important;
   }
+  .print-only { /* New class to show elements only on print */
+    display: none; 
+  }
+  .printable-area .print-only {
+    display: flex !important; /* Or block, depending on the element type */
+  }
   .printable-area .text-primary {
     color: #000 !important; /* Print primary colors as black for better readability */
   }
