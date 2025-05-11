@@ -14,25 +14,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCircle, Edit, Trash2, Save, Search, KeyRound } from "lucide-react";
+import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCircle, Edit, Trash2, Save, Search, KeyRound, ToggleLeft, ToggleRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import type { Role } from '@/types/saas'; // Assuming Role is defined here
+import type { Role } from '@/types/saas'; // Ensure Role type is correctly imported
 
 // Mock data
 const initialUsers = [
-  { id: "USR001", name: "أحمد علي", email: "ahmed.ali@example.com", roleId: "ROLE001", status: "نشط", avatarUrl: "https://picsum.photos/100/100?random=10" },
-  { id: "USR002", name: "فاطمة خالد", email: "fatima.k@example.com", roleId: "ROLE002", status: "نشط", avatarUrl: "https://picsum.photos/100/100?random=11" },
-  { id: "USR003", name: "يوسف حسن", email: "youssef.h@example.com", roleId: "ROLE003", status: "غير نشط", avatarUrl: "https://picsum.photos/100/100?random=12" },
+  { id: "USR001", name: "أحمد علي", email: "ahmed.ali@example.com", roleId: "ROLE001", status: "نشط" as const, avatarUrl: "https://picsum.photos/100/100?random=10" },
+  { id: "USR002", name: "فاطمة خالد", email: "fatima.k@example.com", roleId: "ROLE002", status: "نشط" as const, avatarUrl: "https://picsum.photos/100/100?random=11" },
+  { id: "USR003", name: "يوسف حسن", email: "youssef.h@example.com", roleId: "ROLE003", status: "غير نشط" as const, avatarUrl: "https://picsum.photos/100/100?random=12" },
 ];
 
 
 const initialRoles: Role[] = [
-  { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "sales.view", "sales.create", "sales.edit", "sales.delete", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "hr.view", "hr.create", "hr.edit", "hr.delete", "settings.view", "settings.edit"] },
+  { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "sales.view", "sales.create", "sales.edit", "sales.delete", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "hr.view", "hr.create", "hr.edit", "hr.delete", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles"] },
   { id: "ROLE002", name: "محاسب", description: "صلاحيات على وحدات الحسابات والمالية.", permissions: ["accounting.view", "accounting.create", "accounting.edit"] },
   { id: "ROLE003", name: "موظف مبيعات", description: "صلاحيات على وحدة المبيعات وعروض الأسعار.", permissions: ["sales.view", "sales.create"] },
   { id: "ROLE004", name: "مدير مخزون", description: "صلاحيات على وحدة المخزون والمستودعات.", permissions: ["inventory.view", "inventory.create", "inventory.edit"] },
@@ -55,12 +55,11 @@ const userSchema = z.object({
     email: z.string().email("بريد إلكتروني غير صالح"),
     roleId: z.string().min(1, "الدور مطلوب"),
     status: z.enum(["نشط", "غير نشط"]).default("نشط"),
-    password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل").optional(),
-    avatarUrl: z.string().url().optional(),
+    password: z.string().optional().refine(val => !val || val.length >= 6, {message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل إذا تم إدخالها"}),
+    avatarUrl: z.string().url().optional().or(z.literal('')),
 });
 type UserFormValues = z.infer<typeof userSchema>;
 
-// For the role form (name and description)
 const roleFormSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1, "اسم الدور مطلوب"),
@@ -77,12 +76,12 @@ export default function SettingsPage() {
   const [showManageUserDialog, setShowManageUserDialog] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserFormValues | null>(null);
   const [showManageRoleDialog, setShowManageRoleDialog] = useState(false);
-  const [roleToEdit, setRoleToEdit] = useState<Role | null>(null); // Use Role type here
+  const [roleToEdit, setRoleToEdit] = useState<Role | null>(null); 
   const { toast } = useToast();
 
   const userForm = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
-    defaultValues: { name: "", email: "", roleId: "", status: "نشط" },
+    defaultValues: { name: "", email: "", roleId: "", status: "نشط", password: "", avatarUrl: "" },
   });
 
   const roleForm = useForm<RoleFormValues>({
@@ -93,7 +92,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (showManageUserDialog) {
       if (userToEdit) userForm.reset(userToEdit);
-      else userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password: "" });
+      else userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password: "", avatarUrl:"" });
     }
   }, [userToEdit, userForm, showManageUserDialog]);
 
@@ -107,12 +106,23 @@ export default function SettingsPage() {
     }
   }, [roleToEdit, showManageRoleDialog, roleForm]);
 
+  useEffect(() => {
+    if (selectedRole) {
+      setSelectedRolePermissions(selectedRole.permissions || []);
+    } else {
+      setSelectedRolePermissions([]);
+    }
+  }, [selectedRole]);
 
   const handleUserSubmit = (values: UserFormValues) => {
     if (userToEdit) {
       setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...values, id: userToEdit.id!, avatarUrl: u.avatarUrl } : u));
       toast({ title: "تم التعديل", description: `تم تعديل بيانات المستخدم ${values.name}.` });
     } else {
+      if(!values.password) {
+        userForm.setError("password", {type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد"});
+        return;
+      }
       setUsers(prev => [...prev, { ...values, id: `USR${Date.now()}`, avatarUrl: "https://picsum.photos/100/100?random=" + Date.now() }]);
       toast({ title: "تمت الإضافة", description: `تم إضافة المستخدم ${values.name} بنجاح.` });
     }
@@ -120,12 +130,27 @@ export default function SettingsPage() {
     setUserToEdit(null);
   };
 
+  const handleToggleUserStatus = (userId: string) => {
+    setUsers(prevUsers => prevUsers.map(user => 
+      user.id === userId ? { ...user, status: user.status === "نشط" ? "غير نشط" : "نشط" } : user
+    ));
+    const user = users.find(u => u.id === userId);
+    toast({ title: "تم تحديث الحالة", description: `تم ${user?.status === "نشط" ? "تعطيل" : "تفعيل"} حساب ${user?.name}.`});
+  };
+
+  const handleResetPassword = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    toast({ title: "طلب إعادة تعيين", description: `تم إرسال رابط إعادة تعيين كلمة المرور إلى ${user?.email}. (محاكاة)` });
+  };
+
+
   const handleRoleSubmit = (values: RoleFormValues) => {
     if (roleToEdit) {
-      setRolesData(prev => prev.map(role => role.id === roleToEdit.id ? { ...role, name: values.name, description: values.description } : role));
+      const updatedRole = { ...roleToEdit, name: values.name, description: values.description };
+      setRolesData(prev => prev.map(role => role.id === roleToEdit.id ? updatedRole : role));
       toast({ title: "تم التعديل", description: `تم تعديل الدور ${values.name}.` });
       if (selectedRole && selectedRole.id === roleToEdit.id) {
-        setSelectedRole(prevFullRole => prevFullRole ? { ...prevFullRole, name: values.name, description: values.description } : null);
+        setSelectedRole(updatedRole);
       }
     } else {
       const newRole: Role = { ...values, id: `ROLE${Date.now()}`, permissions: [] };
@@ -136,20 +161,32 @@ export default function SettingsPage() {
     setRoleToEdit(null);
   };
 
+  const handleDeleteRole = (roleId: string) => {
+      const isRoleInUse = users.some(user => user.roleId === roleId);
+      if (isRoleInUse) {
+          toast({ title: "خطأ في الحذف", description: "لا يمكن حذف الدور لأنه مستخدم من قبل بعض المستخدمين.", variant: "destructive" });
+          return;
+      }
+      setRolesData(prev => prev.filter(role => role.id !== roleId));
+      if (selectedRole?.id === roleId) {
+          setSelectedRole(null);
+          setSelectedRolePermissions([]);
+      }
+      toast({ title: "تم الحذف", description: `تم حذف الدور ${roleId}.`, variant: "destructive" });
+  };
+
   const handleSelectRoleForPermissions = (role: Role) => {
     setSelectedRole(role);
-    setSelectedRolePermissions(role.permissions);
+    setSelectedRolePermissions(role.permissions || []);
   };
 
   const handlePermissionChange = (permissionKey: string, checked: boolean | string) => {
-    // Ensure checked is boolean
-    const isChecked = typeof checked === 'string' ? checked === 'true' : checked;
-
+    const isChecked = typeof checked === 'string' ? checked === 'true' : !!checked;
     setSelectedRolePermissions(prev => {
       if (isChecked) {
-        return [...new Set([...prev, permissionKey])]; // Add permission, ensure uniqueness
+        return [...new Set([...prev, permissionKey])];
       } else {
-        return prev.filter(p => p !== permissionKey); // Remove permission
+        return prev.filter(p => p !== permissionKey);
       }
     });
   };
@@ -157,11 +194,13 @@ export default function SettingsPage() {
 
   const handleSaveRolePermissions = () => {
     if (selectedRole) {
+      const updatedRole = { ...selectedRole, permissions: selectedRolePermissions };
       setRolesData(prevRoles =>
         prevRoles.map(r =>
-          r.id === selectedRole.id ? { ...r, permissions: selectedRolePermissions } : r
+          r.id === selectedRole.id ? updatedRole : r
         )
       );
+      setSelectedRole(updatedRole);
       toast({ title: "تم الحفظ", description: `تم حفظ صلاحيات الدور ${selectedRole.name}.` });
     }
   };
@@ -174,16 +213,16 @@ export default function SettingsPage() {
 
       <Tabs defaultValue="general" className="w-full" dir="rtl">
         <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
-          <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsTrigger value="general" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <SettingsIcon className="inline-block me-2 h-4 w-4" /> الإعدادات العامة
           </TabsTrigger>
-          <TabsTrigger value="users" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <Users className="inline-block me-2 h-4 w-4" /> إدارة المستخدمين
           </TabsTrigger>
-          <TabsTrigger value="roles" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsTrigger value="roles" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <ShieldCheck className="inline-block me-2 h-4 w-4" /> الأدوار والصلاحيات
           </TabsTrigger>
-          <TabsTrigger value="customization" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+          <TabsTrigger value="customization" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <SlidersHorizontal className="inline-block me-2 h-4 w-4" /> تخصيص النظام
           </TabsTrigger>
         </TabsList>
@@ -240,7 +279,7 @@ export default function SettingsPage() {
                 <Switch id="autoBackup" defaultChecked />
                 <Label htmlFor="autoBackup">تمكين النسخ الاحتياطي التلقائي</Label>
               </div>
-              <Button className="shadow-md hover:shadow-lg transition-shadow">
+              <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => toast({title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح."})}>
                 <Save className="me-2 h-4 w-4" /> حفظ الإعدادات العامة
               </Button>
             </CardContent>
@@ -257,7 +296,7 @@ export default function SettingsPage() {
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                     <Dialog open={showManageUserDialog} onOpenChange={(isOpen) => {setShowManageUserDialog(isOpen); if(!isOpen) setUserToEdit(null);}}>
                         <DialogTrigger asChild>
-                            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setUserToEdit(null); userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password:"" }); setShowManageUserDialog(true);}}>
+                            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setUserToEdit(null); userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password:"", avatarUrl:"" }); setShowManageUserDialog(true);}}>
                                 <PlusCircle className="me-2 h-4 w-4" /> إضافة مستخدم جديد
                             </Button>
                         </DialogTrigger>
@@ -265,17 +304,17 @@ export default function SettingsPage() {
                             <DialogHeader><DialogTitle>{userToEdit ? "تعديل مستخدم" : "إضافة مستخدم جديد"}</DialogTitle></DialogHeader>
                             <Form {...userForm}>
                                 <form onSubmit={userForm.handleSubmit(handleUserSubmit)} className="space-y-4 py-4">
-                                    <FormField control={userForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم المستخدم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                                    <FormField control={userForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField control={userForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم المستخدم</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField control={userForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem> )}/>
                                     <FormField control={userForm.control} name="roleId" render={({ field }) => ( <FormItem><FormLabel>الدور</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue placeholder="اختر الدور" /></SelectTrigger></FormControl>
+                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                            <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الدور" /></SelectTrigger></FormControl>
                                             <SelectContent>{roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
                                         </Select><FormMessage /></FormItem> )}/>
-                                     {!userToEdit && <FormField control={userForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>كلمة المرور</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem> )}/>}
+                                     {!userToEdit && <FormField control={userForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>كلمة المرور</FormLabel><FormControl><Input type="password" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem> )}/> }
                                      <FormField control={userForm.control} name="status" render={({ field }) => ( <FormItem><FormLabel>الحالة</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl>
+                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                            <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl>
                                             <SelectContent><SelectItem value="نشط">نشط</SelectItem><SelectItem value="غير نشط">غير نشط</SelectItem></SelectContent>
                                         </Select><FormMessage /></FormItem> )}/>
                                     <DialogFooter>
@@ -322,11 +361,11 @@ export default function SettingsPage() {
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المستخدم" onClick={() => {setUserToEdit(user); setShowManageUserDialog(true);}}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إعادة تعيين كلمة المرور">
+                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إعادة تعيين كلمة المرور" onClick={() => handleResetPassword(user.id!)}>
                             <KeyRound className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title={user.status === "نشط" ? "تعطيل الحساب" : "تفعيل الحساب"}>
-                            <Trash2 className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title={user.status === "نشط" ? "تعطيل الحساب" : "تفعيل الحساب"} onClick={() => handleToggleUserStatus(user.id!)}>
+                            {user.status === "نشط" ? <ToggleRight className="h-5 w-5 text-destructive" /> : <ToggleLeft className="h-5 w-5 text-green-600" />}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -356,8 +395,8 @@ export default function SettingsPage() {
                             <DialogHeader><DialogTitle>{roleToEdit ? "تعديل دور" : "إضافة دور جديد"}</DialogTitle></DialogHeader>
                             <Form {...roleForm}>
                                 <form onSubmit={roleForm.handleSubmit(handleRoleSubmit)} className="space-y-4 py-4">
-                                    <FormField control={roleForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الدور</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                                    <FormField control={roleForm.control} name="description" render={({ field }) => ( <FormItem><FormLabel>وصف الدور</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField control={roleForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الدور</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField control={roleForm.control} name="description" render={({ field }) => ( <FormItem><FormLabel>وصف الدور</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )}/>
                                     <DialogFooter>
                                         <Button type="submit">{roleToEdit ? "حفظ التعديلات" : "إضافة الدور"}</Button>
                                         <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
@@ -380,6 +419,18 @@ export default function SettingsPage() {
                                         </div>
                                         <div className="flex gap-1">
                                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); setRoleToEdit(role); setShowManageRoleDialog(true);}}><Edit className="h-4 w-4"/></Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent dir="rtl">
+                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteRole(role.id)}>تأكيد الحذف</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </div>
                                     </div>
                                 </Card>
@@ -389,7 +440,7 @@ export default function SettingsPage() {
                     <div className="md:col-span-2">
                         <h3 className="text-lg font-semibold mb-2">صلاحيات الدور: {selectedRole?.name || "اختر دورًا"}</h3>
                         {selectedRole ? (
-                            <div className="space-y-3 max-h-96 overflow-y-auto border p-4 rounded-md bg-background">
+                            <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto border p-4 rounded-md bg-background"> 
                                 {modules.map(moduleName => (
                                     <div key={moduleName}>
                                         <h4 className="font-medium mb-1.5">{moduleName}</h4>
@@ -410,7 +461,7 @@ export default function SettingsPage() {
                                         {moduleName !== modules[modules.length -1] && <hr className="my-3"/>}
                                     </div>
                                 ))}
-                                 <Button className="mt-4 shadow-md hover:shadow-lg transition-shadow w-full" onClick={handleSaveRolePermissions}>
+                                 <Button className="mt-4 shadow-md hover:shadow-lg transition-shadow w-full" onClick={handleSaveRolePermissions} disabled={!selectedRole}>
                                     <Save className="me-2 h-4 w-4" /> حفظ صلاحيات هذا الدور
                                 </Button>
                             </div>
@@ -453,14 +504,14 @@ export default function SettingsPage() {
               <div className="border p-4 rounded-md">
                 <h4 className="font-semibold mb-2">إدارة الحقول المخصصة</h4>
                 <p className="text-sm text-muted-foreground mb-3">إضافة حقول إضافية لوحدات مثل العملاء، المنتجات، إلخ.</p>
-                <Button variant="secondary" className="shadow-sm hover:shadow-md">إدارة الحقول</Button>
+                <Button variant="secondary" className="shadow-sm hover:shadow-md" onClick={() => toast({title: "قيد التطوير", description:"سيتم تفعيل هذه الميزة قريباً."})}>إدارة الحقول</Button>
               </div>
               <div className="border p-4 rounded-md">
                 <h4 className="font-semibold mb-2">التكامل مع خدمات خارجية (API)</h4>
                 <p className="text-sm text-muted-foreground mb-3">ربط النظام مع بوابات الدفع، خدمات الشحن، وغيرها.</p>
-                <Button variant="secondary" className="shadow-sm hover:shadow-md">إعدادات التكامل</Button>
+                <Button variant="secondary" className="shadow-sm hover:shadow-md" onClick={() => toast({title: "قيد التطوير", description:"سيتم تفعيل هذه الميزة قريباً."})}>إعدادات التكامل</Button>
               </div>
-               <Button className="shadow-md hover:shadow-lg transition-shadow">
+               <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => toast({title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح. (محاكاة)"})}>
                 <Save className="me-2 h-4 w-4" /> حفظ إعدادات التخصيص
               </Button>
             </CardContent>
@@ -470,4 +521,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
