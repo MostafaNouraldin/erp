@@ -2,7 +2,7 @@
       "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
-import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle } from "lucide-react";
+import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle, Shield, Banknote, CalendarPlus, CalendarCheck2, UserCog } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -22,52 +22,58 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 
-
-// Mock data
-const initialEmployeesData = [
-  { id: "EMP001", name: "أحمد محمود", department: "قسم المبيعات", position: "مدير مبيعات", joinDate: new Date("2022-01-15"), status: "نشط" as const, basicSalary: 12000, email: "ahmed.m@example.com", phone: "0501234567", avatarUrl: "https://picsum.photos/100/100?random=1", dataAiHint: "man portrait" },
-  { id: "EMP002", name: "فاطمة علي", department: "قسم التسويق", position: "أخصائية تسويق", joinDate: new Date("2023-03-01"), status: "نشط" as const, basicSalary: 8000, email: "fatima.a@example.com", phone: "0509876543", avatarUrl: "https://picsum.photos/100/100?random=2", dataAiHint: "woman portrait" },
-  { id: "EMP003", name: "خالد عبدالله", department: "قسم المالية", position: "محاسب أول", joinDate: new Date("2021-07-20"), status: "نشط" as const, basicSalary: 10000, email: "khaled.ab@example.com", phone: "0501122334", avatarUrl: "https://picsum.photos/100/100?random=3", dataAiHint: "man office" },
-  { id: "EMP004", name: "سارة إبراهيم", department: "قسم الموارد البشرية", position: "مسؤول موارد بشرية", joinDate: new Date("2024-02-10"), status: "نشط" as const, basicSalary: 9000, email: "sara.i@example.com", phone: "0504455667", avatarUrl: "https://picsum.photos/100/100?random=4", dataAiHint: "woman smiling" },
-  { id: "EMP005", name: "يوسف حسن", department: "قسم التشغيل", position: "فني صيانة", joinDate: new Date("2020-05-01"), status: "في إجازة" as const, basicSalary: 7000, email: "youssef.h@example.com", phone: "0507788990", avatarUrl: "https://picsum.photos/100/100?random=5", dataAiHint: "man worker" },
-];
-
-const initialPayrollData = [
-  { id: "PAY001", employeeId: "EMP001", monthYear: "يوليو 2024", basicSalary: 12000, allowances: [{description: "بدل سكن", amount: 2500}, {description: "بدل مواصلات", amount: 500}], deductions: [{description: "سلفة", amount: 500}], netSalary: 14500, status: "مدفوع" as const, notes: "تم الدفع مع سداد السلفة." },
-  { id: "PAY002", employeeId: "EMP002", monthYear: "يوليو 2024", basicSalary: 8000, allowances: [{description: "بدل طبيعة عمل", amount: 1500}], deductions: [{description: "تأمين صحي", amount:200}], netSalary: 9300, status: "مدفوع" as const, notes: "" },
-  { id: "PAY003", employeeId: "EMP003", monthYear: "يوليو 2024", basicSalary: 10000, allowances: [{description: "بدل إضافي", amount:2000}], deductions: [{description: "جزاء تأخير", amount:300}], netSalary: 11700, status: "قيد المعالجة" as const, notes: "يراجع من المدير المالي" },
-];
-
-
-const initialAttendanceData = [
-  { id: "ATT001", employeeId: "EMP001", date: new Date("2024-07-25"), checkIn: "08:55", checkOut: "17:05", hours: "8.17", status: "حاضر" as const, notes: "" },
-  { id: "ATT002", employeeId: "EMP002", date: new Date("2024-07-25"), checkIn: "09:10", checkOut: "17:00", hours: "7.83", status: "حاضر (متأخر)" as const, notes: "تأخير 10 دقائق" },
-  { id: "ATT003", employeeId: "EMP003", date: new Date("2024-07-25"), checkIn: null, checkOut: null, hours: "0", status: "غائب" as const, notes: "غياب بدون عذر" },
-  { id: "ATT004", employeeId: "EMP004", date: new Date("2024-07-25"), checkIn: "09:00", checkOut: "16:30", hours: "7.5", status: "حاضر (مغادرة مبكرة)" as const, notes: "استئذان شخصي" },
-];
-
-const initialLeaveRequestsData = [
-  { id: "LR001", employeeId: "EMP005", type: "إجازة سنوية", startDate: new Date("2024-08-01"), endDate: new Date("2024-08-10"), days: 10, status: "موافق عليها" as const, reason: "إجازة اعتيادية" },
-  { id: "LR002", employeeId: "EMP002", type: "إجازة مرضية", startDate: new Date("2024-07-28"), endDate: new Date("2024-07-29"), days: 2, status: "مقدمة" as const, reason: "وعكة صحية طارئة" },
-  { id: "LR003", employeeId: "EMP001", type: "إجازة عارضة", startDate: new Date("2024-09-05"), endDate: new Date("2024-09-05"), days: 1, status: "مرفوضة" as const, reason: "ظرف طارئ" },
-];
-const mockDepartments = ["قسم المبيعات", "قسم التسويق", "قسم المالية", "قسم الموارد البشرية", "قسم التشغيل", "الإدارة"];
-const mockPositions = ["مدير", "أخصائي", "محاسب", "مسؤول", "فني", "مساعد إداري"];
 
 // Schemas
+const employeeAllowanceSchema = z.object({
+  description: z.string().min(1, "وصف البدل مطلوب"),
+  amount: z.coerce.number().min(0, "المبلغ يجب أن يكون إيجابياً"),
+});
+
 const employeeSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "اسم الموظف مطلوب"),
+  jobTitle: z.string().min(1, "المسمى الوظيفي مطلوب"),
   department: z.string().min(1, "القسم مطلوب"),
-  position: z.string().min(1, "المنصب مطلوب"),
-  joinDate: z.date({ required_error: "تاريخ التعيين مطلوب" }),
-  status: z.enum(["نشط", "في إجازة", "منتهية خدمته", "متوقف مؤقتاً"]).default("نشط"),
-  basicSalary: z.coerce.number().min(0, "الراتب الأساسي يجب أن يكون إيجابياً"),
-  email: z.string().email("بريد إلكتروني غير صالح").optional(),
+  
+  // Contract Information
+  contractStartDate: z.date({ required_error: "تاريخ بداية العقد مطلوب" }),
+  contractEndDate: z.date({ required_error: "تاريخ نهاية العقد مطلوب" }),
+  contractDuration: z.string().optional(), // e.g., "سنة", "سنتان"
+  probationEndDate: z.date().optional().nullable(),
+  canRenewContract: z.boolean().default(true),
+  employmentType: z.enum(["دوام كامل", "دوام جزئي", "عقد محدد", "مستقل"], { required_error: "نوع التوظيف مطلوب" }).default("دوام كامل"),
+  
+  // Personal Information
+  email: z.string().email("بريد إلكتروني غير صالح").optional().or(z.literal('')),
   phone: z.string().optional(),
-  avatarUrl: z.string().url("رابط الصورة غير صالح").optional(),
+  avatarUrl: z.string().url("رابط الصورة غير صالح").optional().or(z.literal('')),
   dataAiHint: z.string().max(30, "الكلمات المفتاحية يجب ألا تتجاوز 30 حرفًا").optional(),
+  nationality: z.string().optional(),
+  idNumber: z.string().optional(), // رقم الهوية/الإقامة
+  workLocation: z.string().optional(),
+
+  // Financial Information
+  basicSalary: z.coerce.number().min(0, "الراتب الأساسي يجب أن يكون إيجابياً"),
+  bankName: z.string().optional(),
+  iban: z.string().optional(),
+  socialInsuranceNumber: z.string().optional(), // رقم التأمينات الاجتماعية
+  housingAllowance: z.coerce.number().optional().default(0),
+  transportationAllowance: z.coerce.number().optional().default(0),
+  otherAllowances: z.array(employeeAllowanceSchema).optional().default([]),
+
+  // Medical Insurance
+  medicalInsuranceProvider: z.string().optional(),
+  medicalInsurancePolicyNumber: z.string().optional(),
+  medicalInsuranceExpiryDate: z.date().optional().nullable(),
+
+  // Emergency Contact
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: z.string().optional(),
+  
+  status: z.enum(["نشط", "في إجازة", "منتهية خدمته", "متوقف مؤقتاً"]).default("نشط"),
 });
 type EmployeeFormValues = z.infer<typeof employeeSchema>;
 
@@ -112,6 +118,48 @@ const leaveRequestSchema = z.object({
 });
 type LeaveRequestFormValues = z.infer<typeof leaveRequestSchema>;
 
+// Mock data
+const initialEmployeesData: EmployeeFormValues[] = [
+  { id: "EMP001", name: "أحمد محمود", department: "قسم المبيعات", jobTitle: "مدير مبيعات", contractStartDate: new Date("2022-01-15"), contractEndDate: new Date("2025-01-14"), contractDuration: "3 سنوات", probationEndDate: new Date("2022-04-15"), canRenewContract: true, employmentType: "دوام كامل", status: "نشط", basicSalary: 12000, email: "ahmed.m@example.com", phone: "0501234567", avatarUrl: "https://picsum.photos/100/100?random=1", dataAiHint: "man portrait", nationality: "سعودي", idNumber: "1012345678", bankName: "البنك الأهلي", iban: "SA0380000000608010167519", socialInsuranceNumber:"12345001", medicalInsuranceProvider: "بوبا للتأمين", medicalInsurancePolicyNumber: "BUPA-111", medicalInsuranceExpiryDate: new Date("2024-12-31"), housingAllowance:3000, transportationAllowance:1000, otherAllowances: [{description: "بدل طبيعة عمل", amount:500}], emergencyContactName: "محمد محمود", emergencyContactPhone:"0507654321", workLocation: "المقر الرئيسي - الرياض"  },
+  { id: "EMP002", name: "فاطمة علي", department: "قسم التسويق", jobTitle: "أخصائية تسويق", contractStartDate: new Date("2023-03-01"), contractEndDate: new Date("2025-02-28"), contractDuration: "سنتان", employmentType: "دوام كامل", status: "نشط", basicSalary: 8000, email: "fatima.a@example.com", phone: "0509876543", avatarUrl: "https://picsum.photos/100/100?random=2", dataAiHint: "woman portrait", nationality: "سعودية", idNumber:"2023456789", medicalInsuranceProvider: "التعاونية للتأمين", medicalInsurancePolicyNumber: "TAW-222", medicalInsuranceExpiryDate: new Date("2025-01-31"), otherAllowances: [], emergencyContactName:"علي حسن", emergencyContactPhone: "0551231234", workLocation: "فرع جدة"},
+  { id: "EMP003", name: "خالد عبدالله", department: "قسم المالية", jobTitle: "محاسب أول", contractStartDate: new Date("2021-07-20"), contractEndDate: new Date("2024-07-19"), contractDuration: "3 سنوات", employmentType: "دوام كامل", status: "نشط", basicSalary: 10000, email: "khaled.ab@example.com", phone: "0501122334", avatarUrl: "https://picsum.photos/100/100?random=3", dataAiHint: "man office", otherAllowances: [], workLocation: "المقر الرئيسي - الرياض" },
+  { id: "EMP004", name: "سارة إبراهيم", department: "قسم الموارد البشرية", jobTitle: "مسؤول موارد بشرية", contractStartDate: new Date("2024-02-10"), contractEndDate: new Date("2026-02-09"), contractDuration: "سنتان", employmentType: "دوام كامل", status: "نشط", basicSalary: 9000, email: "sara.i@example.com", phone: "0504455667", avatarUrl: "https://picsum.photos/100/100?random=4", dataAiHint: "woman smiling", otherAllowances: [] },
+  { id: "EMP005", name: "يوسف حسن", department: "قسم التشغيل", jobTitle: "فني صيانة", contractStartDate: new Date("2020-05-01"), contractEndDate: new Date("2024-04-30"), contractDuration: "4 سنوات", canRenewContract: false, employmentType: "دوام كامل", status: "في إجازة", basicSalary: 7000, email: "youssef.h@example.com", phone: "0507788990", avatarUrl: "https://picsum.photos/100/100?random=5", dataAiHint: "man worker", otherAllowances: [] },
+];
+
+const initialPayrollData = [
+  { id: "PAY001", employeeId: "EMP001", monthYear: "يوليو 2024", basicSalary: 12000, allowances: [{description: "بدل سكن", amount: 2500}, {description: "بدل مواصلات", amount: 500}], deductions: [{description: "سلفة", amount: 500}], netSalary: 14500, status: "مدفوع" as const, notes: "تم الدفع مع سداد السلفة." },
+  { id: "PAY002", employeeId: "EMP002", monthYear: "يوليو 2024", basicSalary: 8000, allowances: [{description: "بدل طبيعة عمل", amount: 1500}], deductions: [{description: "تأمين صحي", amount:200}], netSalary: 9300, status: "مدفوع" as const, notes: "" },
+  { id: "PAY003", employeeId: "EMP003", monthYear: "يوليو 2024", basicSalary: 10000, allowances: [{description: "بدل إضافي", amount:2000}], deductions: [{description: "جزاء تأخير", amount:300}], netSalary: 11700, status: "قيد المعالجة" as const, notes: "يراجع من المدير المالي" },
+];
+
+
+const initialAttendanceData = [
+  { id: "ATT001", employeeId: "EMP001", date: new Date("2024-07-25"), checkIn: "08:55", checkOut: "17:05", hours: "8.17", status: "حاضر" as const, notes: "" },
+  { id: "ATT002", employeeId: "EMP002", date: new Date("2024-07-25"), checkIn: "09:10", checkOut: "17:00", hours: "7.83", status: "حاضر (متأخر)" as const, notes: "تأخير 10 دقائق" },
+  { id: "ATT003", employeeId: "EMP003", date: new Date("2024-07-25"), checkIn: null, checkOut: null, hours: "0", status: "غائب" as const, notes: "غياب بدون عذر" },
+  { id: "ATT004", employeeId: "EMP004", date: new Date("2024-07-25"), checkIn: "09:00", checkOut: "16:30", hours: "7.5", status: "حاضر (مغادرة مبكرة)" as const, notes: "استئذان شخصي" },
+];
+
+const initialLeaveRequestsData = [
+  { id: "LR001", employeeId: "EMP005", type: "إجازة سنوية", startDate: new Date("2024-08-01"), endDate: new Date("2024-08-10"), days: 10, status: "موافق عليها" as const, reason: "إجازة اعتيادية" },
+  { id: "LR002", employeeId: "EMP002", type: "إجازة مرضية", startDate: new Date("2024-07-28"), endDate: new Date("2024-07-29"), days: 2, status: "مقدمة" as const, reason: "وعكة صحية طارئة" },
+  { id: "LR003", employeeId: "EMP001", type: "إجازة عارضة", startDate: new Date("2024-09-05"), endDate: new Date("2024-09-05"), days: 1, status: "مرفوضة" as const, reason: "ظرف طارئ" },
+];
+const mockDepartments = ["قسم المبيعات", "قسم التسويق", "قسم المالية", "قسم الموارد البشرية", "قسم التشغيل", "الإدارة"];
+const mockPositions = ["مدير", "أخصائي", "محاسب", "مسؤول", "فني", "مساعد إداري"];
+const mockEmploymentTypes = ["دوام كامل", "دوام جزئي", "عقد محدد", "مستقل"];
+
+const employeeDefaultValues: EmployeeFormValues = {
+  name: "", department: "", jobTitle: "", contractStartDate: new Date(), contractEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // Default to 1 year contract
+  status: "نشط", basicSalary: 0, email: "", phone: "", avatarUrl: "", dataAiHint: "",
+  contractDuration: "سنة واحدة", probationEndDate: null, canRenewContract: true, employmentType: "دوام كامل",
+  nationality: "", idNumber: "", workLocation: "", bankName: "", iban: "", socialInsuranceNumber: "",
+  housingAllowance: 0, transportationAllowance: 0, otherAllowances: [],
+  medicalInsuranceProvider: "", medicalInsurancePolicyNumber: "", medicalInsuranceExpiryDate: null,
+  emergencyContactName: "", emergencyContactPhone: "",
+};
+
 
 export default function HRPayrollPage() {
   const [employees, setEmployeesData] = useState(initialEmployeesData);
@@ -141,16 +189,19 @@ export default function HRPayrollPage() {
 
   const { toast } = useToast();
 
-  const employeeForm = useForm<EmployeeFormValues>({ resolver: zodResolver(employeeSchema) });
+  const employeeForm = useForm<EmployeeFormValues>({ resolver: zodResolver(employeeSchema), defaultValues: employeeDefaultValues });
+  const { fields: otherAllowanceFields, append: appendOtherAllowance, remove: removeOtherAllowance } = useFieldArray({ control: employeeForm.control, name: "otherAllowances" });
+
   const payrollForm = useForm<PayrollFormValues>({ resolver: zodResolver(payrollSchema) });
   const { fields: allowanceFields, append: appendAllowance, remove: removeAllowance } = useFieldArray({ control: payrollForm.control, name: "allowances" });
   const { fields: deductionFields, append: appendDeduction, remove: removeDeduction } = useFieldArray({ control: payrollForm.control, name: "deductions" });
+  
   const attendanceForm = useForm<AttendanceFormValues>({ resolver: zodResolver(attendanceSchema) });
   const leaveRequestForm = useForm<LeaveRequestFormValues>({ resolver: zodResolver(leaveRequestSchema) });
 
   useEffect(() => {
     if (employeeToEdit) employeeForm.reset(employeeToEdit);
-    else employeeForm.reset({ name: "", department: "", position: "", joinDate: new Date(), status: "نشط", basicSalary: 0, email: "", phone: "", avatarUrl: "", dataAiHint: "" });
+    else employeeForm.reset(employeeDefaultValues);
   }, [employeeToEdit, employeeForm, showAddEmployeeDialog]);
 
   useEffect(() => {
@@ -158,7 +209,7 @@ export default function HRPayrollPage() {
         const emp = employees.find(e => e.id === payrollToEdit.employeeId);
         payrollForm.reset({
             ...payrollToEdit,
-            basicSalary: payrollToEdit.basicSalary || emp?.basicSalary || 0, // Ensure basicSalary is set
+            basicSalary: payrollToEdit.basicSalary || emp?.basicSalary || 0, 
         });
     } else {
         const currentMonthYear = `${new Date().toLocaleString('ar-SA', { month: 'long' })} ${new Date().getFullYear()}`;
@@ -286,31 +337,103 @@ export default function HRPayrollPage() {
         <div className="flex gap-2">
           <Dialog open={showAddEmployeeDialog} onOpenChange={(isOpen) => {setShowAddEmployeeDialog(isOpen); if(!isOpen) setEmployeeToEdit(null);}}>
             <DialogTrigger asChild>
-              <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setEmployeeToEdit(null); employeeForm.reset(); setShowAddEmployeeDialog(true);}}>
+              <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setEmployeeToEdit(null); employeeForm.reset(employeeDefaultValues); setShowAddEmployeeDialog(true);}}>
                 <PlusCircle className="me-2 h-4 w-4" /> إضافة موظف جديد
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg" dir="rtl">
+            <DialogContent className="sm:max-w-2xl" dir="rtl">
                 <DialogHeader><DialogTitle>{employeeToEdit ? "تعديل بيانات موظف" : "إضافة موظف جديد"}</DialogTitle></DialogHeader>
                 <Form {...employeeForm}>
                     <form onSubmit={employeeForm.handleSubmit(handleEmployeeSubmit)} className="space-y-4 py-4">
-                        <FormField control={employeeForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم الموظف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={employeeForm.control} name="department" render={({ field }) => (<FormItem><FormLabel>القسم</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر القسم" /></SelectTrigger></FormControl>
-                                <SelectContent>{mockDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                            <FormField control={employeeForm.control} name="position" render={({ field }) => (<FormItem><FormLabel>المنصب</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر المنصب" /></SelectTrigger></FormControl>
-                                <SelectContent>{mockPositions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                        </div>
-                        <FormField control={employeeForm.control} name="joinDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ التعيين</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
-                        <FormField control={employeeForm.control} name="basicSalary" render={({ field }) => (<FormItem><FormLabel>الراتب الأساسي (SAR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={employeeForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={employeeForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        </div>
-                         <FormField control={employeeForm.control} name="avatarUrl" render={({ field }) => (<FormItem><FormLabel>رابط صورة الموظف (اختياري)</FormLabel><FormControl><Input {...field} placeholder="https://example.com/avatar.jpg" /></FormControl><FormMessage /></FormItem>)} />
-                         <FormField control={employeeForm.control} name="dataAiHint" render={({ field }) => (<FormItem><FormLabel>كلمات مفتاحية للصورة (AI Hint)</FormLabel><FormControl><Input {...field} placeholder="مثال: رجل أعمال (كلمتين كحد أقصى)" /></FormControl><DialogDescription className="text-xs text-muted-foreground">كلمة أو كلمتين لوصف الصورة (للبحث).</DialogDescription><FormMessage /></FormItem>)} />
+                        <ScrollArea className="max-h-[70vh] p-1">
+                        <Tabs defaultValue="personal" className="w-full" dir="rtl">
+                            <TabsList className="w-full mb-4">
+                                <TabsTrigger value="personal" className="flex-1">معلومات شخصية ووظيفية</TabsTrigger>
+                                <TabsTrigger value="contract" className="flex-1">معلومات العقد</TabsTrigger>
+                                <TabsTrigger value="financial" className="flex-1">معلومات مالية</TabsTrigger>
+                                <TabsTrigger value="insurance" className="flex-1">التأمين والاتصال</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="personal" className="space-y-4">
+                                <FormField control={employeeForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم الموظف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={employeeForm.control} name="jobTitle" render={({ field }) => (<FormItem><FormLabel>المسمى الوظيفي</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر المسمى" /></SelectTrigger></FormControl>
+                                        <SelectContent>{mockPositions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                    <FormField control={employeeForm.control} name="department" render={({ field }) => (<FormItem><FormLabel>القسم</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر القسم" /></SelectTrigger></FormControl>
+                                        <SelectContent>{mockDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={employeeForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={employeeForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={employeeForm.control} name="nationality" render={({ field }) => (<FormItem><FormLabel>الجنسية</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={employeeForm.control} name="idNumber" render={({ field }) => (<FormItem><FormLabel>رقم الهوية/الإقامة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                                <FormField control={employeeForm.control} name="workLocation" render={({ field }) => (<FormItem><FormLabel>موقع العمل</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={employeeForm.control} name="avatarUrl" render={({ field }) => (<FormItem><FormLabel>رابط صورة الموظف (اختياري)</FormLabel><FormControl><Input {...field} placeholder="https://example.com/avatar.jpg" /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={employeeForm.control} name="dataAiHint" render={({ field }) => (<FormItem><FormLabel>كلمات مفتاحية للصورة (AI Hint)</FormLabel><FormControl><Input {...field} placeholder="مثال: رجل أعمال (كلمتين كحد أقصى)" /></FormControl><DialogDescription className="text-xs text-muted-foreground">كلمة أو كلمتين لوصف الصورة (للبحث).</DialogDescription><FormMessage /></FormItem>)} />
+                            </TabsContent>
+
+                            <TabsContent value="contract" className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={employeeForm.control} name="contractStartDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ بداية العقد</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                    <FormField control={employeeForm.control} name="contractEndDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ نهاية العقد</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={employeeForm.control} name="contractDuration" render={({ field }) => (<FormItem><FormLabel>مدة العقد</FormLabel><FormControl><Input {...field} placeholder="مثال: سنة واحدة, سنتان" /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={employeeForm.control} name="probationEndDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>نهاية فترة التجربة (اختياري)</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                </div>
+                                <FormField control={employeeForm.control} name="employmentType" render={({ field }) => (<FormItem><FormLabel>نوع التوظيف</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl>
+                                    <SelectContent>{mockEmploymentTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                <FormField control={employeeForm.control} name="canRenewContract" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm rtl:space-x-reverse"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="canRenewContractEmployee" /></FormControl><FormLabel htmlFor="canRenewContractEmployee" className="font-normal">العقد قابل للتجديد</FormLabel></FormItem>)} />
+                                <FormField control={employeeForm.control} name="status" render={({ field }) => (<FormItem><FormLabel>حالة الموظف</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl>
+                                    <SelectContent>{["نشط", "في إجازة", "منتهية خدمته", "متوقف مؤقتاً"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            </TabsContent>
+
+                            <TabsContent value="financial" className="space-y-4">
+                                <FormField control={employeeForm.control} name="basicSalary" render={({ field }) => (<FormItem><FormLabel>الراتب الأساسي (SAR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={employeeForm.control} name="bankName" render={({ field }) => (<FormItem><FormLabel>اسم البنك</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={employeeForm.control} name="iban" render={({ field }) => (<FormItem><FormLabel>رقم الآيبان (IBAN)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                                <FormField control={employeeForm.control} name="socialInsuranceNumber" render={({ field }) => (<FormItem><FormLabel>رقم التأمينات الاجتماعية</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <Separator className="my-3"/>
+                                <FormLabel>البدلات</FormLabel>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <FormField control={employeeForm.control} name="housingAllowance" render={({ field }) => (<FormItem><FormLabel>بدل السكن (SAR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                     <FormField control={employeeForm.control} name="transportationAllowance" render={({ field }) => (<FormItem><FormLabel>بدل النقل (SAR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                                 <FormLabel className="text-sm">بدلات أخرى</FormLabel>
+                                 {otherAllowanceFields.map((item, index) => (
+                                    <div key={item.id} className="flex gap-2 items-end">
+                                        <FormField control={employeeForm.control} name={`otherAllowances.${index}.description`} render={({ field }) => (<FormItem className="flex-1"><FormLabel className="text-xs sr-only">وصف البدل</FormLabel><FormControl><Input placeholder="وصف البدل" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={employeeForm.control} name={`otherAllowances.${index}.amount`} render={({ field }) => (<FormItem><FormLabel className="text-xs sr-only">المبلغ</FormLabel><FormControl><Input type="number" placeholder="المبلغ" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeOtherAllowance(index)} className="h-9 w-9 text-destructive"><MinusCircle className="h-4 w-4" /></Button>
+                                    </div>
+                                ))}
+                                <Button type="button" variant="outline" size="sm" onClick={() => appendOtherAllowance({description: '', amount: 0})}><PlusCircle className="me-1 h-3 w-3" /> إضافة بدل آخر</Button>
+                            </TabsContent>
+                             <TabsContent value="insurance" className="space-y-4">
+                                <FormLabel>التأمين الطبي</FormLabel>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={employeeForm.control} name="medicalInsuranceProvider" render={({ field }) => (<FormItem><FormLabel>شركة التأمين</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={employeeForm.control} name="medicalInsurancePolicyNumber" render={({ field }) => (<FormItem><FormLabel>رقم البوليصة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                                <FormField control={employeeForm.control} name="medicalInsuranceExpiryDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ انتهاء التأمين</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                <Separator className="my-3"/>
+                                <FormLabel>معلومات الاتصال في الطوارئ</FormLabel>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={employeeForm.control} name="emergencyContactName" render={({ field }) => (<FormItem><FormLabel>اسم جهة الاتصال</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={employeeForm.control} name="emergencyContactPhone" render={({ field }) => (<FormItem><FormLabel>رقم هاتف جهة الاتصال</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                        </ScrollArea>
                         <DialogFooter><Button type="submit">{employeeToEdit ? "حفظ التعديلات" : "إضافة الموظف"}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
                     </form>
                 </Form>
@@ -406,9 +529,9 @@ export default function HRPayrollPage() {
                       <TableHead></TableHead>
                       <TableHead>الرقم الوظيفي</TableHead>
                       <TableHead>اسم الموظف</TableHead>
+                      <TableHead>المسمى الوظيفي</TableHead>
                       <TableHead>القسم</TableHead>
-                      <TableHead>المنصب</TableHead>
-                      <TableHead>تاريخ التعيين</TableHead>
+                      <TableHead>تاريخ بداية العقد</TableHead>
                       <TableHead>الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
@@ -419,9 +542,9 @@ export default function HRPayrollPage() {
                         <TableCell><Avatar className="h-9 w-9"><AvatarImage src={emp.avatarUrl} alt={emp.name} data-ai-hint={emp.dataAiHint || emp.name.split(' ').slice(0,2).join(' ') } /><AvatarFallback>{emp.name.substring(0,1)}</AvatarFallback></Avatar></TableCell>
                         <TableCell className="font-medium">{emp.id}</TableCell>
                         <TableCell>{emp.name}</TableCell>
+                        <TableCell>{emp.jobTitle}</TableCell>
                         <TableCell>{emp.department}</TableCell>
-                        <TableCell>{emp.position}</TableCell>
-                        <TableCell>{emp.joinDate.toLocaleDateString('ar-SA', {calendar: 'gregory'})}</TableCell>
+                        <TableCell>{emp.contractStartDate.toLocaleDateString('ar-SA', {calendar: 'gregory'})}</TableCell>
                         <TableCell>
                           <Badge variant={emp.status === "نشط" ? "default" : "secondary"}>{emp.status}</Badge>
                         </TableCell>
@@ -433,7 +556,7 @@ export default function HRPayrollPage() {
                             <Edit className="h-4 w-4" />
                           </Button>
                           {emp.status === "نشط" && <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="إنهاء خدمة"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="إنهاء خدمة"><UserCog className="h-4 w-4" /></Button></AlertDialogTrigger>
                             <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد إنهاء الخدمة</AlertDialogTitle><AlertDialogDescriptionComponent>هل أنت متأكد من إنهاء خدمة الموظف {emp.name}؟</AlertDialogDescriptionComponent></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleTerminateEmployee(emp.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                           </AlertDialog>}
                         </TableCell>
@@ -717,25 +840,74 @@ export default function HRPayrollPage() {
 
       {/* View Employee Dialog */}
         <Dialog open={showViewEmployeeDialog} onOpenChange={setShowViewEmployeeDialog}>
-            <DialogContent className="sm:max-w-md" dir="rtl">
+            <DialogContent className="sm:max-w-lg" dir="rtl">
                 <DialogHeader>
                     <DialogTitle>ملف الموظف: {selectedEmployeeForView?.name}</DialogTitle>
                 </DialogHeader>
                 {selectedEmployeeForView && (
+                    <ScrollArea className="max-h-[70vh] p-1">
                     <div className="py-4 space-y-3 text-sm">
                         <div className="flex justify-center mb-4">
                             <Avatar className="h-24 w-24"><AvatarImage src={selectedEmployeeForView.avatarUrl} alt={selectedEmployeeForView.name} data-ai-hint={selectedEmployeeForView.dataAiHint || selectedEmployeeForView.name.split(' ').slice(0,2).join(' ')} /><AvatarFallback>{selectedEmployeeForView.name?.substring(0,1)}</AvatarFallback></Avatar>
                         </div>
-                        <p><strong>الرقم الوظيفي:</strong> {selectedEmployeeForView.id}</p>
-                        <p><strong>الاسم:</strong> {selectedEmployeeForView.name}</p>
-                        <p><strong>القسم:</strong> {selectedEmployeeForView.department}</p>
-                        <p><strong>المنصب:</strong> {selectedEmployeeForView.position}</p>
-                        <p><strong>تاريخ التعيين:</strong> {selectedEmployeeForView.joinDate?.toLocaleDateString('ar-SA', {calendar:'gregory'})}</p>
-                        <p><strong>الراتب الأساسي:</strong> {(selectedEmployeeForView.basicSalary || 0)?.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})}</p>
-                        <p><strong>البريد الإلكتروني:</strong> {selectedEmployeeForView.email || "-"}</p>
-                        <p><strong>الهاتف:</strong> {selectedEmployeeForView.phone || "-"}</p>
-                        <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedEmployeeForView.status === "نشط" ? "default" : "outline"}>{selectedEmployeeForView.status}</Badge></div>
+                        <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><UserCog className="me-2 h-4 w-4 text-primary" /> معلومات أساسية</CardTitle></CardHeader>
+                          <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                            <p><strong>الرقم الوظيفي:</strong> {selectedEmployeeForView.id}</p>
+                            <p><strong>الاسم:</strong> {selectedEmployeeForView.name}</p>
+                            <p><strong>المسمى الوظيفي:</strong> {selectedEmployeeForView.jobTitle}</p>
+                            <p><strong>القسم:</strong> {selectedEmployeeForView.department}</p>
+                            <p><strong>البريد الإلكتروني:</strong> {selectedEmployeeForView.email || "-"}</p>
+                            <p><strong>الهاتف:</strong> {selectedEmployeeForView.phone || "-"}</p>
+                            <p><strong>الجنسية:</strong> {selectedEmployeeForView.nationality || "-"}</p>
+                            <p><strong>رقم الهوية/الإقامة:</strong> {selectedEmployeeForView.idNumber || "-"}</p>
+                            <p><strong>موقع العمل:</strong> {selectedEmployeeForView.workLocation || "-"}</p>
+                            <p><strong>الحالة:</strong> <Badge variant={selectedEmployeeForView.status === "نشط" ? "default" : "outline"}>{selectedEmployeeForView.status}</Badge></p>
+                          </CardContent>
+                        </Card>
+
+                        <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><CalendarCheck2 className="me-2 h-4 w-4 text-primary" /> معلومات العقد</CardTitle></CardHeader>
+                            <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                                <p><strong>تاريخ بداية العقد:</strong> {selectedEmployeeForView.contractStartDate?.toLocaleDateString('ar-SA', {calendar:'gregory'})}</p>
+                                <p><strong>تاريخ نهاية العقد:</strong> {selectedEmployeeForView.contractEndDate?.toLocaleDateString('ar-SA', {calendar:'gregory'})}</p>
+                                <p><strong>مدة العقد:</strong> {selectedEmployeeForView.contractDuration || "-"}</p>
+                                <p><strong>نهاية فترة التجربة:</strong> {selectedEmployeeForView.probationEndDate ? selectedEmployeeForView.probationEndDate.toLocaleDateString('ar-SA', {calendar:'gregory'}) : "-"}</p>
+                                <p><strong>نوع التوظيف:</strong> {selectedEmployeeForView.employmentType}</p>
+                                <p><strong>قابل للتجديد:</strong> {selectedEmployeeForView.canRenewContract ? "نعم" : "لا"}</p>
+                            </CardContent>
+                        </Card>
+
+                        <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><Banknote className="me-2 h-4 w-4 text-primary" /> معلومات مالية</CardTitle></CardHeader>
+                            <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                                <p><strong>الراتب الأساسي:</strong> {(selectedEmployeeForView.basicSalary || 0)?.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})}</p>
+                                <p><strong>اسم البنك:</strong> {selectedEmployeeForView.bankName || "-"}</p>
+                                <p><strong>رقم الآيبان:</strong> {selectedEmployeeForView.iban || "-"}</p>
+                                <p><strong>رقم التأمينات:</strong> {selectedEmployeeForView.socialInsuranceNumber || "-"}</p>
+                                <p><strong>بدل السكن:</strong> {(selectedEmployeeForView.housingAllowance || 0).toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})}</p>
+                                <p><strong>بدل النقل:</strong> {(selectedEmployeeForView.transportationAllowance || 0).toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})}</p>
+                                {(selectedEmployeeForView.otherAllowances && selectedEmployeeForView.otherAllowances.length > 0) && (
+                                    <div className="col-span-2 mt-1">
+                                        <p><strong>بدلات أخرى:</strong></p>
+                                        <ul className="list-disc ms-4">
+                                            {selectedEmployeeForView.otherAllowances.map((allow, i) => (
+                                                <li key={i}>{allow.description}: {allow.amount.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                        
+                        <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><Shield className="me-2 h-4 w-4 text-primary" /> التأمين والاتصال بالطوارئ</CardTitle></CardHeader>
+                            <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                                <p><strong>شركة التأمين:</strong> {selectedEmployeeForView.medicalInsuranceProvider || "-"}</p>
+                                <p><strong>رقم البوليصة:</strong> {selectedEmployeeForView.medicalInsurancePolicyNumber || "-"}</p>
+                                <p><strong>انتهاء التأمين:</strong> {selectedEmployeeForView.medicalInsuranceExpiryDate ? selectedEmployeeForView.medicalInsuranceExpiryDate.toLocaleDateString('ar-SA', {calendar:'gregory'}) : "-"}</p>
+                                <p className="col-span-2 border-t pt-1 mt-1"><strong>جهة اتصال الطوارئ:</strong> {selectedEmployeeForView.emergencyContactName || "-"} ({selectedEmployeeForView.emergencyContactPhone || "-"})</p>
+                            </CardContent>
+                        </Card>
+
                     </div>
+                    </ScrollArea>
                 )}
                 <DialogFooter><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
             </DialogContent>
@@ -801,6 +973,5 @@ export default function HRPayrollPage() {
     </div>
   );
 }
-
 
     
