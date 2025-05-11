@@ -18,12 +18,11 @@ import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCi
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Role } from '@/types/saas';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
 
 // Mock data
 const initialUsers = [
@@ -58,7 +57,7 @@ const userSchema = z.object({
     roleId: z.string().min(1, "الدور مطلوب"),
     status: z.enum(["نشط", "غير نشط"]).default("نشط"),
     password: z.string().optional().refine(val => !val || val.length >= 6, {message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل إذا تم إدخالها"}),
-    avatarUrl: z.string().url().optional().or(z.literal('')),
+    avatarUrl: z.string().url("الرابط غير صالح").optional().or(z.literal('')),
 });
 type UserFormValues = z.infer<typeof userSchema>;
 
@@ -70,7 +69,7 @@ const roleFormSchema = z.object({
 type RoleFormValues = z.infer<typeof roleFormSchema>;
 
 const hexToHsl = (hex: string): string | null => {
-  if (typeof document === 'undefined') return null; // Guard for server-side rendering
+  if (typeof document === 'undefined') return null;
   if (!hex.startsWith("#") || (hex.length !== 4 && hex.length !== 7)) {
     return null; 
   }
@@ -104,6 +103,28 @@ const hexToHsl = (hex: string): string | null => {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 };
 
+interface CustomizableColors {
+  primaryColor: string;
+  backgroundColor: string;
+  foregroundColor: string;
+  cardColor: string;
+  borderColor: string;
+  inputColor: string;
+  sidebarBackgroundColor: string;
+  sidebarForegroundColor: string;
+}
+
+const defaultColors: CustomizableColors = {
+  primaryColor: "#008080", // Teal
+  backgroundColor: "#F5F5DC", // Beige
+  foregroundColor: "#262626", // Dark Gray
+  cardColor: "#F5F5DC", // Beige
+  borderColor: "#CCCCCC", // Gray
+  inputColor: "#D9D9D9", // Light Gray
+  sidebarBackgroundColor: "#F5F5F5", // Off-white
+  sidebarForegroundColor: "#262626", // Dark Gray
+};
+
 
 export default function SettingsPage() {
   const [users, setUsers] = useState(initialUsers);
@@ -116,48 +137,61 @@ export default function SettingsPage() {
   const [roleToEdit, setRoleToEdit] = useState<Role | null>(null); 
   const { toast } = useToast();
 
-  const [themeColor, setThemeColor] = useState<string>("#008080");
+  const [customColors, setCustomColors] = useState<CustomizableColors>(defaultColors);
   const [logoPreview, setLogoPreview] = useState<string | null>("https://picsum.photos/200/200?random=1");
 
+  const applyCustomColors = (colors: CustomizableColors) => {
+    if (typeof document === 'undefined') return;
+
+    const colorMap: Record<keyof CustomizableColors, string> = {
+      primaryColor: '--custom-primary-hsl',
+      backgroundColor: '--custom-background-hsl',
+      foregroundColor: '--custom-foreground-hsl',
+      cardColor: '--custom-card-hsl',
+      borderColor: '--custom-border-hsl',
+      inputColor: '--custom-input-hsl',
+      sidebarBackgroundColor: '--custom-sidebar-background-hsl',
+      sidebarForegroundColor: '--custom-sidebar-foreground-hsl',
+    };
+    
+    (Object.keys(colors) as Array<keyof CustomizableColors>).forEach(key => {
+      const hslValue = hexToHsl(colors[key]);
+      if (hslValue) {
+        document.documentElement.style.setProperty(colorMap[key], hslValue);
+      } else {
+        document.documentElement.style.removeProperty(colorMap[key]);
+      }
+    });
+  };
+
   useEffect(() => {
-    if (typeof window !== 'undefined') { // Ensure localStorage is accessed only on the client
-        const savedColor = localStorage.getItem("themePrimaryColor");
-        if (savedColor) {
-        setThemeColor(savedColor);
-        }
-        const savedLogo = localStorage.getItem("companyLogo");
-        if (savedLogo) {
-            setLogoPreview(savedLogo);
-        }
+    const loadedColors: Partial<CustomizableColors> = {};
+    (Object.keys(defaultColors) as Array<keyof CustomizableColors>).forEach(key => {
+      const savedColor = localStorage.getItem(key);
+      if (savedColor) {
+        loadedColors[key] = savedColor;
+      }
+    });
+    const newColors = { ...defaultColors, ...loadedColors };
+    setCustomColors(newColors);
+    applyCustomColors(newColors); // Apply loaded or default colors on mount
+
+    const savedLogo = localStorage.getItem("companyLogo");
+    if (savedLogo) {
+        setLogoPreview(savedLogo);
     }
   }, []);
 
   useEffect(() => {
-    if (typeof document !== 'undefined') { // Ensure document is accessed only on the client
-        const hslColor = hexToHsl(themeColor);
-        if (hslColor) {
-        document.documentElement.style.setProperty('--primary', hslColor);
-        document.documentElement.style.setProperty('--accent', hslColor); 
-        document.documentElement.style.setProperty('--ring', hslColor);   
-        
-        const [h, s, l] = hslColor.split(" ").map(val => parseInt(val));
-        if(!isNaN(h) && !isNaN(s) && !isNaN(l)){
-            document.documentElement.style.setProperty('--chart-1', `${h} ${s}% ${Math.min(100, l + 10)}%`);
-            document.documentElement.style.setProperty('--chart-2', `${h} ${Math.max(0, s - 15)}% ${l}%`);
-            document.documentElement.style.setProperty('--chart-3', `${h} ${s}% ${Math.max(0, l - 10)}%`);
-            document.documentElement.style.setProperty('--chart-4', `${h} ${Math.max(0, s - 25)}% ${Math.min(100, l + 5)}%`);
-            document.documentElement.style.setProperty('--chart-5', `${h} ${s}% ${Math.max(0, l - 20)}%`);
-        }
-        }
-    }
-  }, [themeColor]);
+    applyCustomColors(customColors);
+  }, [customColors]);
 
-  const handleColorButtonClick = (color: string) => {
-    setThemeColor(color);
-  };
 
-  const handleColorInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setThemeColor(event.target.value);
+  const handleColorInputChange = (colorName: keyof CustomizableColors, value: string) => {
+    setCustomColors(prevColors => ({
+      ...prevColors,
+      [colorName]: value,
+    }));
   };
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,11 +206,11 @@ export default function SettingsPage() {
   };
 
   const handleSaveCustomization = () => {
-    if (typeof window !== 'undefined') {
-        localStorage.setItem("themePrimaryColor", themeColor);
-        if(logoPreview) localStorage.setItem("companyLogo", logoPreview);
-        toast({ title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح." });
-    }
+    (Object.keys(customColors) as Array<keyof CustomizableColors>).forEach(key => {
+      localStorage.setItem(key, customColors[key]);
+    });
+    if(logoPreview) localStorage.setItem("companyLogo", logoPreview);
+    toast({ title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح." });
   };
 
   const userForm = useForm<UserFormValues>({
@@ -246,10 +280,10 @@ export default function SettingsPage() {
 
   const handleRoleSubmit = (values: RoleFormValues) => {
     if (roleToEdit) {
-      const updatedRole: Role = { ...(roleToEdit as Role), name: values.name, description: values.description, permissions: selectedRolePermissions };
-      setRolesData(prev => prev.map(role => role.id === roleToEdit!.id ? updatedRole : role));
+      const updatedRole = { ...roleToEdit, name: values.name, description: values.description, permissions: selectedRolePermissions };
+      setRolesData(prev => prev.map(role => role.id === roleToEdit.id ? updatedRole : role));
       toast({ title: "تم التعديل", description: `تم تعديل الدور ${values.name}.` });
-      if (selectedRole && selectedRole.id === roleToEdit!.id) {
+      if (selectedRole && selectedRole.id === roleToEdit.id) {
         setSelectedRole(updatedRole);
       }
     } else {
@@ -526,7 +560,7 @@ export default function SettingsPage() {
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent dir="rtl">
-                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>تراجع</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => handleDeleteRole(role.id)}>تأكيد الحذف</AlertDialogAction>
@@ -562,9 +596,9 @@ export default function SettingsPage() {
                                                 </div>
                                             )})}
                                         </div>
-                                        {moduleName !== modules[modules.length -1] && <hr className="my-3"/>}
+                                        {moduleName !== modules[modules.length - 1] && <hr className="my-3"/>}
                                     </div>
-                                ))}
+                            ))}
                                  <Button className="mt-4 shadow-md hover:shadow-lg transition-shadow w-full" onClick={handleSaveRolePermissions} disabled={!selectedRole}>
                                     <Save className="me-2 h-4 w-4" /> حفظ صلاحيات هذا الدور
                                 </Button>
@@ -586,14 +620,38 @@ export default function SettingsPage() {
               <CardDescription>تعديل مظهر النظام، إضافة حقول مخصصة، وإدارة التكامل مع خدمات أخرى.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="themeColor">لون الواجهة الرئيسي</Label>
-                <div className="flex gap-2 items-center">
-                    <Button variant="outline" style={{backgroundColor: "#008080"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm" onClick={() => handleColorButtonClick("#008080")}></Button>
-                    <Button variant="outline" style={{backgroundColor: "#3B82F6"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm" onClick={() => handleColorButtonClick("#3B82F6")}></Button>
-                    <Button variant="outline" style={{backgroundColor: "#10B981"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm" onClick={() => handleColorButtonClick("#10B981")}></Button>
-                    <Button variant="outline" style={{backgroundColor: "#F59E0B"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm" onClick={() => handleColorButtonClick("#F59E0B")}></Button>
-                    <Input type="color" value={themeColor} onChange={handleColorInputChange} className="w-12 h-10 p-1 bg-background"/>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <Label htmlFor="primaryColor">اللون الأساسي</Label>
+                    <Input id="primaryColor" type="color" value={customColors.primaryColor} onChange={(e) => handleColorInputChange('primaryColor', e.target.value)} className="p-1 h-10 w-full"/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="backgroundColor">لون الخلفية</Label>
+                    <Input id="backgroundColor" type="color" value={customColors.backgroundColor} onChange={(e) => handleColorInputChange('backgroundColor', e.target.value)} className="p-1 h-10 w-full"/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="foregroundColor">لون النص الأساسي</Label>
+                    <Input id="foregroundColor" type="color" value={customColors.foregroundColor} onChange={(e) => handleColorInputChange('foregroundColor', e.target.value)} className="p-1 h-10 w-full"/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="cardColor">لون البطاقات</Label>
+                    <Input id="cardColor" type="color" value={customColors.cardColor} onChange={(e) => handleColorInputChange('cardColor', e.target.value)} className="p-1 h-10 w-full"/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="borderColor">لون الحدود</Label>
+                    <Input id="borderColor" type="color" value={customColors.borderColor} onChange={(e) => handleColorInputChange('borderColor', e.target.value)} className="p-1 h-10 w-full"/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="inputColor">لون حقول الإدخال</Label>
+                    <Input id="inputColor" type="color" value={customColors.inputColor} onChange={(e) => handleColorInputChange('inputColor', e.target.value)} className="p-1 h-10 w-full"/>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="sidebarBackgroundColor">لون خلفية القائمة الجانبية</Label>
+                    <Input id="sidebarBackgroundColor" type="color" value={customColors.sidebarBackgroundColor} onChange={(e) => handleColorInputChange('sidebarBackgroundColor', e.target.value)} className="p-1 h-10 w-full"/>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="sidebarForegroundColor">لون نص القائمة الجانبية</Label>
+                    <Input id="sidebarForegroundColor" type="color" value={customColors.sidebarForegroundColor} onChange={(e) => handleColorInputChange('sidebarForegroundColor', e.target.value)} className="p-1 h-10 w-full"/>
                 </div>
               </div>
                <div className="space-y-2">

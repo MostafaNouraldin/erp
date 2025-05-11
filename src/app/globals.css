@@ -4,78 +4,155 @@
 
 @layer base {
   :root {
-    --background: 60 56% 91%; /* Neutral beige #F5F5DC */
-    --foreground: 0 0% 15%; /* Dark gray for text */
-    --card: 60 56% 91%; /* Neutral beige */
-    --card-foreground: 0 0% 15%; /* Dark gray for text */
-    --popover: 60 56% 91%; /* Neutral beige */
-    --popover-foreground: 0 0% 15%; /* Dark gray for text */
-    --primary: 180 100% 25%; /* Teal #008080 */
-    --primary-foreground: 0 0% 100%; /* White */
-    --secondary: 0 0% 88%; /* Light gray #E0E0E0 */
-    --secondary-foreground: 0 0% 25%; /* Darker gray for text on secondary */
-    --muted: 60 40% 85%; /* Lighter beige variant */
-    --muted-foreground: 0 0% 45%; /* Gray */
-    --accent: 180 100% 25%; /* Teal, same as primary */
-    --accent-foreground: 0 0% 100%; /* White */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 80%; /* Slightly darker gray for borders */
-    --input: 0 0% 85%; /* Gray for input backgrounds */
-    --ring: 180 100% 25%; /* Teal for focus rings */
-    --chart-1: 180 100% 30%;
-    --chart-2: 180 80% 40%;
-    --chart-3: 180 60% 50%;
-    --chart-4: 180 40% 60%;
-    --chart-5: 180 20% 70%;
+    /* Default HSL values - these are the fallbacks if not set by JS */
+    --default-background-hsl: 60 56% 91%; /* Neutral beige #F5F5DC */
+    --default-foreground-hsl: 0 0% 15%; /* Dark gray for text */
+    --default-card-hsl: 60 56% 91%;
+    --default-card-foreground-hsl: 0 0% 15%;
+    --default-popover-hsl: 60 56% 91%;
+    --default-popover-foreground-hsl: 0 0% 15%;
+    --default-primary-hsl: 180 100% 25%; /* Teal #008080 */
+    --default-primary-foreground-hsl: 0 0% 100%; /* White */
+    --default-secondary-hsl: 0 0% 88%; /* Light gray #E0E0E0 */
+    --default-secondary-foreground-hsl: 0 0% 25%;
+    --default-muted-hsl: 60 40% 85%;
+    --default-muted-foreground-hsl: 0 0% 45%;
+    --default-accent-hsl: 180 100% 25%;
+    --default-accent-foreground-hsl: 0 0% 100%;
+    --default-destructive-hsl: 0 84.2% 60.2%;
+    --default-destructive-foreground-hsl: 0 0% 98%;
+    --default-border-hsl: 0 0% 80%;
+    --default-input-hsl: 0 0% 85%;
+    --default-ring-hsl: 180 100% 25%;
+
+    --default-chart-1-hsl: 180 100% 30%;
+    --default-chart-2-hsl: 180 80% 40%;
+    --default-chart-3-hsl: 180 60% 50%;
+    --default-chart-4-hsl: 180 40% 60%;
+    --default-chart-5-hsl: 180 20% 70%;
+
+    --default-sidebar-background-hsl: 0 0% 96%;
+    --default-sidebar-foreground-hsl: 0 0% 15%;
+    --default-sidebar-primary-hsl: var(--primary-hsl, var(--default-primary-hsl)); /* Derives from main primary */
+    --default-sidebar-primary-foreground-hsl: var(--primary-foreground-hsl, var(--default-primary-foreground-hsl));
+    --default-sidebar-accent-hsl: 0 0% 88%;
+    --default-sidebar-accent-foreground-hsl: 0 0% 15%;
+    --default-sidebar-border-hsl: 0 0% 80%;
+    --default-sidebar-ring-hsl: var(--ring-hsl, var(--default-ring-hsl)); /* Derives from main ring */
+
+    /* Actual color variables using custom or default HSL */
+    --background: hsl(var(--custom-background-hsl, var(--default-background-hsl)));
+    --foreground: hsl(var(--custom-foreground-hsl, var(--default-foreground-hsl)));
+    --card: hsl(var(--custom-card-hsl, var(--default-card-hsl)));
+    --card-foreground: hsl(var(--custom-card-foreground-hsl, var(--default-card-foreground-hsl)));
+    --popover: hsl(var(--custom-popover-hsl, var(--default-popover-hsl)));
+    --popover-foreground: hsl(var(--custom-popover-foreground-hsl, var(--default-popover-foreground-hsl)));
+    --primary: hsl(var(--custom-primary-hsl, var(--default-primary-hsl)));
+    --primary-foreground: hsl(var(--custom-primary-foreground-hsl, var(--default-primary-foreground-hsl)));
+    --secondary: hsl(var(--custom-secondary-hsl, var(--default-secondary-hsl)));
+    --secondary-foreground: hsl(var(--custom-secondary-foreground-hsl, var(--default-secondary-foreground-hsl)));
+    --muted: hsl(var(--custom-muted-hsl, var(--default-muted-hsl)));
+    --muted-foreground: hsl(var(--custom-muted-foreground-hsl, var(--default-muted-foreground-hsl)));
+    --accent: hsl(var(--custom-accent-hsl, var(--default-accent-hsl)));
+    --accent-foreground: hsl(var(--custom-accent-foreground-hsl, var(--default-accent-foreground-hsl)));
+    --destructive: hsl(var(--custom-destructive-hsl, var(--default-destructive-hsl)));
+    --destructive-foreground: hsl(var(--custom-destructive-foreground-hsl, var(--default-destructive-foreground-hsl)));
+    --border: hsl(var(--custom-border-hsl, var(--default-border-hsl)));
+    --input: hsl(var(--custom-input-hsl, var(--default-input-hsl)));
+    --ring: hsl(var(--custom-ring-hsl, var(--default-ring-hsl)));
+
+    --chart-1: hsl(var(--custom-chart-1-hsl, var(--default-chart-1-hsl)));
+    --chart-2: hsl(var(--custom-chart-2-hsl, var(--default-chart-2-hsl)));
+    --chart-3: hsl(var(--custom-chart-3-hsl, var(--default-chart-3-hsl)));
+    --chart-4: hsl(var(--custom-chart-4-hsl, var(--default-chart-4-hsl)));
+    --chart-5: hsl(var(--custom-chart-5-hsl, var(--default-chart-5-hsl)));
+
     --radius: 0.5rem;
 
-    /* Sidebar specific theme */
-    --sidebar-background: 0 0% 96%; /* Slightly off-white for sidebar */
-    --sidebar-foreground: 0 0% 15%; /* Dark gray for text */
-    --sidebar-primary: 180 100% 25%; /* Teal */
-    --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 0 0% 88%; /* Light gray for hover/active states */
-    --sidebar-accent-foreground: 0 0% 15%; /* Dark gray */
-    --sidebar-border: 0 0% 80%; /* Gray for borders */
-    --sidebar-ring: 180 100% 25%; /* Teal */
+    /* Sidebar specific theme using custom or default HSL */
+    --sidebar-background: hsl(var(--custom-sidebar-background-hsl, var(--default-sidebar-background-hsl)));
+    --sidebar-foreground: hsl(var(--custom-sidebar-foreground-hsl, var(--default-sidebar-foreground-hsl)));
+    --sidebar-primary: hsl(var(--custom-sidebar-primary-hsl, var(--primary-hsl, var(--default-primary-hsl)) ));
+    --sidebar-primary-foreground: hsl(var(--custom-sidebar-primary-foreground-hsl, var(--primary-foreground-hsl, var(--default-primary-foreground-hsl)) ));
+    --sidebar-accent: hsl(var(--custom-sidebar-accent-hsl, var(--default-sidebar-accent-hsl)));
+    --sidebar-accent-foreground: hsl(var(--custom-sidebar-accent-foreground-hsl, var(--default-sidebar-accent-foreground-hsl)));
+    --sidebar-border: hsl(var(--custom-sidebar-border-hsl, var(--default-sidebar-border-hsl)));
+    --sidebar-ring: hsl(var(--custom-sidebar-ring-hsl, var(--ring-hsl, var(--default-ring-hsl)) ));
   }
 
   .dark {
-    --background: 0 0% 10%; /* Dark gray for dark mode background */
-    --foreground: 0 0% 95%; /* Light gray for text */
-    --card: 0 0% 12%; /* Slightly lighter dark gray */
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 180 100% 35%; /* Brighter Teal for dark mode */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 20%; /* Darker gray */
-    --secondary-foreground: 0 0% 90%;
-    --muted: 0 0% 22%; /* Slightly lighter dark gray */
-    --muted-foreground: 0 0% 60%;
-    --accent: 180 100% 35%; /* Brighter Teal */
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 25%; /* Gray for borders */
-    --input: 0 0% 23%; /* Dark gray for input backgrounds */
-    --ring: 180 100% 35%; /* Brighter Teal */
-    --chart-1: 180 100% 40%;
-    --chart-2: 180 80% 50%;
-    --chart-3: 180 60% 60%;
-    --chart-4: 180 40% 70%;
-    --chart-5: 180 20% 80%;
+    /* Default HSL values for dark theme - fallbacks if not set by JS */
+    --default-background-hsl-dark: 0 0% 10%;
+    --default-foreground-hsl-dark: 0 0% 95%;
+    --default-card-hsl-dark: 0 0% 12%;
+    --default-card-foreground-hsl-dark: 0 0% 95%;
+    --default-popover-hsl-dark: 0 0% 12%;
+    --default-popover-foreground-hsl-dark: 0 0% 95%;
+    --default-primary-hsl-dark: 180 100% 35%;
+    --default-primary-foreground-hsl-dark: 0 0% 100%;
+    --default-secondary-hsl-dark: 0 0% 20%;
+    --default-secondary-foreground-hsl-dark: 0 0% 90%;
+    --default-muted-hsl-dark: 0 0% 22%;
+    --default-muted-foreground-hsl-dark: 0 0% 60%;
+    --default-accent-hsl-dark: 180 100% 35%;
+    --default-accent-foreground-hsl-dark: 0 0% 100%;
+    --default-destructive-hsl-dark: 0 70% 50%;
+    --default-destructive-foreground-hsl-dark: 0 0% 98%;
+    --default-border-hsl-dark: 0 0% 25%;
+    --default-input-hsl-dark: 0 0% 23%;
+    --default-ring-hsl-dark: 180 100% 35%;
 
-    /* Sidebar specific theme for dark mode */
-    --sidebar-background: 0 0% 12%; /* Dark gray */
-    --sidebar-foreground: 0 0% 95%; /* Light gray */
-    --sidebar-primary: 180 100% 35%; /* Brighter Teal */
-    --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 0 0% 20%; /* Darker gray for hover/active */
-    --sidebar-accent-foreground: 0 0% 95%; /* Light gray */
-    --sidebar-border: 0 0% 25%; /* Gray for borders */
-    --sidebar-ring: 180 100% 35%; /* Brighter Teal */
+    --default-chart-1-hsl-dark: 180 100% 40%;
+    --default-chart-2-hsl-dark: 180 80% 50%;
+    --default-chart-3-hsl-dark: 180 60% 60%;
+    --default-chart-4-hsl-dark: 180 40% 70%;
+    --default-chart-5-hsl-dark: 180 20% 80%;
+
+    --default-sidebar-background-hsl-dark: 0 0% 12%;
+    --default-sidebar-foreground-hsl-dark: 0 0% 95%;
+    --default-sidebar-primary-hsl-dark: var(--primary-hsl-dark, var(--default-primary-hsl-dark));
+    --default-sidebar-primary-foreground-hsl-dark: var(--primary-foreground-hsl-dark, var(--default-primary-foreground-hsl-dark));
+    --default-sidebar-accent-hsl-dark: 0 0% 20%;
+    --default-sidebar-accent-foreground-hsl-dark: 0 0% 95%;
+    --default-sidebar-border-hsl-dark: 0 0% 25%;
+    --default-sidebar-ring-hsl-dark: var(--ring-hsl-dark, var(--default-ring-hsl-dark));
+
+    /* Actual color variables using custom HSL (shared with light mode) or dark mode defaults */
+    --background: hsl(var(--custom-background-hsl, var(--default-background-hsl-dark)));
+    --foreground: hsl(var(--custom-foreground-hsl, var(--default-foreground-hsl-dark)));
+    --card: hsl(var(--custom-card-hsl, var(--default-card-hsl-dark)));
+    --card-foreground: hsl(var(--custom-card-foreground-hsl, var(--default-card-foreground-hsl-dark)));
+    --popover: hsl(var(--custom-popover-hsl, var(--default-popover-hsl-dark)));
+    --popover-foreground: hsl(var(--custom-popover-foreground-hsl, var(--default-popover-foreground-hsl-dark)));
+    --primary: hsl(var(--custom-primary-hsl, var(--default-primary-hsl-dark)));
+    --primary-foreground: hsl(var(--custom-primary-foreground-hsl, var(--default-primary-foreground-hsl-dark)));
+    --secondary: hsl(var(--custom-secondary-hsl, var(--default-secondary-hsl-dark)));
+    --secondary-foreground: hsl(var(--custom-secondary-foreground-hsl, var(--default-secondary-foreground-hsl-dark)));
+    --muted: hsl(var(--custom-muted-hsl, var(--default-muted-hsl-dark)));
+    --muted-foreground: hsl(var(--custom-muted-foreground-hsl, var(--default-muted-foreground-hsl-dark)));
+    --accent: hsl(var(--custom-accent-hsl, var(--default-accent-hsl-dark)));
+    --accent-foreground: hsl(var(--custom-accent-foreground-hsl, var(--default-accent-foreground-hsl-dark)));
+    --destructive: hsl(var(--custom-destructive-hsl, var(--default-destructive-hsl-dark)));
+    --destructive-foreground: hsl(var(--custom-destructive-foreground-hsl, var(--default-destructive-foreground-hsl-dark)));
+    --border: hsl(var(--custom-border-hsl, var(--default-border-hsl-dark)));
+    --input: hsl(var(--custom-input-hsl, var(--default-input-hsl-dark)));
+    --ring: hsl(var(--custom-ring-hsl, var(--default-ring-hsl-dark)));
+
+    --chart-1: hsl(var(--custom-chart-1-hsl, var(--default-chart-1-hsl-dark)));
+    --chart-2: hsl(var(--custom-chart-2-hsl, var(--default-chart-2-hsl-dark)));
+    --chart-3: hsl(var(--custom-chart-3-hsl, var(--default-chart-3-hsl-dark)));
+    --chart-4: hsl(var(--custom-chart-4-hsl, var(--default-chart-4-hsl-dark)));
+    --chart-5: hsl(var(--custom-chart-5-hsl, var(--default-chart-5-hsl-dark)));
+    
+    /* Sidebar specific theme for dark mode using custom or dark defaults */
+    --sidebar-background: hsl(var(--custom-sidebar-background-hsl, var(--default-sidebar-background-hsl-dark)));
+    --sidebar-foreground: hsl(var(--custom-sidebar-foreground-hsl, var(--default-sidebar-foreground-hsl-dark)));
+    --sidebar-primary: hsl(var(--custom-sidebar-primary-hsl, var(--primary-hsl-dark, var(--default-primary-hsl-dark)) ));
+    --sidebar-primary-foreground: hsl(var(--custom-sidebar-primary-foreground-hsl, var(--primary-foreground-hsl-dark, var(--default-primary-foreground-hsl-dark)) ));
+    --sidebar-accent: hsl(var(--custom-sidebar-accent-hsl, var(--default-sidebar-accent-hsl-dark)));
+    --sidebar-accent-foreground: hsl(var(--custom-sidebar-accent-foreground-hsl, var(--default-sidebar-accent-foreground-hsl-dark)));
+    --sidebar-border: hsl(var(--custom-sidebar-border-hsl, var(--default-sidebar-border-hsl-dark)));
+    --sidebar-ring: hsl(var(--custom-sidebar-ring-hsl, var(--ring-hsl-dark, var(--default-ring-hsl-dark)) ));
   }
 }
 
@@ -116,7 +193,7 @@
     display: none; 
   }
   .printable-area .print-only {
-    display: flex !important; /* Or block, depending on the element type */
+    display: block !important; /* Or flex, depending on the element type */
   }
   .printable-area .text-primary {
     color: #000 !important; /* Print primary colors as black for better readability */
