@@ -21,7 +21,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import type { Role } from '@/types/saas'; // Ensure Role type is correctly imported
+import type { Role } from '@/types/saas';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 // Mock data
 const initialUsers = [
@@ -32,10 +34,10 @@ const initialUsers = [
 
 
 const initialRoles: Role[] = [
-  { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "sales.view", "sales.create", "sales.edit", "sales.delete", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "hr.view", "hr.create", "hr.edit", "hr.delete", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles"] },
-  { id: "ROLE002", name: "محاسب", description: "صلاحيات على وحدات الحسابات والمالية.", permissions: ["accounting.view", "accounting.create", "accounting.edit"] },
-  { id: "ROLE003", name: "موظف مبيعات", description: "صلاحيات على وحدة المبيعات وعروض الأسعار.", permissions: ["sales.view", "sales.create"] },
-  { id: "ROLE004", name: "مدير مخزون", description: "صلاحيات على وحدة المخزون والمستودعات.", permissions: ["inventory.view", "inventory.create", "inventory.edit"] },
+  { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles"] },
+  { id: "ROLE002", name: "محاسب", description: "صلاحيات على وحدات الحسابات والمالية.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "reports.view_financial"] },
+  { id: "ROLE003", name: "موظف مبيعات", description: "صلاحيات على وحدة المبيعات وعروض الأسعار.", permissions: ["sales.view", "sales.create", "reports.view_sales"] },
+  { id: "ROLE004", name: "مدير مخزون", description: "صلاحيات على وحدة المخزون والمستودعات.", permissions: ["inventory.view", "inventory.create", "inventory.edit", "inventory.adjust_stock", "reports.view_inventory"] },
 ];
 
 const modules = ["الحسابات", "المبيعات", "المشتريات", "المخزون", "الموارد البشرية", "التقارير", "الإعدادات"];
@@ -68,6 +70,41 @@ const roleFormSchema = z.object({
 type RoleFormValues = z.infer<typeof roleFormSchema>;
 
 
+const hexToHsl = (hex: string): string | null => {
+  if (!hex.startsWith("#") || (hex.length !== 4 && hex.length !== 7)) {
+    return null; 
+  }
+  let r = 0, g = 0, b = 0;
+  if (hex.length === 4) {
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else if (hex.length === 7) {
+    r = parseInt(hex.substring(1, 3), 16);
+    g = parseInt(hex.substring(3, 5), 16);
+    b = parseInt(hex.substring(5, 7), 16);
+  }
+
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0; // achromatic
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+};
+
+
 export default function SettingsPage() {
   const [users, setUsers] = useState(initialUsers);
   const [roles, setRolesData] = useState<Role[]>(initialRoles);
@@ -78,6 +115,63 @@ export default function SettingsPage() {
   const [showManageRoleDialog, setShowManageRoleDialog] = useState(false);
   const [roleToEdit, setRoleToEdit] = useState<Role | null>(null); 
   const { toast } = useToast();
+
+  const [themeColor, setThemeColor] = useState<string>("#008080");
+  const [logoPreview, setLogoPreview] = useState<string | null>("https://picsum.photos/200/200?random=1");
+
+  useEffect(() => {
+    const savedColor = localStorage.getItem("themePrimaryColor");
+    if (savedColor) {
+      setThemeColor(savedColor);
+    }
+    const savedLogo = localStorage.getItem("companyLogo");
+    if (savedLogo) {
+        setLogoPreview(savedLogo);
+    }
+  }, []);
+
+  useEffect(() => {
+    const hslColor = hexToHsl(themeColor);
+    if (hslColor && typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--primary', hslColor);
+      document.documentElement.style.setProperty('--accent', hslColor); 
+      document.documentElement.style.setProperty('--ring', hslColor);   
+      
+      const [h, s, l] = hslColor.split(" ").map(val => parseInt(val));
+      if(!isNaN(h) && !isNaN(s) && !isNaN(l)){
+        document.documentElement.style.setProperty('--chart-1', `${h} ${s}% ${Math.min(100, l + 10)}%`);
+        document.documentElement.style.setProperty('--chart-2', `${h} ${Math.max(0, s - 15)}% ${l}%`);
+        document.documentElement.style.setProperty('--chart-3', `${h} ${s}% ${Math.max(0, l - 10)}%`);
+        document.documentElement.style.setProperty('--chart-4', `${h} ${Math.max(0, s - 25)}% ${Math.min(100, l + 5)}%`);
+        document.documentElement.style.setProperty('--chart-5', `${h} ${s}% ${Math.max(0, l - 20)}%`);
+      }
+    }
+  }, [themeColor]);
+
+  const handleColorButtonClick = (color: string) => {
+    setThemeColor(color);
+  };
+
+  const handleColorInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setThemeColor(event.target.value);
+  };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveCustomization = () => {
+    localStorage.setItem("themePrimaryColor", themeColor);
+    if(logoPreview) localStorage.setItem("companyLogo", logoPreview);
+    toast({ title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح." });
+  };
 
   const userForm = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
@@ -123,7 +217,7 @@ export default function SettingsPage() {
         userForm.setError("password", {type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد"});
         return;
       }
-      setUsers(prev => [...prev, { ...values, id: `USR${Date.now()}`, avatarUrl: "https://picsum.photos/100/100?random=" + Date.now() }]);
+      setUsers(prev => [...prev, { ...values, id: `USR${Date.now()}`, avatarUrl: values.avatarUrl || "https://picsum.photos/100/100?random=" + Date.now() }]);
       toast({ title: "تمت الإضافة", description: `تم إضافة المستخدم ${values.name} بنجاح.` });
     }
     setShowManageUserDialog(false);
@@ -146,14 +240,14 @@ export default function SettingsPage() {
 
   const handleRoleSubmit = (values: RoleFormValues) => {
     if (roleToEdit) {
-      const updatedRole = { ...roleToEdit, name: values.name, description: values.description };
+      const updatedRole = { ...roleToEdit, name: values.name, description: values.description, permissions: selectedRolePermissions };
       setRolesData(prev => prev.map(role => role.id === roleToEdit.id ? updatedRole : role));
       toast({ title: "تم التعديل", description: `تم تعديل الدور ${values.name}.` });
       if (selectedRole && selectedRole.id === roleToEdit.id) {
         setSelectedRole(updatedRole);
       }
     } else {
-      const newRole: Role = { ...values, id: `ROLE${Date.now()}`, permissions: [] };
+      const newRole: Role = { ...values, id: `ROLE${Date.now()}`, permissions: selectedRolePermissions };
       setRolesData(prev => [...prev, newRole]);
       toast({ title: "تمت الإضافة", description: `تم إضافة الدور ${values.name} بنجاح.` });
     }
@@ -177,7 +271,7 @@ export default function SettingsPage() {
 
   const handleSelectRoleForPermissions = (role: Role) => {
     setSelectedRole(role);
-    setSelectedRolePermissions(role.permissions || []);
+    // Permissions will be set by the useEffect hook watching selectedRole
   };
 
   const handlePermissionChange = (permissionKey: string, checked: boolean | string) => {
@@ -200,7 +294,7 @@ export default function SettingsPage() {
           r.id === selectedRole.id ? updatedRole : r
         )
       );
-      setSelectedRole(updatedRole);
+      setSelectedRole(updatedRole); 
       toast({ title: "تم الحفظ", description: `تم حفظ صلاحيات الدور ${selectedRole.name}.` });
     }
   };
@@ -409,7 +503,8 @@ export default function SettingsPage() {
                  <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-1">
                         <h3 className="text-lg font-semibold mb-2">قائمة الأدوار</h3>
-                        <div className="space-y-2 max-h-96 overflow-y-auto pe-2">
+                        <ScrollArea className="h-96 pe-2">
+                        <div className="space-y-2">
                             {roles.map(role => (
                                 <Card key={role.id} className={`p-3 hover:shadow-md transition-shadow cursor-pointer ${selectedRole?.id === role.id ? 'bg-primary/10 border-primary' : 'bg-muted/30'}`} onClick={() => handleSelectRoleForPermissions(role)}>
                                     <div className="flex justify-between items-center">
@@ -418,7 +513,7 @@ export default function SettingsPage() {
                                             <p className="text-xs text-muted-foreground">{role.description}</p>
                                         </div>
                                         <div className="flex gap-1">
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); setRoleToEdit(role); setShowManageRoleDialog(true);}}><Edit className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); setRoleToEdit(role); setSelectedRolePermissions(role.permissions); setShowManageRoleDialog(true);}}><Edit className="h-4 w-4"/></Button>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
@@ -436,17 +531,19 @@ export default function SettingsPage() {
                                 </Card>
                             ))}
                         </div>
+                        </ScrollArea>
                     </div>
                     <div className="md:col-span-2">
                         <h3 className="text-lg font-semibold mb-2">صلاحيات الدور: {selectedRole?.name || "اختر دورًا"}</h3>
                         {selectedRole ? (
-                            <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto border p-4 rounded-md bg-background"> 
+                            <ScrollArea className="h-[calc(100vh-300px)] border p-4 rounded-md bg-background">
+                            <div className="space-y-3"> 
                                 {modules.map(moduleName => (
                                     <div key={moduleName}>
                                         <h4 className="font-medium mb-1.5">{moduleName}</h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2">
                                             {permissionsMap[moduleName]?.map(permissionDetail => {
-                                                const permissionKey = `${moduleName.toLowerCase().replace(/\s+/g, '_')}.${permissionDetail.key}`;
+                                                const permissionKey = `${moduleName.toLowerCase().replace(/ /g, '_').replace(/وال/g,'_')}.${permissionDetail.key}`;
                                                 return (
                                                 <div key={permissionKey} className="flex items-center space-x-2 rtl:space-x-reverse">
                                                     <Checkbox
@@ -465,6 +562,7 @@ export default function SettingsPage() {
                                     <Save className="me-2 h-4 w-4" /> حفظ صلاحيات هذا الدور
                                 </Button>
                             </div>
+                            </ScrollArea>
                         ) : (
                             <p className="text-muted-foreground text-center py-10">الرجاء اختيار دور من القائمة لعرض أو تعديل صلاحياته.</p>
                         )}
@@ -483,22 +581,22 @@ export default function SettingsPage() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="themeColor">لون الواجهة الرئيسي</Label>
-                <div className="flex gap-2">
-                    <Button variant="outline" style={{backgroundColor: "hsl(var(--primary))"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm"></Button>
-                    <Button variant="outline" style={{backgroundColor: "#3B82F6"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm"></Button>
-                    <Button variant="outline" style={{backgroundColor: "#10B981"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm"></Button>
-                    <Button variant="outline" style={{backgroundColor: "#F59E0B"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm"></Button>
-                    <Input type="color" defaultValue="#008080" className="w-12 h-10 p-1 bg-background"/>
+                <div className="flex gap-2 items-center">
+                    <Button variant="outline" style={{backgroundColor: "#008080"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm" onClick={() => handleColorButtonClick("#008080")}></Button>
+                    <Button variant="outline" style={{backgroundColor: "#3B82F6"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm" onClick={() => handleColorButtonClick("#3B82F6")}></Button>
+                    <Button variant="outline" style={{backgroundColor: "#10B981"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm" onClick={() => handleColorButtonClick("#10B981")}></Button>
+                    <Button variant="outline" style={{backgroundColor: "#F59E0B"}} className="h-10 w-10 p-0 border-2 border-border shadow-sm" onClick={() => handleColorButtonClick("#F59E0B")}></Button>
+                    <Input type="color" value={themeColor} onChange={handleColorInputChange} className="w-12 h-10 p-1 bg-background"/>
                 </div>
               </div>
                <div className="space-y-2">
                 <Label htmlFor="logoUpload">شعار الشركة</Label>
                 <div className="flex items-center gap-4">
                     <Avatar className="h-16 w-16 rounded-md">
-                        <AvatarImage src="https://picsum.photos/200/200?random=1" alt="شعار الشركة الحالي" data-ai-hint="company logo"/>
+                        <AvatarImage src={logoPreview || undefined} alt="شعار الشركة الحالي" data-ai-hint="company logo"/>
                         <AvatarFallback>ERP</AvatarFallback>
                     </Avatar>
-                    <Input id="logoUpload" type="file" className="bg-background" />
+                    <Input id="logoUpload" type="file" accept="image/*" className="bg-background" onChange={handleLogoUpload} />
                 </div>
               </div>
               <div className="border p-4 rounded-md">
@@ -511,7 +609,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted-foreground mb-3">ربط النظام مع بوابات الدفع، خدمات الشحن، وغيرها.</p>
                 <Button variant="secondary" className="shadow-sm hover:shadow-md" onClick={() => toast({title: "قيد التطوير", description:"سيتم تفعيل هذه الميزة قريباً."})}>إعدادات التكامل</Button>
               </div>
-               <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => toast({title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح. (محاكاة)"})}>
+               <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={handleSaveCustomization}>
                 <Save className="me-2 h-4 w-4" /> حفظ إعدادات التخصيص
               </Button>
             </CardContent>
