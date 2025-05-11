@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import type { Role } from '@/types/saas'; // Assuming Role is defined here
 
 // Mock data
 const initialUsers = [
@@ -29,12 +30,6 @@ const initialUsers = [
   { id: "USR003", name: "يوسف حسن", email: "youssef.h@example.com", roleId: "ROLE003", status: "غير نشط", avatarUrl: "https://picsum.photos/100/100?random=12" },
 ];
 
-interface Role {
-  id: string;
-  name: string;
-  description: string;
-  permissions: string[];
-}
 
 const initialRoles: Role[] = [
   { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "sales.view", "sales.create", "sales.edit", "sales.delete", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "hr.view", "hr.create", "hr.edit", "hr.delete", "settings.view", "settings.edit"] },
@@ -44,20 +39,15 @@ const initialRoles: Role[] = [
 ];
 
 const modules = ["الحسابات", "المبيعات", "المشتريات", "المخزون", "الموارد البشرية", "التقارير", "الإعدادات"];
-const permissionsMap: { [key: string]: string[] } = {
-  "الحسابات": ["view", "create", "edit", "delete", "approve"],
-  "المبيعات": ["view", "create", "edit", "delete", "send_quote"],
-  "المشتريات": ["view", "create", "edit", "delete", "approve_po"],
-  "المخزون": ["view", "create", "edit", "delete", "adjust_stock"],
-  "الموارد البشرية": ["view", "create_employee", "edit_employee", "run_payroll"],
-  "التقارير": ["view_financial", "view_sales", "view_inventory", "view_hr"],
-  "الإعدادات": ["view", "edit_general", "manage_users", "manage_roles"],
+const permissionsMap: { [key: string]: {name: string, key: string}[] } = {
+  "الحسابات": [{name:"عرض", key:"view"}, {name:"إنشاء", key:"create"}, {name:"تعديل", key:"edit"}, {name:"حذف", key:"delete"}, {name:"موافقة", key:"approve"}],
+  "المبيعات": [{name:"عرض", key:"view"}, {name:"إنشاء", key:"create"}, {name:"تعديل", key:"edit"}, {name:"حذف", key:"delete"}, {name:"إرسال عرض سعر", key:"send_quote"}],
+  "المشتريات": [{name:"عرض", key:"view"}, {name:"إنشاء", key:"create"}, {name:"تعديل", key:"edit"}, {name:"حذف", key:"delete"}, {name:"موافقة على أمر شراء", key:"approve_po"}],
+  "المخزون": [{name:"عرض", key:"view"}, {name:"إنشاء", key:"create"}, {name:"تعديل", key:"edit"}, {name:"حذف", key:"delete"}, {name:"تسوية مخزون", key:"adjust_stock"}],
+  "الموارد البشرية": [{name:"عرض", key:"view"}, {name:"إضافة موظف", key:"create_employee"}, {name:"تعديل موظف", key:"edit_employee"}, {name:"تشغيل الرواتب", key:"run_payroll"}],
+  "التقارير": [{name:"عرض مالية", key:"view_financial"}, {name:"عرض مبيعات", key:"view_sales"}, {name:"عرض مخزون", key:"view_inventory"}, {name:"عرض موارد بشرية", key:"view_hr"}],
+  "الإعدادات": [{name:"عرض", key:"view"}, {name:"تعديل عامة", key:"edit_general"}, {name:"إدارة المستخدمين", key:"manage_users"}, {name:"إدارة الأدوار", key:"manage_roles"}],
 };
-
-const allPermissions = modules.flatMap(module => 
-  permissionsMap[module]?.map(permission => `${module.toLowerCase().replace(/\s+/g, '_')}.${permission}`) || []
-);
-
 
 const userSchema = z.object({
     id: z.string().optional(),
@@ -70,23 +60,24 @@ const userSchema = z.object({
 });
 type UserFormValues = z.infer<typeof userSchema>;
 
-const roleSchema = z.object({
+// For the role form (name and description)
+const roleFormSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1, "اسم الدور مطلوب"),
     description: z.string().min(1, "وصف الدور مطلوب"),
 });
-type RoleFormValues = z.infer<typeof roleSchema>;
+type RoleFormValues = z.infer<typeof roleFormSchema>;
 
 
 export default function SettingsPage() {
   const [users, setUsers] = useState(initialUsers);
-  const [roles, setRolesData] = useState<Role[]>(initialRoles); // Renamed to setRolesData
+  const [roles, setRolesData] = useState<Role[]>(initialRoles);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedRolePermissions, setSelectedRolePermissions] = useState<string[]>([]);
   const [showManageUserDialog, setShowManageUserDialog] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserFormValues | null>(null);
   const [showManageRoleDialog, setShowManageRoleDialog] = useState(false);
-  const [roleToEdit, setRoleToEdit] = useState<Role | null>(null);
+  const [roleToEdit, setRoleToEdit] = useState<Role | null>(null); // Use Role type here
   const { toast } = useToast();
 
   const userForm = useForm<UserFormValues>({
@@ -95,30 +86,31 @@ export default function SettingsPage() {
   });
 
   const roleForm = useForm<RoleFormValues>({
-    resolver: zodResolver(roleSchema),
+    resolver: zodResolver(roleFormSchema),
     defaultValues: { name: "", description: "" },
   });
 
   useEffect(() => {
-    if (userToEdit) userForm.reset(userToEdit);
-    else userForm.reset({ name: "", email: "", roleId: "", status: "نشط" });
+    if (showManageUserDialog) {
+      if (userToEdit) userForm.reset(userToEdit);
+      else userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password: "" });
+    }
   }, [userToEdit, userForm, showManageUserDialog]);
 
   useEffect(() => {
-    if (roleToEdit) {
-        roleForm.reset({ id: roleToEdit.id, name: roleToEdit.name, description: roleToEdit.description });
-        setSelectedRolePermissions(roleToEdit.permissions);
-        setSelectedRole(roleToEdit);
-    } else {
-        roleForm.reset({ name: "", description: "" });
-        setSelectedRolePermissions([]);
-        setSelectedRole(null);
+    if (showManageRoleDialog) {
+        if (roleToEdit) {
+            roleForm.reset({ id: roleToEdit.id, name: roleToEdit.name, description: roleToEdit.description });
+        } else {
+            roleForm.reset({ name: "", description: "" });
+        }
     }
-  }, [roleToEdit, roleForm, showManageRoleDialog]);
+  }, [roleToEdit, showManageRoleDialog, roleForm]);
+
 
   const handleUserSubmit = (values: UserFormValues) => {
     if (userToEdit) {
-      setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...values, id: userToEdit.id, avatarUrl: u.avatarUrl } : u));
+      setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...values, id: userToEdit.id!, avatarUrl: u.avatarUrl } : u));
       toast({ title: "تم التعديل", description: `تم تعديل بيانات المستخدم ${values.name}.` });
     } else {
       setUsers(prev => [...prev, { ...values, id: `USR${Date.now()}`, avatarUrl: "https://picsum.photos/100/100?random=" + Date.now() }]);
@@ -129,18 +121,19 @@ export default function SettingsPage() {
   };
 
   const handleRoleSubmit = (values: RoleFormValues) => {
-    const finalValues = { ...values, permissions: selectedRolePermissions };
     if (roleToEdit) {
-      setRolesData(prev => prev.map(role => role.id === roleToEdit.id ? { ...finalValues, id: roleToEdit.id! } : role));
+      setRolesData(prev => prev.map(role => role.id === roleToEdit.id ? { ...role, name: values.name, description: values.description } : role));
       toast({ title: "تم التعديل", description: `تم تعديل الدور ${values.name}.` });
+      if (selectedRole && selectedRole.id === roleToEdit.id) {
+        setSelectedRole(prevFullRole => prevFullRole ? { ...prevFullRole, name: values.name, description: values.description } : null);
+      }
     } else {
-      setRolesData(prev => [...prev, { ...finalValues, id: `ROLE${Date.now()}` }]);
+      const newRole: Role = { ...values, id: `ROLE${Date.now()}`, permissions: [] };
+      setRolesData(prev => [...prev, newRole]);
       toast({ title: "تمت الإضافة", description: `تم إضافة الدور ${values.name} بنجاح.` });
     }
     setShowManageRoleDialog(false);
     setRoleToEdit(null);
-    setSelectedRolePermissions([]);
-    setSelectedRole(null);
   };
 
   const handleSelectRoleForPermissions = (role: Role) => {
@@ -149,12 +142,18 @@ export default function SettingsPage() {
   };
 
   const handlePermissionChange = (permissionKey: string, checked: boolean | string) => {
-    if (checked) {
-      setSelectedRolePermissions(prev => [...prev, permissionKey]);
-    } else {
-      setSelectedRolePermissions(prev => prev.filter(p => p !== permissionKey));
-    }
+    // Ensure checked is boolean
+    const isChecked = typeof checked === 'string' ? checked === 'true' : checked;
+
+    setSelectedRolePermissions(prev => {
+      if (isChecked) {
+        return [...new Set([...prev, permissionKey])]; // Add permission, ensure uniqueness
+      } else {
+        return prev.filter(p => p !== permissionKey); // Remove permission
+      }
+    });
   };
+  
 
   const handleSaveRolePermissions = () => {
     if (selectedRole) {
@@ -258,7 +257,7 @@ export default function SettingsPage() {
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                     <Dialog open={showManageUserDialog} onOpenChange={(isOpen) => {setShowManageUserDialog(isOpen); if(!isOpen) setUserToEdit(null);}}>
                         <DialogTrigger asChild>
-                            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setUserToEdit(null); userForm.reset(); setShowManageUserDialog(true);}}>
+                            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setUserToEdit(null); userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password:"" }); setShowManageUserDialog(true);}}>
                                 <PlusCircle className="me-2 h-4 w-4" /> إضافة مستخدم جديد
                             </Button>
                         </DialogTrigger>
@@ -381,7 +380,6 @@ export default function SettingsPage() {
                                         </div>
                                         <div className="flex gap-1">
                                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); setRoleToEdit(role); setShowManageRoleDialog(true);}}><Edit className="h-4 w-4"/></Button>
-                                            {/* Delete button could be added here with confirmation */}
                                         </div>
                                     </div>
                                 </Card>
@@ -396,8 +394,8 @@ export default function SettingsPage() {
                                     <div key={moduleName}>
                                         <h4 className="font-medium mb-1.5">{moduleName}</h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2">
-                                            {permissionsMap[moduleName]?.map(permission => {
-                                                const permissionKey = `${moduleName.toLowerCase().replace(/\s+/g, '_')}.${permission}`;
+                                            {permissionsMap[moduleName]?.map(permissionDetail => {
+                                                const permissionKey = `${moduleName.toLowerCase().replace(/\s+/g, '_')}.${permissionDetail.key}`;
                                                 return (
                                                 <div key={permissionKey} className="flex items-center space-x-2 rtl:space-x-reverse">
                                                     <Checkbox
@@ -405,7 +403,7 @@ export default function SettingsPage() {
                                                         checked={selectedRolePermissions.includes(permissionKey)}
                                                         onCheckedChange={(checked) => handlePermissionChange(permissionKey, checked)}
                                                     />
-                                                    <Label htmlFor={permissionKey} className="text-sm font-normal">{permission}</Label>
+                                                    <Label htmlFor={permissionKey} className="text-sm font-normal">{permissionDetail.name}</Label>
                                                 </div>
                                             )})}
                                         </div>

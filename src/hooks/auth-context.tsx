@@ -1,12 +1,13 @@
 
 // src/hooks/auth-context.tsx
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import type { Role } from '@/types/saas'; // Import Role type
 
 // Define a more specific user type if possible
 interface User {
     id: string;
     name: string;
-    role: string; // This would ideally be a Role ID linked to your roles definition
+    roleId: string; // Changed from role to roleId
     // Add other user properties as needed
 }
 
@@ -15,7 +16,7 @@ interface AuthContextProps {
     isAuthenticated: boolean;
     permissions: string[];
     hasPermission: (permissionKey: string) => boolean;
-    login: (userData: User, userPermissions: string[]) => void; // Accept user data and permissions
+    login: (userData: User, userPermissions: string[]) => void;
     logout: () => void;
 }
 
@@ -25,12 +26,12 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
-// Mock roles and permissions for demonstration. In a real app, these would come from your backend.
-const mockRolesData = {
-    admin: ["accounting.view", "accounting.create", "sales.view", "sales.create", "inventory.view", "hr.view", "settings.view"],
-    accountant: ["accounting.view", "accounting.create"],
-    sales_rep: ["sales.view", "sales.create"],
-};
+// Mock roles data (should ideally come from settings or API)
+const mockRoles: Role[] = [
+    { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة", permissions: ["accounting.view", "sales.create", "inventory.edit", "hr.delete", "settings.manage_users"] },
+    { id: "ROLE002", name: "محاسب", description: "صلاحيات محاسبة", permissions: ["accounting.view", "accounting.create"] },
+    // Add other roles as needed
+];
 
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
@@ -39,31 +40,35 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        // In a real app, you'd check for a stored token or session here
-        // For now, let's simulate a logged-in user for testing
         const storedUser = localStorage.getItem("erpUser");
-        const storedPermissions = localStorage.getItem("erpPermissions");
-        if (storedUser && storedPermissions) {
+        if (storedUser) {
             try {
-                const parsedUser = JSON.parse(storedUser);
-                const parsedPermissions = JSON.parse(storedPermissions);
+                const parsedUser: User = JSON.parse(storedUser);
+                const userRole = mockRoles.find(r => r.id === parsedUser.roleId);
+                const userPermissions = userRole ? userRole.permissions : [];
+                
                 setUser(parsedUser);
-                setPermissions(parsedPermissions);
+                setPermissions(userPermissions);
                 setIsAuthenticated(true);
             } catch (error) {
                 console.error("Error parsing stored auth data:", error);
                 localStorage.removeItem("erpUser");
-                localStorage.removeItem("erpPermissions");
             }
         }
     }, []);
 
-    const login = (userData: User, userPermissions: string[]) => {
+    const login = (userData: User, userPermissionsFromLogin?: string[]) => { // userPermissionsFromLogin is optional
+        const userRole = mockRoles.find(r => r.id === userData.roleId);
+        const derivedPermissions = userRole ? userRole.permissions : [];
+        
+        // Prefer permissions passed directly during login, otherwise use derived permissions
+        const finalPermissions = userPermissionsFromLogin || derivedPermissions;
+
         setUser(userData);
-        setPermissions(userPermissions);
+        setPermissions(finalPermissions);
         setIsAuthenticated(true);
         localStorage.setItem("erpUser", JSON.stringify(userData));
-        localStorage.setItem("erpPermissions", JSON.stringify(userPermissions));
+        // localStorage.setItem("erpPermissions", JSON.stringify(finalPermissions)); // Not needed if deriving from roleId
     };
 
     const logout = () => {
@@ -71,11 +76,11 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setPermissions([]);
         setIsAuthenticated(false);
         localStorage.removeItem("erpUser");
-        localStorage.removeItem("erpPermissions");
-        // Add logic to redirect to login page
+        // localStorage.removeItem("erpPermissions");
     };
 
     const hasPermission = (permissionKey: string): boolean => {
+        // In a real app, permissions might be an array of strings like 'module.action'
         return permissions.includes(permissionKey);
     };
 
