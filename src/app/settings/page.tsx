@@ -18,7 +18,7 @@ import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCi
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Role } from '@/types/saas';
@@ -307,7 +307,7 @@ export default function SettingsPage() {
                 <Input id="taxRate" type="number" defaultValue="15" className="bg-background" />
               </div>
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                <Switch id="autoBackup" defaultChecked />
+                <Switch id="autoBackup" defaultChecked className="align-middle" />
                 <Label htmlFor="autoBackup">تمكين النسخ الاحتياطي التلقائي</Label>
               </div>
               <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => toast({title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح."})}>
@@ -457,7 +457,7 @@ export default function SettingsPage() {
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent dir="rtl">
-                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
+                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescription></AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>تراجع</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => handleDeleteRole(role.id)}>تأكيد الحذف</AlertDialogAction>
@@ -517,7 +517,6 @@ export default function SettingsPage() {
               <CardDescription>تعديل مظهر النظام، إضافة حقول مخصصة، وإدارة التكامل مع خدمات أخرى.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Color customization UI is removed */}
                <div className="space-y-2">
                 <Label htmlFor="logoUpload">شعار الشركة</Label>
                 <div className="flex items-center gap-4">
