@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -10,12 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { DollarSign, ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud, UserCheck } from "lucide-react";
+import { ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud, UserCheck, CreditCardIcon } from "lucide-react"; // Added CreditCardIcon
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; 
-import type { InvoiceItem as SalesInvoiceItem, Invoice as SalesInvoice } from '@/app/sales/page'; // Import types from sales page
-import type { JournalEntry as GLJournalEntry } from '@/app/general-ledger/page'; // Import types from GL page
+import type { InvoiceItem as SalesInvoiceItem, Invoice as SalesInvoice } from '@/app/sales/page'; 
+import type { JournalEntry as GLJournalEntry } from '@/app/general-ledger/page'; 
 
 // Mock data
 const categories = ["الكل", "مشروبات", "مأكولات خفيفة", "حلويات", "مخبوزات", "منتجات ورقية"];
@@ -67,7 +68,7 @@ export default function POSPage() {
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [totalAmount, setTotalAmount] = useState(0);
   const [discount, setDiscount] = useState(0);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(''); 
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(CASH_CUSTOMER_ID); 
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const { toast } = useToast();
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>(initialRecentTransactions);
@@ -107,7 +108,7 @@ export default function POSPage() {
   const clearCart = () => {
     setCart([]);
     setDiscount(0);
-    setSelectedCustomerId('');
+    setSelectedCustomerId(CASH_CUSTOMER_ID);
     setPaymentMethod(null);
   };
   
@@ -134,7 +135,7 @@ export default function POSPage() {
         }
         
         const deferredInvoice: SalesInvoice = {
-            id: `INV-POS-${Date.now().toString().slice(-5)}`,
+            id: `INV-POS-${transactionId}`,
             customerId: selectedCustomerId,
             date: new Date(),
             dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days later
@@ -153,6 +154,10 @@ export default function POSPage() {
         };
         console.log("محاكاة إنشاء فاتورة آجلة (سيتم إضافتها لقسم فواتير المبيعات):", deferredInvoice);
         
+        if (typeof window !== 'undefined' && (window as any).addExternalSalesInvoice) {
+            (window as any).addExternalSalesInvoice(deferredInvoice);
+        }
+
         toast({
             title: "تم تسجيل البيع الآجل بنجاح!",
             description: `تم إنشاء فاتورة آجلة رقم ${deferredInvoice.id} للعميل ${customerNameForInvoice} بمبلغ ${totalAmount.toFixed(2)} SAR.`,
@@ -180,6 +185,10 @@ export default function POSPage() {
             source: "POS",
         };
         console.log("محاكاة إنشاء فاتورة مسددة (سيتم إضافتها لقسم فواتير المبيعات):", settledInvoice);
+        
+        if (typeof window !== 'undefined' && (window as any).addExternalSalesInvoice) {
+            (window as any).addExternalSalesInvoice(settledInvoice);
+        }
 
         toast({
             title: "تمت عملية الدفع بنجاح!",
@@ -230,7 +239,6 @@ export default function POSPage() {
 
     console.log("ترحيل إجمالي المبيعات المسددة للحسابات العامة:", journalEntryData);
     
-    // Simulate adding to GL page (in a real app, this would be an API call or shared state update)
     if (typeof window !== 'undefined' && (window as any).addExternalJournalEntry) {
         (window as any).addExternalJournalEntry(journalEntryData);
     }
@@ -248,7 +256,7 @@ export default function POSPage() {
       <Card className="shadow-lg mb-6">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
-            <DollarSign className="me-2 h-8 w-8 text-primary" />
+            <CreditCardIcon className="me-2 h-8 w-8 text-primary" /> 
             نقطة البيع (POS)
           </CardTitle>
           <CardDescription>إدارة عمليات البيع بالتجزئة، طباعة الإيصالات، وتتبع المبيعات.</CardDescription>
@@ -387,7 +395,7 @@ export default function POSPage() {
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button className="w-full shadow-md hover:shadow-lg transition-shadow text-base py-3 h-auto" disabled={cart.length === 0}>
-                        <DollarSign className="me-2 h-5 w-5" /> الدفع
+                        <CreditCardIcon className="me-2 h-5 w-5" /> الدفع
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md" dir="rtl">
@@ -489,4 +497,3 @@ export default function POSPage() {
     </div>
   );
 }
-

@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Users, Package, TrendingUp, ArrowUpRight, Activity, CreditCard, Percent, FilePlus, FileCheck, FileClock } from "lucide-react";
+import { DollarSign, Users, Package, TrendingUp, ArrowUpRight, Activity, CreditCardIcon, Percent, FilePlus, FileCheck, FileClock } from "lucide-react"; // Changed CreditCard to CreditCardIcon
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, ResponsiveContainer } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
@@ -74,7 +74,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">المبيعات</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CreditCardIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+12,234</div>
@@ -252,4 +252,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
