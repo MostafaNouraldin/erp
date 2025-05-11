@@ -66,7 +66,7 @@ export function DatePickerWithPresets({ className, onDateChange, selectedDate, m
           <Button
             variant={"outline"}
             className={cn(
-              "w-full sm:w-[280px] justify-start text-left font-normal shadow-sm hover:shadow-md transition-shadow",
+              "w-full justify-start text-left font-normal shadow-sm hover:shadow-md transition-shadow", // Removed sm:w-[280px]
               !date && "text-muted-foreground"
             )}
           >
