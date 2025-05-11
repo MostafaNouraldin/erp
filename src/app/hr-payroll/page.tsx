@@ -861,7 +861,7 @@ export default function HRPayrollPage() {
                             <p><strong>الجنسية:</strong> {selectedEmployeeForView.nationality || "-"}</p>
                             <p><strong>رقم الهوية/الإقامة:</strong> {selectedEmployeeForView.idNumber || "-"}</p>
                             <p><strong>موقع العمل:</strong> {selectedEmployeeForView.workLocation || "-"}</p>
-                            <p><strong>الحالة:</strong> <Badge variant={selectedEmployeeForView.status === "نشط" ? "default" : "outline"}>{selectedEmployeeForView.status}</Badge></p>
+                            <div className="flex items-center gap-1"><strong>الحالة:</strong> <Badge variant={selectedEmployeeForView.status === "نشط" ? "default" : "outline"}>{selectedEmployeeForView.status}</Badge></div>
                           </CardContent>
                         </Card>
 
@@ -941,7 +941,7 @@ export default function HRPayrollPage() {
                         ) : <p className="text-xs text-muted-foreground">لا توجد خصومات.</p>}
                         
                         <p className="font-bold text-primary mt-3 border-t pt-2"><strong>صافي الراتب:</strong> {(selectedPayrollForView.netSalary || 0).toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</p>
-                        <p><strong>الحالة:</strong> <Badge variant={selectedPayrollForView.status === "مدفوع" ? "default" : "outline"}>{selectedPayrollForView.status}</Badge></p>
+                        <div className="flex items-center gap-1"><strong>الحالة:</strong> <Badge variant={selectedPayrollForView.status === "مدفوع" ? "default" : "outline"}>{selectedPayrollForView.status}</Badge></div>
                         <p><strong>ملاحظات:</strong> {selectedPayrollForView.notes || "لا يوجد"}</p>
                     </div>
                 )}
@@ -963,7 +963,7 @@ export default function HRPayrollPage() {
                         <p><strong>تاريخ الانتهاء:</strong> {selectedLeaveForView.endDate?.toLocaleDateString('ar-SA', {calendar:'gregory'})}</p>
                         <p><strong>عدد الأيام:</strong> {selectedLeaveForView.days}</p>
                         <p><strong>السبب:</strong> {selectedLeaveForView.reason || "لا يوجد"}</p>
-                        <p><strong>الحالة:</strong> <Badge variant={selectedLeaveForView.status === "موافق عليها" ? "default" : selectedLeaveForView.status === "مرفوضة" ? "destructive" : "secondary"}>{selectedLeaveForView.status}</Badge></p>
+                        <div className="flex items-center gap-1"><strong>الحالة:</strong> <Badge variant={selectedLeaveForView.status === "موافق عليها" ? "default" : selectedLeaveForView.status === "مرفوضة" ? "destructive" : "secondary"}>{selectedLeaveForView.status}</Badge></div>
                     </div>
                 )}
                 <DialogFooter><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
