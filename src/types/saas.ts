@@ -59,3 +59,10 @@ export interface SubscriptionInvoice {
   paymentMethod?: string;
   transactionId?: string;
 }
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[]; // Array of permission keys like "module.action" e.g. "accounting.view"
+}

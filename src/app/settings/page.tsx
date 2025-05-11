@@ -18,7 +18,7 @@ import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCi
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Role } from '@/types/saas';
@@ -37,7 +37,7 @@ const initialRoles: Role[] = [
   { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles"] },
   { id: "ROLE002", name: "محاسب", description: "صلاحيات على وحدات الحسابات والمالية.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "reports.view_financial"] },
   { id: "ROLE003", name: "موظف مبيعات", description: "صلاحيات على وحدة المبيعات وعروض الأسعار.", permissions: ["sales.view", "sales.create", "reports.view_sales"] },
-  { id: "ROLE004", name: "مدير مخزون", description: "صلاحيات على وحدة المخزون والمستودعات.", permissions: ["inventory.view", "inventory.create", "inventory.edit", "inventory.adjust_stock", "reports.view_inventory"] },
+  { id: "ROLE004", name: "مدير مخزون", description: "صلاحيات على وحدة المخزون والمستودعات.", permissions: ["inventory.view", "inventory.create", "inventory.edit", "reports.view_inventory"] },
 ];
 
 const modules = ["الحسابات", "المبيعات", "المشتريات", "المخزون", "الموارد البشرية", "التقارير", "الإعدادات"];
@@ -69,8 +69,8 @@ const roleFormSchema = z.object({
 });
 type RoleFormValues = z.infer<typeof roleFormSchema>;
 
-
 const hexToHsl = (hex: string): string | null => {
+  if (typeof document === 'undefined') return null; // Guard for server-side rendering
   if (!hex.startsWith("#") || (hex.length !== 4 && hex.length !== 7)) {
     return null; 
   }
@@ -107,7 +107,7 @@ const hexToHsl = (hex: string): string | null => {
 
 export default function SettingsPage() {
   const [users, setUsers] = useState(initialUsers);
-  const [roles, setRolesData] = useState<Role[]>(initialRoles);
+  const [roles, setRolesData] = useState(initialRoles);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedRolePermissions, setSelectedRolePermissions] = useState<string[]>([]);
   const [showManageUserDialog, setShowManageUserDialog] = useState(false);
@@ -120,31 +120,35 @@ export default function SettingsPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>("https://picsum.photos/200/200?random=1");
 
   useEffect(() => {
-    const savedColor = localStorage.getItem("themePrimaryColor");
-    if (savedColor) {
-      setThemeColor(savedColor);
-    }
-    const savedLogo = localStorage.getItem("companyLogo");
-    if (savedLogo) {
-        setLogoPreview(savedLogo);
+    if (typeof window !== 'undefined') { // Ensure localStorage is accessed only on the client
+        const savedColor = localStorage.getItem("themePrimaryColor");
+        if (savedColor) {
+        setThemeColor(savedColor);
+        }
+        const savedLogo = localStorage.getItem("companyLogo");
+        if (savedLogo) {
+            setLogoPreview(savedLogo);
+        }
     }
   }, []);
 
   useEffect(() => {
-    const hslColor = hexToHsl(themeColor);
-    if (hslColor && typeof document !== 'undefined') {
-      document.documentElement.style.setProperty('--primary', hslColor);
-      document.documentElement.style.setProperty('--accent', hslColor); 
-      document.documentElement.style.setProperty('--ring', hslColor);   
-      
-      const [h, s, l] = hslColor.split(" ").map(val => parseInt(val));
-      if(!isNaN(h) && !isNaN(s) && !isNaN(l)){
-        document.documentElement.style.setProperty('--chart-1', `${h} ${s}% ${Math.min(100, l + 10)}%`);
-        document.documentElement.style.setProperty('--chart-2', `${h} ${Math.max(0, s - 15)}% ${l}%`);
-        document.documentElement.style.setProperty('--chart-3', `${h} ${s}% ${Math.max(0, l - 10)}%`);
-        document.documentElement.style.setProperty('--chart-4', `${h} ${Math.max(0, s - 25)}% ${Math.min(100, l + 5)}%`);
-        document.documentElement.style.setProperty('--chart-5', `${h} ${s}% ${Math.max(0, l - 20)}%`);
-      }
+    if (typeof document !== 'undefined') { // Ensure document is accessed only on the client
+        const hslColor = hexToHsl(themeColor);
+        if (hslColor) {
+        document.documentElement.style.setProperty('--primary', hslColor);
+        document.documentElement.style.setProperty('--accent', hslColor); 
+        document.documentElement.style.setProperty('--ring', hslColor);   
+        
+        const [h, s, l] = hslColor.split(" ").map(val => parseInt(val));
+        if(!isNaN(h) && !isNaN(s) && !isNaN(l)){
+            document.documentElement.style.setProperty('--chart-1', `${h} ${s}% ${Math.min(100, l + 10)}%`);
+            document.documentElement.style.setProperty('--chart-2', `${h} ${Math.max(0, s - 15)}% ${l}%`);
+            document.documentElement.style.setProperty('--chart-3', `${h} ${s}% ${Math.max(0, l - 10)}%`);
+            document.documentElement.style.setProperty('--chart-4', `${h} ${Math.max(0, s - 25)}% ${Math.min(100, l + 5)}%`);
+            document.documentElement.style.setProperty('--chart-5', `${h} ${s}% ${Math.max(0, l - 20)}%`);
+        }
+        }
     }
   }, [themeColor]);
 
@@ -168,9 +172,11 @@ export default function SettingsPage() {
   };
 
   const handleSaveCustomization = () => {
-    localStorage.setItem("themePrimaryColor", themeColor);
-    if(logoPreview) localStorage.setItem("companyLogo", logoPreview);
-    toast({ title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح." });
+    if (typeof window !== 'undefined') {
+        localStorage.setItem("themePrimaryColor", themeColor);
+        if(logoPreview) localStorage.setItem("companyLogo", logoPreview);
+        toast({ title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح." });
+    }
   };
 
   const userForm = useForm<UserFormValues>({
@@ -240,10 +246,10 @@ export default function SettingsPage() {
 
   const handleRoleSubmit = (values: RoleFormValues) => {
     if (roleToEdit) {
-      const updatedRole = { ...roleToEdit, name: values.name, description: values.description, permissions: selectedRolePermissions };
-      setRolesData(prev => prev.map(role => role.id === roleToEdit.id ? updatedRole : role));
+      const updatedRole: Role = { ...(roleToEdit as Role), name: values.name, description: values.description, permissions: selectedRolePermissions };
+      setRolesData(prev => prev.map(role => role.id === roleToEdit!.id ? updatedRole : role));
       toast({ title: "تم التعديل", description: `تم تعديل الدور ${values.name}.` });
-      if (selectedRole && selectedRole.id === roleToEdit.id) {
+      if (selectedRole && selectedRole.id === roleToEdit!.id) {
         setSelectedRole(updatedRole);
       }
     } else {
@@ -411,6 +417,7 @@ export default function SettingsPage() {
                                             <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl>
                                             <SelectContent><SelectItem value="نشط">نشط</SelectItem><SelectItem value="غير نشط">غير نشط</SelectItem></SelectContent>
                                         </Select><FormMessage /></FormItem> )}/>
+                                     <FormField control={userForm.control} name="avatarUrl" render={({ field }) => (<FormItem><FormLabel> رابط الصورة</FormLabel><FormControl><Input placeholder="https://example.com/avatar.png" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem> )}/>
                                     <DialogFooter>
                                         <Button type="submit">{userToEdit ? "حفظ التعديلات" : "إضافة المستخدم"}</Button>
                                         <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
@@ -452,14 +459,14 @@ export default function SettingsPage() {
                           <Badge variant={user.status === "نشط" ? "default" : "outline"}>{user.status}</Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المستخدم" onClick={() => {setUserToEdit(user); setShowManageUserDialog(true);}}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المستخدم" onClick={() => {setUserToEdit(user as UserFormValues); setShowManageUserDialog(true);}}>
                             <Edit className="h-4 w-4" />
                           </Button>
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إعادة تعيين كلمة المرور" onClick={() => handleResetPassword(user.id!)}>
                             <KeyRound className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" title={user.status === "نشط" ? "تعطيل الحساب" : "تفعيل الحساب"} onClick={() => handleToggleUserStatus(user.id!)}>
-                            {user.status === "نشط" ? <ToggleRight className="h-5 w-5 text-destructive" /> : <ToggleLeft className="h-5 w-5 text-green-600" />}
+                            {user.status === "نشط" ? <ToggleLeft className="h-5 w-5 text-destructive" /> : <ToggleRight className="h-5 w-5 text-green-600" />}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -519,9 +526,9 @@ export default function SettingsPage() {
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent dir="rtl">
-                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
+                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescription></AlertDialogHeader>
                                                     <AlertDialogFooter>
-                                                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                        <AlertDialogCancel>تراجع</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => handleDeleteRole(role.id)}>تأكيد الحذف</AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
@@ -543,7 +550,7 @@ export default function SettingsPage() {
                                         <h4 className="font-medium mb-1.5">{moduleName}</h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2">
                                             {permissionsMap[moduleName]?.map(permissionDetail => {
-                                                const permissionKey = `${moduleName.toLowerCase().replace(/ /g, '_').replace(/وال/g,'_')}.${permissionDetail.key}`;
+                                                const permissionKey = `${moduleName.toLowerCase().replace(/\s+/g, '_').replace(/وال/g,'_')}.${permissionDetail.key}`;
                                                 return (
                                                 <div key={permissionKey} className="flex items-center space-x-2 rtl:space-x-reverse">
                                                     <Checkbox

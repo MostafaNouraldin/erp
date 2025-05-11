@@ -16,7 +16,7 @@ interface AuthContextProps {
     isAuthenticated: boolean;
     permissions: string[];
     hasPermission: (permissionKey: string) => boolean;
-    login: (userData: User, userPermissions: string[]) => void;
+    login: (userData: User) => void; // Removed userPermissions from login signature
     logout: () => void;
 }
 
@@ -27,10 +27,12 @@ interface AuthProviderProps {
 }
 
 // Mock roles data (should ideally come from settings or API)
+// This should be consistent with the roles defined in settings/page.tsx
 const mockRoles: Role[] = [
-    { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة", permissions: ["accounting.view", "sales.create", "inventory.edit", "hr.delete", "settings.manage_users"] },
-    { id: "ROLE002", name: "محاسب", description: "صلاحيات محاسبة", permissions: ["accounting.view", "accounting.create"] },
-    // Add other roles as needed
+  { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles"] },
+  { id: "ROLE002", name: "محاسب", description: "صلاحيات على وحدات الحسابات والمالية.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "reports.view_financial"] },
+  { id: "ROLE003", name: "موظف مبيعات", description: "صلاحيات على وحدة المبيعات وعروض الأسعار.", permissions: ["sales.view", "sales.create", "reports.view_sales"] },
+  { id: "ROLE004", name: "مدير مخزون", description: "صلاحيات على وحدة المخزون والمستودعات.", permissions: ["inventory.view", "inventory.create", "inventory.edit", "reports.view_inventory"] },
 ];
 
 
@@ -40,47 +42,47 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem("erpUser");
-        if (storedUser) {
-            try {
-                const parsedUser: User = JSON.parse(storedUser);
-                const userRole = mockRoles.find(r => r.id === parsedUser.roleId);
-                const userPermissions = userRole ? userRole.permissions : [];
-                
-                setUser(parsedUser);
-                setPermissions(userPermissions);
-                setIsAuthenticated(true);
-            } catch (error) {
-                console.error("Error parsing stored auth data:", error);
-                localStorage.removeItem("erpUser");
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem("erpUser");
+            if (storedUser) {
+                try {
+                    const parsedUser: User = JSON.parse(storedUser);
+                    const userRole = mockRoles.find(r => r.id === parsedUser.roleId);
+                    const userPermissions = userRole ? userRole.permissions : [];
+                    
+                    setUser(parsedUser);
+                    setPermissions(userPermissions);
+                    setIsAuthenticated(true);
+                } catch (error) {
+                    console.error("Error parsing stored auth data:", error);
+                    localStorage.removeItem("erpUser");
+                }
             }
         }
     }, []);
 
-    const login = (userData: User, userPermissionsFromLogin?: string[]) => { // userPermissionsFromLogin is optional
+    const login = (userData: User) => {
         const userRole = mockRoles.find(r => r.id === userData.roleId);
         const derivedPermissions = userRole ? userRole.permissions : [];
         
-        // Prefer permissions passed directly during login, otherwise use derived permissions
-        const finalPermissions = userPermissionsFromLogin || derivedPermissions;
-
         setUser(userData);
-        setPermissions(finalPermissions);
+        setPermissions(derivedPermissions);
         setIsAuthenticated(true);
-        localStorage.setItem("erpUser", JSON.stringify(userData));
-        // localStorage.setItem("erpPermissions", JSON.stringify(finalPermissions)); // Not needed if deriving from roleId
+        if (typeof window !== 'undefined') {
+            localStorage.setItem("erpUser", JSON.stringify(userData));
+        }
     };
 
     const logout = () => {
         setUser(null);
         setPermissions([]);
         setIsAuthenticated(false);
-        localStorage.removeItem("erpUser");
-        // localStorage.removeItem("erpPermissions");
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem("erpUser");
+        }
     };
 
     const hasPermission = (permissionKey: string): boolean => {
-        // In a real app, permissions might be an array of strings like 'module.action'
         return permissions.includes(permissionKey);
     };
 
