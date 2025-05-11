@@ -153,7 +153,7 @@ export default function ProductionPage() {
         <h1 className="text-2xl md:text-3xl font-bold">الإنتاج والتصنيع</h1>
         <Dialog open={showManageWorkOrderDialog} onOpenChange={(isOpen) => { setShowManageWorkOrderDialog(isOpen); if(!isOpen) setWorkOrderToEdit(null);}}>
             <DialogTrigger asChild>
-                <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setWorkOrderToEdit(null); workOrderForm.reset(); setShowManageWorkOrderDialog(true); }}>
+                <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setWorkOrderToEdit(null); workOrderForm.reset({ productId: '', quantity: 1, startDate: new Date(), endDate: new Date(), status: "مجدول", progress: 0, notes: '' }); setShowManageWorkOrderDialog(true); }}>
                   <PlusCircle className="me-2 h-4 w-4" /> إنشاء أمر عمل جديد
                 </Button>
             </DialogTrigger>
@@ -180,7 +180,7 @@ export default function ProductionPage() {
                                     <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
                         </div>
                          <FormField control={workOrderForm.control} name="notes" render={({ field }) => (
-                            <FormItem><FormLabel>ملاحظات (اختياري)</FormLabel><FormControl><Textarea placeholder="أية ملاحظات إضافية..." {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormItem><FormLabel>ملاحظات (اختياري)</FormLabel><FormControl><Textarea placeholder="أية ملاحظات إضافية..." {...field} className="bg-background text-right" /></FormControl><FormMessage /></FormItem> )} />
                          <FormField control={workOrderForm.control} name="status" render={({ field }) => (
                             <FormItem><FormLabel>الحالة</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
@@ -436,7 +436,7 @@ export default function ProductionPage() {
               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                 <Dialog open={showManageQualityCheckDialog} onOpenChange={(isOpen) => { setShowManageQualityCheckDialog(isOpen); if(!isOpen) setQualityCheckToEdit(null);}}>
                     <DialogTrigger asChild>
-                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setQualityCheckToEdit(null); qualityCheckForm.reset(); setShowManageQualityCheckDialog(true);}}>
+                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setQualityCheckToEdit(null); qualityCheckForm.reset({ workOrderId: '', checkPoint: '', result: undefined, date: new Date(), inspectorId: '', notes: '' }); setShowManageQualityCheckDialog(true);}}>
                             <PlusCircle className="me-2 h-4 w-4" /> تسجيل فحص جودة جديد
                         </Button>
                     </DialogTrigger>
@@ -474,7 +474,7 @@ export default function ProductionPage() {
                                             <SelectContent>{mockUsers.map(user => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}</SelectContent>
                                         </Select><FormMessage /></FormItem> )} />
                                  <FormField control={qualityCheckForm.control} name="notes" render={({ field }) => (
-                                    <FormItem><FormLabel>ملاحظات (اختياري)</FormLabel><FormControl><Textarea placeholder="أية ملاحظات حول الفحص..." {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                                    <FormItem><FormLabel>ملاحظات (اختياري)</FormLabel><FormControl><Textarea placeholder="أية ملاحظات حول الفحص..." {...field} className="bg-background text-right" /></FormControl><FormMessage /></FormItem> )} />
                                 <DialogFooter>
                                     <Button type="submit">{qualityCheckToEdit ? "حفظ التعديلات" : "حفظ الفحص"}</Button>
                                     <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
