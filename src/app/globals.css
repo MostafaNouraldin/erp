@@ -15,15 +15,15 @@
     --default-primary-foreground-hsl: 0 0% 100%; /* White */
     --default-secondary-hsl: 0 0% 88%; /* Light gray #E0E0E0 */
     --default-secondary-foreground-hsl: 0 0% 25%;
-    --default-muted-hsl: 60 40% 85%;
+    --default-muted-hsl: 60 40% 85%; /* Tan / Lighter Beige Variant */
     --default-muted-foreground-hsl: 0 0% 45%;
-    --default-accent-hsl: 180 100% 25%;
+    --default-accent-hsl: 180 100% 25%; /* Teal, same as primary */
     --default-accent-foreground-hsl: 0 0% 100%;
-    --default-destructive-hsl: 0 84.2% 60.2%;
+    --default-destructive-hsl: 0 84.2% 60.2%; /* Red */
     --default-destructive-foreground-hsl: 0 0% 98%;
     --default-border-hsl: 0 0% 80%;
     --default-input-hsl: 0 0% 85%;
-    --default-ring-hsl: 180 100% 25%;
+    --default-ring-hsl: 180 100% 25%; /* Teal */
 
     --default-chart-1-hsl: 180 100% 30%;
     --default-chart-2-hsl: 180 80% 40%;
@@ -31,16 +31,18 @@
     --default-chart-4-hsl: 180 40% 60%;
     --default-chart-5-hsl: 180 20% 70%;
 
-    --default-sidebar-background-hsl: 0 0% 96%;
-    --default-sidebar-foreground-hsl: 0 0% 15%;
-    --default-sidebar-primary-hsl: var(--primary-hsl, var(--default-primary-hsl)); /* Derives from main primary */
-    --default-sidebar-primary-foreground-hsl: var(--primary-foreground-hsl, var(--default-primary-foreground-hsl));
+    --default-sidebar-background-hsl: 0 0% 96%; /* Off-white */
+    --default-sidebar-foreground-hsl: 0 0% 15%; /* Dark gray */
+    /* Sidebar primary and ring can derive from main theme primary/ring if not set explicitly */
+    --default-sidebar-primary-hsl: var(--default-primary-hsl);
+    --default-sidebar-primary-foreground-hsl: var(--default-primary-foreground-hsl);
     --default-sidebar-accent-hsl: 0 0% 88%;
     --default-sidebar-accent-foreground-hsl: 0 0% 15%;
     --default-sidebar-border-hsl: 0 0% 80%;
-    --default-sidebar-ring-hsl: var(--ring-hsl, var(--default-ring-hsl)); /* Derives from main ring */
+    --default-sidebar-ring-hsl: var(--default-ring-hsl);
 
-    /* Actual color variables using custom or default HSL */
+
+    /* Actual color variables using custom HSL (set by JS) or default HSL */
     --background: hsl(var(--custom-background-hsl, var(--default-background-hsl)));
     --foreground: hsl(var(--custom-foreground-hsl, var(--default-foreground-hsl)));
     --card: hsl(var(--custom-card-hsl, var(--default-card-hsl)));
@@ -72,12 +74,12 @@
     /* Sidebar specific theme using custom or default HSL */
     --sidebar-background: hsl(var(--custom-sidebar-background-hsl, var(--default-sidebar-background-hsl)));
     --sidebar-foreground: hsl(var(--custom-sidebar-foreground-hsl, var(--default-sidebar-foreground-hsl)));
-    --sidebar-primary: hsl(var(--custom-sidebar-primary-hsl, var(--primary-hsl, var(--default-primary-hsl)) ));
-    --sidebar-primary-foreground: hsl(var(--custom-sidebar-primary-foreground-hsl, var(--primary-foreground-hsl, var(--default-primary-foreground-hsl)) ));
+    --sidebar-primary: hsl(var(--custom-sidebar-primary-hsl, var(--sidebar-background, var(--default-sidebar-primary-hsl)) )); /* Derives from custom primary or default sidebar primary */
+    --sidebar-primary-foreground: hsl(var(--custom-sidebar-primary-foreground-hsl, var(--sidebar-foreground, var(--default-sidebar-primary-foreground-hsl)) ));
     --sidebar-accent: hsl(var(--custom-sidebar-accent-hsl, var(--default-sidebar-accent-hsl)));
     --sidebar-accent-foreground: hsl(var(--custom-sidebar-accent-foreground-hsl, var(--default-sidebar-accent-foreground-hsl)));
     --sidebar-border: hsl(var(--custom-sidebar-border-hsl, var(--default-sidebar-border-hsl)));
-    --sidebar-ring: hsl(var(--custom-sidebar-ring-hsl, var(--ring-hsl, var(--default-ring-hsl)) ));
+    --sidebar-ring: hsl(var(--custom-sidebar-ring-hsl, var(--sidebar-ring, var(--default-sidebar-ring-hsl)) ));
   }
 
   .dark {
@@ -110,14 +112,14 @@
 
     --default-sidebar-background-hsl-dark: 0 0% 12%;
     --default-sidebar-foreground-hsl-dark: 0 0% 95%;
-    --default-sidebar-primary-hsl-dark: var(--primary-hsl-dark, var(--default-primary-hsl-dark));
-    --default-sidebar-primary-foreground-hsl-dark: var(--primary-foreground-hsl-dark, var(--default-primary-foreground-hsl-dark));
+    --default-sidebar-primary-hsl-dark: var(--default-primary-hsl-dark);
+    --default-sidebar-primary-foreground-hsl-dark: var(--default-primary-foreground-hsl-dark);
     --default-sidebar-accent-hsl-dark: 0 0% 20%;
     --default-sidebar-accent-foreground-hsl-dark: 0 0% 95%;
     --default-sidebar-border-hsl-dark: 0 0% 25%;
-    --default-sidebar-ring-hsl-dark: var(--ring-hsl-dark, var(--default-ring-hsl-dark));
+    --default-sidebar-ring-hsl-dark: var(--default-ring-hsl-dark);
 
-    /* Actual color variables using custom HSL (shared with light mode) or dark mode defaults */
+    /* Actual color variables using custom HSL (shared with light mode via JS) or dark mode defaults */
     --background: hsl(var(--custom-background-hsl, var(--default-background-hsl-dark)));
     --foreground: hsl(var(--custom-foreground-hsl, var(--default-foreground-hsl-dark)));
     --card: hsl(var(--custom-card-hsl, var(--default-card-hsl-dark)));
@@ -147,12 +149,12 @@
     /* Sidebar specific theme for dark mode using custom or dark defaults */
     --sidebar-background: hsl(var(--custom-sidebar-background-hsl, var(--default-sidebar-background-hsl-dark)));
     --sidebar-foreground: hsl(var(--custom-sidebar-foreground-hsl, var(--default-sidebar-foreground-hsl-dark)));
-    --sidebar-primary: hsl(var(--custom-sidebar-primary-hsl, var(--primary-hsl-dark, var(--default-primary-hsl-dark)) ));
-    --sidebar-primary-foreground: hsl(var(--custom-sidebar-primary-foreground-hsl, var(--primary-foreground-hsl-dark, var(--default-primary-foreground-hsl-dark)) ));
+    --sidebar-primary: hsl(var(--custom-sidebar-primary-hsl, var(--primary-hsl-dark, var(--default-sidebar-primary-hsl-dark)) ));
+    --sidebar-primary-foreground: hsl(var(--custom-sidebar-primary-foreground-hsl, var(--primary-foreground-hsl-dark, var(--default-sidebar-primary-foreground-hsl-dark)) ));
     --sidebar-accent: hsl(var(--custom-sidebar-accent-hsl, var(--default-sidebar-accent-hsl-dark)));
     --sidebar-accent-foreground: hsl(var(--custom-sidebar-accent-foreground-hsl, var(--default-sidebar-accent-foreground-hsl-dark)));
     --sidebar-border: hsl(var(--custom-sidebar-border-hsl, var(--default-sidebar-border-hsl-dark)));
-    --sidebar-ring: hsl(var(--custom-sidebar-ring-hsl, var(--ring-hsl-dark, var(--default-ring-hsl-dark)) ));
+    --sidebar-ring: hsl(var(--custom-sidebar-ring-hsl, var(--ring-hsl-dark, var(--default-sidebar-ring-hsl-dark)) ));
   }
 }
 
@@ -193,7 +195,7 @@
     display: none; 
   }
   .printable-area .print-only {
-    display: block !important; /* Or flex, depending on the element type */
+    display: flex !important; /* Or block, depending on the element type */
   }
   .printable-area .text-primary {
     color: #000 !important; /* Print primary colors as black for better readability */

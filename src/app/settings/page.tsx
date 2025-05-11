@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -18,7 +17,7 @@ import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCi
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Role } from '@/types/saas';
@@ -69,7 +68,6 @@ const roleFormSchema = z.object({
 type RoleFormValues = z.infer<typeof roleFormSchema>;
 
 const hexToHsl = (hex: string): string | null => {
-  if (typeof document === 'undefined') return null;
   if (!hex.startsWith("#") || (hex.length !== 4 && hex.length !== 7)) {
     return null; 
   }
@@ -108,21 +106,33 @@ interface CustomizableColors {
   backgroundColor: string;
   foregroundColor: string;
   cardColor: string;
+  popoverColor: string;
+  secondaryColor: string;
+  mutedColor: string;
+  accentColor: string;
+  destructiveColor: string;
   borderColor: string;
   inputColor: string;
+  ringColor: string;
   sidebarBackgroundColor: string;
   sidebarForegroundColor: string;
 }
 
 const defaultColors: CustomizableColors = {
-  primaryColor: "#008080", // Teal
-  backgroundColor: "#F5F5DC", // Beige
-  foregroundColor: "#262626", // Dark Gray
-  cardColor: "#F5F5DC", // Beige
-  borderColor: "#CCCCCC", // Gray
-  inputColor: "#D9D9D9", // Light Gray
+  primaryColor: "#008080",      // Teal
+  backgroundColor: "#F5F5DC",  // Beige
+  foregroundColor: "#262626",  // Dark Gray
+  cardColor: "#F5F5DC",          // Beige
+  popoverColor: "#F5F5DC",       // Beige
+  secondaryColor: "#E0E0E0",    // Light Gray
+  mutedColor: "#D2B48C",         // Tan / Lighter Beige Variant
+  accentColor: "#008080",        // Teal (same as primary by default)
+  destructiveColor: "#E53E3E",  // Red
+  borderColor: "#CCCCCC",        // Gray
+  inputColor: "#D9D9D9",         // Light Gray
+  ringColor: "#008080",          // Teal
   sidebarBackgroundColor: "#F5F5F5", // Off-white
-  sidebarForegroundColor: "#262626", // Dark Gray
+  sidebarForegroundColor: "#262626",  // Dark Gray
 };
 
 
@@ -140,7 +150,7 @@ export default function SettingsPage() {
   const [customColors, setCustomColors] = useState<CustomizableColors>(defaultColors);
   const [logoPreview, setLogoPreview] = useState<string | null>("https://picsum.photos/200/200?random=1");
 
-  const applyCustomColors = (colors: CustomizableColors) => {
+   const applyCustomColors = React.useCallback((colors: CustomizableColors) => {
     if (typeof document === 'undefined') return;
 
     const colorMap: Record<keyof CustomizableColors, string> = {
@@ -148,8 +158,14 @@ export default function SettingsPage() {
       backgroundColor: '--custom-background-hsl',
       foregroundColor: '--custom-foreground-hsl',
       cardColor: '--custom-card-hsl',
+      popoverColor: '--custom-popover-hsl',
+      secondaryColor: '--custom-secondary-hsl',
+      mutedColor: '--custom-muted-hsl',
+      accentColor: '--custom-accent-hsl',
+      destructiveColor: '--custom-destructive-hsl',
       borderColor: '--custom-border-hsl',
       inputColor: '--custom-input-hsl',
+      ringColor: '--custom-ring-hsl',
       sidebarBackgroundColor: '--custom-sidebar-background-hsl',
       sidebarForegroundColor: '--custom-sidebar-foreground-hsl',
     };
@@ -162,29 +178,33 @@ export default function SettingsPage() {
         document.documentElement.style.removeProperty(colorMap[key]);
       }
     });
-  };
+  }, []);
 
   useEffect(() => {
     const loadedColors: Partial<CustomizableColors> = {};
     (Object.keys(defaultColors) as Array<keyof CustomizableColors>).forEach(key => {
-      const savedColor = localStorage.getItem(key);
-      if (savedColor) {
-        loadedColors[key] = savedColor;
+      if (typeof window !== 'undefined') {
+        const savedColor = localStorage.getItem(key);
+        if (savedColor) {
+          loadedColors[key] = savedColor;
+        }
       }
     });
     const newColors = { ...defaultColors, ...loadedColors };
     setCustomColors(newColors);
-    applyCustomColors(newColors); // Apply loaded or default colors on mount
+    // applyCustomColors(newColors); // Initial application is handled by the next useEffect
 
-    const savedLogo = localStorage.getItem("companyLogo");
-    if (savedLogo) {
-        setLogoPreview(savedLogo);
+    if (typeof window !== 'undefined') {
+        const savedLogo = localStorage.getItem("companyLogo");
+        if (savedLogo) {
+            setLogoPreview(savedLogo);
+        }
     }
-  }, []);
+  }, []); // Empty dependency array for mount
 
   useEffect(() => {
     applyCustomColors(customColors);
-  }, [customColors]);
+  }, [customColors, applyCustomColors]);
 
 
   const handleColorInputChange = (colorName: keyof CustomizableColors, value: string) => {
@@ -206,10 +226,12 @@ export default function SettingsPage() {
   };
 
   const handleSaveCustomization = () => {
-    (Object.keys(customColors) as Array<keyof CustomizableColors>).forEach(key => {
-      localStorage.setItem(key, customColors[key]);
-    });
-    if(logoPreview) localStorage.setItem("companyLogo", logoPreview);
+    if (typeof window !== 'undefined') {
+        (Object.keys(customColors) as Array<keyof CustomizableColors>).forEach(key => {
+        localStorage.setItem(key, customColors[key]);
+        });
+        if(logoPreview) localStorage.setItem("companyLogo", logoPreview);
+    }
     toast({ title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح." });
   };
 
@@ -493,7 +515,7 @@ export default function SettingsPage() {
                           <Badge variant={user.status === "نشط" ? "default" : "outline"}>{user.status}</Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المستخدم" onClick={() => {setUserToEdit(user as UserFormValues); setShowManageUserDialog(true);}}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المستخدم" onClick={() => {setUserToEdit(user as any); setShowManageUserDialog(true);}}>
                             <Edit className="h-4 w-4" />
                           </Button>
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إعادة تعيين كلمة المرور" onClick={() => handleResetPassword(user.id!)}>
@@ -560,7 +582,7 @@ export default function SettingsPage() {
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent dir="rtl">
-                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
+                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescription></AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>تراجع</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => handleDeleteRole(role.id)}>تأكيد الحذف</AlertDialogAction>
@@ -620,40 +642,30 @@ export default function SettingsPage() {
               <CardDescription>تعديل مظهر النظام، إضافة حقول مخصصة، وإدارة التكامل مع خدمات أخرى.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <Label htmlFor="primaryColor">اللون الأساسي</Label>
-                    <Input id="primaryColor" type="color" value={customColors.primaryColor} onChange={(e) => handleColorInputChange('primaryColor', e.target.value)} className="p-1 h-10 w-full"/>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {(Object.keys(customColors) as Array<keyof CustomizableColors>).map((colorKey) => (
+                        <div className="space-y-2" key={colorKey}>
+                            <Label htmlFor={colorKey}>
+                                {colorKey === "primaryColor" ? "اللون الأساسي" :
+                                 colorKey === "backgroundColor" ? "لون الخلفية العام" :
+                                 colorKey === "foregroundColor" ? "لون النص العام" :
+                                 colorKey === "cardColor" ? "لون البطاقات" :
+                                 colorKey === "popoverColor" ? "لون القوائم المنبثقة" :
+                                 colorKey === "secondaryColor" ? "اللون الثانوي" :
+                                 colorKey === "mutedColor" ? "اللون المحايد (Muted)" :
+                                 colorKey === "accentColor" ? "لون التمييز (Accent)" :
+                                 colorKey === "destructiveColor" ? "لون الحذف/الخطأ" :
+                                 colorKey === "borderColor" ? "لون الحدود" :
+                                 colorKey === "inputColor" ? "لون حقول الإدخال" :
+                                 colorKey === "ringColor" ? "لون حلقة التركيز (Ring)" :
+                                 colorKey === "sidebarBackgroundColor" ? "لون خلفية القائمة الجانبية" :
+                                 colorKey === "sidebarForegroundColor" ? "لون نص القائمة الجانبية" :
+                                 colorKey}
+                            </Label>
+                            <Input id={colorKey} type="color" value={customColors[colorKey]} onChange={(e) => handleColorInputChange(colorKey, e.target.value)} className="p-1 h-10 w-full"/>
+                        </div>
+                    ))}
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="backgroundColor">لون الخلفية</Label>
-                    <Input id="backgroundColor" type="color" value={customColors.backgroundColor} onChange={(e) => handleColorInputChange('backgroundColor', e.target.value)} className="p-1 h-10 w-full"/>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="foregroundColor">لون النص الأساسي</Label>
-                    <Input id="foregroundColor" type="color" value={customColors.foregroundColor} onChange={(e) => handleColorInputChange('foregroundColor', e.target.value)} className="p-1 h-10 w-full"/>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="cardColor">لون البطاقات</Label>
-                    <Input id="cardColor" type="color" value={customColors.cardColor} onChange={(e) => handleColorInputChange('cardColor', e.target.value)} className="p-1 h-10 w-full"/>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="borderColor">لون الحدود</Label>
-                    <Input id="borderColor" type="color" value={customColors.borderColor} onChange={(e) => handleColorInputChange('borderColor', e.target.value)} className="p-1 h-10 w-full"/>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="inputColor">لون حقول الإدخال</Label>
-                    <Input id="inputColor" type="color" value={customColors.inputColor} onChange={(e) => handleColorInputChange('inputColor', e.target.value)} className="p-1 h-10 w-full"/>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="sidebarBackgroundColor">لون خلفية القائمة الجانبية</Label>
-                    <Input id="sidebarBackgroundColor" type="color" value={customColors.sidebarBackgroundColor} onChange={(e) => handleColorInputChange('sidebarBackgroundColor', e.target.value)} className="p-1 h-10 w-full"/>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="sidebarForegroundColor">لون نص القائمة الجانبية</Label>
-                    <Input id="sidebarForegroundColor" type="color" value={customColors.sidebarForegroundColor} onChange={(e) => handleColorInputChange('sidebarForegroundColor', e.target.value)} className="p-1 h-10 w-full"/>
-                </div>
-              </div>
                <div className="space-y-2">
                 <Label htmlFor="logoUpload">شعار الشركة</Label>
                 <div className="flex items-center gap-4">
