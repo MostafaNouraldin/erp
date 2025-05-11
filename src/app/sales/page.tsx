@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -21,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 // Mock data
@@ -71,6 +73,7 @@ interface Invoice {
   status: "مدفوع" | "غير مدفوع" | "متأخر";
   items: InvoiceItem[];
   notes?: string;
+  isDeferredPayment?: boolean;
 }
 
 const initialInvoicesData: Invoice[] = [
@@ -85,6 +88,7 @@ const initialInvoicesData: Invoice[] = [
     items: [
       {itemId: "SERV001", description: "خدمة استشارية لتطوير الأعمال", quantity: 1, unitPrice: 7130.43, total: 7130.43 }, 
     ],
+    isDeferredPayment: false,
   },
   {
     id: "INV-C002",
@@ -97,6 +101,7 @@ const initialInvoicesData: Invoice[] = [
       {itemId: "ITEM001", description: "تطوير واجهة مستخدم لتطبيق موبايل", quantity: 1, unitPrice: 10000, total: 10000 },
       {itemId: "ITEM002", description: "تصميم شعار وهوية بصرية", quantity: 1, unitPrice: 3478.26, total: 3478.26 }, 
     ],
+    isDeferredPayment: true,
   },
 ];
 
@@ -182,6 +187,7 @@ const invoiceSchema = z.object({
   numericTotalAmount: z.coerce.number().default(0),
   status: z.enum(["مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
   orderId: z.string().optional(),
+  isDeferredPayment: z.boolean().optional().default(false),
 });
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
@@ -230,7 +236,7 @@ export default function SalesPage() {
 
   const invoiceForm = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
-    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0 },
+    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false },
   });
   const { fields: invoiceItemsFields, append: appendInvoiceItem, remove: removeInvoiceItem } = useFieldArray({
     control: invoiceForm.control, name: "items",
@@ -253,7 +259,7 @@ export default function SalesPage() {
 
   useEffect(() => {
     if (invoiceToEdit) invoiceForm.reset(invoiceToEdit);
-    else invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0 });
+    else invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false });
   }, [invoiceToEdit, invoiceForm, showCreateInvoiceDialog]);
 
 
@@ -333,6 +339,14 @@ export default function SalesPage() {
     }
     setShowCreateInvoiceDialog(false);
     setInvoiceToEdit(null);
+  };
+
+  const getInvoiceStatusText = (invoice: Invoice) => {
+    if (invoice.isDeferredPayment) {
+      if (invoice.status === "غير مدفوع") return "غير مدفوع (آجل)";
+      if (invoice.status === "متأخر") return "متأخر (آجل)";
+    }
+    return invoice.status;
   };
 
   return (
@@ -667,6 +681,14 @@ export default function SalesPage() {
                               <FormField control={invoiceForm.control} name="dueDate" render={({ field }) => (
                                   <FormItem className="flex flex-col"><FormLabel>تاريخ الاستحقاق</FormLabel>
                                     <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                              <FormField control={invoiceForm.control} name="isDeferredPayment" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm md:col-span-2 rtl:space-x-reverse">
+                                  <FormControl>
+                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} id="isDeferredPayment"/>
+                                  </FormControl>
+                                  <FormLabel htmlFor="isDeferredPayment" className="font-normal">فاتورة بيع آجل</FormLabel>
+                                </FormItem>
+                                )} />
                             </div>
                             <ScrollArea className="h-[200px] border rounded-md p-2">
                                   {invoiceItemsFields.map((item, index) => (
@@ -735,7 +757,12 @@ export default function SalesPage() {
                         <TableCell>{formatDate(inv.dueDate)}</TableCell>
                         <TableCell>{inv.numericTotalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
                         <TableCell>
-                            <Badge variant={inv.status === "مدفوع" ? "default" : "destructive"} className="whitespace-nowrap">{inv.status}</Badge>
+                            <Badge 
+                                variant={inv.status === "مدفوع" ? "default" : (inv.status === "متأخر" || (inv.isDeferredPayment && inv.status !== "مدفوع")) ? "destructive" : "outline"} 
+                                className="whitespace-nowrap"
+                            >
+                                {getInvoiceStatusText(inv)}
+                            </Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة الفاتورة" onClick={() => handlePrintInvoice(inv)}>
@@ -838,8 +865,8 @@ export default function SalesPage() {
                   </div>
                 </div>
                 <div className="text-left">
-                  <h3 className="text-2xl font-semibold text-primary">فاتورة مبيعات</h3>
-                  <p className="text-xs">Sales Invoice</p>
+                  <h3 className="text-2xl font-semibold text-primary">فاتورة مبيعات {selectedInvoiceForPrint.isDeferredPayment && '(آجلة)'}</h3>
+                  <p className="text-xs">Sales Invoice {selectedInvoiceForPrint.isDeferredPayment && '(Deferred)'}</p>
                   <p className="text-sm mt-1"><strong>رقم الفاتورة:</strong> {selectedInvoiceForPrint.id}</p>
                   <p className="text-sm"><strong>تاريخ الفاتورة:</strong> {formatDate(selectedInvoiceForPrint.date)}</p>
                   <p className="text-sm"><strong>تاريخ الاستحقاق:</strong> {formatDate(selectedInvoiceForPrint.dueDate)}</p>
@@ -907,6 +934,7 @@ export default function SalesPage() {
                   <h5 className="font-semibold text-foreground mb-1">الشروط والأحكام:</h5>
                   <p>- يجب دفع الفاتورة خلال 30 يوماً من تاريخ الاستحقاق.</p>
                   <p>- جميع الأسعار بالريال السعودي شاملة ضريبة القيمة المضافة.</p>
+                  {selectedInvoiceForPrint.isDeferredPayment && <p className="font-semibold text-primary">- هذه الفاتورة آجلة الدفع.</p>}
                   {selectedInvoiceForPrint.notes && <p className="mt-2"><strong>ملاحظات إضافية:</strong> {selectedInvoiceForPrint.notes}</p>}
               </div>
 

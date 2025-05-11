@@ -16,19 +16,20 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuChe
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 // Mock data initial state
 const initialCustomerInvoicesData = [
-  { id: "INV-C001", customerId: "CUST001", date: new Date("2024-07-01"), dueDate: new Date("2024-07-31"), totalAmount: 15000, paidAmount: 10000, remainingAmount: 5000, status: "جزئي" as const, notes: "دفعة مقدمة لخدمات استشارية", items: [{itemId: 'SERV001', description: 'خدمة استشارية A', quantity: 1, unitPrice: 15000, total: 15000}] },
-  { id: "INV-C002", customerId: "CUST002", date: new Date("2024-06-15"), dueDate: new Date("2024-07-15"), totalAmount: 8200, paidAmount: 8200, remainingAmount: 0, status: "مدفوع" as const, notes: "", items: [{itemId: 'ITEM001', description: 'لابتوب', quantity:1, unitPrice: 8200, total: 8200}] },
-  { id: "INV-C003", customerId: "CUST003", date: new Date("2024-07-10"), dueDate: new Date("2024-08-10"), totalAmount: 22500, paidAmount: 0, remainingAmount: 22500, status: "غير مدفوع" as const, notes: "", items: [{itemId: 'ITEM002', description: 'طابعة', quantity:3, unitPrice: 7500, total: 22500}] },
-  { id: "INV-C004", customerId: "CUST004", date: new Date("2024-05-20"), dueDate: new Date("2024-06-20"), totalAmount: 12000, paidAmount: 0, remainingAmount: 12000, status: "متأخر" as const, notes: "", items: [{itemId: 'SERV001', description: 'خدمة استشارية B', quantity:1, unitPrice: 12000, total: 12000}] },
+  { id: "INV-C001", customerId: "CUST001", date: new Date("2024-07-01"), dueDate: new Date("2024-07-31"), totalAmount: 15000, paidAmount: 10000, remainingAmount: 5000, status: "جزئي" as const, notes: "دفعة مقدمة لخدمات استشارية", items: [{itemId: 'SERV001', description: 'خدمة استشارية A', quantity: 1, unitPrice: 15000, total: 15000}], isDeferredPayment: false },
+  { id: "INV-C002", customerId: "CUST002", date: new Date("2024-06-15"), dueDate: new Date("2024-07-15"), totalAmount: 8200, paidAmount: 8200, remainingAmount: 0, status: "مدفوع" as const, notes: "", items: [{itemId: 'ITEM001', description: 'لابتوب', quantity:1, unitPrice: 8200, total: 8200}], isDeferredPayment: false },
+  { id: "INV-C003", customerId: "CUST003", date: new Date("2024-07-10"), dueDate: new Date("2024-08-10"), totalAmount: 22500, paidAmount: 0, remainingAmount: 22500, status: "غير مدفوع" as const, notes: "", items: [{itemId: 'ITEM002', description: 'طابعة', quantity:3, unitPrice: 7500, total: 22500}], isDeferredPayment: true },
+  { id: "INV-C004", customerId: "CUST004", date: new Date("2024-05-20"), dueDate: new Date("2024-06-20"), totalAmount: 12000, paidAmount: 0, remainingAmount: 12000, status: "متأخر" as const, notes: "", items: [{itemId: 'SERV001', description: 'خدمة استشارية B', quantity:1, unitPrice: 12000, total: 12000}], isDeferredPayment: true },
 ];
 
 const initialSupplierInvoicesData = [
@@ -88,6 +89,7 @@ const baseInvoiceSchema = z.object({
 const customerInvoiceSchema = baseInvoiceSchema.extend({
   customerId: z.string().min(1, "العميل مطلوب"),
   status: z.enum(["جزئي", "مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
+  isDeferredPayment: z.boolean().optional().default(false),
 });
 type CustomerInvoiceFormValues = z.infer<typeof customerInvoiceSchema>;
 
@@ -127,7 +129,7 @@ export default function AccountsPayableReceivablePage() {
 
   const customerInvoiceForm = useForm<CustomerInvoiceFormValues>({
     resolver: zodResolver(customerInvoiceSchema),
-    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0 },
+    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0, isDeferredPayment: false },
   });
   const { fields: custInvoiceItemsFields, append: appendCustInvoiceItem, remove: removeCustInvoiceItem } = useFieldArray({
     control: customerInvoiceForm.control, name: "items",
@@ -148,7 +150,7 @@ export default function AccountsPayableReceivablePage() {
 
   useEffect(() => {
     if (customerInvoiceToEdit) customerInvoiceForm.reset(customerInvoiceToEdit);
-    else customerInvoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0 });
+    else customerInvoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0, isDeferredPayment: false });
   }, [customerInvoiceToEdit, customerInvoiceForm, showAddCustomerInvoiceDialog]);
   
   useEffect(() => {
@@ -164,6 +166,12 @@ export default function AccountsPayableReceivablePage() {
   const updateInvoiceStatus = (invoice: AnyInvoice): AnyInvoice['status'] => {
     if (invoice.paidAmount >= invoice.totalAmount) return "مدفوع";
     if (invoice.paidAmount > 0) return "جزئي";
+    
+    if ('customerId' in invoice && (invoice as CustomerInvoiceFormValues).isDeferredPayment) { // Customer invoice specific logic
+        if (invoice.dueDate && invoice.dueDate < new Date() && invoice.paidAmount === 0) return "متأخر";
+        return "غير مدفوع"; // For deferred, "غير مدفوع" means it's on account until due or paid
+    }
+    // Default for supplier or non-deferred customer
     if ('dueDate' in invoice && invoice.dueDate && invoice.dueDate < new Date() && invoice.paidAmount === 0 && invoice.status !== "مدفوع") return "متأخر";
     return "غير مدفوع";
   };
@@ -248,6 +256,14 @@ export default function AccountsPayableReceivablePage() {
     setInvoiceToPay(null);
   };
 
+  const getCustomerInvoiceStatusText = (invoice: CustomerInvoiceFormValues) => {
+    if (invoice.isDeferredPayment) {
+        if (invoice.status === "غير مدفوع") return "غير مدفوع (آجل)";
+        if (invoice.status === "متأخر") return "متأخر (آجل)";
+    }
+    return invoice.status;
+  };
+
   return (
     <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
@@ -278,6 +294,14 @@ export default function AccountsPayableReceivablePage() {
                     <FormField control={customerInvoiceForm.control} name="dueDate" render={({ field }) => (
                         <FormItem className="flex flex-col"><FormLabel>تاريخ الاستحقاق</FormLabel>
                           <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                    <FormField control={customerInvoiceForm.control} name="isDeferredPayment" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm md:col-span-2 rtl:space-x-reverse">
+                          <FormControl>
+                            <Checkbox checked={field.value} onCheckedChange={field.onChange} id="isDeferredPaymentCust"/>
+                          </FormControl>
+                          <FormLabel htmlFor="isDeferredPaymentCust" className="font-normal">فاتورة بيع آجل</FormLabel>
+                        </FormItem>
+                        )} />
                   </div>
                    <ScrollArea className="h-[200px] border rounded-md p-2">
                         {custInvoiceItemsFields.map((item, index) => (
@@ -419,7 +443,9 @@ export default function AccountsPayableReceivablePage() {
                       <DropdownMenuCheckboxItem>مدفوع</DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem>جزئي</DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem>غير مدفوع</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>غير مدفوع (آجل)</DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem>متأخر</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>متأخر (آجل)</DropdownMenuCheckboxItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <DatePickerWithPresets mode="range" />
@@ -445,8 +471,16 @@ export default function AccountsPayableReceivablePage() {
                         <TableCell>{invoice.paidAmount.toFixed(2)} SAR</TableCell>
                         <TableCell className="font-semibold">{invoice.remainingAmount.toFixed(2)} SAR</TableCell>
                         <TableCell>
-                          <Badge variant={ invoice.status === "مدفوع" ? "default" : invoice.status === "جزئي" ? "secondary" : invoice.status === "متأخر" ? "destructive" : "outline" } className="whitespace-nowrap">
-                            {invoice.status}
+                          <Badge 
+                            variant={ 
+                                invoice.status === "مدفوع" ? "default" : 
+                                invoice.status === "جزئي" ? "secondary" : 
+                                invoice.status === "متأخر" ? "destructive" : 
+                                "outline" 
+                            } 
+                            className="whitespace-nowrap"
+                          >
+                            {getCustomerInvoiceStatusText(invoice)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
@@ -460,7 +494,7 @@ export default function AccountsPayableReceivablePage() {
                              <AlertDialog>
                                 <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                 <AlertDialogContent dir="rtl">
-                                    <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponent>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescriptionComponent></AlertDialogHeader>
                                     <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id!, 'customer')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -539,7 +573,7 @@ export default function AccountsPayableReceivablePage() {
                              <AlertDialog>
                                 <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                 <AlertDialogContent dir="rtl">
-                                    <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponent>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescriptionComponent></AlertDialogHeader>
                                     <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id!, 'supplier')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -614,13 +648,16 @@ export default function AccountsPayableReceivablePage() {
                     variant={
                         selectedInvoiceForView.status === "مدفوع" ? "default" :
                         selectedInvoiceForView.status === "جزئي" ? "secondary" :
-                        selectedInvoiceForView.status === "متأخر" ? "destructive" :
+                        (selectedInvoiceForView.status === "متأخر" || (selectedInvoiceForView.isDeferredPayment && selectedInvoiceForView.status !== "مدفوع" ))? "destructive" :
                         "outline"
                     }
                 >
-                    {selectedInvoiceForView.status}
+                    {selectedInvoiceForView.type === 'customer' ? getCustomerInvoiceStatusText(selectedInvoiceForView as CustomerInvoiceFormValues) : selectedInvoiceForView.status}
                 </Badge>
               </div>
+              {selectedInvoiceForView.type === 'customer' && selectedInvoiceForView.isDeferredPayment && (
+                <div className="text-primary font-semibold">ملاحظة: هذه فاتورة بيع آجل.</div>
+              )}
               <div><strong>ملاحظات:</strong> {selectedInvoiceForView.notes || 'لا يوجد'}</div>
                <h4 className="font-semibold pt-2 border-t mt-3">الأصناف:</h4>
                 {selectedInvoiceForView.items && selectedInvoiceForView.items.length > 0 ? (

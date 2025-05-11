@@ -9,11 +9,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { DollarSign, ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud } from "lucide-react";
+import { DollarSign, ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud, UserCheck } from "lucide-react";
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast"; 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Assuming Select component exists for customers
 
 // Mock data
 const categories = ["الكل", "مشروبات", "مأكولات خفيفة", "حلويات", "مخبوزات", "منتجات ورقية"];
@@ -27,6 +28,12 @@ const products = [
   { id: "PROD007", name: "عصير برتقال طازج", category: "مشروبات", price: 18, stock: 40, image: "https://picsum.photos/200/200?random=7", dataAiHint: "orange juice" },
   { id: "PROD008", name: "ساندويتش دجاج", category: "مأكولات خفيفة", price: 22, stock: 25, image: "https://picsum.photos/200/200?random=8", dataAiHint: "chicken sandwich" },
 ];
+const mockCustomers = [ // Re-using from other pages for consistency
+  { id: "CUST001", name: "شركة الأمل" },
+  { id: "CUST002", name: "مؤسسة النجاح" },
+  { id: "CUST003", name: "أحمد خالد (فرد)" },
+];
+
 
 interface CartItem {
   id: string;
@@ -36,7 +43,16 @@ interface CartItem {
   image: string;
 }
 
-const recentTransactions: Array<{id: string, time: string, items: number, total: string, paymentMethod: string}> = [
+interface RecentTransaction {
+  id: string;
+  time: string;
+  items: number;
+  total: string;
+  paymentMethod: string;
+  customerName?: string;
+}
+
+const initialRecentTransactions: RecentTransaction[] = [
     { id: "TRX001", time: "10:30 ص", items: 2, total: "30 SAR", paymentMethod: "نقدي" },
     { id: "TRX002", time: "10:35 ص", items: 1, total: "15 SAR", paymentMethod: "بطاقة" },
     { id: "TRX003", time: "10:42 ص", items: 3, total: "45 SAR", paymentMethod: "نقدي" },
@@ -49,9 +65,11 @@ export default function POSPage() {
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [totalAmount, setTotalAmount] = useState(0);
   const [discount, setDiscount] = useState(0);
-  const [customerName, setCustomerName] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(''); // Changed from customerName to customerId
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const { toast } = useToast();
+  const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>(initialRecentTransactions);
+
 
   useEffect(() => {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -87,7 +105,7 @@ export default function POSPage() {
   const clearCart = () => {
     setCart([]);
     setDiscount(0);
-    setCustomerName('');
+    setSelectedCustomerId('');
     setPaymentMethod(null);
   };
   
@@ -99,67 +117,82 @@ export default function POSPage() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleProcessPayment = () => {
-    // Simulate payment processing
     const transactionId = `TRX${Date.now().toString().slice(-5)}`;
-    console.log("Processing payment for:", {
-        transactionId,
-        customerName,
-        cart,
-        subtotal,
-        discount,
-        totalAmount,
-        paymentMethod,
-    });
+    const customer = mockCustomers.find(c => c.id === selectedCustomerId);
 
-    toast({
-        title: "تمت عملية الدفع بنجاح!",
-        description: `تم إنشاء الفاتورة رقم ${transactionId} والمبلغ ${totalAmount.toFixed(2)} SAR.`,
-        variant: "default",
-    });
+    if (paymentMethod === 'deferred') {
+        if (!selectedCustomerId) {
+            toast({
+                title: "خطأ",
+                description: "الرجاء اختيار العميل لعملية البيع الآجل.",
+                variant: "destructive",
+            });
+            return;
+        }
+        // Simulate creating a deferred sales invoice
+        const deferredInvoice = {
+            id: `INV-POS-${Date.now().toString().slice(-5)}`,
+            customerId: selectedCustomerId,
+            customerName: customer?.name || 'عميل غير محدد',
+            date: new Date(),
+            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days later
+            items: cart.map(item => ({ ...item, unitPrice: item.price })), // Adjust to match InvoiceItem structure if needed
+            numericTotalAmount: totalAmount,
+            status: "غير مدفوع",
+            isDeferredPayment: true,
+            notes: `فاتورة آجلة من نقطة البيع للعميل: ${customer?.name || selectedCustomerId}`,
+        };
+        console.log("Simulating creation of deferred invoice:", deferredInvoice);
+        // In a real app, this `deferredInvoice` would be saved to the invoicing system/database.
+        
+        toast({
+            title: "تم تسجيل البيع الآجل بنجاح!",
+            description: `تم إنشاء فاتورة آجلة رقم ${deferredInvoice.id} للعميل ${deferredInvoice.customerName} بمبلغ ${totalAmount.toFixed(2)} SAR.`,
+            variant: "default",
+        });
+
+    } else {
+        // Standard payment processing
+        console.log("Processing payment for:", {
+            transactionId,
+            customerId: selectedCustomerId,
+            customerName: customer?.name,
+            cart,
+            subtotal,
+            discount,
+            totalAmount,
+            paymentMethod,
+        });
+        toast({
+            title: "تمت عملية الدفع بنجاح!",
+            description: `تم إنشاء الفاتورة رقم ${transactionId} والمبلغ ${totalAmount.toFixed(2)} SAR.`,
+            variant: "default",
+        });
+    }
     
-    const newTransaction = {
+    const newTransaction: RecentTransaction = {
         id: transactionId,
         time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
         items: cart.reduce((sum, item) => sum + item.quantity, 0),
         total: `${totalAmount.toFixed(2)} SAR`,
-        paymentMethod: paymentMethod || "غير محدد",
+        paymentMethod: paymentMethod === 'deferred' ? 'آجل' : (paymentMethod || "غير محدد"),
+        customerName: customer?.name,
     };
-    
-    // Update recent transactions - ensure it's mutable if it's a top-level const
-    const updatedRecentTransactions = [newTransaction, ...recentTransactions.slice(0, 4)];
-    // If recentTransactions is a state: setRecentTransactions(updatedRecentTransactions);
-    // For this example, we assume recentTransactions can be mutated if it's not a state or carefully managed.
-    // For simplicity in this isolated change, directly modifying the mock if it were state:
-    // setRecentTransactions(updatedRecentTransactions); 
-    // Since it's a const, this won't actually update the UI unless recentTransactions is a state.
-    // This line is illustrative for a real implementation.
-    if (typeof recentTransactions.unshift === 'function') { // Check if array and modifiable
-        recentTransactions.unshift(newTransaction);
-        if (recentTransactions.length > 5) recentTransactions.pop();
-    }
-
-
+    setRecentTransactions(prev => [newTransaction, ...prev.slice(0, 4)]);
     clearCart();
   };
 
   const handlePostToGL = () => {
-    if(totalAmount <= 0 && cart.length === 0) { // Check if there is anything to post (based on completed sales, not current cart)
-        toast({
-            title: "لا توجد مبيعات للترحيل",
-            description: "الرجاء إتمام عمليات بيع أولاً ليكون هناك رصيد للترحيل.",
-            variant: "destructive"
-        });
-        return;
-    }
-    // This mock function simulates posting the *total sales for a period* or *end-of-day total*.
-    // For this example, let's assume we are posting an *aggregated* total amount from previous sales, not the current cart.
-    // In a real POS, you'd track sales and post a summary. Here, we'll use a dummy `dailySalesTotalForPosting`.
-    const dailySalesTotalForPosting = recentTransactions.reduce((sum, trx) => sum + parseFloat(trx.total.split(" ")[0]), 0); // Example: sum of recent mock transactions
+    // This mock function posts an aggregated total of *settled* sales (cash/card) for the day/period.
+    // Deferred sales are handled by creating an invoice, which has its own accounting implications (A/R).
+    const settledSalesTotal = recentTransactions
+        .filter(trx => trx.paymentMethod === "نقدي" || trx.paymentMethod === "بطاقة" || trx.paymentMethod === "تحويل بنكي")
+        .reduce((sum, trx) => sum + parseFloat(trx.total.split(" ")[0]), 0);
 
-    if (dailySalesTotalForPosting <= 0) {
+    if (settledSalesTotal <= 0) {
         toast({
-            title: "لا يوجد رصيد مبيعات للترحيل",
-            description: "لم يتم تسجيل أي مبيعات مؤخراً.",
+            title: "لا يوجد رصيد مبيعات (نقدية/بطاقة) للترحيل",
+            description: "لم يتم تسجيل أي مبيعات نقدية أو بالبطاقة مؤخراً.",
             variant: "destructive"
         });
         return;
@@ -167,25 +200,24 @@ export default function POSPage() {
     
     const journalEntryData = {
         date: new Date(),
-        description: `ترحيل إجمالي مبيعات نقاط البيع - ${new Date().toLocaleDateString('ar-SA')}`,
+        description: `ترحيل إجمالي مبيعات نقاط البيع (نقدية/بطاقة) - ${new Date().toLocaleDateString('ar-SA')}`,
         lines: [
-            { accountId: "1013", debit: dailySalesTotalForPosting, credit: 0, description: "إجمالي مبيعات نقاط البيع" }, // صندوق نقاط البيع
-            { accountId: "4010", debit: 0, credit: dailySalesTotalForPosting, description: "إيراد مبيعات نقاط البيع" }, // إيرادات مبيعات
+            { accountId: "1013", debit: settledSalesTotal, credit: 0, description: "إجمالي مبيعات نقاط البيع (نقدية/بطاقة)" }, // صندوق نقاط البيع
+            { accountId: "4010", debit: 0, credit: settledSalesTotal, description: "إيراد مبيعات نقاط البيع" }, // إيرادات مبيعات
         ],
-        totalAmount: dailySalesTotalForPosting,
+        totalAmount: settledSalesTotal,
         status: "مرحل" as "مرحل",
         sourceModule: "POS" as "POS",
-        sourceDocumentId: `POS_EOB_${Date.now().toString().slice(-5)}` // End Of Business or similar ID
+        sourceDocumentId: `POS_SETTLED_${Date.now().toString().slice(-5)}`
     };
 
-    console.log("Posting to General Ledger:", journalEntryData);
+    console.log("Posting to General Ledger (Settled Sales):", journalEntryData);
     
     toast({
-        title: "تم طلب الترحيل للحسابات العامة",
-        description: `سيتم ترحيل قيد إجمالي مبيعات نقاط البيع بمبلغ ${dailySalesTotalForPosting.toFixed(2)} SAR.`,
+        title: "تم طلب ترحيل المبيعات المسددة",
+        description: `سيتم ترحيل قيد إجمالي المبيعات النقدية/بالبطاقة بمبلغ ${settledSalesTotal.toFixed(2)} SAR.`,
         variant: "default",
     });
-    // After successful posting, you might want to clear the daily sales tracking variable, or mark it as posted.
   };
 
 
@@ -336,9 +368,10 @@ export default function POSPage() {
                         <DollarSign className="me-2 h-5 w-5" /> الدفع
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-md" dir="rtl">
                       <DialogHeader>
                         <DialogTitle className="text-xl">إتمام عملية الدفع</DialogTitle>
+                         <DialogDescriptionComponent>اختر العميل (للبيع الآجل) وطريقة الدفع.</DialogDescriptionComponent>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="text-center">
@@ -346,20 +379,33 @@ export default function POSPage() {
                             <p className="text-3xl font-bold text-primary">{totalAmount.toFixed(2)} SAR</p>
                         </div>
                         <div>
-                            <Label htmlFor="customerName">اسم العميل (اختياري)</Label>
-                            <Input id="customerName" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="أدخل اسم العميل" className="bg-background" />
+                            <Label htmlFor="posCustomer">العميل</Label>
+                            <Select dir="rtl" value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                                <SelectTrigger id="posCustomer" className="bg-background">
+                                    <SelectValue placeholder="اختر العميل (ضروري للبيع الآجل)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value=""><em>عميل نقدي (بدون اسم)</em></SelectItem>
+                                    {mockCustomers.map(cust => (
+                                        <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div>
                             <Label>طريقة الدفع</Label>
-                            <div className="grid grid-cols-3 gap-2 mt-2">
-                                <Button variant={paymentMethod === 'cash' ? 'default' : 'outline'} onClick={() => setPaymentMethod('cash')} className="flex-col h-auto py-2">
-                                    <CircleDollarSign className="h-6 w-6 mb-1"/> نقدي
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                <Button variant={paymentMethod === 'cash' ? 'default' : 'outline'} onClick={() => setPaymentMethod('cash')} className="flex-col h-auto py-2 text-sm">
+                                    <CircleDollarSign className="h-5 w-5 mb-1"/> نقدي
                                 </Button>
-                                <Button variant={paymentMethod === 'card' ? 'default' : 'outline'} onClick={() => setPaymentMethod('card')} className="flex-col h-auto py-2">
-                                    <CreditCard className="h-6 w-6 mb-1"/> بطاقة
+                                <Button variant={paymentMethod === 'card' ? 'default' : 'outline'} onClick={() => setPaymentMethod('card')} className="flex-col h-auto py-2 text-sm">
+                                    <CreditCard className="h-5 w-5 mb-1"/> بطاقة
                                 </Button>
-                                 <Button variant={paymentMethod === 'bank' ? 'default' : 'outline'} onClick={() => setPaymentMethod('bank')} className="flex-col h-auto py-2">
-                                    <Landmark className="h-6 w-6 mb-1"/> تحويل بنكي
+                                 <Button variant={paymentMethod === 'bank' ? 'default' : 'outline'} onClick={() => setPaymentMethod('bank')} className="flex-col h-auto py-2 text-sm">
+                                    <Landmark className="h-5 w-5 mb-1"/> تحويل
+                                </Button>
+                                <Button variant={paymentMethod === 'deferred' ? 'default' : 'outline'} onClick={() => setPaymentMethod('deferred')} className="flex-col h-auto py-2 text-sm" disabled={!selectedCustomerId}>
+                                    <UserCheck className="h-5 w-5 mb-1"/> بيع آجل
                                 </Button>
                             </div>
                         </div>
@@ -372,7 +418,7 @@ export default function POSPage() {
                         )}
                       </div>
                       <DialogFooter className="sm:justify-start">
-                        <Button type="button" className="w-full" onClick={handleProcessPayment} disabled={!paymentMethod}>
+                        <Button type="button" className="w-full" onClick={handleProcessPayment} disabled={!paymentMethod || (paymentMethod === 'deferred' && !selectedCustomerId)}>
                            <Printer className="me-2 h-4 w-4" /> تأكيد وطباعة الفاتورة
                         </Button>
                          <DialogClose asChild>
@@ -404,10 +450,10 @@ export default function POSPage() {
                             {recentTransactions.map(trx => (
                                 <TableRow key={trx.id} className="text-xs">
                                     <TableCell className="p-1">{trx.time}</TableCell>
-                                    <TableCell className="p-1">#{trx.id.slice(-3)}</TableCell>
+                                    <TableCell className="p-1">#{trx.id.slice(-3)} {trx.customerName && `(${trx.customerName.substring(0,10)}..)`}</TableCell>
                                     <TableCell className="p-1">{trx.total}</TableCell>
                                     <TableCell className="p-1">
-                                        <Badge variant="secondary" className="text-xs">{trx.paymentMethod}</Badge>
+                                        <Badge variant={trx.paymentMethod === 'آجل' ? 'destructive' : 'secondary'} className="text-xs">{trx.paymentMethod}</Badge>
                                     </TableCell>
                                 </TableRow>
                             ))}
