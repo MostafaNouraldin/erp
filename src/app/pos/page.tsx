@@ -34,6 +34,7 @@ const mockCustomers = [ // Re-using from other pages for consistency
   { id: "CUST003", name: "أحمد خالد (فرد)" },
 ];
 
+const CASH_CUSTOMER_ID = "__cash_customer__";
 
 interface CartItem {
   id: string;
@@ -65,7 +66,7 @@ export default function POSPage() {
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [totalAmount, setTotalAmount] = useState(0);
   const [discount, setDiscount] = useState(0);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(''); // Changed from customerName to customerId
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(''); 
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const { toast } = useToast();
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>(initialRecentTransactions);
@@ -121,10 +122,10 @@ export default function POSPage() {
     const customer = mockCustomers.find(c => c.id === selectedCustomerId);
 
     if (paymentMethod === 'deferred') {
-        if (!selectedCustomerId) {
+        if (!selectedCustomerId || selectedCustomerId === CASH_CUSTOMER_ID) {
             toast({
                 title: "خطأ",
-                description: "الرجاء اختيار العميل لعملية البيع الآجل.",
+                description: "الرجاء اختيار عميل معرف لعملية البيع الآجل.",
                 variant: "destructive",
             });
             return;
@@ -136,14 +137,16 @@ export default function POSPage() {
             customerName: customer?.name || 'عميل غير محدد',
             date: new Date(),
             dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days later
-            items: cart.map(item => ({ ...item, unitPrice: item.price })), // Adjust to match InvoiceItem structure if needed
+            items: cart.map(item => ({ ...item, unitPrice: item.price, description: item.name })), 
             numericTotalAmount: totalAmount,
-            status: "غير مدفوع",
+            status: "غير مدفوع" as "غير مدفوع" | "مدفوع" | "متأخر",
             isDeferredPayment: true,
             notes: `فاتورة آجلة من نقطة البيع للعميل: ${customer?.name || selectedCustomerId}`,
         };
         console.log("Simulating creation of deferred invoice:", deferredInvoice);
         // In a real app, this `deferredInvoice` would be saved to the invoicing system/database.
+        // For example, you might call a function like:
+        // addDeferredInvoiceToSystem(deferredInvoice);
         
         toast({
             title: "تم تسجيل البيع الآجل بنجاح!",
@@ -156,7 +159,7 @@ export default function POSPage() {
         console.log("Processing payment for:", {
             transactionId,
             customerId: selectedCustomerId,
-            customerName: customer?.name,
+            customerName: selectedCustomerId === CASH_CUSTOMER_ID ? 'عميل نقدي' : customer?.name,
             cart,
             subtotal,
             discount,
@@ -176,7 +179,7 @@ export default function POSPage() {
         items: cart.reduce((sum, item) => sum + item.quantity, 0),
         total: `${totalAmount.toFixed(2)} SAR`,
         paymentMethod: paymentMethod === 'deferred' ? 'آجل' : (paymentMethod || "غير محدد"),
-        customerName: customer?.name,
+        customerName: selectedCustomerId === CASH_CUSTOMER_ID ? undefined : customer?.name,
     };
     setRecentTransactions(prev => [newTransaction, ...prev.slice(0, 4)]);
     clearCart();
@@ -186,23 +189,24 @@ export default function POSPage() {
     // This mock function posts an aggregated total of *settled* sales (cash/card) for the day/period.
     // Deferred sales are handled by creating an invoice, which has its own accounting implications (A/R).
     const settledSalesTotal = recentTransactions
-        .filter(trx => trx.paymentMethod === "نقدي" || trx.paymentMethod === "بطاقة" || trx.paymentMethod === "تحويل بنكي")
+        .filter(trx => trx.paymentMethod === "نقدي" || trx.paymentMethod === "بطاقة" || trx.paymentMethod === "تحويل") // Added "تحويل"
         .reduce((sum, trx) => sum + parseFloat(trx.total.split(" ")[0]), 0);
 
     if (settledSalesTotal <= 0) {
         toast({
-            title: "لا يوجد رصيد مبيعات (نقدية/بطاقة) للترحيل",
-            description: "لم يتم تسجيل أي مبيعات نقدية أو بالبطاقة مؤخراً.",
+            title: "لا يوجد رصيد مبيعات (نقدية/بطاقة/تحويل) للترحيل",
+            description: "لم يتم تسجيل أي مبيعات نقدية أو بالبطاقة أو تحويل مؤخراً.",
             variant: "destructive"
         });
         return;
     }
     
     const journalEntryData = {
+        id: `POS_JV_${Date.now().toString().slice(-5)}`,
         date: new Date(),
-        description: `ترحيل إجمالي مبيعات نقاط البيع (نقدية/بطاقة) - ${new Date().toLocaleDateString('ar-SA')}`,
+        description: `ترحيل إجمالي مبيعات نقاط البيع (نقدية/بطاقة/تحويل) - ${new Date().toLocaleDateString('ar-SA')}`,
         lines: [
-            { accountId: "1013", debit: settledSalesTotal, credit: 0, description: "إجمالي مبيعات نقاط البيع (نقدية/بطاقة)" }, // صندوق نقاط البيع
+            { accountId: "1013", debit: settledSalesTotal, credit: 0, description: "إجمالي مبيعات نقاط البيع (نقدية/بطاقة/تحويل)" }, // صندوق نقاط البيع
             { accountId: "4010", debit: 0, credit: settledSalesTotal, description: "إيراد مبيعات نقاط البيع" }, // إيرادات مبيعات
         ],
         totalAmount: settledSalesTotal,
@@ -215,7 +219,7 @@ export default function POSPage() {
     
     toast({
         title: "تم طلب ترحيل المبيعات المسددة",
-        description: `سيتم ترحيل قيد إجمالي المبيعات النقدية/بالبطاقة بمبلغ ${settledSalesTotal.toFixed(2)} SAR.`,
+        description: `سيتم ترحيل قيد إجمالي المبيعات النقدية/بالبطاقة/تحويل بمبلغ ${settledSalesTotal.toFixed(2)} SAR.`,
         variant: "default",
     });
   };
@@ -385,7 +389,7 @@ export default function POSPage() {
                                     <SelectValue placeholder="اختر العميل (ضروري للبيع الآجل)" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value=""><em>عميل نقدي (بدون اسم)</em></SelectItem>
+                                    <SelectItem value={CASH_CUSTOMER_ID}><em>عميل نقدي (بدون اسم)</em></SelectItem>
                                     {mockCustomers.map(cust => (
                                         <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>
                                     ))}
@@ -404,7 +408,7 @@ export default function POSPage() {
                                  <Button variant={paymentMethod === 'bank' ? 'default' : 'outline'} onClick={() => setPaymentMethod('bank')} className="flex-col h-auto py-2 text-sm">
                                     <Landmark className="h-5 w-5 mb-1"/> تحويل
                                 </Button>
-                                <Button variant={paymentMethod === 'deferred' ? 'default' : 'outline'} onClick={() => setPaymentMethod('deferred')} className="flex-col h-auto py-2 text-sm" disabled={!selectedCustomerId}>
+                                <Button variant={paymentMethod === 'deferred' ? 'default' : 'outline'} onClick={() => setPaymentMethod('deferred')} className="flex-col h-auto py-2 text-sm" disabled={!selectedCustomerId || selectedCustomerId === CASH_CUSTOMER_ID}>
                                     <UserCheck className="h-5 w-5 mb-1"/> بيع آجل
                                 </Button>
                             </div>
@@ -418,7 +422,7 @@ export default function POSPage() {
                         )}
                       </div>
                       <DialogFooter className="sm:justify-start">
-                        <Button type="button" className="w-full" onClick={handleProcessPayment} disabled={!paymentMethod || (paymentMethod === 'deferred' && !selectedCustomerId)}>
+                        <Button type="button" className="w-full" onClick={handleProcessPayment} disabled={!paymentMethod || (paymentMethod === 'deferred' && (!selectedCustomerId || selectedCustomerId === CASH_CUSTOMER_ID))}>
                            <Printer className="me-2 h-4 w-4" /> تأكيد وطباعة الفاتورة
                         </Button>
                          <DialogClose asChild>

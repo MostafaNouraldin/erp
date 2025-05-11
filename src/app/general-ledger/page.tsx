@@ -15,7 +15,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
   DialogFooter, DialogClose, DialogTrigger,
 } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
@@ -72,6 +72,7 @@ const initialJournalEntriesData: JournalEntry[] = [
   { id: "JV003", date: new Date("2024-07-10"), description: "مصروفات كهرباء", totalAmount: 1200, status: "مسودة" as const, lines: [{accountId: '5011', debit: 1200, credit: 0, description: 'فاتورة كهرباء يوليو'}, {accountId: '1011', debit: 0, credit: 1200, description: 'دفع من الصندوق'}], sourceModule: "General" },
 ];
 
+const NO_PARENT_ID_VALUE = "__no_parent__";
 
 // Schemas
 const accountSchema = z.object({
@@ -174,10 +175,14 @@ export default function GeneralLedgerPage() {
 
 
   const handleAccountSubmit = (values: AccountFormValues) => {
+    const finalValues = {
+      ...values,
+      parentId: values.parentId === NO_PARENT_ID_VALUE ? null : values.parentId,
+    };
     if (accountToEdit) {
-      setChartOfAccounts(prev => prev.map(acc => acc.id === accountToEdit.id ? { ...values, balance: acc.balance } : acc)); // Keep original balance on edit for simplicity
+      setChartOfAccounts(prev => prev.map(acc => acc.id === accountToEdit.id ? { ...finalValues, balance: acc.balance } : acc)); // Keep original balance on edit for simplicity
     } else {
-      setChartOfAccounts(prev => [...prev, { ...values, balance: '0 SAR' }]);
+      setChartOfAccounts(prev => [...prev, { ...finalValues, balance: '0 SAR' }]);
     }
     setShowAddAccountDialog(false);
     setAccountToEdit(null);
@@ -364,10 +369,18 @@ export default function GeneralLedgerPage() {
                                     <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl>
                                     <SelectContent><SelectItem value="رئيسي">رئيسي</SelectItem><SelectItem value="فرعي">فرعي</SelectItem><SelectItem value="تفصيلي">تفصيلي</SelectItem></SelectContent>
                                 </Select><FormMessage /></FormItem>)} />
-                            <FormField control={accountForm.control} name="parentId" render={({ field }) => (<FormItem><FormLabel>الحساب الرئيسي</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value || ""} dir="rtl">
+                            <FormField control={accountForm.control} name="parentId" render={({ field }) => (
+                                <FormItem><FormLabel>الحساب الرئيسي</FormLabel>
+                                <Select 
+                                    onValueChange={(value) => field.onChange(value === NO_PARENT_ID_VALUE ? null : value)} 
+                                    value={field.value === null || field.value === undefined ? NO_PARENT_ID_VALUE : field.value} 
+                                    dir="rtl"
+                                >
                                     <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحساب الرئيسي (إن وجد)" /></SelectTrigger></FormControl>
-                                    <SelectContent><SelectItem value=""><em>لا يوجد</em></SelectItem>{chartOfAccounts.filter(acc => acc.type !== 'تفصيلي').map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name} ({acc.id})</SelectItem>))}</SelectContent>
+                                    <SelectContent>
+                                        <SelectItem value={NO_PARENT_ID_VALUE}><em>لا يوجد</em></SelectItem>
+                                        {chartOfAccounts.filter(acc => acc.type !== 'تفصيلي').map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name} ({acc.id})</SelectItem>))}
+                                    </SelectContent>
                                 </Select><FormMessage /></FormItem>)} />
                             <DialogFooter><Button type="submit">{accountToEdit ? 'حفظ التعديلات' : 'حفظ الحساب'}</Button><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose></DialogFooter>
                         </form>
@@ -387,7 +400,7 @@ export default function GeneralLedgerPage() {
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                             <AlertDialogContent dir="rtl">
-                              <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>لا يمكن التراجع عن هذا الإجراء. سيتم حذف الحساب "{account.name}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponent>لا يمكن التراجع عن هذا الإجراء. سيتم حذف الحساب "{account.name}" نهائياً.</AlertDialogDescriptionComponent></AlertDialogHeader>
                               <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAccount(account.id)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -424,7 +437,7 @@ export default function GeneralLedgerPage() {
                             <AlertDialog>
                               <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                               <AlertDialogContent dir="rtl">
-                                <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف القيد "{entry.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponent>سيتم حذف القيد "{entry.id}" نهائياً.</AlertDialogDescriptionComponent></AlertDialogHeader>
                                 <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteJournalEntry(entry.id)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
