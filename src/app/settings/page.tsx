@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -17,7 +18,7 @@ import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCi
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Role } from '@/types/saas';
@@ -29,7 +30,6 @@ const initialUsers = [
   { id: "USR002", name: "فاطمة خالد", email: "fatima.k@example.com", roleId: "ROLE002", status: "نشط" as const, avatarUrl: "https://picsum.photos/100/100?random=11" },
   { id: "USR003", name: "يوسف حسن", email: "youssef.h@example.com", roleId: "ROLE003", status: "غير نشط" as const, avatarUrl: "https://picsum.photos/100/100?random=12" },
 ];
-
 
 const initialRoles: Role[] = [
   { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles"] },
@@ -56,7 +56,7 @@ const userSchema = z.object({
     roleId: z.string().min(1, "الدور مطلوب"),
     status: z.enum(["نشط", "غير نشط"]).default("نشط"),
     password: z.string().optional().refine(val => !val || val.length >= 6, {message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل إذا تم إدخالها"}),
-    avatarUrl: z.string().url("الرابط غير صالح").optional().or(z.literal('')),
+    avatarUrl: z.string().url().optional().or(z.literal('')),
 });
 type UserFormValues = z.infer<typeof userSchema>;
 
@@ -66,74 +66,6 @@ const roleFormSchema = z.object({
     description: z.string().min(1, "وصف الدور مطلوب"),
 });
 type RoleFormValues = z.infer<typeof roleFormSchema>;
-
-const hexToHsl = (hex: string): string | null => {
-  if (!hex.startsWith("#") || (hex.length !== 4 && hex.length !== 7)) {
-    return null; 
-  }
-  let r = 0, g = 0, b = 0;
-  if (hex.length === 4) {
-    r = parseInt(hex[1] + hex[1], 16);
-    g = parseInt(hex[2] + hex[2], 16);
-    b = parseInt(hex[3] + hex[3], 16);
-  } else if (hex.length === 7) {
-    r = parseInt(hex.substring(1, 3), 16);
-    g = parseInt(hex.substring(3, 5), 16);
-    b = parseInt(hex.substring(5, 7), 16);
-  }
-
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0; // achromatic
-  } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-};
-
-interface CustomizableColors {
-  primaryColor: string;
-  backgroundColor: string;
-  foregroundColor: string;
-  cardColor: string;
-  popoverColor: string;
-  secondaryColor: string;
-  mutedColor: string;
-  accentColor: string;
-  destructiveColor: string;
-  borderColor: string;
-  inputColor: string;
-  ringColor: string;
-  sidebarBackgroundColor: string;
-  sidebarForegroundColor: string;
-}
-
-const defaultColors: CustomizableColors = {
-  primaryColor: "#008080",      // Teal
-  backgroundColor: "#F5F5DC",  // Beige
-  foregroundColor: "#262626",  // Dark Gray
-  cardColor: "#F5F5DC",          // Beige
-  popoverColor: "#F5F5DC",       // Beige
-  secondaryColor: "#E0E0E0",    // Light Gray
-  mutedColor: "#D2B48C",         // Tan / Lighter Beige Variant
-  accentColor: "#008080",        // Teal (same as primary by default)
-  destructiveColor: "#E53E3E",  // Red
-  borderColor: "#CCCCCC",        // Gray
-  inputColor: "#D9D9D9",         // Light Gray
-  ringColor: "#008080",          // Teal
-  sidebarBackgroundColor: "#F5F5F5", // Off-white
-  sidebarForegroundColor: "#262626",  // Dark Gray
-};
 
 
 export default function SettingsPage() {
@@ -147,72 +79,17 @@ export default function SettingsPage() {
   const [roleToEdit, setRoleToEdit] = useState<Role | null>(null); 
   const { toast } = useToast();
 
-  const [customColors, setCustomColors] = useState<CustomizableColors>(defaultColors);
   const [logoPreview, setLogoPreview] = useState<string | null>("https://picsum.photos/200/200?random=1");
 
-   const applyCustomColors = React.useCallback((colors: CustomizableColors) => {
-    if (typeof document === 'undefined') return;
-
-    const colorMap: Record<keyof CustomizableColors, string> = {
-      primaryColor: '--custom-primary-hsl',
-      backgroundColor: '--custom-background-hsl',
-      foregroundColor: '--custom-foreground-hsl',
-      cardColor: '--custom-card-hsl',
-      popoverColor: '--custom-popover-hsl',
-      secondaryColor: '--custom-secondary-hsl',
-      mutedColor: '--custom-muted-hsl',
-      accentColor: '--custom-accent-hsl',
-      destructiveColor: '--custom-destructive-hsl',
-      borderColor: '--custom-border-hsl',
-      inputColor: '--custom-input-hsl',
-      ringColor: '--custom-ring-hsl',
-      sidebarBackgroundColor: '--custom-sidebar-background-hsl',
-      sidebarForegroundColor: '--custom-sidebar-foreground-hsl',
-    };
-    
-    (Object.keys(colors) as Array<keyof CustomizableColors>).forEach(key => {
-      const hslValue = hexToHsl(colors[key]);
-      if (hslValue) {
-        document.documentElement.style.setProperty(colorMap[key], hslValue);
-      } else {
-        document.documentElement.style.removeProperty(colorMap[key]);
-      }
-    });
-  }, []);
-
   useEffect(() => {
-    const loadedColors: Partial<CustomizableColors> = {};
-    (Object.keys(defaultColors) as Array<keyof CustomizableColors>).forEach(key => {
-      if (typeof window !== 'undefined') {
-        const savedColor = localStorage.getItem(key);
-        if (savedColor) {
-          loadedColors[key] = savedColor;
-        }
-      }
-    });
-    const newColors = { ...defaultColors, ...loadedColors };
-    setCustomColors(newColors);
-    // applyCustomColors(newColors); // Initial application is handled by the next useEffect
-
     if (typeof window !== 'undefined') {
         const savedLogo = localStorage.getItem("companyLogo");
         if (savedLogo) {
             setLogoPreview(savedLogo);
         }
     }
-  }, []); // Empty dependency array for mount
+  }, []);
 
-  useEffect(() => {
-    applyCustomColors(customColors);
-  }, [customColors, applyCustomColors]);
-
-
-  const handleColorInputChange = (colorName: keyof CustomizableColors, value: string) => {
-    setCustomColors(prevColors => ({
-      ...prevColors,
-      [colorName]: value,
-    }));
-  };
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -227,10 +104,8 @@ export default function SettingsPage() {
 
   const handleSaveCustomization = () => {
     if (typeof window !== 'undefined') {
-        (Object.keys(customColors) as Array<keyof CustomizableColors>).forEach(key => {
-        localStorage.setItem(key, customColors[key]);
-        });
         if(logoPreview) localStorage.setItem("companyLogo", logoPreview);
+        else localStorage.removeItem("companyLogo");
     }
     toast({ title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح." });
   };
@@ -582,7 +457,7 @@ export default function SettingsPage() {
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent dir="rtl">
-                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>تراجع</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => handleDeleteRole(role.id)}>تأكيد الحذف</AlertDialogAction>
@@ -642,30 +517,7 @@ export default function SettingsPage() {
               <CardDescription>تعديل مظهر النظام، إضافة حقول مخصصة، وإدارة التكامل مع خدمات أخرى.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(Object.keys(customColors) as Array<keyof CustomizableColors>).map((colorKey) => (
-                        <div className="space-y-2" key={colorKey}>
-                            <Label htmlFor={colorKey}>
-                                {colorKey === "primaryColor" ? "اللون الأساسي" :
-                                 colorKey === "backgroundColor" ? "لون الخلفية العام" :
-                                 colorKey === "foregroundColor" ? "لون النص العام" :
-                                 colorKey === "cardColor" ? "لون البطاقات" :
-                                 colorKey === "popoverColor" ? "لون القوائم المنبثقة" :
-                                 colorKey === "secondaryColor" ? "اللون الثانوي" :
-                                 colorKey === "mutedColor" ? "اللون المحايد (Muted)" :
-                                 colorKey === "accentColor" ? "لون التمييز (Accent)" :
-                                 colorKey === "destructiveColor" ? "لون الحذف/الخطأ" :
-                                 colorKey === "borderColor" ? "لون الحدود" :
-                                 colorKey === "inputColor" ? "لون حقول الإدخال" :
-                                 colorKey === "ringColor" ? "لون حلقة التركيز (Ring)" :
-                                 colorKey === "sidebarBackgroundColor" ? "لون خلفية القائمة الجانبية" :
-                                 colorKey === "sidebarForegroundColor" ? "لون نص القائمة الجانبية" :
-                                 colorKey}
-                            </Label>
-                            <Input id={colorKey} type="color" value={customColors[colorKey]} onChange={(e) => handleColorInputChange(colorKey, e.target.value)} className="p-1 h-10 w-full"/>
-                        </div>
-                    ))}
-                </div>
+              {/* Color customization UI is removed */}
                <div className="space-y-2">
                 <Label htmlFor="logoUpload">شعار الشركة</Label>
                 <div className="flex items-center gap-4">
