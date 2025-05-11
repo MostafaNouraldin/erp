@@ -13,12 +13,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
-import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle, Tag } from "lucide-react";
+import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle, Tag, Eye } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -122,8 +122,17 @@ const initialInvoicesData: Invoice[] = [
   },
 ];
 
-
-const customers = [
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  type: string;
+  balance: string;
+  address?: string;
+  vatNumber?: string | null;
+}
+const customers: Customer[] = [
   { id: "CUST001", name: "شركة الأمل", email: "contact@alamal.com", phone: "0501234567", type: "شركة", balance: "15,500 SAR", address: "طريق الملك فهد، الرياض، المملكة العربية السعودية", vatNumber: "300123456700003" },
   { id: "CUST002", name: "مؤسسة النجاح", email: "info@najjsuccess.org", phone: "0559876543", type: "مؤسسة", balance: "0 SAR", address: "شارع الأمير سلطان، جدة، المملكة العربية السعودية", vatNumber: "300765432100003" },
   { id: "CUST003", name: "أحمد خالد (فرد)", email: "ahmed.k@mail.com", phone: "0533332222", type: "فرد", balance: "0 SAR", address: "حي النزهة، الدمام، المملكة العربية السعودية", vatNumber: null },
@@ -141,6 +150,14 @@ interface PrintableInvoice extends Invoice {
     customerVatNumber?: string | null;
     subTotalForPrint: number;
     vatAmountForPrint: number;
+}
+
+interface StatementEntry {
+  date: string;
+  description: string;
+  debit: number;
+  credit: number;
+  balance: number;
 }
 
 const quotationItemSchema = z.object({
@@ -233,6 +250,12 @@ export default function SalesPage() {
 
   const [showCreateInvoiceDialog, setShowCreateInvoiceDialog] = useState(false);
   const [invoiceToEdit, setInvoiceToEdit] = useState<InvoiceFormValues | null>(null);
+
+  const [showCustomerDetailsDialog, setShowCustomerDetailsDialog] = useState(false);
+  const [selectedCustomerForDetails, setSelectedCustomerForDetails] = useState<Customer | null>(null);
+  const [customerInvoicesForDetails, setCustomerInvoicesForDetails] = useState<Invoice[]>([]);
+  const [customerStatement, setCustomerStatement] = useState<StatementEntry[]>([]);
+
 
   const { toast } = useToast();
 
@@ -366,6 +389,75 @@ export default function SalesPage() {
     }
     return invoice.status;
   };
+
+  const parseBalance = (balanceString: string): number => {
+    const numericString = balanceString.replace(/[^0-9.]/g, '');
+    return parseFloat(numericString) || 0;
+  };
+  
+  const generateCustomerStatement = (customer: Customer, allInvoices: Invoice[]): StatementEntry[] => {
+    const statement: StatementEntry[] = [];
+    let runningBalance = 0; // Start with a zero balance for the statement period
+  
+    const customerInvoices = allInvoices.filter(inv => inv.customerId === customer.id);
+  
+    const transactions: Array<{ date: Date, description: string, debit: number, credit: number }> = [];
+  
+    customerInvoices.forEach(invoice => {
+      transactions.push({
+        date: new Date(invoice.date),
+        description: `فاتورة رقم: ${invoice.id}`,
+        debit: invoice.numericTotalAmount,
+        credit: 0,
+      });
+      if (invoice.status === "مدفوع") {
+        transactions.push({
+          date: new Date(invoice.dueDate), // Or invoice.date, or a separate payment date if available
+          description: `سداد فاتورة رقم: ${invoice.id}`,
+          debit: 0,
+          credit: invoice.numericTotalAmount,
+        });
+      }
+    });
+  
+    transactions.sort((a, b) => a.date.getTime() - b.date.getTime());
+  
+    transactions.forEach(transaction => {
+      runningBalance += transaction.debit;
+      runningBalance -= transaction.credit;
+      statement.push({
+        date: transaction.date.toLocaleDateString('ar-SA', { calendar: 'gregory' }),
+        description: transaction.description,
+        debit: transaction.debit,
+        credit: transaction.credit,
+        balance: runningBalance,
+      });
+    });
+  
+    return statement;
+  };
+
+
+  const handleViewCustomerDetails = (customer: Customer) => {
+    setSelectedCustomerForDetails(customer);
+    const relatedInvoices = invoices.filter(inv => inv.customerId === customer.id);
+    setCustomerInvoicesForDetails(relatedInvoices);
+    setCustomerStatement(generateCustomerStatement(customer, relatedInvoices));
+    setShowCustomerDetailsDialog(true);
+  };
+
+  const handlePrintCustomerStatement = () => {
+    // Logic to trigger print for the customer statement
+    // This will likely involve using window.print() and CSS for print styling
+    // For now, we can simulate it with an alert or by opening the print dialog.
+    const printableContent = document.getElementById('printable-customer-statement');
+    if (printableContent) {
+        window.print();
+    } else {
+        toast({ title: "خطأ", description: "لا يمكن طباعة كشف الحساب حالياً.", variant: "destructive" });
+    }
+  };
+
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -853,8 +945,8 @@ export default function SalesPage() {
                         </TableCell>
                         <TableCell className="font-semibold">{cust.balance}</TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض ملف العميل">
-                                <FileText className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض ملف العميل" onClick={() => handleViewCustomerDetails(cust)}>
+                                <Eye className="h-4 w-4" />
                             </Button>
                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل بيانات العميل">
                                 <Edit className="h-4 w-4" />
@@ -987,7 +1079,102 @@ export default function SalesPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Customer Details Dialog */}
+      <Dialog open={showCustomerDetailsDialog} onOpenChange={setShowCustomerDetailsDialog}>
+        <DialogContent className="sm:max-w-4xl print-hidden" dir="rtl">
+          <DialogHeader className="print-hidden">
+            <DialogTitle>تفاصيل العميل: {selectedCustomerForDetails?.name}</DialogTitle>
+            <DialogDescriptionComponent>عرض بيانات العميل، فواتيره، وكشف حسابه.</DialogDescriptionComponent>
+          </DialogHeader>
+          {selectedCustomerForDetails && isClient && (
+            <div id="printable-customer-statement" className="printable-area bg-background text-foreground font-cairo text-sm p-4 max-h-[80vh] overflow-y-auto">
+              {/* Print Header */}
+              <div className="print-only flex justify-between items-start pb-4 mb-6 border-b">
+                <div className="flex items-center gap-2"> <AppLogo />
+                  <div> <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2> <p className="text-xs">Al-Mustaqbal IT Co.</p> <p className="text-xs">الرياض - المملكة العربية السعودية</p> <p className="text-xs">الرقم الضريبي: 300012345600003</p> </div>
+                </div>
+                <div className="text-left"> <h3 className="text-xl font-semibold text-primary">كشف حساب عميل</h3> <p className="text-xs">Customer Statement</p> <p className="text-sm mt-1"><strong>العميل:</strong> {selectedCustomerForDetails.name}</p> <p className="text-sm"><strong>التاريخ:</strong> {new Date().toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p> </div>
+              </div>
+
+              <Tabs defaultValue="info" className="w-full">
+                <TabsList className="w-full mb-4 print-hidden">
+                  <TabsTrigger value="info">بيانات العميل</TabsTrigger>
+                  <TabsTrigger value="invoicesList">قائمة الفواتير</TabsTrigger>
+                  <TabsTrigger value="statement">كشف الحساب</TabsTrigger>
+                </TabsList>
+                <TabsContent value="info">
+                  <Card>
+                    <CardHeader><CardTitle className="text-base">بيانات العميل</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      <p><strong>الاسم:</strong> {selectedCustomerForDetails.name}</p>
+                      <p><strong>البريد الإلكتروني:</strong> {selectedCustomerForDetails.email}</p>
+                      <p><strong>الهاتف:</strong> {selectedCustomerForDetails.phone}</p>
+                      <p><strong>النوع:</strong> {selectedCustomerForDetails.type}</p>
+                      <p><strong>الرصيد الحالي:</strong> {selectedCustomerForDetails.balance}</p>
+                      <p><strong>العنوان:</strong> {selectedCustomerForDetails.address || "غير متوفر"}</p>
+                      <p><strong>الرقم الضريبي:</strong> {selectedCustomerForDetails.vatNumber || "غير متوفر"}</p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="invoicesList">
+                  <Card>
+                    <CardHeader><CardTitle className="text-base">فواتير العميل ({customerInvoicesForDetails.length})</CardTitle></CardHeader>
+                    <CardContent>
+                      {customerInvoicesForDetails.length > 0 ? (
+                        <Table size="sm">
+                          <TableHeader><TableRow><TableHead>رقم الفاتورة</TableHead><TableHead>التاريخ</TableHead><TableHead>الاستحقاق</TableHead><TableHead>المبلغ</TableHead><TableHead>الحالة</TableHead></TableRow></TableHeader>
+                          <TableBody>
+                            {customerInvoicesForDetails.map(inv => (
+                              <TableRow key={inv.id}>
+                                <TableCell>{inv.id}</TableCell>
+                                <TableCell>{formatDate(inv.date)}</TableCell>
+                                <TableCell>{formatDate(inv.dueDate)}</TableCell>
+                                <TableCell>{inv.numericTotalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                                <TableCell><Badge variant={inv.status === "مدفوع" ? "default" : "outline"}>{getInvoiceStatusText(inv)}</Badge></TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : <p className="text-muted-foreground text-center py-4">لا توجد فواتير لهذا العميل.</p>}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="statement">
+                  <Card>
+                    <CardHeader><CardTitle className="text-base">كشف حساب العميل</CardTitle></CardHeader>
+                    <CardContent>
+                      {customerStatement.length > 0 ? (
+                        <Table size="sm">
+                          <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>البيان</TableHead><TableHead>مدين</TableHead><TableHead>دائن</TableHead><TableHead>الرصيد</TableHead></TableRow></TableHeader>
+                          <TableBody>
+                            {customerStatement.map((entry, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell>{entry.date}</TableCell>
+                                <TableCell>{entry.description}</TableCell>
+                                <TableCell>{entry.debit > 0 ? entry.debit.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' }) : '-'}</TableCell>
+                                <TableCell>{entry.credit > 0 ? entry.credit.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' }) : '-'}</TableCell>
+                                <TableCell className="font-semibold">{entry.balance.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : <p className="text-muted-foreground text-center py-4">لا توجد حركات في كشف الحساب.</p>}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+              <p className="text-center text-xs text-muted-foreground mt-10 print-only">هذا المستند معتمد من نظام المستقبل ERP</p>
+            </div>
+          )}
+          <DialogFooter className="print-hidden pt-4">
+            <Button onClick={handlePrintCustomerStatement} disabled={!selectedCustomerForDetails || !isClient || customerStatement.length === 0}>
+              <Printer className="me-2 h-4 w-4" /> طباعة كشف الحساب
+            </Button>
+            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
-
