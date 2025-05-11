@@ -29,17 +29,25 @@ const initialTenantsData: Tenant[] = [
 ];
 
 const allAvailableModules: Module[] = [
-  { id: "MOD001", key: "Accounting", name: "الحسابات", isRentable: true, priceMonthly: 100, priceYearly: 1000 },
-  { id: "MOD002", key: "Inventory", name: "المخزون", isRentable: true, priceMonthly: 80, priceYearly: 800 },
-  { id: "MOD003", key: "Sales", name: "المبيعات", isRentable: true, priceMonthly: 90, priceYearly: 900 },
-  { id: "MOD004", key: "Purchases", name: "المشتريات", isRentable: false, priceMonthly: 70, priceYearly: 700 },
-  { id: "MOD005", key: "HR", name: "الموارد البشرية", isRentable: true, priceMonthly: 120, priceYearly: 1200 },
-  { id: "MOD006", key: "POS", name: "نقاط البيع", isRentable: true, priceMonthly: 50, priceYearly: 500 },
+  { id: "MOD001", key: "Dashboard", name: "لوحة التحكم", description: "عرض ملخصات وأداء النظام", isRentable: false, priceMonthly: 0, priceYearly: 0 },
+  { id: "MOD002", key: "Accounting", name: "الحسابات", description: "إدارة الحسابات العامة والقيود", isRentable: true, priceMonthly: 100, priceYearly: 1000 },
+  { id: "MOD003", key: "Inventory", name: "المخزون", description: "إدارة المنتجات والمستودعات", isRentable: true, priceMonthly: 80, priceYearly: 800 },
+  { id: "MOD004", key: "Sales", name: "المبيعات", description: "إدارة عروض الأسعار والفواتير", isRentable: true, priceMonthly: 90, priceYearly: 900 },
+  { id: "MOD005", key: "Purchases", name: "المشتريات", description: "إدارة أوامر الشراء والموردين", isRentable: true, priceMonthly: 70, priceYearly: 700 },
+  { id: "MOD006", key: "HR", name: "الموارد البشرية", description: "إدارة الموظفين والرواتب", isRentable: true, priceMonthly: 120, priceYearly: 1200 },
+  { id: "MOD007", key: "Production", name: "الإنتاج", description: "إدارة عمليات التصنيع", isRentable: true, priceMonthly: 150, priceYearly: 1500 },
+  { id: "MOD008", key: "Projects", name: "المشاريع", description: "إدارة المشاريع والمهام", isRentable: true, priceMonthly: 110, priceYearly: 1100 },
+  { id: "MOD009", key: "POS", name: "نقاط البيع", description: "نظام نقاط البيع بالتجزئة", isRentable: true, priceMonthly: 50, priceYearly: 500 },
+  { id: "MOD010", key: "BI", name: "التقارير والتحليل", description: "تقارير مجمعة وتحليلات", isRentable: true, priceMonthly: 60, priceYearly: 600 },
+  { id: "MOD011", key: "Settings", name: "الإعدادات العامة", description: "إعدادات النظام الأساسية", isRentable: false, priceMonthly: 0, priceYearly: 0 },
+  { id: "MOD012", key: "Help", name: "المساعدة", description: "مركز المساعدة والدعم", isRentable: false, priceMonthly: 0, priceYearly: 0 },
+  { id: "MOD013", key: "SystemAdministration", name: "إدارة النظام", description: "إدارة الشركات والاشتراكات", isRentable: false, priceMonthly: 0, priceYearly: 0 },
 ];
+
 
 const initialTenantSubscriptions: Record<string, TenantSubscribedModule[]> = {
   "TEN001": [
-    { moduleId: "Accounting", subscribed: true }, { moduleId: "Inventory", subscribed: true }, { moduleId: "Sales", subscribed: false }
+    { moduleId: "Accounting", subscribed: true }, { moduleId: "Inventory", subscribed: true }, { moduleId: "Sales", subscribed: false }, { moduleId: "Purchases", subscribed: true}
   ],
   "TEN002": [
     { moduleId: "Accounting", subscribed: true }
@@ -59,7 +67,7 @@ const tenantSchema = z.object({
   isActive: z.boolean().default(true),
   subscriptionEndDate: z.date().optional(),
   subscribedModules: z.array(z.object({
-    moduleId: z.string(),
+    moduleId: z.string(), // This will store the module.key
     subscribed: z.boolean(),
   })).default([]),
   billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
@@ -76,7 +84,7 @@ export default function TenantsPage() {
 
   const form = useForm<TenantFormValues>({
     resolver: zodResolver(tenantSchema),
-    defaultValues: { name: "", email: "", isActive: true, subscribedModules: allAvailableModules.map(m => ({moduleId: m.key, subscribed: false})), billingCycle: "yearly" },
+    // defaultValues will be set in useEffect based on tenantToEdit
   });
 
   const { fields: subscribedModulesFields, replace: replaceSubscribedModules } = useFieldArray({
@@ -86,38 +94,47 @@ export default function TenantsPage() {
 
 
   useEffect(() => {
-    if (tenantToEdit) {
-      const currentSubs = tenantModuleSubscriptions[tenantToEdit.id!] || allAvailableModules.map(m => ({ moduleId: m.key, subscribed: false }));
-      const modulesWithConfig = allAvailableModules.map(mod => {
-        const sub = currentSubs.find(s => s.moduleId === mod.key);
-        return { moduleId: mod.key, name: mod.name, subscribed: sub ? sub.subscribed : false };
-      });
-      form.reset({
-        ...tenantToEdit,
-        subscribedModules: modulesWithConfig.map(m => ({moduleId: m.moduleId, subscribed: m.subscribed})),
-      });
-    } else {
-       form.reset({
-        name: "", email: "", isActive: true, phone: "", address: "", vatNumber: "",
-        subscribedModules: allAvailableModules.map(m => ({ moduleId: m.key, subscribed: false })),
-        billingCycle: "yearly",
-        subscriptionEndDate: undefined
-      });
+    if (showManageTenantDialog) {
+      if (tenantToEdit && tenantToEdit.id) {
+        const currentTenantSubs = tenantModuleSubscriptions[tenantToEdit.id] || [];
+        const initialFormModules = allAvailableModules.map(mod => {
+          const sub = currentTenantSubs.find(s => s.moduleId === mod.key);
+          return { moduleId: mod.key, subscribed: sub ? sub.subscribed : false };
+        });
+        form.reset({
+          ...tenantToEdit,
+          subscribedModules: initialFormModules,
+        });
+      } else {
+        const initialFormModules = allAvailableModules.map(mod => ({
+          moduleId: mod.key,
+          subscribed: false,
+        }));
+        form.reset({
+          name: "", email: "", isActive: true, phone: "", address: "", vatNumber: "",
+          subscribedModules: initialFormModules,
+          billingCycle: "yearly",
+          subscriptionEndDate: undefined,
+        });
+      }
     }
-  }, [tenantToEdit, form, showManageTenantDialog, tenantModuleSubscriptions]);
+  }, [tenantToEdit, showManageTenantDialog, tenantModuleSubscriptions, form]);
 
 
   const handleTenantSubmit = (values: TenantFormValues) => {
-    const subscriptionEndDate = values.subscriptionEndDate ? new Date(values.subscriptionEndDate) : undefined;
-    if (values.billingCycle === 'monthly' && !subscriptionEndDate) {
-        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
-    } else if (values.billingCycle === 'yearly' && !subscriptionEndDate) {
-        subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+    let effectiveSubscriptionEndDate = values.subscriptionEndDate;
+    if (!effectiveSubscriptionEndDate && (values.billingCycle === 'monthly' || values.billingCycle === 'yearly')) {
+        effectiveSubscriptionEndDate = new Date();
+        if (values.billingCycle === 'monthly') {
+            effectiveSubscriptionEndDate.setMonth(effectiveSubscriptionEndDate.getMonth() + 1);
+        } else {
+            effectiveSubscriptionEndDate.setFullYear(effectiveSubscriptionEndDate.getFullYear() + 1);
+        }
     }
 
 
     if (tenantToEdit && tenantToEdit.id) {
-      setTenants(prev => prev.map(t => t.id === tenantToEdit.id ? { ...t, ...values, createdAt: t.createdAt, id: t.id, subscriptionEndDate } : t));
+      setTenants(prev => prev.map(t => t.id === tenantToEdit.id ? { ...t, ...values, createdAt: t.createdAt, id: t.id, subscriptionEndDate: effectiveSubscriptionEndDate } : t));
       setTenantModuleSubscriptions(prev => ({...prev, [tenantToEdit.id!]: values.subscribedModules}));
       toast({ title: "تم التعديل", description: `تم تعديل بيانات الشركة: ${values.name}` });
     } else {
@@ -126,7 +143,7 @@ export default function TenantsPage() {
         id: newTenantId,
         ...values,
         createdAt: new Date(),
-        subscriptionEndDate,
+        subscriptionEndDate: effectiveSubscriptionEndDate,
       };
       setTenants(prev => [...prev, newTenant]);
       setTenantModuleSubscriptions(prev => ({...prev, [newTenantId]: values.subscribedModules}));
@@ -146,10 +163,10 @@ export default function TenantsPage() {
     toast({ title: "تم الحذف", description: `تم حذف الشركة ${tenantId}.`, variant: "destructive" });
   };
 
-  const getModuleSubscribedStatus = (tenantId: string, moduleId: string) => {
+  const getModuleSubscribedStatus = (tenantId: string, moduleKey: string) => {
     const subs = tenantModuleSubscriptions[tenantId];
     if (!subs) return false;
-    const moduleSub = subs.find(s => s.moduleId === moduleId);
+    const moduleSub = subs.find(s => s.moduleId === moduleKey);
     return moduleSub ? moduleSub.subscribed : false;
   };
 
@@ -171,7 +188,7 @@ export default function TenantsPage() {
         <h2 className="text-xl font-semibold">قائمة الشركات</h2>
         <Dialog open={showManageTenantDialog} onOpenChange={(isOpen) => { setShowManageTenantDialog(isOpen); if (!isOpen) setTenantToEdit(null); }}>
           <DialogTrigger asChild>
-            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setTenantToEdit(null); form.reset(); setShowManageTenantDialog(true); }}>
+            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setTenantToEdit(null); setShowManageTenantDialog(true); }}>
               <PlusCircle className="me-2 h-4 w-4" /> إضافة شركة جديدة
             </Button>
           </DialogTrigger>
@@ -182,7 +199,7 @@ export default function TenantsPage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleTenantSubmit)} className="space-y-4 py-4">
                 <ScrollArea className="max-h-[70vh] p-1">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-2">
                     <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input placeholder="اسم الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                     <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني (للإدارة)</FormLabel><FormControl><Input type="email" placeholder="admin@company.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                     <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
@@ -191,7 +208,7 @@ export default function TenantsPage() {
                   </div>
                   <Card className="mb-4">
                     <CardHeader><CardTitle className="text-base">إعدادات الاشتراك</CardTitle></CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="space-y-3 p-4">
                         <FormField control={form.control} name="billingCycle" render={({ field }) => (
                             <FormItem><FormLabel>دورة الفوترة</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value} dir="rtl">
@@ -221,48 +238,37 @@ export default function TenantsPage() {
                   </Card>
                    <Card>
                         <CardHeader><CardTitle className="text-base">الوحدات المشترك بها</CardTitle></CardHeader>
-                        <CardContent className="space-y-2">
-                            {allAvailableModules.filter(m => m.isRentable).map((module, index) => (
-                                <FormField
-                                    key={module.id}
-                                    control={form.control}
-                                    name={`subscribedModules.${index}.subscribed`}
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5">
-                                                <FormLabel>{module.name}</FormLabel>
-                                                <DialogDescriptionComponent className="text-xs">
-                                                    شهري: {module.priceMonthly} SAR / سنوي: {module.priceYearly} SAR
-                                                </DialogDescriptionComponent>
-                                            </div>
-                                            <FormControl>
-                                                <Checkbox
-                                                    checked={field.value}
-                                                    onCheckedChange={(checked) => {
-                                                        field.onChange(checked);
-                                                        // Ensure moduleId is correctly set when checkbox changes
-                                                        const updatedModules = form.getValues('subscribedModules').map((m, i) => 
-                                                            i === index ? { moduleId: module.key, subscribed: !!checked } : m
-                                                        );
-                                                        // Make sure all modules are present, even if not rentable
-                                                         const allModulesKeys = allAvailableModules.map(am => am.key);
-                                                         const currentModuleKeys = updatedModules.map(um => um.moduleId);
-                                                         allModulesKeys.forEach(amk => {
-                                                            if(!currentModuleKeys.includes(amk)){
-                                                                updatedModules.push({moduleId: amk, subscribed: false});
-                                                            }
-                                                         });
-
-
-                                                        form.setValue('subscribedModules', updatedModules.filter(m => allModulesKeys.includes(m.moduleId)) );
-                                                    }}
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-                            ))}
-                             <input type="hidden" {...form.register(`subscribedModules.${allAvailableModules.filter(m => m.isRentable).length}.moduleId`)} value="placeholder"/>
+                        <CardContent className="space-y-2 p-4">
+                            {subscribedModulesFields.map((formFieldItem, index) => {
+                                const moduleDetails = allAvailableModules.find(m => m.key === form.getValues(`subscribedModules.${index}.moduleId`));
+                                if (!moduleDetails || !moduleDetails.isRentable) {
+                                    return null;
+                                }
+                                return (
+                                    <FormField
+                                        key={formFieldItem.id}
+                                        control={form.control}
+                                        name={`subscribedModules.${index}.subscribed`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                                <div className="space-y-0.5">
+                                                    <FormLabel htmlFor={`subscribedModules.${index}.subscribed`}>{moduleDetails.name}</FormLabel>
+                                                    <DialogDescriptionComponent className="text-xs">
+                                                        شهري: {moduleDetails.priceMonthly} SAR / سنوي: {moduleDetails.priceYearly} SAR
+                                                    </DialogDescriptionComponent>
+                                                </div>
+                                                <FormControl>
+                                                    <Checkbox
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                        id={`subscribedModules.${index}.subscribed`}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                );
+                            })}
                         </CardContent>
                     </Card>
                 </ScrollArea>
@@ -307,7 +313,7 @@ export default function TenantsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs">
-                      {tenantModuleSubscriptions[tenant.id]?.filter(s => s.subscribed).map(s => allAvailableModules.find(m=>m.key === s.moduleId)?.name).join(', ') || 'لا يوجد'}
+                      {tenantModuleSubscriptions[tenant.id!]?.filter(s => s.subscribed).map(s => allAvailableModules.find(m=>m.key === s.moduleId)?.name).join(', ') || 'لا يوجد'}
                     </TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setTenantToEdit(tenant as TenantFormValues); setShowManageTenantDialog(true); }}>
