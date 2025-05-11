@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Search, Filter, Printer, Download } from "lucide-react";
+import { FileText, Search, Filter, Printer, Download, Banknote } from "lucide-react"; // Changed BadgeCent to Banknote
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
@@ -113,7 +113,7 @@ export default function SubscriptionInvoicesPage() {
                         </Button>
                         {invoice.status === "unpaid" && (
                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة">
-                                <BadgeCent className="h-4 w-4 text-green-600" />
+                                <Banknote className="h-4 w-4 text-green-600" />
                             </Button>
                         )}
                       </TableCell>
@@ -128,3 +128,4 @@ export default function SubscriptionInvoicesPage() {
     </div>
   );
 }
+
