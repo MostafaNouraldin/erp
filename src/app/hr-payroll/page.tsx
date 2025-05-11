@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
-import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send } from "lucide-react";
+import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -26,24 +26,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Mock data
 const initialEmployeesData = [
-  { id: "EMP001", name: "أحمد محمود", department: "قسم المبيعات", position: "مدير مبيعات", joinDate: new Date("2022-01-15"), status: "نشط" as const, basicSalary: 12000, email: "ahmed.m@example.com", phone: "0501234567", avatarUrl: "https://picsum.photos/100/100?random=1" },
-  { id: "EMP002", name: "فاطمة علي", department: "قسم التسويق", position: "أخصائية تسويق", joinDate: new Date("2023-03-01"), status: "نشط" as const, basicSalary: 8000, email: "fatima.a@example.com", phone: "0509876543", avatarUrl: "https://picsum.photos/100/100?random=2" },
-  { id: "EMP003", name: "خالد عبدالله", department: "قسم المالية", position: "محاسب أول", joinDate: new Date("2021-07-20"), status: "نشط" as const, basicSalary: 10000, email: "khaled.ab@example.com", phone: "0501122334", avatarUrl: "https://picsum.photos/100/100?random=3" },
-  { id: "EMP004", name: "سارة إبراهيم", department: "قسم الموارد البشرية", position: "مسؤول موارد بشرية", joinDate: new Date("2024-02-10"), status: "نشط" as const, basicSalary: 9000, email: "sara.i@example.com", phone: "0504455667", avatarUrl: "https://picsum.photos/100/100?random=4" },
-  { id: "EMP005", name: "يوسف حسن", department: "قسم التشغيل", position: "فني صيانة", joinDate: new Date("2020-05-01"), status: "في إجازة" as const, basicSalary: 7000, email: "youssef.h@example.com", phone: "0507788990", avatarUrl: "https://picsum.photos/100/100?random=5" },
+  { id: "EMP001", name: "أحمد محمود", department: "قسم المبيعات", position: "مدير مبيعات", joinDate: new Date("2022-01-15"), status: "نشط" as const, basicSalary: 12000, email: "ahmed.m@example.com", phone: "0501234567", avatarUrl: "https://picsum.photos/100/100?random=1", dataAiHint: "man portrait" },
+  { id: "EMP002", name: "فاطمة علي", department: "قسم التسويق", position: "أخصائية تسويق", joinDate: new Date("2023-03-01"), status: "نشط" as const, basicSalary: 8000, email: "fatima.a@example.com", phone: "0509876543", avatarUrl: "https://picsum.photos/100/100?random=2", dataAiHint: "woman portrait" },
+  { id: "EMP003", name: "خالد عبدالله", department: "قسم المالية", position: "محاسب أول", joinDate: new Date("2021-07-20"), status: "نشط" as const, basicSalary: 10000, email: "khaled.ab@example.com", phone: "0501122334", avatarUrl: "https://picsum.photos/100/100?random=3", dataAiHint: "man office" },
+  { id: "EMP004", name: "سارة إبراهيم", department: "قسم الموارد البشرية", position: "مسؤول موارد بشرية", joinDate: new Date("2024-02-10"), status: "نشط" as const, basicSalary: 9000, email: "sara.i@example.com", phone: "0504455667", avatarUrl: "https://picsum.photos/100/100?random=4", dataAiHint: "woman smiling" },
+  { id: "EMP005", name: "يوسف حسن", department: "قسم التشغيل", position: "فني صيانة", joinDate: new Date("2020-05-01"), status: "في إجازة" as const, basicSalary: 7000, email: "youssef.h@example.com", phone: "0507788990", avatarUrl: "https://picsum.photos/100/100?random=5", dataAiHint: "man worker" },
 ];
 
 const initialPayrollData = [
-  { id: "PAY001", employeeId: "EMP001", monthYear: "يوليو 2024", basicSalary: 12000, allowances: 3000, deductions: 500, netSalary: 14500, status: "مدفوع" as const },
-  { id: "PAY002", employeeId: "EMP002", monthYear: "يوليو 2024", basicSalary: 8000, allowances: 1500, deductions: 200, netSalary: 9300, status: "مدفوع" as const },
-  { id: "PAY003", employeeId: "EMP003", monthYear: "يوليو 2024", basicSalary: 10000, allowances: 2000, deductions: 300, netSalary: 11700, status: "قيد المعالجة" as const },
+  { id: "PAY001", employeeId: "EMP001", monthYear: "يوليو 2024", basicSalary: 12000, allowances: [{description: "بدل سكن", amount: 2500}, {description: "بدل مواصلات", amount: 500}], deductions: [{description: "سلفة", amount: 500}], netSalary: 14500, status: "مدفوع" as const, notes: "تم الدفع مع سداد السلفة." },
+  { id: "PAY002", employeeId: "EMP002", monthYear: "يوليو 2024", basicSalary: 8000, allowances: [{description: "بدل طبيعة عمل", amount: 1500}], deductions: [{description: "تأمين صحي", amount:200}], netSalary: 9300, status: "مدفوع" as const, notes: "" },
+  { id: "PAY003", employeeId: "EMP003", monthYear: "يوليو 2024", basicSalary: 10000, allowances: [{description: "بدل إضافي", amount:2000}], deductions: [{description: "جزاء تأخير", amount:300}], netSalary: 11700, status: "قيد المعالجة" as const, notes: "يراجع من المدير المالي" },
 ];
 
+
 const initialAttendanceData = [
-  { id: "ATT001", employeeId: "EMP001", date: new Date("2024-07-25"), checkIn: "08:55", checkOut: "17:05", hours: "8.17", status: "حاضر" as const },
-  { id: "ATT002", employeeId: "EMP002", date: new Date("2024-07-25"), checkIn: "09:10", checkOut: "17:00", hours: "7.83", status: "حاضر (متأخر)" as const },
-  { id: "ATT003", employeeId: "EMP003", date: new Date("2024-07-25"), checkIn: null, checkOut: null, hours: "0", status: "غائب" as const },
-  { id: "ATT004", employeeId: "EMP004", date: new Date("2024-07-25"), checkIn: "09:00", checkOut: "16:30", hours: "7.5", status: "حاضر (مغادرة مبكرة)" as const },
+  { id: "ATT001", employeeId: "EMP001", date: new Date("2024-07-25"), checkIn: "08:55", checkOut: "17:05", hours: "8.17", status: "حاضر" as const, notes: "" },
+  { id: "ATT002", employeeId: "EMP002", date: new Date("2024-07-25"), checkIn: "09:10", checkOut: "17:00", hours: "7.83", status: "حاضر (متأخر)" as const, notes: "تأخير 10 دقائق" },
+  { id: "ATT003", employeeId: "EMP003", date: new Date("2024-07-25"), checkIn: null, checkOut: null, hours: "0", status: "غائب" as const, notes: "غياب بدون عذر" },
+  { id: "ATT004", employeeId: "EMP004", date: new Date("2024-07-25"), checkIn: "09:00", checkOut: "16:30", hours: "7.5", status: "حاضر (مغادرة مبكرة)" as const, notes: "استئذان شخصي" },
 ];
 
 const initialLeaveRequestsData = [
@@ -66,6 +67,7 @@ const employeeSchema = z.object({
   email: z.string().email("بريد إلكتروني غير صالح").optional(),
   phone: z.string().optional(),
   avatarUrl: z.string().url("رابط الصورة غير صالح").optional(),
+  dataAiHint: z.string().max(30, "الكلمات المفتاحية يجب ألا تتجاوز 30 حرفًا").optional(),
 });
 type EmployeeFormValues = z.infer<typeof employeeSchema>;
 
@@ -82,6 +84,7 @@ const payrollSchema = z.object({
   deductions: z.array(payrollItemSchema).optional().default([]),
   notes: z.string().optional(),
   status: z.enum(["مسودة", "قيد المعالجة", "مدفوع", "ملغي"]).default("مسودة"),
+  netSalary: z.coerce.number().optional(), // Calculated field
 });
 type PayrollFormValues = z.infer<typeof payrollSchema>;
 
@@ -93,6 +96,7 @@ const attendanceSchema = z.object({
   checkOut: z.string().optional().nullable(),
   notes: z.string().optional(),
   status: z.enum(["حاضر", "غائب", "حاضر (متأخر)", "حاضر (مغادرة مبكرة)", "إجازة"]).default("حاضر"),
+  hours: z.string().optional(), // Calculated field
 });
 type AttendanceFormValues = z.infer<typeof attendanceSchema>;
 
@@ -104,6 +108,7 @@ const leaveRequestSchema = z.object({
   endDate: z.date({ required_error: "تاريخ الانتهاء مطلوب" }),
   reason: z.string().optional(),
   status: z.enum(["مقدمة", "موافق عليها", "مرفوضة", "ملغاة"]).default("مقدمة"),
+  days: z.coerce.number().optional(), // Calculated field
 });
 type LeaveRequestFormValues = z.infer<typeof leaveRequestSchema>;
 
@@ -122,7 +127,8 @@ export default function HRPayrollPage() {
   const [showCreatePayrollDialog, setShowCreatePayrollDialog] = useState(false);
   const [payrollToEdit, setPayrollToEdit] = useState<PayrollFormValues | null>(null);
   const [showViewPayrollDialog, setShowViewPayrollDialog] = useState(false);
-  const [selectedPayrollForView, setSelectedPayrollForView] = useState<any | null>(null);
+  const [selectedPayrollForView, setSelectedPayrollForView] = useState<PayrollFormValues & {employeeName?: string} | null>(null);
+
 
   const [showEditAttendanceDialog, setShowEditAttendanceDialog] = useState(false);
   const [attendanceToEdit, setAttendanceToEdit] = useState<AttendanceFormValues | null>(null);
@@ -130,7 +136,8 @@ export default function HRPayrollPage() {
   const [showCreateLeaveDialog, setShowCreateLeaveDialog] = useState(false);
   const [leaveRequestToEdit, setLeaveRequestToEdit] = useState<LeaveRequestFormValues | null>(null);
   const [showViewLeaveDialog, setShowViewLeaveDialog] = useState(false);
-  const [selectedLeaveForView, setSelectedLeaveForView] = useState<any | null>(null);
+  const [selectedLeaveForView, setSelectedLeaveForView] = useState<(LeaveRequestFormValues & {employeeName?:string}) | null>(null);
+
 
   const { toast } = useToast();
 
@@ -143,13 +150,21 @@ export default function HRPayrollPage() {
 
   useEffect(() => {
     if (employeeToEdit) employeeForm.reset(employeeToEdit);
-    else employeeForm.reset({ name: "", department: "", position: "", joinDate: new Date(), status: "نشط", basicSalary: 0, email: "", phone: "", avatarUrl: "" });
+    else employeeForm.reset({ name: "", department: "", position: "", joinDate: new Date(), status: "نشط", basicSalary: 0, email: "", phone: "", avatarUrl: "", dataAiHint: "" });
   }, [employeeToEdit, employeeForm, showAddEmployeeDialog]);
 
   useEffect(() => {
-    if (payrollToEdit) payrollForm.reset(payrollToEdit);
-    else payrollForm.reset({ employeeId: "", monthYear: `${new Date().toLocaleString('ar-SA', { month: 'long' })} ${new Date().getFullYear()}`, basicSalary: 0, allowances: [], deductions: [], notes: "", status: "مسودة" });
-  }, [payrollToEdit, payrollForm, showCreatePayrollDialog]);
+    if (payrollToEdit) {
+        const emp = employees.find(e => e.id === payrollToEdit.employeeId);
+        payrollForm.reset({
+            ...payrollToEdit,
+            basicSalary: payrollToEdit.basicSalary || emp?.basicSalary || 0, // Ensure basicSalary is set
+        });
+    } else {
+        const currentMonthYear = `${new Date().toLocaleString('ar-SA', { month: 'long' })} ${new Date().getFullYear()}`;
+        payrollForm.reset({ employeeId: "", monthYear: currentMonthYear, basicSalary: 0, allowances: [], deductions: [], notes: "", status: "مسودة" });
+    }
+  }, [payrollToEdit, payrollForm, showCreatePayrollDialog, employees]);
 
   useEffect(() => {
     if (attendanceToEdit) attendanceForm.reset(attendanceToEdit);
@@ -186,10 +201,10 @@ export default function HRPayrollPage() {
   const handlePayrollSubmit = (values: PayrollFormValues) => {
     const totalAllowances = values.allowances?.reduce((sum, item) => sum + item.amount, 0) || 0;
     const totalDeductions = values.deductions?.reduce((sum, item) => sum + item.amount, 0) || 0;
-    const netSalary = values.basicSalary + totalAllowances - totalDeductions;
+    const netSalary = (values.basicSalary || 0) + totalAllowances - totalDeductions;
     const employee = employees.find(e => e.id === values.employeeId);
 
-    const finalValues = { ...values, allowances: totalAllowances, deductions: totalDeductions, netSalary, employeeName: employee?.name };
+    const finalValues = { ...values, netSalary, employeeName: employee?.name };
 
     if (payrollToEdit) {
       setPayrollDataState(prev => prev.map(p => p.id === payrollToEdit.id ? { ...finalValues, id: payrollToEdit.id! } : p));
@@ -202,15 +217,26 @@ export default function HRPayrollPage() {
     setPayrollToEdit(null);
   };
 
-  const handleViewPayroll = (payroll: any) => {
+  const handleViewPayroll = (payroll: PayrollFormValues) => {
       const employee = employees.find(e => e.id === payroll.employeeId);
-      setSelectedPayrollForView({...payroll, employeeName: employee?.name, fullAllowances: payrollToEdit?.allowances || [], fullDeductions: payrollToEdit?.deductions || [] });
+      setSelectedPayrollForView({...payroll, employeeName: employee?.name });
       setShowViewPayrollDialog(true);
   }
 
   const handleAttendanceSubmit = (values: AttendanceFormValues) => {
-      // Calculate hours worked logic would go here if checkIn and checkOut are times
-      const hours = (values.checkIn && values.checkOut) ? "8.0" : "0"; // Placeholder
+      let hours = "0";
+      if (values.checkIn && values.checkOut) {
+        try {
+            const [inHours, inMinutes] = values.checkIn.split(':').map(Number);
+            const [outHours, outMinutes] = values.checkOut.split(':').map(Number);
+            const checkInDate = new Date(0); checkInDate.setHours(inHours, inMinutes);
+            const checkOutDate = new Date(0); checkOutDate.setHours(outHours, outMinutes);
+            if (checkOutDate > checkInDate) {
+                const diffMs = checkOutDate.getTime() - checkInDate.getTime();
+                hours = (diffMs / (1000 * 60 * 60)).toFixed(2);
+            }
+        } catch(e) { console.error("Error calculating hours:", e); }
+      }
       const finalValues = {...values, hours};
     if (attendanceToEdit) {
       setAttendanceDataState(prev => prev.map(att => att.id === attendanceToEdit.id ? { ...finalValues, id: attendanceToEdit.id! } : att));
@@ -246,7 +272,7 @@ export default function HRPayrollPage() {
       toast({ title: "تم تحديث الطلب", description: `تم ${newStatus === "موافق عليها" ? "الموافقة على" : "رفض"} طلب الإجازة.` });
   };
 
-  const handleViewLeave = (leave: any) => {
+  const handleViewLeave = (leave: LeaveRequestFormValues) => {
       const employee = employees.find(e => e.id === leave.employeeId);
       setSelectedLeaveForView({...leave, employeeName: employee?.name});
       setShowViewLeaveDialog(true);
@@ -284,6 +310,7 @@ export default function HRPayrollPage() {
                             <FormField control={employeeForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                          <FormField control={employeeForm.control} name="avatarUrl" render={({ field }) => (<FormItem><FormLabel>رابط صورة الموظف (اختياري)</FormLabel><FormControl><Input {...field} placeholder="https://example.com/avatar.jpg" /></FormControl><FormMessage /></FormItem>)} />
+                         <FormField control={employeeForm.control} name="dataAiHint" render={({ field }) => (<FormItem><FormLabel>كلمات مفتاحية للصورة (AI Hint)</FormLabel><FormControl><Input {...field} placeholder="مثال: رجل أعمال (كلمتين كحد أقصى)" /></FormControl><DialogDescription className="text-xs text-muted-foreground">كلمة أو كلمتين لوصف الصورة (للبحث).</DialogDescription><FormMessage /></FormItem>)} />
                         <DialogFooter><Button type="submit">{employeeToEdit ? "حفظ التعديلات" : "إضافة الموظف"}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
                     </form>
                 </Form>
@@ -300,8 +327,10 @@ export default function HRPayrollPage() {
                 <Form {...payrollForm}>
                     <form onSubmit={payrollForm.handleSubmit(handlePayrollSubmit)} className="space-y-4 py-4">
                         <FormField control={payrollForm.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>الموظف</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl>
-                            <SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <Select onValueChange={(value) => { field.onChange(value); const emp = employees.find(e => e.id === value); if (emp) payrollForm.setValue("basicSalary", emp.basicSalary); }} value={field.value} dir="rtl">
+                                <FormControl><SelectTrigger><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl>
+                                <SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>)}</SelectContent>
+                            </Select><FormMessage /></FormItem>)} />
                         <FormField control={payrollForm.control} name="monthYear" render={({ field }) => (<FormItem><FormLabel>الشهر والسنة</FormLabel><FormControl><Input {...field} placeholder="مثال: يوليو 2024" /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={payrollForm.control} name="basicSalary" render={({ field }) => (<FormItem><FormLabel>الراتب الأساسي</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         
@@ -387,7 +416,7 @@ export default function HRPayrollPage() {
                   <TableBody>
                     {employees.map((emp) => (
                       <TableRow key={emp.id} className="hover:bg-muted/50">
-                        <TableCell><Avatar className="h-9 w-9"><AvatarImage src={emp.avatarUrl} alt={emp.name} data-ai-hint="person" /><AvatarFallback>{emp.name.substring(0,1)}</AvatarFallback></Avatar></TableCell>
+                        <TableCell><Avatar className="h-9 w-9"><AvatarImage src={emp.avatarUrl} alt={emp.name} data-ai-hint={emp.dataAiHint || emp.name.split(' ').slice(0,2).join(' ') } /><AvatarFallback>{emp.name.substring(0,1)}</AvatarFallback></Avatar></TableCell>
                         <TableCell className="font-medium">{emp.id}</TableCell>
                         <TableCell>{emp.name}</TableCell>
                         <TableCell>{emp.department}</TableCell>
@@ -457,15 +486,17 @@ export default function HRPayrollPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payrollData.map((payroll) => (
+                    {payrollData.map((payroll) => {
+                      const emp = employees.find(e => e.id === payroll.employeeId);
+                      return (
                       <TableRow key={payroll.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{payroll.id}</TableCell>
-                        <TableCell>{employees.find(e => e.id === payroll.employeeId)?.name}</TableCell>
+                        <TableCell>{emp?.name}</TableCell>
                         <TableCell>{payroll.monthYear}</TableCell>
-                        <TableCell>{payroll.basicSalary.toLocaleString('ar-SA', {style: 'currency', currency: 'SAR'})}</TableCell>
-                        <TableCell>{payroll.allowances.toLocaleString('ar-SA', {style: 'currency', currency: 'SAR'})}</TableCell>
-                        <TableCell>{payroll.deductions.toLocaleString('ar-SA', {style: 'currency', currency: 'SAR'})}</TableCell>
-                        <TableCell className="font-semibold">{payroll.netSalary.toLocaleString('ar-SA', {style: 'currency', currency: 'SAR'})}</TableCell>
+                        <TableCell>{(payroll.basicSalary || 0).toLocaleString('ar-SA', {style: 'currency', currency: 'SAR'})}</TableCell>
+                        <TableCell>{(payroll.allowances?.reduce((sum, item) => sum + item.amount, 0) || 0).toLocaleString('ar-SA', {style: 'currency', currency: 'SAR'})}</TableCell>
+                        <TableCell>{(payroll.deductions?.reduce((sum, item) => sum + item.amount, 0) || 0).toLocaleString('ar-SA', {style: 'currency', currency: 'SAR'})}</TableCell>
+                        <TableCell className="font-semibold">{(payroll.netSalary || 0).toLocaleString('ar-SA', {style: 'currency', currency: 'SAR'})}</TableCell>
                         <TableCell>
                           <Badge variant={payroll.status === "مدفوع" ? "default" : "outline"}>{payroll.status}</Badge>
                         </TableCell>
@@ -473,11 +504,11 @@ export default function HRPayrollPage() {
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewPayroll(payroll)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                           {payroll.status !== "مدفوع" && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المسير" onClick={() => {setPayrollToEdit(payrollData.find(p=>p.id === payroll.id) as any || null); payrollForm.reset(payrollData.find(p=>p.id === payroll.id) as any); setShowCreatePayrollDialog(true);}}><Edit className="h-4 w-4" /></Button>}
+                           {payroll.status !== "مدفوع" && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المسير" onClick={() => {setPayrollToEdit(payroll); setShowCreatePayrollDialog(true);}}><Edit className="h-4 w-4" /></Button>}
                            {payroll.status === "قيد المعالجة" && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="اعتماد ودفع"><DollarSign className="h-4 w-4 text-green-600"/></Button>}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )})}
                   </TableBody>
                 </Table>
               </div>
@@ -693,17 +724,17 @@ export default function HRPayrollPage() {
                 {selectedEmployeeForView && (
                     <div className="py-4 space-y-3 text-sm">
                         <div className="flex justify-center mb-4">
-                            <Avatar className="h-24 w-24"><AvatarImage src={selectedEmployeeForView.avatarUrl} alt={selectedEmployeeForView.name} data-ai-hint="person" /><AvatarFallback>{selectedEmployeeForView.name?.substring(0,1)}</AvatarFallback></Avatar>
+                            <Avatar className="h-24 w-24"><AvatarImage src={selectedEmployeeForView.avatarUrl} alt={selectedEmployeeForView.name} data-ai-hint={selectedEmployeeForView.dataAiHint || selectedEmployeeForView.name.split(' ').slice(0,2).join(' ')} /><AvatarFallback>{selectedEmployeeForView.name?.substring(0,1)}</AvatarFallback></Avatar>
                         </div>
                         <p><strong>الرقم الوظيفي:</strong> {selectedEmployeeForView.id}</p>
                         <p><strong>الاسم:</strong> {selectedEmployeeForView.name}</p>
                         <p><strong>القسم:</strong> {selectedEmployeeForView.department}</p>
                         <p><strong>المنصب:</strong> {selectedEmployeeForView.position}</p>
                         <p><strong>تاريخ التعيين:</strong> {selectedEmployeeForView.joinDate?.toLocaleDateString('ar-SA', {calendar:'gregory'})}</p>
-                        <p><strong>الراتب الأساسي:</strong> {selectedEmployeeForView.basicSalary?.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})}</p>
+                        <p><strong>الراتب الأساسي:</strong> {(selectedEmployeeForView.basicSalary || 0)?.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})}</p>
                         <p><strong>البريد الإلكتروني:</strong> {selectedEmployeeForView.email || "-"}</p>
                         <p><strong>الهاتف:</strong> {selectedEmployeeForView.phone || "-"}</p>
-                        <p><strong>الحالة:</strong> <Badge variant={selectedEmployeeForView.status === "نشط" ? "default" : "outline"}>{selectedEmployeeForView.status}</Badge></p>
+                        <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedEmployeeForView.status === "نشط" ? "default" : "outline"}>{selectedEmployeeForView.status}</Badge></div>
                     </div>
                 )}
                 <DialogFooter><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
@@ -719,12 +750,25 @@ export default function HRPayrollPage() {
                 </DialogHeader>
                 {selectedPayrollForView && (
                     <div className="py-4 space-y-3 text-sm">
-                        <p><strong>الراتب الأساسي:</strong> {selectedPayrollForView.basicSalary.toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</p>
-                        <p><strong>إجمالي البدلات:</strong> {selectedPayrollForView.allowances.toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</p>
-                        {/* TODO: Add detailed list of allowances from form values if available */}
-                        <p><strong>إجمالي الخصومات:</strong> {selectedPayrollForView.deductions.toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</p>
-                        {/* TODO: Add detailed list of deductions */}
-                        <p className="font-bold text-primary"><strong>صافي الراتب:</strong> {selectedPayrollForView.netSalary.toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</p>
+                        <p><strong>الراتب الأساسي:</strong> {(selectedPayrollForView.basicSalary || 0).toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</p>
+                        
+                        <h4 className="font-semibold mt-2">البدلات:</h4>
+                        {selectedPayrollForView.allowances && selectedPayrollForView.allowances.length > 0 ? (
+                            <ul className="list-disc ps-5 text-xs">
+                                {selectedPayrollForView.allowances.map((allow, idx) => <li key={`all-${idx}`}>{allow.description}: {allow.amount.toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</li>)}
+                                <li className="font-bold">إجمالي البدلات: {(selectedPayrollForView.allowances.reduce((sum, item) => sum + item.amount, 0) || 0).toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</li>
+                            </ul>
+                        ) : <p className="text-xs text-muted-foreground">لا توجد بدلات.</p>}
+
+                        <h4 className="font-semibold mt-2">الخصومات:</h4>
+                         {selectedPayrollForView.deductions && selectedPayrollForView.deductions.length > 0 ? (
+                            <ul className="list-disc ps-5 text-xs">
+                                {selectedPayrollForView.deductions.map((ded, idx) => <li key={`ded-${idx}`}>{ded.description}: {ded.amount.toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</li>)}
+                                 <li className="font-bold">إجمالي الخصومات: {(selectedPayrollForView.deductions.reduce((sum, item) => sum + item.amount, 0) || 0).toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</li>
+                            </ul>
+                        ) : <p className="text-xs text-muted-foreground">لا توجد خصومات.</p>}
+                        
+                        <p className="font-bold text-primary mt-3 border-t pt-2"><strong>صافي الراتب:</strong> {(selectedPayrollForView.netSalary || 0).toLocaleString('ar-SA', {style:'currency', currency:'SAR'})}</p>
                         <p><strong>الحالة:</strong> <Badge variant={selectedPayrollForView.status === "مدفوع" ? "default" : "outline"}>{selectedPayrollForView.status}</Badge></p>
                         <p><strong>ملاحظات:</strong> {selectedPayrollForView.notes || "لا يوجد"}</p>
                     </div>
