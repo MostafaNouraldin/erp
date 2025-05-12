@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet" // Added SheetHeader, SheetTitle
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import AppLogo from "@/components/app-logo"; // Import AppLogo
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -86,7 +87,9 @@ const SidebarProvider = React.forwardRef<
         }
 
         // This sets the cookie to keep the sidebar state.
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        if (typeof document !== 'undefined') {
+          document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        }
       },
       [setOpenProp, open]
     )
@@ -109,9 +112,10 @@ const SidebarProvider = React.forwardRef<
           toggleSidebar()
         }
       }
-
-      window.addEventListener("keydown", handleKeyDown)
-      return () => window.removeEventListener("keydown", handleKeyDown)
+      if (typeof window !== 'undefined') {
+        window.addEventListener("keydown", handleKeyDown)
+        return () => window.removeEventListener("keydown", handleKeyDown)
+      }
     }, [toggleSidebar])
 
     // We add a state so that we can do data-state="expanded" or "collapsed".
@@ -122,8 +126,10 @@ const SidebarProvider = React.forwardRef<
     const [effectiveSide, setEffectiveSide] = React.useState<"left" | "right">("right"); // Default to right for RTL
 
     React.useEffect(() => {
-      const dir = document.documentElement.dir;
-      setEffectiveSide(dir === "rtl" ? "right" : "left");
+      if (typeof document !== 'undefined') {
+        const dir = document.documentElement.dir;
+        setEffectiveSide(dir === "rtl" ? "right" : "left");
+      }
     }, []);
 
 
@@ -195,7 +201,7 @@ const Sidebar = React.forwardRef<
         <div
           className={cn(
             "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
-             side === "left" ? "border-r" : "border-l", // Add border based on side
+             side === "left" ? "border-r border-sidebar-border" : "border-l border-sidebar-border", 
             className
           )}
           ref={ref}
@@ -214,7 +220,7 @@ const Sidebar = React.forwardRef<
             data-mobile="true"
             className={cn(
                 "w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
-                side === "left" ? "border-r" : "border-l" 
+                side === "left" ? "border-r border-sidebar-border" : "border-l border-sidebar-border" 
             )}
             style={
               {
@@ -223,6 +229,9 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
+            <SheetHeader className="p-4 border-b border-sidebar-border">
+              <SheetTitle><AppLogo /></SheetTitle>
+            </SheetHeader>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>
@@ -258,7 +267,7 @@ const Sidebar = React.forwardRef<
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
               : cn(
                   "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
-                  side === "left" ? "border-r" : "border-l" 
+                  side === "left" ? "border-r border-sidebar-border" : "border-l border-sidebar-border" 
                 ),
             className
           )}
@@ -785,3 +794,4 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
