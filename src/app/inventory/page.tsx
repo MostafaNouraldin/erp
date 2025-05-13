@@ -1,10 +1,11 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -361,7 +362,8 @@ export default function InventoryPage() {
 
     const handleViewReport = (report: typeof inventoryReportTypes[0]) => {
         setCurrentReport(report);
-        setReportData(generateReportData(report.key, reportFilters));
+        setReportFilters({}); // Reset filters when opening a new report type
+        setReportData(generateReportData(report.key, {}));
         setShowReportDialog(true);
     };
 
@@ -1009,3 +1011,4 @@ export default function InventoryPage() {
     
 
     
+
