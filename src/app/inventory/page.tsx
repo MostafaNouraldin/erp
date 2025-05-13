@@ -9,14 +9,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, ArrowRightLeft, Layers, AlertTriangle, Truck, History, BarChart3, Settings2, Eye, Download, PackagePlus, Upload, Printer, SlidersHorizontal, MinusCircle, PackageMinus, ArchiveRestore, ClipboardList, CheckCircle } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, History, BarChart3, SlidersHorizontal, Eye, Download, PackagePlus, Upload, Printer, MinusCircle, PackageMinus, ArchiveRestore, ClipboardList, CheckCircle, AlertTriangle, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
@@ -42,7 +42,7 @@ const productSchema = z.object({
   reorderLevel: z.coerce.number().min(0, "حد إعادة الطلب لا يمكن أن يكون سالباً").default(0),
   location: z.string().optional(),
   barcode: z.string().optional(),
-  supplierId: z.string().optional(), // Mock supplier ID
+  supplierId: z.string().optional(),
   itemsPerParentUnit: z.coerce.number().positive("العدد يجب أن يكون أكبر من صفر").optional(),
   subUnit: z.enum(["قطعة", "حبة", "متر", "سنتيمتر"]).optional(),
   subUnitSellingPrice: z.coerce.number().min(0, "سعر الوحدة الفرعية يجب أن يكون إيجابياً").optional(),
@@ -94,7 +94,7 @@ const stockIssueVoucherSchema = z.object({
   items: z.array(stockIssueItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   notes: z.string().optional(),
   status: z.enum(["مسودة", "معتمد", "ملغي"]).default("مسودة"),
-  issuedBy: z.string().optional(), // To be filled by logged-in user context
+  issuedBy: z.string().optional(),
 });
 type StockIssueVoucherFormValues = z.infer<typeof stockIssueVoucherSchema>;
 
@@ -137,7 +137,6 @@ const stockRequisitionSchema = z.object({
 });
 type StockRequisitionFormValues = z.infer<typeof stockRequisitionSchema>;
 
-
 // Mock data
 const initialProductsData: ProductFormValues[] = [
   { id: "ITEM001", sku: "DELL-XPS15-LAP", name: "لابتوب Dell XPS 15", description: "لابتوب عالي الأداء بشاشة 15 بوصة", category: "إلكترونيات", unit: "قطعة", costPrice: 5800, sellingPrice: 6500, quantity: 50, reorderLevel: 10, location: "مستودع A - رف 3", barcode: "1234567890123", supplierId: "SUP001", image: "https://picsum.photos/200/200?random=1", dataAiHint: "laptop computer" },
@@ -155,7 +154,6 @@ const mockUsers = [{ id: "USR001", name: "فريق الجرد أ" }, { id: "USR0
 const mockDepartments = [{id: "DEP001", name: "قسم المبيعات"}, {id: "DEP002", name: "قسم الصيانة"}];
 const mockRecipients = [...mockDepartments, {id: "CUST001", name: "عميل X"}, {id: "WH002", name: "مستودع فرعي أ (تحويل)"}];
 const mockReceiptSources = [...mockSuppliers, {id: "PROD001", name: "أمر إنتاج #P123"}, {id: "WH001", name: "مستودع رئيسي (تحويل)"}];
-
 
 const initialStockIssueVouchers: StockIssueVoucherFormValues[] = [
     {id: "SIV001", date: new Date("2024-07-28"), warehouseId: "WH001", recipient: "DEP001", reason: "استخدام داخلي لقسم المبيعات", items: [{productId: "ITEM003", quantityIssued: 2}, {productId: "ITEM005", quantityIssued: 5}], status: "معتمد", issuedBy: "USR003"},
@@ -179,7 +177,7 @@ export default function InventoryPage() {
   const [showManageProductDialog, setShowManageProductDialog] = useState(false);
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
+
   const [currentReport, setCurrentReport] = useState<{name: string, description: string, icon: React.ElementType} | null>(null);
 
   const [showStartStocktakeDialog, setShowStartStocktakeDialog] = useState(false);
@@ -199,54 +197,73 @@ export default function InventoryPage() {
   const [showManageStockRequisitionDialog, setShowManageStockRequisitionDialog] = useState(false);
   const [stockRequisitionToEdit, setStockRequisitionToEdit] = useState<StockRequisitionFormValues | null>(null);
 
-
   const productForm = useForm<ProductFormValues>({ resolver: zodResolver(productSchema), defaultValues: { sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined, image: "", dataAiHint: "" },});
   const stocktakeInitiationForm = useForm<StocktakeInitiationFormValues>({ resolver: zodResolver(stocktakeInitiationSchema), defaultValues: { stocktakeDate: new Date(), warehouseId: "", responsiblePerson: "", notes: "" },});
-  
+
   const stockIssueVoucherForm = useForm<StockIssueVoucherFormValues>({ resolver: zodResolver(stockIssueVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1}], status: "مسودة", notes: ""}});
   const { fields: stockIssueItemsFields, append: appendStockIssueItem, remove: removeStockIssueItem } = useFieldArray({ control: stockIssueVoucherForm.control, name: "items" });
-  
-  const stockReceiptVoucherForm = useForm<StockReceiptVoucherFormValues>({ resolver: zodResolver(stockReceiptVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1}], status: "مسودة", notes: ""}});
+
+  const stockReceiptVoucherForm = useForm<StockReceiptVoucherFormValues>({ resolver: zodResolver(stockReceiptVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0 }], status: "مسودة", notes: ""}});
   const { fields: stockReceiptItemsFields, append: appendStockReceiptItem, remove: removeStockReceiptItem } = useFieldArray({ control: stockReceiptVoucherForm.control, name: "items" });
-  
+
   const stockRequisitionForm = useForm<StockRequisitionFormValues>({ resolver: zodResolver(stockRequisitionSchema), defaultValues: { requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""}});
   const { fields: stockRequisitionItemsFields, append: appendStockRequisitionItem, remove: removeStockRequisitionItem } = useFieldArray({ control: stockRequisitionForm.control, name: "items" });
 
   useEffect(() => { if (productToEdit) { productForm.reset(productToEdit); setImagePreview(productToEdit.image || null); } else { productForm.reset({ sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined, image: "", dataAiHint: "" }); setImagePreview(null); }}, [productToEdit, productForm, showManageProductDialog]);
   useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
-  useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1}], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
+  useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0}], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
+  const handleProductSubmit = (values: ProductFormValues) => { 
+    if (productToEdit) { 
+      setProductsData(prev => prev.map(p => p.id === productToEdit.id ? { ...values, id: productToEdit.id! } : p)); 
+      toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." }); 
+    } else { 
+      setProductsData(prev => [...prev, { ...values, id: `ITEM${Date.now()}` }]); 
+      toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." }); 
+    } 
+    setShowManageProductDialog(false); 
+    setProductToEdit(null); 
+    setImagePreview(null);
+  };
+  const handleDeleteProduct = (productId: string) => { 
+    setProductsData(prev => prev.filter(p => p.id !== productId)); 
+    toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
+  };
 
-  const handleProductSubmit = (values: ProductFormValues) => { if (productToEdit) { setProductsData(prev => prev.map(p => p.id === productToEdit.id ? { ...values, id: productToEdit.id } : p)); toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." }); } else { setProductsData(prev => [...prev, { ...values, id: `ITEM${Date.now()}` }]); toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." }); } setShowManageProductDialog(false); setProductToEdit(null); setImagePreview(null);};
-  const handleDeleteProduct = (productId: string) => { setProductsData(prev => prev.filter(p => p.id !== productId)); toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });};
-  
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => { 
-    const file = event.target.files?.[0]; 
-    if (file) { 
-      try { 
-        const dataUri = await new Promise<string>((resolve, reject) => { 
-          const reader = new FileReader(); 
-          reader.onload = () => resolve(reader.result as string); 
-          reader.onerror = reject; 
-          reader.readAsDataURL(file); 
-        }); 
-        setImagePreview(dataUri); 
-        productForm.setValue('image', dataUri); 
-      } catch (error) { 
-        console.error("Error converting file to data URI:", error); 
-        toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" }); 
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const dataUri = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        setImagePreview(dataUri);
+        productForm.setValue('image', dataUri);
+      } catch (error) {
+        console.error("Error converting file to data URI:", error);
+        toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" });
       }
     }
   };
 
-  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => { console.log("Starting new stocktake with values:", values); toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, }); setShowStartStocktakeDialog(false); stocktakeInitiationForm.reset();};
-  const handleViewStocktakeDetails = () => { setSelectedStocktakeForView(mockStocktakeDetail); setShowViewStocktakeDetailsDialog(true);};
-  const selectedUnit = productForm.watch("unit");
+  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => { 
+    console.log("Starting new stocktake with values:", values); 
+    toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, }); 
+    setShowStartStocktakeDialog(false); 
+    stocktakeInitiationForm.reset();
+  };
+  const handleViewStocktakeDetails = () => { 
+    setSelectedStocktakeForView(mockStocktakeDetail); 
+    setShowViewStocktakeDetailsDialog(true);
+  };
 
   const handleStockIssueSubmit = (values: StockIssueVoucherFormValues) => {
     if (stockIssueToEdit) {
-        setStockIssueVouchers(prev => prev.map(v => v.id === stockIssueToEdit.id ? {...values, id: stockIssueToEdit.id} : v));
+        setStockIssueVouchers(prev => prev.map(v => v.id === stockIssueToEdit.id ? {...values, id: stockIssueToEdit.id!} : v));
         toast({ title: "تم التعديل", description: "تم تعديل إذن الصرف بنجاح." });
     } else {
         setStockIssueVouchers(prev => [...prev, {...values, id: `SIV${Date.now()}`}]);
@@ -258,7 +275,7 @@ export default function InventoryPage() {
 
   const handleStockReceiptSubmit = (values: StockReceiptVoucherFormValues) => {
     if (stockReceiptToEdit) {
-        setStockReceiptVouchers(prev => prev.map(v => v.id === stockReceiptToEdit.id ? {...values, id: stockReceiptToEdit.id} : v));
+        setStockReceiptVouchers(prev => prev.map(v => v.id === stockReceiptToEdit.id ? {...values, id: stockReceiptToEdit.id!} : v));
         toast({ title: "تم التعديل", description: "تم تعديل إذن الإضافة بنجاح." });
     } else {
         setStockReceiptVouchers(prev => [...prev, {...values, id: `SRV${Date.now()}`}]);
@@ -270,7 +287,7 @@ export default function InventoryPage() {
 
   const handleStockRequisitionSubmit = (values: StockRequisitionFormValues) => {
     if (stockRequisitionToEdit) {
-        setStockRequisitions(prev => prev.map(r => r.id === stockRequisitionToEdit.id ? {...values, id: stockRequisitionToEdit.id} : r));
+        setStockRequisitions(prev => prev.map(r => r.id === stockRequisitionToEdit!.id ? {...values, id: stockRequisitionToEdit!.id} : r));
         toast({ title: "تم التعديل", description: "تم تعديل طلب الصرف بنجاح." });
     } else {
         setStockRequisitions(prev => [...prev, {...values, id: `SRQ${Date.now()}`}]);
@@ -280,6 +297,8 @@ export default function InventoryPage() {
     setStockRequisitionToEdit(null);
   };
 
+  const selectedUnit = productForm.watch("unit");
+  
   return (
     <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
@@ -357,13 +376,111 @@ export default function InventoryPage() {
           <TabsTrigger value="reports" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><BarChart3 className="inline-block me-2 h-4 w-4" /> تقارير المخزون</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="itemsList">{/* Existing items list content */}</TabsContent>
+        <TabsContent value="itemsList">
+            <Card className="shadow-lg">
+                <CardHeader>
+                <CardTitle>قائمة الأصناف</CardTitle>
+                <CardDescription>
+                    تعريف الأصناف، الوحدات، الأسعار، وإدارة مواقع التخزين. تنبيهات الحد الأدنى لإعادة الطلب.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
+                    <div className="relative w-full sm:w-auto grow sm:grow-0">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="بحث في الأصناف..." className="pr-10 w-full sm:w-64 bg-background" />
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+                            <Filter className="me-2 h-4 w-4" /> تصفية الفئة
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" dir="rtl">
+                        <DropdownMenuLabel>تصفية حسب الفئة</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {mockCategories.map(cat => <DropdownMenuCheckboxItem key={cat}>{cat}</DropdownMenuCheckboxItem>)}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+                        <AlertTriangle className="me-2 h-4 w-4 text-destructive" /> عرض أصناف تحت حد الطلب
+                    </Button>
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>كود الصنف</TableHead>
+                        <TableHead>اسم الصنف</TableHead>
+                        <TableHead>الفئة</TableHead>
+                        <TableHead>الوحدة</TableHead>
+                        <TableHead>السعر</TableHead>
+                        <TableHead>الكمية الحالية</TableHead>
+                        <TableHead>حد إعادة الطلب</TableHead>
+                        <TableHead>الموقع</TableHead>
+                        <TableHead className="text-center">إجراءات</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {productsData.map((product) => (
+                        <TableRow key={product.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium">{product.sku}</TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                    {product.image ? (
+                                        <Image src={product.image} alt={product.name} width={32} height={32} className="rounded-sm object-cover" data-ai-hint={product.dataAiHint || 'product image'}/>
+                                    ) : (
+                                        <div className="w-8 h-8 bg-muted rounded-sm flex items-center justify-center text-muted-foreground text-xs" data-ai-hint={product.dataAiHint || 'product'}>ERP</div>
+                                    )}
+                                    {product.name}
+                                </div>
+                            </TableCell>
+                            <TableCell>{product.category}</TableCell>
+                            <TableCell>{product.unit}</TableCell>
+                            <TableCell>{product.sellingPrice.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                            <TableCell className={product.quantity < product.reorderLevel ? 'text-destructive font-semibold' : ''}>{product.quantity}</TableCell>
+                            <TableCell>{product.reorderLevel}</TableCell>
+                            <TableCell>{product.location}</TableCell>
+                            <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setProductToEdit(product); setShowManageProductDialog(true); }}>
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent dir="rtl">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle>
+                                    <AlertDialogDescriptionComponentClass>
+                                    لا يمكن التراجع عن هذا الإجراء. سيتم حذف المنتج "{product.name}" نهائياً.
+                                    </AlertDialogDescriptionComponentClass>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteProduct(product.id!)}>تأكيد الحذف</AlertDialogAction>
+                                </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            </TableCell>
+                        </TableRow>
+                        ))}
+                    </TableBody>
+                    </Table>
+                </div>
+                </CardContent>
+            </Card>
+        </TabsContent>
 
         <TabsContent value="stockIssue">
           <Card className="shadow-lg">
             <CardHeader><CardTitle>أذونات صرف المخزون</CardTitle><CardDescription>إدارة وتسجيل أذونات صرف الأصناف من المستودعات.</CardDescription></CardHeader>
             <CardContent>
-                <div className="mb-4"><Button onClick={() => {setStockIssueToEdit(null); stockIssueVoucherForm.reset({date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{productId: "", quantityIssued: 1}], status: "مسودة", notes: "" }); setShowManageStockIssueDialog(true);}}><PlusCircle className="me-2 h-4 w-4"/> إنشاء إذن صرف جديد</Button></div>
+                <div className="mb-4"><Button onClick={() => {setStockIssueToEdit(null); stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{productId: "", quantityIssued: 1}], status: "مسودة", notes: "" }); setShowManageStockIssueDialog(true);}}><PlusCircle className="me-2 h-4 w-4"/> إنشاء إذن صرف جديد</Button></div>
                 <Dialog open={showManageStockIssueDialog} onOpenChange={(isOpen) => { setShowManageStockIssueDialog(isOpen); if (!isOpen) setStockIssueToEdit(null);}}>
                     <DialogContent className="sm:max-w-lg" dir="rtl">
                         <DialogHeader><DialogTitle>{stockIssueToEdit ? "تعديل إذن صرف" : "إنشاء إذن صرف جديد"}</DialogTitle></DialogHeader>
@@ -399,7 +516,7 @@ export default function InventoryPage() {
           <Card className="shadow-lg">
             <CardHeader><CardTitle>أذونات إضافة للمخزون</CardTitle><CardDescription>تسجيل الأصناف الواردة إلى المستودعات من الموردين أو الإنتاج.</CardDescription></CardHeader>
             <CardContent>
-                <div className="mb-4"><Button onClick={() => {setStockReceiptToEdit(null); stockReceiptVoucherForm.reset({date: new Date(), warehouseId: "", source: "", items: [{productId: "", quantityReceived: 1}], status: "مسودة", notes: "" }); setShowManageStockReceiptDialog(true);}}><PlusCircle className="me-2 h-4 w-4"/> إنشاء إذن إضافة جديد</Button></div>
+                <div className="mb-4"><Button onClick={() => {setStockReceiptToEdit(null); stockReceiptVoucherForm.reset({date: new Date(), warehouseId: "", source: "", items: [{productId: "", quantityReceived: 1, costPricePerUnit:0}], status: "مسودة", notes: "" }); setShowManageStockReceiptDialog(true);}}><PlusCircle className="me-2 h-4 w-4"/> إنشاء إذن إضافة جديد</Button></div>
                 <Dialog open={showManageStockReceiptDialog} onOpenChange={(isOpen) => { setShowManageStockReceiptDialog(isOpen); if (!isOpen) setStockReceiptToEdit(null);}}>
                      <DialogContent className="sm:max-w-lg" dir="rtl">
                         <DialogHeader><DialogTitle>{stockReceiptToEdit ? "تعديل إذن إضافة" : "إنشاء إذن إضافة جديد"}</DialogTitle></DialogHeader>
@@ -474,12 +591,176 @@ export default function InventoryPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="stockMovement">{/* Existing stock movement content */}</TabsContent>
-        <TabsContent value="stocktaking">{/* Existing stocktaking content */}</TabsContent>
-        <TabsContent value="reports">{/* Existing reports content */}</TabsContent>
+        <TabsContent value="stockMovement">
+            <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle>حركة المخزون</CardTitle>
+                <CardDescription>
+                عرض سجل مفصل لجميع حركات الأصناف، بما في ذلك الدخول والخروج والتحويلات والتسويات.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
+                <div className="relative w-full sm:w-auto grow sm:grow-0">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="بحث برقم الصنف أو المرجع..." className="pr-10 w-full sm:w-64 bg-background" />
+                </div>
+                <DatePickerWithPresets mode="range" />
+                </div>
+                <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>رقم الحركة</TableHead>
+                        <TableHead>التاريخ</TableHead>
+                        <TableHead>نوع الحركة</TableHead>
+                        <TableHead>الصنف</TableHead>
+                        <TableHead>الكمية</TableHead>
+                        <TableHead>من/إلى</TableHead>
+                        <TableHead>المرجع</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {stockMovements.map((movement) => (
+                        <TableRow key={movement.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">{movement.id}</TableCell>
+                        <TableCell>{movement.date}</TableCell>
+                        <TableCell>
+                            <Badge
+                            variant={
+                                movement.type.includes("دخول") || movement.type.includes("زيادة") ? "default" :
+                                movement.type.includes("خروج") || movement.type.includes("نقص") ? "destructive" :
+                                "secondary"
+                            }
+                            className="whitespace-nowrap"
+                            >
+                            {movement.type}
+                            </Badge>
+                        </TableCell>
+                        <TableCell>{productsData.find(p => p.id === movement.item)?.name || movement.item}</TableCell>
+                        <TableCell>{movement.quantity}</TableCell>
+                        <TableCell>{movement.fromTo}</TableCell>
+                        <TableCell>{movement.reference}</TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                </div>
+            </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="stocktaking">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle>الجرد والتسويات المخزنية</CardTitle>
+                    <CardDescription>
+                    إدارة عمليات الجرد الدوري والمستمر، وتسجيل الفروقات والتسويات اللازمة.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="mb-4 flex flex-wrap gap-2 items-center">
+                    <Dialog open={showStartStocktakeDialog} onOpenChange={setShowStartStocktakeDialog}>
+                        <DialogTrigger asChild>
+                        <Button className="shadow-md hover:shadow-lg transition-shadow">
+                            <PlusCircle className="me-2 h-4 w-4" /> بدء عملية جرد جديدة
+                        </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md" dir="rtl">
+                        <DialogHeader>
+                            <DialogTitle>بدء عملية جرد جديدة</DialogTitle>
+                            <DialogDescriptionComponent>
+                            أدخل تفاصيل عملية الجرد الجديدة.
+                            </DialogDescriptionComponent>
+                        </DialogHeader>
+                        <Form {...stocktakeInitiationForm}>
+                        <form onSubmit={stocktakeInitiationForm.handleSubmit(handleStartStocktakeSubmit)} className="space-y-4 py-4">
+                            <FormField control={stocktakeInitiationForm.control} name="stocktakeDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ الجرد</FormLabel><DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange} /><FormMessage /></FormItem>)}/>
+                            <FormField control={stocktakeInitiationForm.control} name="warehouseId" render={({ field }) => (<FormItem><FormLabel>المستودع</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المستودع" /></SelectTrigger></FormControl><SelectContent>{mockWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                            <FormField control={stocktakeInitiationForm.control} name="responsiblePerson" render={({ field }) => (<FormItem><FormLabel>المسؤول عن الجرد</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المسؤول" /></SelectTrigger></FormControl><SelectContent>{mockUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                            <FormField control={stocktakeInitiationForm.control} name="notes" render={({ field }) => (<FormItem><FormLabel>ملاحظات (اختياري)</FormLabel><FormControl><Textarea {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)}/>
+                            <DialogFooter><Button type="submit">بدء الجرد</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                        </form>
+                        </Form>
+                        </DialogContent>
+                    </Dialog>
+                    <Button variant="secondary" className="shadow-sm hover:shadow-md transition-shadow" onClick={() => alert("سيتم فتح شاشة إدخال نتائج الجرد.")}>
+                        <Upload className="me-2 h-4 w-4" /> إدخال نتائج الجرد
+                    </Button>
+                    </div>
+                    <CardDescription className="mb-2">سجل عمليات الجرد السابقة:</CardDescription>
+                    <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>رقم الجرد</TableHead>
+                            <TableHead>التاريخ</TableHead>
+                            <TableHead>المستودع</TableHead>
+                            <TableHead>المسؤول</TableHead>
+                            <TableHead>الحالة</TableHead>
+                            <TableHead className="text-center">إجراءات</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        <TableRow className="hover:bg-muted/50">
+                            <TableCell>STK-2024-06-30-A</TableCell>
+                            <TableCell>2024-06-30</TableCell>
+                            <TableCell>مستودع A</TableCell>
+                            <TableCell>فريق الجرد ألف</TableCell>
+                            <TableCell><Badge>مكتمل</Badge></TableCell>
+                            <TableCell className="text-center">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={handleViewStocktakeDetails}><Eye className="h-4 w-4" /></Button>
+                            </TableCell>
+                        </TableRow>
+                        {/* Add more rows for other stocktakes */}
+                        </TableBody>
+                    </Table>
+                    </div>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="reports">
+            <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle>تقارير المخزون</CardTitle>
+                <CardDescription>
+                عرض تحليلات ورسوم بيانية لأداء المخزون، مستويات الكميات، والتكاليف.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {inventoryReportTypes.map(report => (
+                    <Card key={report.name} className="flex flex-col items-center justify-center p-4 hover:shadow-xl transition-shadow duration-300 shadow-md rounded-lg">
+                    <report.icon className="h-10 w-10 text-primary mb-2" />
+                    <CardTitle className="text-base mb-1 text-center">{report.name}</CardTitle>
+                    <CardDescription className="text-xs text-center mb-3">{report.description}</CardDescription>
+                    <Button variant="outline" size="sm" className="w-full shadow-sm hover:shadow-md transition-shadow" onClick={() => {setCurrentReport(report); alert(`عرض تقرير: ${report.name}`)}}><Eye className="me-2 h-4 w-4" /> عرض/تحميل</Button>
+                    </Card>
+                ))}
+                </div>
+                 {/* Example Chart */}
+                <Card>
+                    <CardHeader><CardTitle>مبيعات الأصناف (آخر 6 أشهر)</CardTitle></CardHeader>
+                    <CardContent className="h-[300px] pe-2">
+                        <ChartContainer config={chartConfig} className="w-full h-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RechartsBarChart data={sampleChartData} layout="vertical" barCategoryGap="20%">
+                            <CartesianGrid horizontal={false} />
+                            <XAxis type="number" />
+                            <YAxis dataKey="month" type="category" tickLine={false} axisLine={false} width={60} />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <ChartLegend content={<ChartLegendContent />} />
+                            <Bar dataKey="ITEM001" fill="var(--color-ITEM001)" radius={4} />
+                            <Bar dataKey="ITEM002" fill="var(--color-ITEM002)" radius={4} />
+                            </RechartsBarChart>
+                        </ResponsiveContainer>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
+            </CardContent>
+            </Card>
+        </TabsContent>
       </Tabs>
 
-      {/* Other Dialogs: View Stocktake Details, etc. as before */}
       <Dialog open={showViewStocktakeDetailsDialog} onOpenChange={setShowViewStocktakeDetailsDialog}>
             <DialogContent className="sm:max-w-2xl" dir="rtl">
                 <DialogHeader>
@@ -487,7 +768,6 @@ export default function InventoryPage() {
                 </DialogHeader>
                 {selectedStocktakeForView && (
                     <div className="printable-area" id="printable-stocktake-report">
-                        {/* Print Header - Hidden on screen, shown on print */}
                         <div className="print-only mb-6 flex justify-between items-center border-b pb-2">
                             <div className="flex items-center gap-2">
                                 <AppLogo />
@@ -513,7 +793,7 @@ export default function InventoryPage() {
                                 <p><strong>الفروقات:</strong> {selectedStocktakeForView.discrepanciesFound}</p>
                             </div>
                             {selectedStocktakeForView.notes && <p className="text-sm"><strong>ملاحظات:</strong> {selectedStocktakeForView.notes}</p>}
-                            
+
                             <h4 className="font-semibold mt-3 text-md">تفاصيل الأصناف:</h4>
                             {selectedStocktakeForView.items && selectedStocktakeForView.items.length > 0 ? (
                                 <Table size="sm">
@@ -540,7 +820,6 @@ export default function InventoryPage() {
                                 </Table>
                             ) : <p className="text-muted-foreground text-sm">لا توجد تفاصيل أصناف لهذا الجرد.</p>}
                         </div>
-                         {/* Print Footer - Hidden on screen */}
                          <div className="print-only mt-8 pt-4 border-t text-xs text-muted-foreground text-center">
                             <p>هذا التقرير تم إنشاؤه بواسطة نظام المستقبل ERP في {new Date().toLocaleString('ar-SA')}</p>
                         </div>
