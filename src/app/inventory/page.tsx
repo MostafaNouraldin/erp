@@ -225,11 +225,11 @@ export default function InventoryPage() {
     setShowManageProductDialog(false); 
     setProductToEdit(null); 
     setImagePreview(null);
-  }
+  };
   const handleDeleteProduct = (productId: string) => { 
     setProductsData(prev => prev.filter(p => p.id !== productId)); 
     toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
-  }
+  };
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => { 
     const file = event.target.files?.[0]; 
@@ -248,10 +248,10 @@ export default function InventoryPage() {
         toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" }); 
       } 
     } 
-  }
+  };
   
-  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => { console.log("Starting new stocktake with values:", values); toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, }); setShowStartStocktakeDialog(false); stocktakeInitiationForm.reset();}
-  const handleViewStocktakeDetails = () => { setSelectedStocktakeForView(mockStocktakeDetail); setShowViewStocktakeDetailsDialog(true);}
+  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => { console.log("Starting new stocktake with values:", values); toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, }); setShowStartStocktakeDialog(false); stocktakeInitiationForm.reset();};
+  const handleViewStocktakeDetails = () => { setSelectedStocktakeForView(mockStocktakeDetail); setShowViewStocktakeDetailsDialog(true);};
 
   const handleStockIssueSubmit = (values: StockIssueVoucherFormValues) => {
     if (stockIssueToEdit) {
@@ -263,7 +263,7 @@ export default function InventoryPage() {
     }
     setShowManageStockIssueDialog(false);
     setStockIssueToEdit(null);
-  }
+  };
 
   const handleStockReceiptSubmit = (values: StockReceiptVoucherFormValues) => {
     if (stockReceiptToEdit) {
@@ -275,7 +275,7 @@ export default function InventoryPage() {
     }
     setShowManageStockReceiptDialog(false);
     setStockReceiptToEdit(null);
-  }
+  };
 
   const handleStockRequisitionSubmit = (values: StockRequisitionFormValues) => {
     if (stockRequisitionToEdit) {
@@ -287,7 +287,7 @@ export default function InventoryPage() {
     }
     setShowManageStockRequisitionDialog(false);
     setStockRequisitionToEdit(null);
-  }
+  };
   
   const selectedUnit = productForm.watch("unit");
   
@@ -828,5 +828,3 @@ export default function InventoryPage() {
     </div>
   );
 }
-
-    
