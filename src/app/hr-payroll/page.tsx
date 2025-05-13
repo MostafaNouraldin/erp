@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -13,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
-import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle, Shield, Banknote, CalendarPlus, CalendarCheck2, UserCog, Award, Plane, UploadCloud, Printer, FileWarning, FileEdit, UserMinus, AlertOctagon, FolderOpen } from "lucide-react";
+import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle, Shield, Banknote, CalendarPlus, CalendarCheck2, UserCog, Award, Plane, UploadCloud, Printer, FileWarning, FileEdit, UserMinus, AlertOctagon, FolderOpen, BookText, UserX, ClipboardSignature } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -166,6 +165,42 @@ const leaveRequestSchema = z.object({
 });
 type LeaveRequestFormValues = z.infer<typeof leaveRequestSchema>;
 
+const administrativeDecisionSchema = z.object({
+    id: z.string().optional(),
+    employeeId: z.string().min(1, "الموظف مطلوب"),
+    decisionDate: z.date({ required_error: "تاريخ القرار مطلوب" }),
+    decisionType: z.string().min(1, "نوع القرار مطلوب (مثال: ترقية, نقل, تعديل راتب)"),
+    details: z.string().min(1, "تفاصيل القرار مطلوبة"),
+    issuingAuthority: z.string().min(1, "الجهة المصدرة للقرار مطلوبة"),
+    effectiveDate: z.date({ required_error: "تاريخ سريان القرار مطلوب" }),
+    status: z.enum(["مسودة", "معتمد", "منفذ", "ملغى"]).default("مسودة"),
+});
+type AdministrativeDecisionFormValues = z.infer<typeof administrativeDecisionSchema>;
+
+const resignationSchema = z.object({
+    id: z.string().optional(),
+    employeeId: z.string().min(1, "الموظف مطلوب"),
+    submissionDate: z.date({ required_error: "تاريخ تقديم الاستقالة مطلوب" }),
+    lastWorkingDate: z.date({ required_error: "تاريخ آخر يوم عمل مطلوب" }),
+    reason: z.string().min(1, "سبب الاستقالة مطلوب"),
+    managerNotifiedDate: z.date().optional().nullable(),
+    status: z.enum(["مقدمة", "مقبولة", "قيد المراجعة", "مسحوبة", "مرفوضة"]).default("مقدمة"),
+});
+type ResignationFormValues = z.infer<typeof resignationSchema>;
+
+const disciplinaryWarningSchema = z.object({
+    id: z.string().optional(),
+    employeeId: z.string().min(1, "الموظف مطلوب"),
+    warningDate: z.date({ required_error: "تاريخ الإنذار مطلوب" }),
+    warningType: z.enum(["إنذار أول", "إنذار ثاني", "إنذار نهائي", "إجراء تأديبي آخر"], { required_error: "نوع الإنذار مطلوب" }),
+    violationDetails: z.string().min(1, "تفاصيل المخالفة مطلوبة"),
+    actionTaken: z.string().optional(), // e.g., خصم يوم, تدريب إضافي
+    issuingManager: z.string().min(1, "المدير المصدر مطلوب"),
+    status: z.enum(["مسودة", "تم التسليم", "معترض عليه", "منفذ"]).default("مسودة"),
+});
+type DisciplinaryWarningFormValues = z.infer<typeof disciplinaryWarningSchema>;
+
+
 // Mock data
 const initialEmployeesData: EmployeeFormValues[] = [
   { id: "EMP001", name: "أحمد محمود", department: "قسم المبيعات", jobTitle: "مدير مبيعات", contractStartDate: new Date("2022-01-15"), contractEndDate: new Date("2025-01-14"), contractDuration: "3 سنوات", probationEndDate: new Date("2022-04-15"), canRenewContract: true, employmentType: "دوام كامل", contractType: "عائلي", status: "نشط", basicSalary: 12000, email: "ahmed.m@example.com", phone: "0501234567", avatarUrl: "https://picsum.photos/100/100?random=1", dataAiHint: "man portrait", nationality: "سعودي", idNumber: "1012345678", bankName: "البنك الأهلي", iban: "SA0380000000608010167519", socialInsuranceNumber:"12345001", medicalInsuranceProvider: "بوبا للتأمين", medicalInsurancePolicyNumber: "BUPA-111", medicalInsuranceExpiryDate: new Date("2024-12-31"), allowances: [{id: "ALW001", description: "بدل سكن", amount:3000, type: "ثابت"}, {id: "ALW002", description: "بدل مواصلات", amount:1000, type: "ثابت"}, {id:"ALW003", description: "بدل طبيعة عمل", amount:500, type: "متغير"}], deductions: [{id: "DED001", description: "سلفة شخصية", amount: 200, type: "ثابت"}], emergencyContactName: "محمد محمود", emergencyContactPhone:"0507654321", workLocation: "المقر الرئيسي - الرياض", incentives: [{id: "INC001", description: "مكافأة تحقيق الهدف السنوي", amount: 5000, date: new Date("2024-12-31"), type: "سنوي"}], delegations: []  },
@@ -182,6 +217,16 @@ const initialDelegationsData: EmployeeDelegationFormValues[] = [
 
 const initialWarningNoticesData: WarningNoticeFormValues[] = [
     { id: "WN001", employeeId: "EMP003", date: new Date("2024-07-15"), reason: "تأخير متكرر عن العمل", details: "لوحظ تأخر الموظف عن موعد الحضور الرسمي لأكثر من ثلاث مرات خلال الأسبوع الماضي بدون عذر مقبول.", issuingManager: "مدير القسم المالي", status: "تم التسليم" },
+];
+
+const initialAdministrativeDecisionsData: AdministrativeDecisionFormValues[] = [
+    { id: "AD001", employeeId: "EMP001", decisionDate: new Date("2024-08-01"), decisionType: "ترقية", details: "ترقية الموظف إلى منصب مدير مبيعات إقليمي.", issuingAuthority: "إدارة الموارد البشرية", effectiveDate: new Date("2024-08-15"), status: "معتمد" },
+];
+const initialResignationsData: ResignationFormValues[] = [
+    { id: "RES001", employeeId: "EMP005", submissionDate: new Date("2024-07-20"), lastWorkingDate: new Date("2024-08-20"), reason: "عرض وظيفي أفضل", managerNotifiedDate: new Date("2024-07-21"), status: "مقبولة" },
+];
+const initialDisciplinaryWarningsData: DisciplinaryWarningFormValues[] = [
+    { id: "DW001", employeeId: "EMP003", warningDate: new Date("2024-07-25"), warningType: "إنذار أول", violationDetails: "تجاوز سياسات الشركة المتعلقة باستخدام الإنترنت خلال ساعات العمل.", actionTaken: "خصم نصف يوم", issuingManager: "مدير القسم المالي", status: "تم التسليم" },
 ];
 
 
@@ -209,7 +254,9 @@ const mockJobTitles = ["مدير مبيعات", "أخصائية تسويق", "م
 const mockEmploymentTypes = ["دوام كامل", "دوام جزئي", "عقد محدد", "مستقل"];
 const mockContractTypes = ["فردي", "عائلي"];
 const mockLeaveTypes = ["إجازة سنوية", "إجازة مرضية", "إجازة عارضة", "إجازة بدون راتب", "إجازة أمومة", "إجازة زواج", "أخرى"];
-const mockManagers = initialEmployeesData.filter(emp => emp.jobTitle?.includes("مدير") || emp.jobTitle?.includes("مسؤول")).map(emp => ({id: emp.id, name: emp.name}));
+const mockManagers = initialEmployeesData.filter(emp => emp.jobTitle?.includes("مدير") || emp.jobTitle?.includes("مسؤول")).map(emp => ({id: emp.id!, name: emp.name})); // Added non-null assertion
+const mockDecisionTypes = ["ترقية", "نقل", "تعديل راتب", "إنهاء خدمات", "أخرى"];
+const mockWarningTypes = ["إنذار أول", "إنذار ثاني", "إنذار نهائي", "إجراء تأديبي آخر"];
 
 
 const employeeDefaultValues: EmployeeFormValues = {
@@ -236,6 +283,9 @@ export default function HRPayrollPage() {
   const [attendanceData, setAttendanceDataState] = useState(initialAttendanceData);
   const [leaveRequests, setLeaveRequestsData] = useState(initialLeaveRequestsData);
   const [warningNoticesData, setWarningNoticesData] = useState<WarningNoticeFormValues[]>(initialWarningNoticesData);
+  const [administrativeDecisionsData, setAdministrativeDecisionsData] = useState<AdministrativeDecisionFormValues[]>(initialAdministrativeDecisionsData);
+  const [resignationsData, setResignationsData] = useState<ResignationFormValues[]>(initialResignationsData);
+  const [disciplinaryWarningsData, setDisciplinaryWarningsData] = useState<DisciplinaryWarningFormValues[]>(initialDisciplinaryWarningsData);
 
 
   const [showAddEmployeeDialog, setShowAddEmployeeDialog] = useState(false);
@@ -264,6 +314,21 @@ export default function HRPayrollPage() {
   const [warningNoticeToEdit, setWarningNoticeToEdit] = useState<WarningNoticeFormValues | null>(null);
   const [showPrintWarningNoticeDialog, setShowPrintWarningNoticeDialog] = useState(false);
   const [selectedWarningNoticeForPrint, setSelectedWarningNoticeForPrint] = useState<WarningNoticeFormValues | null>(null);
+  
+  const [showManageAdminDecisionDialog, setShowManageAdminDecisionDialog] = useState(false);
+  const [adminDecisionToEdit, setAdminDecisionToEdit] = useState<AdministrativeDecisionFormValues | null>(null);
+  const [showPrintAdminDecisionDialog, setShowPrintAdminDecisionDialog] = useState(false);
+  const [selectedAdminDecisionForPrint, setSelectedAdminDecisionForPrint] = useState<AdministrativeDecisionFormValues | null>(null);
+
+  const [showManageResignationDialog, setShowManageResignationDialog] = useState(false);
+  const [resignationToEdit, setResignationToEdit] = useState<ResignationFormValues | null>(null);
+  const [showPrintResignationDialog, setShowPrintResignationDialog] = useState(false);
+  const [selectedResignationForPrint, setSelectedResignationForPrint] = useState<ResignationFormValues | null>(null);
+  
+  const [showManageDisciplinaryDialog, setShowManageDisciplinaryDialog] = useState(false);
+  const [disciplinaryToEdit, setDisciplinaryToEdit] = useState<DisciplinaryWarningFormValues | null>(null);
+  const [showPrintDisciplinaryDialog, setShowPrintDisciplinaryDialog] = useState(false);
+  const [selectedDisciplinaryForPrint, setSelectedDisciplinaryForPrint] = useState<DisciplinaryWarningFormValues | null>(null);
 
   const { toast } = useToast();
 
@@ -274,6 +339,10 @@ export default function HRPayrollPage() {
   const { fields: delegationFormFields, append: appendDelegationField, remove: removeDelegationField } = useFieldArray({ control: employeeForm.control, name: "delegations" });
 
   const warningNoticeForm = useForm<WarningNoticeFormValues>({ resolver: zodResolver(warningNoticeSchema), defaultValues: { employeeId: '', date: new Date(), reason: '', details: '', issuingManager: '', status: "مسودة" } });
+  const adminDecisionForm = useForm<AdministrativeDecisionFormValues>({ resolver: zodResolver(administrativeDecisionSchema), defaultValues: { employeeId: '', decisionDate: new Date(), decisionType: '', details: '', issuingAuthority: '', effectiveDate: new Date(), status: "مسودة" } });
+  const resignationForm = useForm<ResignationFormValues>({ resolver: zodResolver(resignationSchema), defaultValues: { employeeId: '', submissionDate: new Date(), lastWorkingDate: new Date(), reason: '', managerNotifiedDate: null, status: "مقدمة" } });
+  const disciplinaryWarningForm = useForm<DisciplinaryWarningFormValues>({ resolver: zodResolver(disciplinaryWarningSchema), defaultValues: { employeeId: '', warningDate: new Date(), warningType: undefined, violationDetails: '', actionTaken: '', issuingManager: '', status: "مسودة" } });
+
 
 
   const payrollForm = useForm<PayrollFormValues>({ resolver: zodResolver(payrollSchema) });
@@ -318,9 +387,25 @@ export default function HRPayrollPage() {
     else warningNoticeForm.reset({ employeeId: '', date: new Date(), reason: '', details: '', issuingManager: '', status: "مسودة" });
   }, [warningNoticeToEdit, warningNoticeForm, showManageWarningNoticeDialog]);
 
+  useEffect(() => {
+    if (adminDecisionToEdit) adminDecisionForm.reset(adminDecisionToEdit);
+    else adminDecisionForm.reset({ employeeId: '', decisionDate: new Date(), decisionType: '', details: '', issuingAuthority: '', effectiveDate: new Date(), status: "مسودة" });
+  }, [adminDecisionToEdit, adminDecisionForm, showManageAdminDecisionDialog]);
+
+  useEffect(() => {
+    if (resignationToEdit) resignationForm.reset(resignationToEdit);
+    else resignationForm.reset({ employeeId: '', submissionDate: new Date(), lastWorkingDate: new Date(), reason: '', managerNotifiedDate: null, status: "مقدمة" });
+  }, [resignationToEdit, resignationForm, showManageResignationDialog]);
+
+  useEffect(() => {
+    if (disciplinaryToEdit) disciplinaryWarningForm.reset(disciplinaryToEdit);
+    else disciplinaryWarningForm.reset({ employeeId: '', warningDate: new Date(), warningType: undefined, violationDetails: '', actionTaken: '', issuingManager: '', status: "مسودة" });
+  }, [disciplinaryToEdit, disciplinaryWarningForm, showManageDisciplinaryDialog]);
+
+
   const handleEmployeeSubmit = (values: EmployeeFormValues) => {
     if (employeeToEdit) {
-      setEmployeesData(prev => prev.map(emp => emp.id === employeeToEdit.id ? { ...values, id: employeeToEdit.id } : emp));
+      setEmployeesData(prev => prev.map(emp => emp.id === employeeToEdit.id ? { ...values, id: employeeToEdit.id! } : emp));
       toast({ title: "تم التعديل", description: `تم تعديل بيانات الموظف ${values.name}.` });
     } else {
       setEmployeesData(prev => [...prev, { ...values, id: `EMP${Date.now()}` }]);
@@ -484,6 +569,66 @@ export default function HRPayrollPage() {
   const handlePrintWarningNotice = (notice: WarningNoticeFormValues) => {
     setSelectedWarningNoticeForPrint(notice);
     setShowPrintWarningNoticeDialog(true);
+  };
+
+  const handleAdministrativeDecisionSubmit = (values: AdministrativeDecisionFormValues) => {
+    if (adminDecisionToEdit) {
+        setAdministrativeDecisionsData(prev => prev.map(ad => ad.id === adminDecisionToEdit.id ? { ...values, id: adminDecisionToEdit.id! } : ad));
+        toast({ title: "تم التعديل", description: "تم تعديل القرار الإداري بنجاح." });
+    } else {
+        setAdministrativeDecisionsData(prev => [...prev, { ...values, id: `AD${Date.now()}` }]);
+        toast({ title: "تم الإنشاء", description: "تم إنشاء القرار الإداري بنجاح." });
+    }
+    setShowManageAdminDecisionDialog(false);
+    setAdminDecisionToEdit(null);
+  };
+  const handleDeleteAdministrativeDecision = (decisionId: string) => {
+    setAdministrativeDecisionsData(prev => prev.filter(ad => ad.id !== decisionId));
+    toast({ title: "تم الحذف", description: `تم حذف القرار الإداري ${decisionId}.`, variant: "destructive" });
+  };
+  const handlePrintAdministrativeDecision = (decision: AdministrativeDecisionFormValues) => {
+    setSelectedAdminDecisionForPrint(decision);
+    setShowPrintAdminDecisionDialog(true);
+  };
+  
+  const handleResignationSubmit = (values: ResignationFormValues) => {
+    if (resignationToEdit) {
+        setResignationsData(prev => prev.map(res => res.id === resignationToEdit.id ? { ...values, id: resignationToEdit.id! } : res));
+        toast({ title: "تم التعديل", description: "تم تعديل طلب الاستقالة بنجاح." });
+    } else {
+        setResignationsData(prev => [...prev, { ...values, id: `RES${Date.now()}` }]);
+        toast({ title: "تم التقديم", description: "تم تقديم طلب الاستقالة بنجاح." });
+    }
+    setShowManageResignationDialog(false);
+    setResignationToEdit(null);
+  };
+  const handleDeleteResignation = (resignationId: string) => {
+    setResignationsData(prev => prev.filter(res => res.id !== resignationId));
+    toast({ title: "تم الحذف", description: `تم حذف طلب الاستقالة ${resignationId}.`, variant: "destructive" });
+  };
+  const handlePrintResignation = (resignation: ResignationFormValues) => {
+    setSelectedResignationForPrint(resignation);
+    setShowPrintResignationDialog(true);
+  };
+
+  const handleDisciplinaryWarningSubmit = (values: DisciplinaryWarningFormValues) => {
+    if (disciplinaryToEdit) {
+        setDisciplinaryWarningsData(prev => prev.map(dw => dw.id === disciplinaryToEdit.id ? { ...values, id: disciplinaryToEdit.id! } : dw));
+        toast({ title: "تم التعديل", description: "تم تعديل الإنذار بنجاح." });
+    } else {
+        setDisciplinaryWarningsData(prev => [...prev, { ...values, id: `DW${Date.now()}` }]);
+        toast({ title: "تم الإنشاء", description: "تم إنشاء الإنذار بنجاح." });
+    }
+    setShowManageDisciplinaryDialog(false);
+    setDisciplinaryToEdit(null);
+  };
+  const handleDeleteDisciplinaryWarning = (warningId: string) => {
+    setDisciplinaryWarningsData(prev => prev.filter(dw => dw.id !== warningId));
+    toast({ title: "تم الحذف", description: `تم حذف الإنذار ${warningId}.`, variant: "destructive" });
+  };
+  const handlePrintDisciplinaryWarning = (warning: DisciplinaryWarningFormValues) => {
+    setSelectedDisciplinaryForPrint(warning);
+    setShowPrintDisciplinaryDialog(true);
   };
 
 
@@ -670,7 +815,7 @@ export default function HRPayrollPage() {
                                 }
                             }} value={field.value} dir="rtl">
                                 <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl>
-                                <SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>)}</SelectContent>
+                                <SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id!}>{emp.name}</SelectItem>)}</SelectContent>
                             </Select><FormMessage /></FormItem>)} />
                         <FormField control={payrollForm.control} name="monthYear" render={({ field }) => (<FormItem><FormLabel>الشهر والسنة</FormLabel><FormControl><Input {...field} placeholder="مثال: يوليو 2024" className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={payrollForm.control} name="basicSalary" render={({ field }) => (<FormItem><FormLabel>الراتب الأساسي</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
@@ -780,8 +925,7 @@ export default function HRPayrollPage() {
                           )}
                           {emp.status === "نشط" && <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="إنهاء خدمة"><UserCog className="h-4 w-4" /></Button></AlertDialogTrigger>
-                            <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد إنهاء الخدمة</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من إنهاء خدمة الموظف {emp.name}؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleTerminateEmployee(emp.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-                          </AlertDialog>}
+                            <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد إنهاء الخدمة</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من إنهاء خدمة الموظف {emp.name}؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleTerminateEmployee(emp.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -899,7 +1043,7 @@ export default function HRPayrollPage() {
                             <form onSubmit={attendanceForm.handleSubmit(handleAttendanceSubmit)} className="space-y-4 py-4">
                                 <FormField control={attendanceForm.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>الموظف</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl>
-                                    <SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                    <SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id!}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                 <FormField control={attendanceForm.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>التاريخ</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField control={attendanceForm.control} name="checkIn" render={({ field }) => (<FormItem><FormLabel>وقت الحضور</FormLabel><FormControl><Input type="time" {...field} value={field.value || ""} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
@@ -985,8 +1129,7 @@ export default function HRPayrollPage() {
                         <Form {...leaveRequestForm}>
                             <form onSubmit={leaveRequestForm.handleSubmit(handleLeaveRequestSubmit)} className="space-y-4 py-4">
                                 <FormField control={leaveRequestForm.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>الموظف</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl>
-                                    <SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl><SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id!}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                 <FormField control={leaveRequestForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>نوع الإجازة</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl>
                                     <SelectContent>{mockLeaveTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
@@ -1081,9 +1224,9 @@ export default function HRPayrollPage() {
                 <TabsList className="w-full mb-4 bg-muted/50 p-1 rounded-md">
                     <TabsTrigger value="delegations" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Plane className="me-2 h-4 w-4"/>الانتدابات</TabsTrigger>
                     <TabsTrigger value="warningNotices" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileWarning className="me-2 h-4 w-4"/>لفت النظر</TabsTrigger>
-                    <TabsTrigger value="administrativeDecisions" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileEdit className="me-2 h-4 w-4"/>القرارات الإدارية</TabsTrigger>
-                    <TabsTrigger value="resignations" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><UserMinus className="me-2 h-4 w-4"/>الاستقالات</TabsTrigger>
-                    <TabsTrigger value="disciplinaryWarnings" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><AlertOctagon className="me-2 h-4 w-4"/>الإنذارات</TabsTrigger>
+                    <TabsTrigger value="administrativeDecisions" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><BookText className="me-2 h-4 w-4"/>القرارات الإدارية</TabsTrigger>
+                    <TabsTrigger value="resignations" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><UserX className="me-2 h-4 w-4"/>الاستقالات</TabsTrigger>
+                    <TabsTrigger value="disciplinaryWarnings" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><ClipboardSignature className="me-2 h-4 w-4"/>الإنذارات</TabsTrigger>
                 </TabsList>
                 <TabsContent value="delegations">
                     <Card className="shadow-md">
@@ -1111,7 +1254,7 @@ export default function HRPayrollPage() {
                                         <DialogHeader><DialogTitle>{warningNoticeToEdit ? "تعديل لفت نظر" : "إنشاء لفت نظر جديد"}</DialogTitle></DialogHeader>
                                         <Form {...warningNoticeForm}>
                                             <form onSubmit={warningNoticeForm.handleSubmit(handleWarningNoticeSubmit)} className="space-y-4 py-4">
-                                                <FormField control={warningNoticeForm.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>الموظف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl><SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <FormField control={warningNoticeForm.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>الموظف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl><SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id!}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                                 <FormField control={warningNoticeForm.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ لفت النظر</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
                                                 <FormField control={warningNoticeForm.control} name="reason" render={({ field }) => (<FormItem><FormLabel>السبب</FormLabel><FormControl><Input placeholder="سبب لفت النظر" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
                                                 <FormField control={warningNoticeForm.control} name="details" render={({ field }) => (<FormItem><FormLabel>التفاصيل</FormLabel><FormControl><Textarea placeholder="تفاصيل المخالفة/الملاحظة" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
@@ -1139,10 +1282,138 @@ export default function HRPayrollPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                {/* Placeholder for other form types */}
-                <TabsContent value="administrativeDecisions"><Card><CardHeader><CardTitle>نماذج القرارات الإدارية</CardTitle></CardHeader><CardContent><p className="text-muted-foreground text-center py-10">سيتم إضافة نماذج القرارات الإدارية هنا.</p></CardContent></Card></TabsContent>
-                <TabsContent value="resignations"><Card><CardHeader><CardTitle>نماذج الاستقالات</CardTitle></CardHeader><CardContent><p className="text-muted-foreground text-center py-10">سيتم إضافة نماذج الاستقالات هنا.</p></CardContent></Card></TabsContent>
-                <TabsContent value="disciplinaryWarnings"><Card><CardHeader><CardTitle>نماذج الإنذارات</CardTitle></CardHeader><CardContent><p className="text-muted-foreground text-center py-10">سيتم إضافة نماذج الإنذارات هنا.</p></CardContent></Card></TabsContent>
+                <TabsContent value="administrativeDecisions">
+                    <Card className="shadow-md">
+                        <CardHeader><CardTitle>نماذج القرارات الإدارية</CardTitle><CardDescription>تسجيل ومتابعة القرارات الإدارية المتعلقة بالموظفين.</CardDescription></CardHeader>
+                        <CardContent>
+                            <div className="mb-4">
+                                <Dialog open={showManageAdminDecisionDialog} onOpenChange={(isOpen) => { setShowManageAdminDecisionDialog(isOpen); if(!isOpen) setAdminDecisionToEdit(null);}}>
+                                    <DialogTrigger asChild>
+                                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setAdminDecisionToEdit(null); adminDecisionForm.reset(); setShowManageAdminDecisionDialog(true);}}>
+                                            <PlusCircle className="me-2 h-4 w-4"/> إنشاء قرار إداري جديد
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent dir="rtl" className="sm:max-w-lg">
+                                        <DialogHeader><DialogTitle>{adminDecisionToEdit ? "تعديل قرار إداري" : "إنشاء قرار إداري جديد"}</DialogTitle></DialogHeader>
+                                        <Form {...adminDecisionForm}>
+                                            <form onSubmit={adminDecisionForm.handleSubmit(handleAdministrativeDecisionSubmit)} className="space-y-4 py-4">
+                                                <FormField control={adminDecisionForm.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>الموظف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl><SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id!}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <FormField control={adminDecisionForm.control} name="decisionDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ القرار</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                                <FormField control={adminDecisionForm.control} name="decisionType" render={({ field }) => (<FormItem><FormLabel>نوع القرار</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع القرار" /></SelectTrigger></FormControl><SelectContent>{mockDecisionTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <FormField control={adminDecisionForm.control} name="details" render={({ field }) => (<FormItem><FormLabel>تفاصيل القرار</FormLabel><FormControl><Textarea placeholder="تفاصيل القرار" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={adminDecisionForm.control} name="issuingAuthority" render={({ field }) => (<FormItem><FormLabel>الجهة المصدرة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الجهة" /></SelectTrigger></FormControl><SelectContent>{mockManagers.map(mgr => <SelectItem key={mgr.id} value={mgr.name}>{mgr.name}</SelectItem>)}<SelectItem value="إدارة الشركة">إدارة الشركة</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <FormField control={adminDecisionForm.control} name="effectiveDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ السريان</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                                <DialogFooter><Button type="submit">{adminDecisionToEdit ? "حفظ التعديلات" : "حفظ القرار"}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                            </form>
+                                        </Form>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader><TableRow><TableHead>الموظف</TableHead><TableHead>تاريخ القرار</TableHead><TableHead>النوع</TableHead><TableHead>الجهة المصدرة</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                                    <TableBody>{administrativeDecisionsData.map(ad => (<TableRow key={ad.id} className="hover:bg-muted/50">
+                                        <TableCell>{employees.find(e => e.id === ad.employeeId)?.name}</TableCell><TableCell>{ad.decisionDate.toLocaleDateString('ar-SA', {calendar: 'gregory'})}</TableCell><TableCell>{ad.decisionType}</TableCell><TableCell>{ad.issuingAuthority}</TableCell>
+                                        <TableCell><Badge variant={ad.status === "معتمد" || ad.status === "منفذ" ? "default" : "outline"}>{ad.status}</Badge></TableCell>
+                                        <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة" onClick={() => handlePrintAdministrativeDecision(ad)}><Printer className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setAdminDecisionToEdit(ad); setShowManageAdminDecisionDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                                            <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف هذا القرار؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAdministrativeDecision(ad.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                                        </TableCell>
+                                    </TableRow>))}</TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="resignations">
+                    <Card className="shadow-md">
+                        <CardHeader><CardTitle>نماذج الاستقالات</CardTitle><CardDescription>تسجيل ومتابعة طلبات الاستقالة من الموظفين.</CardDescription></CardHeader>
+                        <CardContent>
+                           <div className="mb-4">
+                                <Dialog open={showManageResignationDialog} onOpenChange={(isOpen) => { setShowManageResignationDialog(isOpen); if(!isOpen) setResignationToEdit(null);}}>
+                                    <DialogTrigger asChild>
+                                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setResignationToEdit(null); resignationForm.reset(); setShowManageResignationDialog(true);}}>
+                                            <PlusCircle className="me-2 h-4 w-4"/> تسجيل طلب استقالة
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent dir="rtl" className="sm:max-w-lg">
+                                        <DialogHeader><DialogTitle>{resignationToEdit ? "تعديل طلب استقالة" : "تسجيل طلب استقالة جديد"}</DialogTitle></DialogHeader>
+                                        <Form {...resignationForm}>
+                                            <form onSubmit={resignationForm.handleSubmit(handleResignationSubmit)} className="space-y-4 py-4">
+                                                <FormField control={resignationForm.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>الموظف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl><SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id!}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <FormField control={resignationForm.control} name="submissionDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ تقديم الاستقالة</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                                <FormField control={resignationForm.control} name="lastWorkingDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ آخر يوم عمل</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                                <FormField control={resignationForm.control} name="reason" render={({ field }) => (<FormItem><FormLabel>سبب الاستقالة</FormLabel><FormControl><Textarea placeholder="سبب الاستقالة" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={resignationForm.control} name="managerNotifiedDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ إبلاغ المدير (اختياري)</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                                <FormField control={resignationForm.control} name="status" render={({ field }) => (<FormItem><FormLabel>الحالة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl><SelectContent>{["مقدمة", "مقبولة", "قيد المراجعة", "مسحوبة", "مرفوضة"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <DialogFooter><Button type="submit">{resignationToEdit ? "حفظ التعديلات" : "حفظ الطلب"}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                            </form>
+                                        </Form>
+                                    </DialogContent>
+                                </Dialog>
+                           </div>
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader><TableRow><TableHead>الموظف</TableHead><TableHead>تاريخ التقديم</TableHead><TableHead>آخر يوم عمل</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                                    <TableBody>{resignationsData.map(res => (<TableRow key={res.id} className="hover:bg-muted/50">
+                                        <TableCell>{employees.find(e => e.id === res.employeeId)?.name}</TableCell><TableCell>{res.submissionDate.toLocaleDateString('ar-SA', {calendar: 'gregory'})}</TableCell><TableCell>{res.lastWorkingDate.toLocaleDateString('ar-SA', {calendar: 'gregory'})}</TableCell>
+                                        <TableCell><Badge variant={res.status === "مقبولة" ? "default" : res.status === "مرفوضة" ? "destructive" : "outline"}>{res.status}</Badge></TableCell>
+                                        <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة" onClick={() => handlePrintResignation(res)}><Printer className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setResignationToEdit(res); setShowManageResignationDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                                            <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف هذا الطلب؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteResignation(res.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                                        </TableCell>
+                                    </TableRow>))}</TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="disciplinaryWarnings">
+                    <Card className="shadow-md">
+                        <CardHeader><CardTitle>نماذج الإنذارات</CardTitle><CardDescription>تسجيل ومتابعة الإنذارات الموجهة للموظفين.</CardDescription></CardHeader>
+                        <CardContent>
+                           <div className="mb-4">
+                                <Dialog open={showManageDisciplinaryDialog} onOpenChange={(isOpen) => { setShowManageDisciplinaryDialog(isOpen); if(!isOpen) setDisciplinaryToEdit(null);}}>
+                                    <DialogTrigger asChild>
+                                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setDisciplinaryToEdit(null); disciplinaryWarningForm.reset(); setShowManageDisciplinaryDialog(true);}}>
+                                            <PlusCircle className="me-2 h-4 w-4"/> إصدار إنذار جديد
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent dir="rtl" className="sm:max-w-lg">
+                                        <DialogHeader><DialogTitle>{disciplinaryToEdit ? "تعديل إنذار" : "إصدار إنذار جديد"}</DialogTitle></DialogHeader>
+                                        <Form {...disciplinaryWarningForm}>
+                                            <form onSubmit={disciplinaryWarningForm.handleSubmit(handleDisciplinaryWarningSubmit)} className="space-y-4 py-4">
+                                                <FormField control={disciplinaryWarningForm.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>الموظف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl><SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id!}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <FormField control={disciplinaryWarningForm.control} name="warningDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ الإنذار</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                                <FormField control={disciplinaryWarningForm.control} name="warningType" render={({ field }) => (<FormItem><FormLabel>نوع الإنذار</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع الإنذار" /></SelectTrigger></FormControl><SelectContent>{mockWarningTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <FormField control={disciplinaryWarningForm.control} name="violationDetails" render={({ field }) => (<FormItem><FormLabel>تفاصيل المخالفة</FormLabel><FormControl><Textarea placeholder="تفاصيل المخالفة" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={disciplinaryWarningForm.control} name="actionTaken" render={({ field }) => (<FormItem><FormLabel>الإجراء المتخذ (اختياري)</FormLabel><FormControl><Input placeholder="مثال: خصم يوم، تحويل للتحقيق" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={disciplinaryWarningForm.control} name="issuingManager" render={({ field }) => (<FormItem><FormLabel>المدير المصدر</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المدير" /></SelectTrigger></FormControl><SelectContent>{mockManagers.map(mgr => <SelectItem key={mgr.id} value={mgr.name}>{mgr.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <DialogFooter><Button type="submit">{disciplinaryToEdit ? "حفظ التعديلات" : "حفظ الإنذار"}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                            </form>
+                                        </Form>
+                                    </DialogContent>
+                                </Dialog>
+                           </div>
+                           <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader><TableRow><TableHead>الموظف</TableHead><TableHead>تاريخ الإنذار</TableHead><TableHead>النوع</TableHead><TableHead>المدير المصدر</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                                    <TableBody>{disciplinaryWarningsData.map(dw => (<TableRow key={dw.id} className="hover:bg-muted/50">
+                                        <TableCell>{employees.find(e => e.id === dw.employeeId)?.name}</TableCell><TableCell>{dw.warningDate.toLocaleDateString('ar-SA', {calendar: 'gregory'})}</TableCell><TableCell>{dw.warningType}</TableCell><TableCell>{dw.issuingManager}</TableCell>
+                                        <TableCell><Badge variant={dw.status === "تم التسليم" || dw.status === "منفذ" ? "destructive" : "outline"}>{dw.status}</Badge></TableCell>
+                                        <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة" onClick={() => handlePrintDisciplinaryWarning(dw)}><Printer className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setDisciplinaryToEdit(dw); setShowManageDisciplinaryDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                                            <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف هذا الإنذار؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteDisciplinaryWarning(dw.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                                        </TableCell>
+                                    </TableRow>))}</TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                 </TabsContent>
             </Tabs>
         </TabsContent>
       </Tabs>
@@ -1368,6 +1639,98 @@ export default function HRPayrollPage() {
             <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
             <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Print Administrative Decision Dialog */}
+      <Dialog open={showPrintAdminDecisionDialog} onOpenChange={setShowPrintAdminDecisionDialog}>
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl">
+          <DialogHeader className="print-hidden">
+            <DialogTitle>طباعة قرار إداري: {selectedAdminDecisionForPrint?.id}</DialogTitle>
+          </DialogHeader>
+          {selectedAdminDecisionForPrint && (
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="decision document">
+              <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                <div className='flex items-center gap-2'> <AppLogo /> <div> <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2> <p className="text-xs">Al-Mustaqbal IT Co.</p> <p className="text-xs">الرياض - المملكة العربية السعودية</p> </div> </div>
+                <div className="text-left"> <h3 className="text-md font-semibold">قرار إداري</h3> <p className="text-xs">Administrative Decision</p> <p className="text-xs mt-1">الرقم: {selectedAdminDecisionForPrint.id}</p> <p className="text-xs">تاريخ القرار: {new Date(selectedAdminDecisionForPrint.decisionDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p> </div>
+              </div>
+              <div className="mb-6 text-xs">
+                <p className="mb-2"><strong>بناءً على الصلاحيات المخولة لنا، وبعد الاطلاع على مصلحة العمل، تقرر ما يلي:</strong></p>
+                <p className="mb-2"><strong>الموظف:</strong> {employees.find(e => e.id === selectedAdminDecisionForPrint.employeeId)?.name} - (الرقم الوظيفي: {selectedAdminDecisionForPrint.employeeId})</p>
+                <p className="mb-2"><strong>نوع القرار:</strong> {selectedAdminDecisionForPrint.decisionType}</p>
+                <p className="mb-4"><strong>تفاصيل القرار:</strong></p>
+                <p className="leading-relaxed mb-4 whitespace-pre-line">{selectedAdminDecisionForPrint.details}</p>
+                <p className="mb-2"><strong>تاريخ سريان القرار:</strong> {new Date(selectedAdminDecisionForPrint.effectiveDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p>يُعمل بهذا القرار من تاريخ سريانه وعلى الجهات المعنية تنفيذه كل فيما يخصه.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-16 pt-6 border-t border-gray-300 text-xs">
+                <div className="text-center"> <p className="mb-10">.........................</p> <p className="font-semibold">الجهة المصدرة للقرار</p> <p>{selectedAdminDecisionForPrint.issuingAuthority}</p> </div>
+                <div className="text-center"> <p className="mb-10">.........................</p> <p className="font-semibold">استلام الموظف (للعلم)</p> <p>(التوقيع)</p> </div>
+              </div>
+              <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
+            </div>
+          )}
+          <DialogFooter className="print-hidden pt-4"> <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button> <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose> </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Resignation Dialog */}
+      <Dialog open={showPrintResignationDialog} onOpenChange={setShowPrintResignationDialog}>
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl">
+          <DialogHeader className="print-hidden"> <DialogTitle>نموذج استقالة: {selectedResignationForPrint?.id}</DialogTitle> </DialogHeader>
+          {selectedResignationForPrint && (
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="resignation form">
+              <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                <div className='flex items-center gap-2'> <AppLogo /> <div> <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2> <p className="text-xs">Al-Mustaqbal IT Co.</p> </div> </div>
+                <div className="text-left"> <h3 className="text-md font-semibold">طلب استقالة</h3> <p className="text-xs">Resignation Request</p> <p className="text-xs mt-1">الرقم: {selectedResignationForPrint.id}</p> </div>
+              </div>
+              <p className="text-right mb-4 text-xs">التاريخ: {new Date(selectedResignationForPrint.submissionDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <p className="mb-2 text-xs"><strong>إلى السيد/ مدير الموارد البشرية المحترم،</strong></p>
+              <p className="mb-4 text-xs">تحية طيبة وبعد،</p>
+              <p className="mb-2 text-xs">أتقدم إليكم بطلب استقالتي من العمل في شركة المستقبل لتقنية المعلومات، وذلك اعتباراً من تاريخ آخر يوم عمل الموافق {new Date(selectedResignationForPrint.lastWorkingDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+              <p className="mb-2 text-xs"><strong>الموظف:</strong> {employees.find(e => e.id === selectedResignationForPrint.employeeId)?.name} - (الرقم الوظيفي: {selectedResignationForPrint.employeeId})</p>
+              <p className="mb-4 text-xs"><strong>سبب الاستقالة:</strong> {selectedResignationForPrint.reason}</p>
+              {selectedResignationForPrint.managerNotifiedDate && <p className="mb-4 text-xs"><strong>تم إبلاغ المدير المباشر بتاريخ:</strong> {new Date(selectedResignationForPrint.managerNotifiedDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>}
+              <p className="mb-4 text-xs">أشكر لكم الفترة التي قضيتها في الشركة وأتمنى لكم كل التوفيق.</p>
+              <div className="grid grid-cols-2 gap-4 mt-16 pt-6 border-t border-gray-300 text-xs">
+                <div className="text-center"> <p className="mb-10">.........................</p> <p className="font-semibold">توقيع الموظف</p> </div>
+                <div className="text-center"> <p className="mb-10">.........................</p> <p className="font-semibold">اعتماد مدير الموارد البشرية</p> </div>
+              </div>
+              <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
+            </div>
+          )}
+          <DialogFooter className="print-hidden pt-4"> <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button> <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose> </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Disciplinary Warning Dialog */}
+      <Dialog open={showPrintDisciplinaryDialog} onOpenChange={setShowPrintDisciplinaryDialog}>
+        <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl">
+          <DialogHeader className="print-hidden"> <DialogTitle>طباعة إنذار: {selectedDisciplinaryForPrint?.id}</DialogTitle> </DialogHeader>
+          {selectedDisciplinaryForPrint && (
+            <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="disciplinary document">
+              <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
+                <div className='flex items-center gap-2'> <AppLogo /> <div> <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2> <p className="text-xs">Al-Mustaqbal IT Co.</p> </div> </div>
+                <div className="text-left"> <h3 className="text-md font-semibold">إشعار إنذار ({selectedDisciplinaryForPrint.warningType})</h3> <p className="text-xs">Disciplinary Warning</p> <p className="text-xs mt-1">الرقم: {selectedDisciplinaryForPrint.id}</p> <p className="text-xs">التاريخ: {new Date(selectedDisciplinaryForPrint.warningDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p> </div>
+              </div>
+              <div className="mb-6 text-xs">
+                <p className="mb-2"><strong>إلى السيد/السيدة:</strong> {employees.find(e => e.id === selectedDisciplinaryForPrint.employeeId)?.name}</p>
+                <p className="mb-2"><strong>الرقم الوظيفي:</strong> {selectedDisciplinaryForPrint.employeeId}</p>
+                <p className="mb-4"><strong>الموضوع:</strong> إنذار ({selectedDisciplinaryForPrint.warningType})</p>
+                <p className="mb-2"><strong>تفاصيل المخالفة:</strong></p>
+                <p className="leading-relaxed mb-4 whitespace-pre-line">{selectedDisciplinaryForPrint.violationDetails}</p>
+                {selectedDisciplinaryForPrint.actionTaken && <p className="mb-2"><strong>الإجراء المتخذ:</strong> {selectedDisciplinaryForPrint.actionTaken}</p>}
+                <p className="mb-2">نأمل منكم الالتزام التام بأنظمة ولوائح الشركة لتجنب أي إجراءات أخرى قد تترتب على تكرار المخالفة.</p>
+                <p>وتفضلوا بقبول فائق الاحترام.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-16 pt-6 border-t border-gray-300 text-xs">
+                <div className="text-center"> <p className="mb-10">.........................</p> <p className="font-semibold">المدير المصدر</p> <p>{selectedDisciplinaryForPrint.issuingManager}</p> </div>
+                <div className="text-center"> <p className="mb-10">.........................</p> <p className="font-semibold">استلام الموظف</p> <p>(التوقيع)</p> </div>
+              </div>
+              <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
+            </div>
+          )}
+          <DialogFooter className="print-hidden pt-4"> <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button> <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose> </DialogFooter>
         </DialogContent>
       </Dialog>
 
