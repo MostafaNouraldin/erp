@@ -226,6 +226,7 @@ export default function InventoryPage() {
     setProductToEdit(null);
     setImagePreview(null);
   };
+
   const handleDeleteProduct = (productId: string) => {
     setProductsData(prev => prev.filter(p => p.id !== productId));
     toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
@@ -256,6 +257,7 @@ export default function InventoryPage() {
     setShowStartStocktakeDialog(false);
     stocktakeInitiationForm.reset();
   };
+
   const handleViewStocktakeDetails = () => {
     setSelectedStocktakeForView(mockStocktakeDetail);
     setShowViewStocktakeDetailsDialog(true);
@@ -296,9 +298,9 @@ export default function InventoryPage() {
     setShowManageStockRequisitionDialog(false);
     setStockRequisitionToEdit(null);
   };
-
-  const selectedUnit = productForm.watch("unit");
   
+  const selectedUnit = productForm.watch("unit");
+
   return (
     <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
@@ -344,10 +346,10 @@ export default function InventoryPage() {
                         <FormControl>
                             <Input type="file" accept="image/*" onChange={handleImageChange} className="bg-background"/>
                         </FormControl>
-                        {imagePreview && <Image src={imagePreview} alt="معاينة المنتج" width={100} height={100} className="mt-2 rounded-md border object-cover" data-ai-hint={productForm.getValues("dataAiHint") || "product"} />}
+                        {imagePreview && <Image src={imagePreview} alt="معاينة المنتج" width={100} height={100} className="mt-2 rounded-md border object-cover" data-ai-hint={productForm.getValues("dataAiHint") || "product"}/>}
                         <FormMessage />
                     </FormItem>
-                )}
+                )}/>
                 <FormField control={productForm.control} name="dataAiHint" render={({ field }) => (
                     <FormItem>
                         <FormLabel>وصف الصورة (AI Hint)</FormLabel>
@@ -357,7 +359,7 @@ export default function InventoryPage() {
                         </DialogDescriptionComponent>
                         <FormMessage />
                     </FormItem>
-                )}
+                )}/>
 
               <DialogFooter><Button type="submit">{productToEdit ? 'حفظ التعديلات' : 'حفظ المنتج'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
             </form></Form>
@@ -763,7 +765,7 @@ export default function InventoryPage() {
 
       <Dialog open={showViewStocktakeDetailsDialog} onOpenChange={setShowViewStocktakeDetailsDialog}>
             <DialogContent className="sm:max-w-2xl" dir="rtl">
-                <DialogHeader>
+                <DialogHeader className="print-hidden">
                     <DialogTitle>تفاصيل الجرد: {selectedStocktakeForView?.id}</DialogTitle>
                 </DialogHeader>
                 {selectedStocktakeForView && (
@@ -836,5 +838,6 @@ export default function InventoryPage() {
     </div>
   );
 }
+    
 
     
