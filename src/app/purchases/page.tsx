@@ -1,10 +1,11 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -162,6 +163,8 @@ export default function PurchasesPage() {
   
   const [showCreatePoDialog, setShowCreatePoDialog] = useState(false);
   const [poToEdit, setPoToEdit] = useState<PurchaseOrderFormValues | null>(null);
+  const [showViewPoDialog, setShowViewPoDialog] = useState(false);
+  const [selectedPoForView, setSelectedPoForView] = useState<PurchaseOrderFormValues | null>(null);
   
   const [showCreateSupplierInvoiceDialog, setShowCreateSupplierInvoiceDialog] = useState(false);
   const [supplierInvoiceToEdit, setSupplierInvoiceToEdit] = useState<SupplierInvoiceFormValues | null>(null);
@@ -272,6 +275,11 @@ export default function PurchasesPage() {
     setPoToEdit(null);
   };
 
+  const handleViewPo = (po: PurchaseOrderFormValues) => {
+    setSelectedPoForView(po);
+    setShowViewPoDialog(true);
+  };
+
   const handleSupplierInvoiceSubmit = (values: SupplierInvoiceFormValues) => {
     const totalAmount = calculateTotalAmountForForm(values.items);
     const finalValues = {...values, totalAmount};
@@ -291,8 +299,26 @@ export default function PurchasesPage() {
     if (po) {
         const totalOrdered = po.items.reduce((sum, item) => sum + item.quantity, 0);
         const totalReceivedInThisGrn = values.items.reduce((sum, item) => sum + item.receivedQuantity, 0);
-        const newPoStatus = totalReceivedInThisGrn >= totalOrdered ? "مستلم بالكامل" as const : "مستلم جزئياً" as const;
-        const newGrnStatus = values.items.every(item => item.receivedQuantity >= (po.items.find(poItem => poItem.itemId === item.itemId)?.quantity || 0)) ? "مستلم بالكامل" as const : "مستلم جزئياً" as const;
+        
+        // Calculate already received quantity for this PO from other GRNs
+        const alreadyReceivedQuantity = goodsReceivedNotes
+            .filter(grn => grn.poId === values.poId && grn.id !== (grnToEdit ? grnToEdit.id : undefined))
+            .reduce((sum, grn) => sum + grn.items.reduce((itemSum, item) => itemSum + item.receivedQuantity, 0), 0);
+
+        const newTotalReceivedForPo = alreadyReceivedQuantity + totalReceivedInThisGrn;
+        
+        const newPoStatus = newTotalReceivedForPo >= totalOrdered ? "مستلم بالكامل" as const : "مستلم جزئياً" as const;
+        
+        const allItemsFullyReceivedInThisGrn = values.items.every(item => 
+            item.receivedQuantity >= (po.items.find(poItem => poItem.itemId === item.itemId)?.quantity || 0) - 
+            goodsReceivedNotes
+                .filter(grn => grn.poId === values.poId && grn.id !== (grnToEdit ? grnToEdit.id : undefined))
+                .flatMap(grn => grn.items)
+                .filter(grnItem => grnItem.itemId === item.itemId)
+                .reduce((sum, grnItem) => sum + grnItem.receivedQuantity, 0)
+        );
+
+        const newGrnStatus = allItemsFullyReceivedInThisGrn && newTotalReceivedForPo >= totalOrdered ? "مستلم بالكامل" as const : "مستلم جزئياً" as const;
         
         if(po.status !== "مستلم بالكامل") {
             setPurchaseOrdersData(prev => prev.map(p => p.id === values.poId ? {...p, status: newPoStatus} : p));
@@ -568,7 +594,7 @@ export default function PurchasesPage() {
                         <TableCell>{po.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
                         <TableCell><Badge variant={po.status === "معتمد" || po.status === "مستلم بالكامل" ? "default" : po.status === "ملغي" ? "destructive" : "outline"} className="whitespace-nowrap">{po.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => toast({title: `عرض أمر ${po.id}`})}><Eye className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => handleViewPo(po)}><Eye className="h-4 w-4" /></Button>
                           {po.status === "مسودة" && (<>
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setPoToEdit(po); setShowCreatePoDialog(true);}}><Edit className="h-4 w-4" /></Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent text-green-600" title="اعتماد" onClick={() => handleApprovePo(po.id!)}><CheckCircle className="h-4 w-4" /></Button>
@@ -935,6 +961,56 @@ export default function PurchasesPage() {
 
       </Tabs>
 
+      {/* View Purchase Order Dialog */}
+      <Dialog open={showViewPoDialog} onOpenChange={setShowViewPoDialog}>
+        <DialogContent className="sm:max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل أمر الشراء: {selectedPoForView?.id}</DialogTitle>
+          </DialogHeader>
+          {selectedPoForView && (
+            <ScrollArea className="max-h-[70vh] p-1">
+              <div className="py-4 space-y-3 text-sm">
+                <Card>
+                  <CardHeader className="p-2"><CardTitle className="text-base">المعلومات الأساسية</CardTitle></CardHeader>
+                  <CardContent className="p-2 space-y-1">
+                    <p><strong>رقم الأمر:</strong> {selectedPoForView.id}</p>
+                    <p><strong>المورد:</strong> {suppliersData.find(s => s.id === selectedPoForView.supplierId)?.name}</p>
+                    <p><strong>تاريخ الأمر:</strong> {formatDateForDisplay(selectedPoForView.date)}</p>
+                    <p><strong>التسليم المتوقع:</strong> {formatDateForDisplay(selectedPoForView.expectedDeliveryDate)}</p>
+                    <p><strong>الإجمالي:</strong> {selectedPoForView.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
+                    <p><strong>الحالة:</strong> <Badge variant={selectedPoForView.status === "معتمد" ? "default" : "outline"}>{selectedPoForView.status}</Badge></p>
+                    <p><strong>ملاحظات:</strong> {selectedPoForView.notes || "لا يوجد"}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="p-2"><CardTitle className="text-base">الأصناف المطلوبة</CardTitle></CardHeader>
+                  <CardContent className="p-2">
+                    {selectedPoForView.items.length > 0 ? (
+                      <Table size="sm">
+                        <TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead className="text-center">الكمية</TableHead><TableHead className="text-center">سعر الوحدة</TableHead><TableHead className="text-left">الإجمالي</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                          {selectedPoForView.items.map((item, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell>{mockItems.find(mi => mi.id === item.itemId)?.name || item.description}</TableCell>
+                              <TableCell className="text-center">{item.quantity}</TableCell>
+                              <TableCell className="text-center">{item.unitPrice.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                              <TableCell className="text-left">{item.total.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : <p className="text-muted-foreground">لا توجد أصناف في أمر الشراء هذا.</p>}
+                  </CardContent>
+                </Card>
+              </div>
+            </ScrollArea>
+          )}
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Print Purchase Return Dialog */}
       <Dialog open={showPrintReturnDialog} onOpenChange={setShowPrintReturnDialog}>
         <DialogContent className="sm:max-w-3xl print-hidden" dir="rtl"> 
@@ -982,7 +1058,7 @@ export default function PurchasesPage() {
                 <div className="text-center"> <p className="mb-10">.........................</p> <p className="font-semibold">إعداد: قسم المشتريات</p> </div>
                 <div className="text-center"> <p className="mb-10">.........................</p> <p className="font-semibold">اعتماد: مدير المخازن/المالية</p> </div>
               </div>
-              <p className="text-center text-xs text-muted-foreground mt-10 print:block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
+              <p className="text-center text-xs text-muted-foreground mt-10 print-block hidden">هذا المستند معتمد من نظام المستقبل ERP</p>
             </div>
           )}
           <DialogFooter className="print-hidden pt-4"> <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button> <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose> </DialogFooter>
