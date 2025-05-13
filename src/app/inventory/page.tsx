@@ -12,12 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, History, BarChart3, SlidersHorizontal, Eye, Download, PackagePlus, Upload, Printer, MinusCircle, PackageMinus, ArchiveRestore, ClipboardList, CheckCircle, AlertTriangle, Truck, Layers, FileSpreadsheet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label"; // Import Label instead of FormLabel for non-form contexts
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; // Keep FormLabel for RHF instances
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
@@ -914,36 +915,36 @@ export default function InventoryPage() {
 
                     <div className="my-4 flex flex-wrap gap-4 items-end print-hidden">
                         {currentReport?.key === "itemMovement" && (
-                            <div className="flex-1 min-w-[200px]"> <FormLabel>الصنف</FormLabel>
+                            <div className="flex-1 min-w-[200px]"> <Label htmlFor="reportItemIdFilter">الصنف</Label>
                                 <Select dir="rtl" onValueChange={(value) => setReportFilters(prev => ({ ...prev, itemId: value === "all" ? undefined : value }))}>
-                                    <SelectTrigger className="bg-background"><SelectValue placeholder="كل الأصناف" /></SelectTrigger>
+                                    <SelectTrigger id="reportItemIdFilter" className="bg-background"><SelectValue placeholder="كل الأصناف" /></SelectTrigger>
                                     <SelectContent><SelectItem value="all">كل الأصناف</SelectItem>{productsData.map(p => <SelectItem key={p.id} value={p.id!}>{p.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                         )}
                         {(currentReport?.key === "itemMovement" || currentReport?.key === "valuation") && (
-                             <div className="flex-1 min-w-[200px]"> <FormLabel>نطاق التاريخ</FormLabel>
+                             <div className="flex-1 min-w-[200px]"> <Label htmlFor="reportDateRangeFilter">نطاق التاريخ</Label>
                                 <DatePickerWithPresets mode="range" onDateChange={(range) => setReportFilters(prev => ({ ...prev, dateRange: range as {from?:Date, to?:Date} }))} />
                             </div>
                         )}
                         {(currentReport?.key === "valuation" || currentReport?.key === "locationReport") && (
-                            <div className="flex-1 min-w-[200px]"> <FormLabel>المستودع</FormLabel>
+                            <div className="flex-1 min-w-[200px]"> <Label htmlFor="reportWarehouseFilter">المستودع</Label>
                                 <Select dir="rtl" onValueChange={(value) => setReportFilters(prev => ({ ...prev, warehouseId: value === "all" ? undefined : value }))}>
-                                    <SelectTrigger className="bg-background"><SelectValue placeholder="كل المستودعات" /></SelectTrigger>
+                                    <SelectTrigger id="reportWarehouseFilter" className="bg-background"><SelectValue placeholder="كل المستودعات" /></SelectTrigger>
                                     <SelectContent><SelectItem value="all">كل المستودعات</SelectItem>{mockWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                         )}
                          {currentReport?.key === "supplierItems" && (
-                            <div className="flex-1 min-w-[200px]"> <FormLabel>المورد</FormLabel>
+                            <div className="flex-1 min-w-[200px]"> <Label htmlFor="reportSupplierFilter">المورد</Label>
                                 <Select dir="rtl" onValueChange={(value) => setReportFilters(prev => ({ ...prev, supplierId: value === "all" ? undefined : value }))}>
-                                    <SelectTrigger className="bg-background"><SelectValue placeholder="كل الموردين" /></SelectTrigger>
+                                    <SelectTrigger id="reportSupplierFilter" className="bg-background"><SelectValue placeholder="كل الموردين" /></SelectTrigger>
                                     <SelectContent><SelectItem value="all">كل الموردين</SelectItem>{mockSuppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                         )}
                          {currentReport?.key === "obsoleteStock" && (
-                            <div className="flex-1 min-w-[200px]"> <FormLabel>لا توجد حركة منذ</FormLabel>
+                            <div className="flex-1 min-w-[200px]"> <Label htmlFor="reportLastMovementDateFilter">لا توجد حركة منذ</Label>
                                 <DatePickerWithPresets mode="single" onDateChange={(date) => setReportFilters(prev => ({ ...prev, lastMovementDate: date as Date | undefined }))} />
                             </div>
                         )}
@@ -1011,4 +1012,5 @@ export default function InventoryPage() {
     
 
     
+
 
