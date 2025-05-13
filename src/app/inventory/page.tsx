@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -9,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, History, BarChart3, SlidersHorizontal, Eye, Download, PackagePlus, Upload, Printer, MinusCircle, PackageMinus, ArchiveRestore, ClipboardList, CheckCircle, AlertTriangle, Truck, Layers } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, History, BarChart3, SlidersHorizontal, Eye, Download, PackagePlus, Upload, Printer, MinusCircle, PackageMinus, ArchiveRestore, ClipboardList, CheckCircle, AlertTriangle, Truck, Layers, FileSpreadsheet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -18,7 +17,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
@@ -66,6 +64,7 @@ interface StocktakeItemDetail {
   expectedQuantity: number;
   countedQuantity: number;
   difference: number;
+  differenceValue?: number; // Added
 }
 interface StocktakeDetails {
   id: string;
@@ -165,11 +164,19 @@ const initialStockRequisitions: StockRequisitionFormValues[] = [
     {id: "SRQ001", requestDate: new Date("2024-07-25"), requestingDepartmentOrPerson: "DEP002", requiredByDate: new Date("2024-07-30"), items: [{productId: "ITEM002", quantityRequested: 1, justification: "طابعة بديلة"}], status: "موافق عليه"},
 ];
 
-const stockMovements = [ { id: "MV001", date: "2024-07-20", type: "دخول (شراء)", item: "ITEM001", quantity: 20, fromTo: "مورد X", reference: "PO-123" }, { id: "MV002", date: "2024-07-21", type: "خروج (بيع)", item: "ITEM003", quantity: 10, fromTo: "عميل Y", reference: "SO-456" }, { id: "MV003", date: "2024-07-22", type: "تحويل داخلي", item: "ITEM002", quantity: 2, fromTo: "مستودع A -> مستودع B", reference: "TRN-001" }, { id: "MV004", date: "2024-07-23", type: "تعديل جرد (زيادة)", item: "ITEM005", quantity: 5, fromTo: "جرد سنوي", reference: "ADJ-001" },];
-const inventoryReportTypes = [ { name: "تقرير حركة صنف", icon: History, description: "تتبع حركة صنف معين خلال فترة." }, { name: "تقرير تقييم المخزون", icon: Layers, description: "عرض قيمة المخزون الحالي بالتكلفة والسعر." }, { name: "تقرير الجرد والفروقات", icon: SlidersHorizontal, description: "مقارنة الكميات الفعلية بالمسجلة وكشف الفروقات." }, { name: "تقرير الأصناف الراكدة", icon: AlertTriangle, description: "تحديد الأصناف التي لم تشهد حركة لفترة." }, { name: "تقرير مواقع التخزين", icon: Warehouse, description: "عرض الأصناف وكمياتها في كل موقع تخزين." }, { name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },];
+const stockMovements = [ { id: "MV001", date: new Date("2024-07-20"), type: "دخول (شراء)", item: "ITEM001", quantity: 20, fromTo: "مورد X", reference: "PO-123" }, { id: "MV002", date: new Date("2024-07-21"), type: "خروج (بيع)", item: "ITEM003", quantity: 10, fromTo: "عميل Y", reference: "SO-456" }, { id: "MV003", date: new Date("2024-07-22"), type: "تحويل داخلي", item: "ITEM002", quantity: 2, fromTo: "مستودع A -> مستودع B", reference: "TRN-001" }, { id: "MV004", date: new Date("2024-07-23"), type: "تعديل جرد (زيادة)", item: "ITEM005", quantity: 5, fromTo: "جرد سنوي", reference: "ADJ-001" },];
+const inventoryReportTypes = [ 
+    { key: "itemMovement", name: "تقرير حركة صنف", icon: History, description: "تتبع حركة صنف معين خلال فترة." }, 
+    { key: "valuation", name: "تقرير تقييم المخزون", icon: Layers, description: "عرض قيمة المخزون الحالي بالتكلفة والسعر." }, 
+    { key: "stocktakeDiscrepancy", name: "تقرير الجرد والفروقات", icon: SlidersHorizontal, description: "مقارنة الكميات الفعلية بالمسجلة وكشف الفروقات." }, 
+    { key: "obsoleteStock", name: "تقرير الأصناف الراكدة", icon: AlertTriangle, description: "تحديد الأصناف التي لم تشهد حركة لفترة." }, 
+    { key: "locationReport", name: "تقرير مواقع التخزين", icon: Warehouse, description: "عرض الأصناف وكمياتها في كل موقع تخزين." }, 
+    { key: "supplierItems", name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },
+];
 const sampleChartData = [ { month: "يناير", "ITEM001": 100, "ITEM002": 50 }, { month: "فبراير", "ITEM001": 120, "ITEM002": 60 }, { month: "مارس", "ITEM001": 80, "ITEM002": 40 }, { month: "ابريل", "ITEM001": 150, "ITEM002": 70 }, { month: "مايو", "ITEM001": 110, "ITEM002": 55 }, { month: "يونيو", "ITEM001": 130, "ITEM002": 65 },];
 const chartConfig = { "ITEM001": { label: "لابتوب Dell XPS 15", color: "hsl(var(--chart-1))" }, "ITEM002": { label: "طابعة HP LaserJet Pro", color: "hsl(var(--chart-2))" },} satisfies ChartConfig;
-const mockStocktakeDetail: StocktakeDetails = { id: "STK-2024-06-30-A", date: "2024-06-30", warehouse: "مستودع A", status: "مكتمل", responsible: "فريق الجرد ألف", itemsCounted: 3, discrepanciesFound: 2, notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.", items: [ { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0 }, { productId: "ITEM002", productName: "طابعة HP LaserJet Pro", expectedQuantity: 7, countedQuantity: 6, difference: -1 }, { productId: "ITEM003", productName: "ورق طباعة A4 (صندوق)", expectedQuantity: 195, countedQuantity: 198, difference: 3 },],};
+
+const mockStocktakeDetail: StocktakeDetails = { id: "STK-2024-06-30-A", date: new Date("2024-06-30").toLocaleDateString('ar-SA'), warehouse: "مستودع A", status: "مكتمل", responsible: "فريق الجرد ألف", itemsCounted: 3, discrepanciesFound: 2, notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.", items: [ { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0, differenceValue: 0 }, { productId: "ITEM002", productName: "طابعة HP LaserJet Pro", expectedQuantity: 7, countedQuantity: 6, difference: -1, differenceValue: -1000 }, { productId: "ITEM003", productName: "ورق طباعة A4 (صندوق)", expectedQuantity: 195, countedQuantity: 198, difference: 3, differenceValue: 360 },],};
 
 
 export default function InventoryPage() {
@@ -178,7 +185,11 @@ export default function InventoryPage() {
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const [currentReport, setCurrentReport] = useState<{name: string, description: string, icon: React.ElementType} | null>(null);
+  const [currentReport, setCurrentReport] = useState<{key: string, name: string, description: string, icon: React.ElementType} | null>(null);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportData, setReportData] = useState<any[]>([]);
+  const [reportFilters, setReportFilters] = useState<{itemId?:string, dateRange?: {from?: Date, to?:Date}, warehouseId?: string, supplierId?: string, lastMovementDate?: Date}>({});
+
 
   const [showStartStocktakeDialog, setShowStartStocktakeDialog] = useState(false);
   const [showViewStocktakeDetailsDialog, setShowViewStocktakeDetailsDialog] = useState(false);
@@ -300,6 +311,71 @@ export default function InventoryPage() {
   };
   
   const selectedUnit = productForm.watch("unit");
+
+    const generateReportData = (reportKey: string, filters: typeof reportFilters) => {
+        // This is mock data generation. In a real app, you'd fetch and filter data.
+        if (reportKey === "itemMovement") {
+            return stockMovements
+                .filter(m => !filters.itemId || m.item === filters.itemId)
+                .filter(m => {
+                    if (!filters.dateRange?.from || !filters.dateRange?.to) return true;
+                    const moveDate = new Date(m.date);
+                    return moveDate >= filters.dateRange.from && moveDate <= filters.dateRange.to;
+                })
+                .map(m => ({ ...m, itemName: productsData.find(p => p.id === m.item)?.name || m.item }));
+        }
+        if (reportKey === "valuation") {
+            return productsData
+                .filter(p => !filters.warehouseId || (p.location && p.location.includes(mockWarehouses.find(w=>w.id === filters.warehouseId)?.name || "")))
+                .map(p => ({ 
+                    ...p, 
+                    totalCostValue: p.quantity * p.costPrice, 
+                    totalSellingValue: p.quantity * p.sellingPrice 
+                }));
+        }
+        if (reportKey === "stocktakeDiscrepancy") return mockStocktakeDetail.items;
+        if (reportKey === "obsoleteStock") {
+            return productsData
+                .filter(p => p.quantity > 0 && (!filters.lastMovementDate || (stockMovements.filter(m => m.item === p.id && new Date(m.date) > filters.lastMovementDate!).length === 0)))
+                .map(p => ({
+                    ...p,
+                    lastMovementDate: stockMovements.filter(m => m.item === p.id).sort((a,b) => b.date.getTime() - a.date.getTime())[0]?.date.toLocaleDateString('ar-SA') || "لا توجد حركة",
+                    value: p.quantity * p.costPrice
+                }));
+        }
+        if (reportKey === "locationReport") {
+             return productsData
+                .filter(p => !filters.warehouseId || (p.location && p.location.includes(mockWarehouses.find(w=>w.id === filters.warehouseId)?.name || "")))
+                .map(p => ({location: p.location, name: p.name, quantity: p.quantity}));
+        }
+        if (reportKey === "supplierItems") {
+            return productsData
+                .filter(p => !filters.supplierId || p.supplierId === filters.supplierId)
+                .map(p => ({
+                    ...p,
+                    lastPurchaseDate: stockMovements.find(m => m.item === p.id && m.type.includes("شراء") && m.fromTo === mockSuppliers.find(s=>s.id === p.supplierId)?.name)?.date.toLocaleDateString('ar-SA') || "N/A"
+                }));
+        }
+        return [];
+    };
+
+    const handleViewReport = (report: typeof inventoryReportTypes[0]) => {
+        setCurrentReport(report);
+        setReportData(generateReportData(report.key, reportFilters));
+        setShowReportDialog(true);
+    };
+
+    const handleApplyReportFilters = () => {
+        if(currentReport) {
+            setReportData(generateReportData(currentReport.key, reportFilters));
+        }
+    };
+
+    const formatDateForDisplay = (date: Date | string | undefined) => {
+        if (!date) return '-';
+        return new Date(date).toLocaleDateString('ar-SA', { day: '2-digit', month: '2-digit', year: 'numeric', calendar: 'gregory' });
+    };
+
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -508,7 +584,7 @@ export default function InventoryPage() {
                 </Dialog>
                 <Table>
                     <TableHeader><TableRow><TableHead>رقم الإذن</TableHead><TableHead>التاريخ</TableHead><TableHead>المستودع</TableHead><TableHead>المستلم</TableHead><TableHead>السبب</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                    <TableBody>{stockIssueVouchers.map(v => (<TableRow key={v.id}><TableCell>{v.id}</TableCell><TableCell>{v.date.toLocaleDateString('ar-SA')}</TableCell><TableCell>{mockWarehouses.find(w=>w.id === v.warehouseId)?.name}</TableCell><TableCell>{mockRecipients.find(r=>r.id === v.recipient)?.name}</TableCell><TableCell>{v.reason}</TableCell><TableCell><Badge variant={v.status === "معتمد" ? "default" : "outline"}>{v.status}</Badge></TableCell><TableCell className="text-center"><Button variant="ghost" size="icon" onClick={() => {setStockIssueToEdit(v);setShowManageStockIssueDialog(true);}}><Edit className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
+                    <TableBody>{stockIssueVouchers.map(v => (<TableRow key={v.id}><TableCell>{v.id}</TableCell><TableCell>{formatDateForDisplay(v.date)}</TableCell><TableCell>{mockWarehouses.find(w=>w.id === v.warehouseId)?.name}</TableCell><TableCell>{mockRecipients.find(r=>r.id === v.recipient)?.name}</TableCell><TableCell>{v.reason}</TableCell><TableCell><Badge variant={v.status === "معتمد" ? "default" : "outline"}>{v.status}</Badge></TableCell><TableCell className="text-center"><Button variant="ghost" size="icon" onClick={() => {setStockIssueToEdit(v);setShowManageStockIssueDialog(true);}}><Edit className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
                 </Table>
             </CardContent>
           </Card>
@@ -546,7 +622,7 @@ export default function InventoryPage() {
                 </Dialog>
                 <Table>
                     <TableHeader><TableRow><TableHead>رقم الإذن</TableHead><TableHead>التاريخ</TableHead><TableHead>المستودع</TableHead><TableHead>المصدر</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                    <TableBody>{stockReceiptVouchers.map(v => (<TableRow key={v.id}><TableCell>{v.id}</TableCell><TableCell>{v.date.toLocaleDateString('ar-SA')}</TableCell><TableCell>{mockWarehouses.find(w=>w.id === v.warehouseId)?.name}</TableCell><TableCell>{mockReceiptSources.find(s=>s.id === v.source)?.name || v.source}</TableCell><TableCell><Badge variant={v.status === "مرحل للمخزون" ? "default" : "outline"}>{v.status}</Badge></TableCell><TableCell className="text-center"><Button variant="ghost" size="icon" onClick={() => {setStockReceiptToEdit(v);setShowManageStockReceiptDialog(true);}}><Edit className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
+                    <TableBody>{stockReceiptVouchers.map(v => (<TableRow key={v.id}><TableCell>{v.id}</TableCell><TableCell>{formatDateForDisplay(v.date)}</TableCell><TableCell>{mockWarehouses.find(w=>w.id === v.warehouseId)?.name}</TableCell><TableCell>{mockReceiptSources.find(s=>s.id === v.source)?.name || v.source}</TableCell><TableCell><Badge variant={v.status === "مرحل للمخزون" ? "default" : "outline"}>{v.status}</Badge></TableCell><TableCell className="text-center"><Button variant="ghost" size="icon" onClick={() => {setStockReceiptToEdit(v);setShowManageStockReceiptDialog(true);}}><Edit className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
                 </Table>
             </CardContent>
           </Card>
@@ -582,7 +658,7 @@ export default function InventoryPage() {
                 </Dialog>
                 <Table>
                     <TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>التاريخ</TableHead><TableHead>الجهة الطالبة</TableHead><TableHead>تاريخ الحاجة</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                    <TableBody>{stockRequisitions.map(r => (<TableRow key={r.id}><TableCell>{r.id}</TableCell><TableCell>{r.requestDate.toLocaleDateString('ar-SA')}</TableCell><TableCell>{mockDepartments.find(d=>d.id===r.requestingDepartmentOrPerson)?.name || mockUsers.find(u=>u.id===r.requestingDepartmentOrPerson)?.name}</TableCell><TableCell>{r.requiredByDate.toLocaleDateString('ar-SA')}</TableCell><TableCell><Badge variant={r.status === "موافق عليه" ? "default" : r.status === "مرفوض" ? "destructive" : "outline"}>{r.status}</Badge></TableCell>
+                    <TableBody>{stockRequisitions.map(r => (<TableRow key={r.id}><TableCell>{r.id}</TableCell><TableCell>{formatDateForDisplay(r.requestDate)}</TableCell><TableCell>{mockDepartments.find(d=>d.id===r.requestingDepartmentOrPerson)?.name || mockUsers.find(u=>u.id===r.requestingDepartmentOrPerson)?.name}</TableCell><TableCell>{formatDateForDisplay(r.requiredByDate)}</TableCell><TableCell><Badge variant={r.status === "موافق عليه" ? "default" : r.status === "مرفوض" ? "destructive" : "outline"}>{r.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1">
                             {r.status === "جديد" || r.status === "قيد المراجعة" ? (<Button variant="ghost" size="icon" onClick={() => alert("موافقة على الطلب")}><CheckCircle className="h-4 w-4 text-green-600"/></Button>) : null}
                             <Button variant="ghost" size="icon" onClick={() => {setStockRequisitionToEdit(r);setShowManageStockRequisitionDialog(true);}}><Edit className="h-4 w-4"/></Button>
@@ -626,7 +702,7 @@ export default function InventoryPage() {
                     {stockMovements.map((movement) => (
                         <TableRow key={movement.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{movement.id}</TableCell>
-                        <TableCell>{movement.date}</TableCell>
+                        <TableCell>{formatDateForDisplay(movement.date)}</TableCell>
                         <TableCell>
                             <Badge
                             variant={
@@ -705,7 +781,7 @@ export default function InventoryPage() {
                         <TableBody>
                         <TableRow className="hover:bg-muted/50">
                             <TableCell>STK-2024-06-30-A</TableCell>
-                            <TableCell>2024-06-30</TableCell>
+                            <TableCell>{formatDateForDisplay(mockStocktakeDetail.date)}</TableCell>
                             <TableCell>مستودع A</TableCell>
                             <TableCell>فريق الجرد ألف</TableCell>
                             <TableCell><Badge>مكتمل</Badge></TableCell>
@@ -722,43 +798,24 @@ export default function InventoryPage() {
         </TabsContent>
         <TabsContent value="reports">
             <Card className="shadow-lg">
-            <CardHeader>
-                <CardTitle>تقارير المخزون</CardTitle>
-                <CardDescription>
-                عرض تحليلات ورسوم بيانية لأداء المخزون، مستويات الكميات، والتكاليف.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {inventoryReportTypes.map(report => (
-                    <Card key={report.name} className="flex flex-col items-center justify-center p-4 hover:shadow-xl transition-shadow duration-300 shadow-md rounded-lg">
-                    <report.icon className="h-10 w-10 text-primary mb-2" />
-                    <CardTitle className="text-base mb-1 text-center">{report.name}</CardTitle>
-                    <CardDescription className="text-xs text-center mb-3">{report.description}</CardDescription>
-                    <Button variant="outline" size="sm" className="w-full shadow-sm hover:shadow-md transition-shadow" onClick={() => {setCurrentReport(report); alert(`عرض تقرير: ${report.name}`)}}><Eye className="me-2 h-4 w-4" /> عرض/تحميل</Button>
-                    </Card>
-                ))}
-                </div>
-                 {/* Example Chart */}
-                <Card>
-                    <CardHeader><CardTitle>مبيعات الأصناف (آخر 6 أشهر)</CardTitle></CardHeader>
-                    <CardContent className="h-[300px] pe-2">
-                        <ChartContainer config={chartConfig} className="w-full h-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RechartsBarChart data={sampleChartData} layout="vertical" barCategoryGap="20%">
-                            <CartesianGrid horizontal={false} />
-                            <XAxis type="number" />
-                            <YAxis dataKey="month" type="category" tickLine={false} axisLine={false} width={60} />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <ChartLegend content={<ChartLegendContent />} />
-                            <Bar dataKey="ITEM001" fill="var(--color-ITEM001)" radius={4} />
-                            <Bar dataKey="ITEM002" fill="var(--color-ITEM002)" radius={4} />
-                            </RechartsBarChart>
-                        </ResponsiveContainer>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-            </CardContent>
+                <CardHeader>
+                    <CardTitle>تقارير المخزون</CardTitle>
+                    <CardDescription>عرض تحليلات ورسوم بيانية لأداء المخزون، مستويات الكميات، والتكاليف.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {inventoryReportTypes.map(report => (
+                            <Card key={report.key} className="flex flex-col items-center justify-center p-4 hover:shadow-xl transition-shadow duration-300 shadow-md rounded-lg">
+                                <report.icon className="h-10 w-10 text-primary mb-2" />
+                                <CardTitle className="text-base mb-1 text-center">{report.name}</CardTitle>
+                                <CardDescription className="text-xs text-center mb-3">{report.description}</CardDescription>
+                                <Button variant="outline" size="sm" className="w-full shadow-sm hover:shadow-md transition-shadow" onClick={() => handleViewReport(report)}>
+                                    <Eye className="me-2 h-4 w-4" /> عرض/تحميل
+                                </Button>
+                            </Card>
+                        ))}
+                    </div>
+                </CardContent>
             </Card>
         </TabsContent>
       </Tabs>
@@ -787,7 +844,7 @@ export default function InventoryPage() {
                         <div className="space-y-3 py-4">
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                 <p><strong>رقم الجرد:</strong> {selectedStocktakeForView.id}</p>
-                                <p><strong>تاريخ الجرد:</strong> {selectedStocktakeForView.date}</p>
+                                <p><strong>تاريخ الجرد:</strong> {formatDateForDisplay(selectedStocktakeForView.date)}</p>
                                 <p><strong>المستودع:</strong> {selectedStocktakeForView.warehouse}</p>
                                 <p><strong>المسؤول:</strong> {selectedStocktakeForView.responsible}</p>
                                 <p><strong>الحالة:</strong> <Badge>{selectedStocktakeForView.status}</Badge></p>
@@ -835,6 +892,117 @@ export default function InventoryPage() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        
+        {/* Report View Dialog */}
+        <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+            <DialogContent className="sm:max-w-4xl" dir="rtl">
+                <DialogHeader className="print-hidden">
+                    <DialogTitle>{currentReport?.name}</DialogTitle>
+                    <DialogDescriptionComponent>{currentReport?.description}</DialogDescriptionComponent>
+                </DialogHeader>
+                <div className="printable-area" id={`printable-report-${currentReport?.key}`}>
+                    {/* Print Header for reports */}
+                    <div className="print-only mb-6 flex justify-between items-center border-b pb-2">
+                        <div className="flex items-center gap-2">
+                            <AppLogo />
+                            <div> <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2> <p className="text-xs">Al-Mustaqbal IT Co.</p> </div>
+                        </div>
+                        <div className="text-left"> <h3 className="text-md font-semibold">{currentReport?.name}</h3> <p className="text-xs">تاريخ التقرير: {new Date().toLocaleDateString('ar-SA')}</p> </div>
+                    </div>
+
+                    <div className="my-4 flex flex-wrap gap-4 items-end print-hidden">
+                        {currentReport?.key === "itemMovement" && (
+                            <div className="flex-1 min-w-[200px]"> <FormLabel>الصنف</FormLabel>
+                                <Select dir="rtl" onValueChange={(value) => setReportFilters(prev => ({ ...prev, itemId: value === "all" ? undefined : value }))}>
+                                    <SelectTrigger className="bg-background"><SelectValue placeholder="كل الأصناف" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">كل الأصناف</SelectItem>{productsData.map(p => <SelectItem key={p.id} value={p.id!}>{p.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        {(currentReport?.key === "itemMovement" || currentReport?.key === "valuation") && (
+                             <div className="flex-1 min-w-[200px]"> <FormLabel>نطاق التاريخ</FormLabel>
+                                <DatePickerWithPresets mode="range" onDateChange={(range) => setReportFilters(prev => ({ ...prev, dateRange: range as {from?:Date, to?:Date} }))} />
+                            </div>
+                        )}
+                        {(currentReport?.key === "valuation" || currentReport?.key === "locationReport") && (
+                            <div className="flex-1 min-w-[200px]"> <FormLabel>المستودع</FormLabel>
+                                <Select dir="rtl" onValueChange={(value) => setReportFilters(prev => ({ ...prev, warehouseId: value === "all" ? undefined : value }))}>
+                                    <SelectTrigger className="bg-background"><SelectValue placeholder="كل المستودعات" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">كل المستودعات</SelectItem>{mockWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                         {currentReport?.key === "supplierItems" && (
+                            <div className="flex-1 min-w-[200px]"> <FormLabel>المورد</FormLabel>
+                                <Select dir="rtl" onValueChange={(value) => setReportFilters(prev => ({ ...prev, supplierId: value === "all" ? undefined : value }))}>
+                                    <SelectTrigger className="bg-background"><SelectValue placeholder="كل الموردين" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">كل الموردين</SelectItem>{mockSuppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                         {currentReport?.key === "obsoleteStock" && (
+                            <div className="flex-1 min-w-[200px]"> <FormLabel>لا توجد حركة منذ</FormLabel>
+                                <DatePickerWithPresets mode="single" onDateChange={(date) => setReportFilters(prev => ({ ...prev, lastMovementDate: date as Date | undefined }))} />
+                            </div>
+                        )}
+                        <Button onClick={handleApplyReportFilters}><Filter className="me-2 h-4 w-4"/> تطبيق الفلاتر</Button>
+                    </div>
+                    
+                    {/* Report Content based on type */}
+                    {currentReport?.key === "itemMovement" && (
+                        <Table>
+                            <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>النوع</TableHead><TableHead>الصنف</TableHead><TableHead>الكمية</TableHead><TableHead>من/إلى</TableHead><TableHead>المرجع</TableHead></TableRow></TableHeader>
+                            <TableBody>{(reportData as typeof stockMovements).map(m => <TableRow key={m.id}><TableCell>{formatDateForDisplay(m.date)}</TableCell><TableCell>{m.type}</TableCell><TableCell>{m.itemName}</TableCell><TableCell>{m.quantity}</TableCell><TableCell>{m.fromTo}</TableCell><TableCell>{m.reference}</TableCell></TableRow>)}</TableBody>
+                        </Table>
+                    )}
+                    {currentReport?.key === "valuation" && (
+                        <>
+                        <Table>
+                            <TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead>الكمية</TableHead><TableHead>تكلفة الوحدة</TableHead><TableHead>إجمالي التكلفة</TableHead><TableHead>سعر البيع</TableHead><TableHead>إجمالي البيع</TableHead></TableRow></TableHeader>
+                            <TableBody>{(reportData as (ProductFormValues & {totalCostValue: number, totalSellingValue: number})[]).map(p => <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell>{p.costPrice.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell><TableCell>{p.totalCostValue.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell><TableCell>{p.sellingPrice.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell><TableCell>{p.totalSellingValue.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell></TableRow>)}</TableBody>
+                        </Table>
+                         <CardFooter className="flex justify-end gap-4 mt-4 border-t pt-4 text-sm font-semibold">
+                            <div>إجمالي قيمة المخزون (التكلفة): {reportData.reduce((sum, p) => sum + p.totalCostValue, 0).toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</div>
+                            <div>إجمالي قيمة المخزون (البيع): {reportData.reduce((sum, p) => sum + p.totalSellingValue, 0).toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</div>
+                        </CardFooter>
+                        </>
+                    )}
+                     {currentReport?.key === "stocktakeDiscrepancy" && (
+                        <Table>
+                            <TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead>المتوقع</TableHead><TableHead>المعدود</TableHead><TableHead>الفرق</TableHead><TableHead>قيمة الفرق (تكلفة)</TableHead></TableRow></TableHeader>
+                            <TableBody>{(reportData as StocktakeItemDetail[]).map(item => <TableRow key={item.productId}><TableCell>{item.productName}</TableCell><TableCell>{item.expectedQuantity}</TableCell><TableCell>{item.countedQuantity}</TableCell><TableCell className={item.difference !== 0 ? (item.difference > 0 ? 'text-green-600' : 'text-destructive') : ''}>{item.difference}</TableCell><TableCell>{(item.differenceValue || 0).toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell></TableRow>)}</TableBody>
+                        </Table>
+                    )}
+                    {currentReport?.key === "obsoleteStock" && (
+                         <Table>
+                            <TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead>آخر حركة</TableHead><TableHead>الكمية الحالية</TableHead><TableHead>القيمة (تكلفة)</TableHead></TableRow></TableHeader>
+                            <TableBody>{(reportData as (ProductFormValues & {lastMovementDate: string, value: number})[]).map(p => <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.lastMovementDate}</TableCell><TableCell>{p.quantity}</TableCell><TableCell>{p.value.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell></TableRow>)}</TableBody>
+                        </Table>
+                    )}
+                    {currentReport?.key === "locationReport" && (
+                        <Table>
+                            <TableHeader><TableRow><TableHead>الموقع</TableHead><TableHead>الصنف</TableHead><TableHead>الكمية</TableHead></TableRow></TableHeader>
+                            <TableBody>{(reportData as {location?: string, name: string, quantity: number}[]).map((p, i) => <TableRow key={i}><TableCell>{p.location || 'غير محدد'}</TableCell><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell></TableRow>)}</TableBody>
+                        </Table>
+                    )}
+                    {currentReport?.key === "supplierItems" && (
+                         <Table>
+                            <TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead>الكمية الحالية</TableHead><TableHead>آخر شراء من هذا المورد</TableHead></TableRow></TableHeader>
+                            <TableBody>{(reportData as (ProductFormValues & {lastPurchaseDate: string})[]).map(p => <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell>{p.lastPurchaseDate}</TableCell></TableRow>)}</TableBody>
+                        </Table>
+                    )}
+                     <div className="print-only mt-8 pt-4 border-t text-xs text-muted-foreground text-center">
+                        <p>هذا التقرير تم إنشاؤه بواسطة نظام المستقبل ERP في {new Date().toLocaleString('ar-SA')}</p>
+                    </div>
+                </div>
+                <DialogFooter className="print-hidden">
+                    <Button variant="outline" onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/> طباعة</Button>
+                    <Button variant="outline" onClick={() => alert("Exporting to Excel...")}><FileSpreadsheet className="me-2 h-4 w-4"/> تصدير Excel</Button>
+                    <DialogClose asChild><Button type="button">إغلاق</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
     </div>
   );
 }
