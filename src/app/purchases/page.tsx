@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -21,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
 
 
 // Mock data (can be replaced with API calls)
@@ -101,11 +103,11 @@ type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
 
 // Initial Data
 const initialPurchaseOrdersData: PurchaseOrderFormValues[] = [
-  { id: "PO001", supplierId: "SUP001", date: new Date("2024-07-10"), expectedDeliveryDate: new Date("2024-07-25"), totalAmount: 30000, status: "معتمد", items: [{itemId: "ITEM001", quantity:5, unitPrice:6000, total:30000}]},
-  { id: "PO002", supplierId: "SUP002", date: new Date("2024-07-15"), expectedDeliveryDate: new Date("2024-08-01"), totalAmount: 18000, status: "مسودة", items: [] },
+  { id: "PO001", supplierId: "SUP001", date: new Date("2024-07-10"), expectedDeliveryDate: new Date("2024-07-25"), totalAmount: 30000, status: "معتمد", items: [{itemId: "ITEM001", description: "لابتوب ديل", quantity:5, unitPrice:6000, total:30000}]},
+  { id: "PO002", supplierId: "SUP002", date: new Date("2024-07-15"), expectedDeliveryDate: new Date("2024-08-01"), totalAmount: 18000, status: "مسودة", items: [{itemId: "MAT001", description: "خشب زان", quantity:90, unitPrice:200, total:18000}] },
 ];
 const initialSupplierInvoicesData: SupplierInvoiceFormValues[] = [
-  { id: "INV-S001", poId: "PO001", supplierId: "SUP001", invoiceDate: new Date("2024-07-26"), dueDate: new Date("2024-08-26"), totalAmount: 30000, status: "غير مدفوع", items: [{itemId:"ITEM001", quantity:5, unitPrice:6000, total:30000}] },
+  { id: "INV-S001", poId: "PO001", supplierId: "SUP001", invoiceDate: new Date("2024-07-26"), dueDate: new Date("2024-08-26"), totalAmount: 30000, status: "غير مدفوع", items: [{itemId:"ITEM001", description: "لابتوب ديل", quantity:5, unitPrice:6000, total:30000}] },
 ];
 const initialGoodsReceivedNotesData: GoodsReceivedNoteFormValues[] = [
   { id: "GRN001", poId: "PO001", supplierId: "SUP001", grnDate: new Date("2024-07-25"), items: [{ itemId: "ITEM001", orderedQuantity: 5, receivedQuantity: 5, description: "لابتوبات Dell" }], status: "مستلم بالكامل", receivedBy: "أحمد" },
@@ -514,6 +516,7 @@ export default function PurchasesPage() {
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض"><Eye className="h-4 w-4" /></Button>
                            {inv.status === "غير مدفوع" && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent text-green-600" title="تسجيل دفعة"><DollarSign className="h-4 w-4" /></Button>}
+                           <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>سيتم حذف فاتورة المورد {inv.id} نهائياً.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={()=>handleDeleteSupplierInvoice(inv.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -632,6 +635,7 @@ export default function PurchasesPage() {
                             <TableCell className="text-center">
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => toast({title:`عرض تفاصيل ${grn.id}`})}><Eye className="h-4 w-4" /></Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="طباعة"><Printer className="h-4 w-4"/></Button>
+                             <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>سيتم حذف إذن الاستلام {grn.id} نهائياً.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={()=>handleDeleteGrn(grn.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                             </TableCell>
                         </TableRow>
                         ))}
@@ -645,3 +649,4 @@ export default function PurchasesPage() {
     </div>
   );
 }
+
