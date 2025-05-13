@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -6,15 +5,14 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button"; // Import buttonVariants
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Cog, ListChecks, CalendarClock, ShieldCheck, PlusCircle, Search, Filter, Edit, Trash2, FileText, PlayCircle, CheckCircle, Settings2, Eye, MinusCircle, XCircle } from "lucide-react";
+import { Cog, ListChecks, CalendarClock, ShieldCheck, PlusCircle, Search, Filter, Edit, Trash2, FileText, PlayCircle, CheckCircle, Settings2, Eye, MinusCircle, XCircle, Factory, PauseCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -22,12 +20,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from '@/components/ui/separator';
 
 // Mock data
 const mockProducts = [
-    { id: "PROD-A", name: "منتج ألف (نهائي)", isRawMaterial: false },
-    { id: "PROD-B", name: "منتج باء (نهائي)", isRawMaterial: false },
-    { id: "PROD-C", name: "منتج جيم (نهائي)", isRawMaterial: false },
+    { id: "PROD-A", name: "منتج ألف (نهائي)", isRawMaterial: false, unit: "قطعة" },
+    { id: "PROD-B", name: "منتج باء (نهائي)", isRawMaterial: false, unit: "قطعة" },
+    { id: "PROD-C", name: "منتج جيم (نهائي)", isRawMaterial: false, unit: "قطعة" },
     { id: "MAT-X", name: "مادة خام X", isRawMaterial: true, unit: "كجم" },
     { id: "MAT-Y", name: "مادة خام Y", isRawMaterial: true, unit: "لتر" },
     { id: "MAT-Z", name: "مادة خام Z", isRawMaterial: true, unit: "قطعة" },
@@ -39,41 +38,38 @@ const mockUsers = [
     { id: "USER-002", name: "فاطمة محمد" },
 ];
 
-
-const initialWorkOrdersData = [
-  { id: "WO001", productId: "PROD-A", quantity: 100, startDate: new Date("2024-08-01"), endDate: new Date("2024-08-05"), status: "قيد التنفيذ" as const, progress: 60, notes: "الدفعة الأولى من الطلبية الكبرى" },
-  { id: "WO002", productId: "PROD-B", quantity: 250, startDate: new Date("2024-07-20"), endDate: new Date("2024-07-30"), status: "مكتمل" as const, progress: 100, notes: "" },
-  { id: "WO003", productId: "PROD-C", quantity: 50, startDate: new Date("2024-08-10"), endDate: new Date("2024-08-15"), status: "مجدول" as const, progress: 0, notes: "إنتاج تجريبي" },
-];
-
-const initialBomsData = [
-  { id: "BOM001", productId: "PROD-A", version: "1.2", items: [{ materialId: "MAT-X", quantity: 5 }, { materialId: "MAT-Y", quantity: 2 }], lastUpdated: new Date("2024-06-15") },
-  { id: "BOM002", productId: "PROD-B", version: "2.0", items: [{ materialId: "MAT-Z", quantity: 10 }, { materialId: "MAT-A", quantity: 3 }], lastUpdated: new Date("2024-05-01") },
-];
-
-const initialProductionPlansData = [
-  { id: "PLAN001", name: "خطة إنتاج أغسطس", startDate: new Date("2024-08-01"), endDate: new Date("2024-08-31"), status: "نشطة", notes: "خطة شهرية شاملة لجميع المنتجات المطلوبة." },
-  { id: "PLAN002", name: "خطة إنتاج الربع الثالث", startDate: new Date("2024-07-01"), endDate: new Date("2024-09-30"), status: "مكتملة", notes: "تم الانتهاء من الخطة بنجاح." },
-];
-
-const initialQualityChecksData = [
-    { id: "QC001", workOrderId: "WO001", checkPoint: "فحص أولي للمواد", result: "ناجح" as const, date: new Date("2024-08-01"), inspectorId: "USER-001", notes: "جميع المواد مطابقة للمواصفات." },
-    { id: "QC002", workOrderId: "WO001", checkPoint: "فحص أثناء العملية (50%)", result: "ناجح" as const, date: new Date("2024-08-03"), inspectorId: "USER-001", notes: "لا توجد عيوب حتى الآن." },
-    { id: "QC003", workOrderId: "WO002", checkPoint: "فحص نهائي للمنتج", result: "ناجح مع ملاحظات" as const, date: new Date("2024-07-30"), inspectorId: "USER-002", notes: "خدوش بسيطة على السطح، مقبولة." },
-];
+interface ProductionLogEntry {
+  date: Date;
+  quantityProduced: number;
+  notes?: string;
+}
 
 // Schemas
 const workOrderSchema = z.object({
     id: z.string().optional(),
     productId: z.string().min(1, "المنتج مطلوب"),
     quantity: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
+    producedQuantity: z.coerce.number().min(0).default(0),
     startDate: z.date({ required_error: "تاريخ البدء مطلوب" }),
     endDate: z.date({ required_error: "تاريخ الانتهاء مطلوب" }),
     notes: z.string().optional(),
     status: z.enum(["مجدول", "قيد التنفيذ", "متوقف مؤقتاً", "مكتمل", "ملغي"]).default("مجدول"),
     progress: z.coerce.number().min(0).max(100).default(0),
+    productionLog: z.array(z.object({
+        date: z.date(),
+        quantityProduced: z.coerce.number().min(0),
+        notes: z.string().optional(),
+    })).optional().default([]),
 });
 type WorkOrderFormValues = z.infer<typeof workOrderSchema>;
+
+const recordProductionOutputSchema = z.object({
+    quantityProducedThisBatch: z.coerce.number().min(0.01, "الكمية المنتجة يجب أن تكون أكبر من صفر"),
+    productionDate: z.date({required_error: "تاريخ الإنتاج مطلوب"}),
+    notes: z.string().optional(),
+});
+type RecordProductionOutputFormValues = z.infer<typeof recordProductionOutputSchema>;
+
 
 const bomItemSchema = z.object({
     materialId: z.string().min(1, "المادة الخام مطلوبة"),
@@ -109,10 +105,30 @@ const qualityCheckSchema = z.object({
 });
 type QualityCheckFormValues = z.infer<typeof qualityCheckSchema>;
 
-const updateProgressSchema = z.object({
-    progress: z.coerce.number().min(0).max(100, "التقدم يجب أن يكون بين 0 و 100"),
-});
-type UpdateProgressFormValues = z.infer<typeof updateProgressSchema>;
+
+// Initial Data
+const initialWorkOrdersData: WorkOrderFormValues[] = [
+  { id: "WO001", productId: "PROD-A", quantity: 100, producedQuantity: 60, startDate: new Date("2024-08-01"), endDate: new Date("2024-08-05"), status: "قيد التنفيذ" as const, progress: 60, notes: "الدفعة الأولى من الطلبية الكبرى", productionLog: [{date: new Date("2024-08-02"), quantityProduced: 60, notes: "Batch 1"}] },
+  { id: "WO002", productId: "PROD-B", quantity: 250, producedQuantity: 250, startDate: new Date("2024-07-20"), endDate: new Date("2024-07-30"), status: "مكتمل" as const, progress: 100, notes: "", productionLog: [{date: new Date("2024-07-28"), quantityProduced: 250, notes: "Final Batch"}] },
+  { id: "WO003", productId: "PROD-C", quantity: 50, producedQuantity: 0, startDate: new Date("2024-08-10"), endDate: new Date("2024-08-15"), status: "مجدول" as const, progress: 0, notes: "إنتاج تجريبي", productionLog: [] },
+];
+
+const initialBomsData: BomFormValues[] = [
+  { id: "BOM001", productId: "PROD-A", version: "1.2", items: [{ materialId: "MAT-X", quantity: 5 }, { materialId: "MAT-Y", quantity: 2 }], lastUpdated: new Date("2024-06-15") },
+  { id: "BOM002", productId: "PROD-B", version: "2.0", items: [{ materialId: "MAT-Z", quantity: 10 }, { materialId: "MAT-A", quantity: 3 }], lastUpdated: new Date("2024-05-01") },
+  { id: "BOM003", productId: "PROD-C", version: "1.0", items: [{ materialId: "MAT-X", quantity: 2 }, { materialId: "MAT-Z", quantity: 1 }], lastUpdated: new Date("2024-07-01") },
+];
+
+const initialProductionPlansData: ProductionPlanFormValues[] = [
+  { id: "PLAN001", name: "خطة إنتاج أغسطس", startDate: new Date("2024-08-01"), endDate: new Date("2024-08-31"), status: "نشطة", notes: "خطة شهرية شاملة لجميع المنتجات المطلوبة." },
+  { id: "PLAN002", name: "خطة إنتاج الربع الثالث", startDate: new Date("2024-07-01"), endDate: new Date("2024-09-30"), status: "مكتملة", notes: "تم الانتهاء من الخطة بنجاح." },
+];
+
+const initialQualityChecksData: QualityCheckFormValues[] = [
+    { id: "QC001", workOrderId: "WO001", checkPoint: "فحص أولي للمواد", result: "ناجح" as const, date: new Date("2024-08-01"), inspectorId: "USER-001", notes: "جميع المواد مطابقة للمواصفات." },
+    { id: "QC002", workOrderId: "WO001", checkPoint: "فحص أثناء العملية (50%)", result: "ناجح" as const, date: new Date("2024-08-03"), inspectorId: "USER-001", notes: "لا توجد عيوب حتى الآن." },
+    { id: "QC003", workOrderId: "WO002", checkPoint: "فحص نهائي للمنتج", result: "ناجح مع ملاحظات" as const, date: new Date("2024-07-30"), inspectorId: "USER-002", notes: "خدوش بسيطة على السطح، مقبولة." },
+];
 
 
 export default function ProductionPage() {
@@ -125,8 +141,8 @@ export default function ProductionPage() {
   const [workOrderToEdit, setWorkOrderToEdit] = useState<WorkOrderFormValues | null>(null);
   const [showViewWorkOrderDialog, setShowViewWorkOrderDialog] = useState(false);
   const [selectedWorkOrderForView, setSelectedWorkOrderForView] = useState<WorkOrderFormValues | null>(null);
-  const [showUpdateProgressDialog, setShowUpdateProgressDialog] = useState(false);
-  const [workOrderToUpdateProgress, setWorkOrderToUpdateProgress] = useState<WorkOrderFormValues | null>(null);
+  const [showRecordProductionDialog, setShowRecordProductionDialog] = useState(false);
+  const [workOrderToRecordProductionFor, setWorkOrderToRecordProductionFor] = useState<WorkOrderFormValues | null>(null);
 
 
   const [showManageBomDialog, setShowManageBomDialog] = useState(false);
@@ -148,10 +164,11 @@ export default function ProductionPage() {
 
   const workOrderForm = useForm<WorkOrderFormValues>({
     resolver: zodResolver(workOrderSchema),
-    defaultValues: { startDate: new Date(), endDate: new Date(), quantity: 1, status: "مجدول", progress: 0 },
+    defaultValues: { startDate: new Date(), endDate: new Date(), quantity: 1, status: "مجدول", progress: 0, producedQuantity: 0, productionLog: [] },
   });
-  const updateProgressForm = useForm<UpdateProgressFormValues>({
-    resolver: zodResolver(updateProgressSchema),
+  const recordProductionOutputForm = useForm<RecordProductionOutputFormValues>({
+    resolver: zodResolver(recordProductionOutputSchema),
+    defaultValues: { productionDate: new Date(), quantityProducedThisBatch: 0 }
   });
 
   const bomForm = useForm<BomFormValues>({
@@ -172,9 +189,13 @@ export default function ProductionPage() {
     defaultValues: { date: new Date() },
   });
 
+  const selectedProductForWOBOM = workOrderForm.watch("productId");
+  const bomForSelectedProductInWOForm = boms.find(b => b.productId === selectedProductForWOBOM);
+
+
   useEffect(() => {
     if (workOrderToEdit) workOrderForm.reset(workOrderToEdit);
-    else workOrderForm.reset({ productId: '', quantity: 1, startDate: new Date(), endDate: new Date(), status: "مجدول", progress: 0, notes: '' });
+    else workOrderForm.reset({ productId: '', quantity: 1, startDate: new Date(), endDate: new Date(), status: "مجدول", progress: 0, producedQuantity:0, productionLog:[], notes: '' });
   }, [workOrderToEdit, workOrderForm, showManageWorkOrderDialog]);
 
   useEffect(() => {
@@ -193,33 +214,77 @@ export default function ProductionPage() {
   }, [qualityCheckToEdit, qualityCheckForm, showManageQualityCheckDialog]);
 
   useEffect(() => {
-    if (workOrderToUpdateProgress) updateProgressForm.reset({ progress: workOrderToUpdateProgress.progress });
-  }, [workOrderToUpdateProgress, updateProgressForm, showUpdateProgressDialog]);
+    if (workOrderToRecordProductionFor) {
+        recordProductionOutputForm.reset({ productionDate: new Date(), quantityProducedThisBatch: 0, notes: '' });
+    }
+  }, [workOrderToRecordProductionFor, recordProductionOutputForm, showRecordProductionDialog]);
 
 
   const handleWorkOrderSubmit = (values: WorkOrderFormValues) => {
+    // Ensure progress and producedQuantity are derived if status is completed
+    let finalValues = { ...values };
+    if (values.status === "مكتمل" && values.producedQuantity < values.quantity) {
+        finalValues.producedQuantity = values.quantity;
+    }
+    finalValues.progress = Math.min(100, Math.round((finalValues.producedQuantity / finalValues.quantity) * 100));
+
+
     if (workOrderToEdit) {
-      setWorkOrders(prev => prev.map(wo => wo.id === workOrderToEdit.id ? { ...values, id: workOrderToEdit.id } : wo));
+      setWorkOrders(prev => prev.map(wo => wo.id === workOrderToEdit.id ? { ...finalValues, id: workOrderToEdit.id } : wo));
       toast({ title: "تم التعديل", description: "تم تعديل أمر العمل بنجاح." });
     } else {
-      setWorkOrders(prev => [...prev, { ...values, id: `WO${Date.now().toString().slice(-4)}` }]);
+      setWorkOrders(prev => [...prev, { ...finalValues, id: `WO${Date.now().toString().slice(-4)}` }]);
       toast({ title: "تم الإنشاء", description: "تم إنشاء أمر العمل بنجاح." });
     }
     setShowManageWorkOrderDialog(false);
     setWorkOrderToEdit(null);
   };
 
-  const handleUpdateProgressSubmit = (values: UpdateProgressFormValues) => {
-    if (workOrderToUpdateProgress) {
-        setWorkOrders(prev => prev.map(wo => wo.id === workOrderToUpdateProgress.id ? { ...wo, progress: values.progress } : wo));
-        toast({ title: "تم التحديث", description: `تم تحديث تقدم أمر العمل ${workOrderToUpdateProgress.id} إلى ${values.progress}%.` });
+  const handleRecordProductionOutputSubmit = (values: RecordProductionOutputFormValues) => {
+    if (workOrderToRecordProductionFor) {
+        setWorkOrders(prev => prev.map(wo => {
+            if (wo.id === workOrderToRecordProductionFor.id) {
+                const newProducedQuantity = wo.producedQuantity + values.quantityProducedThisBatch;
+                const newProgress = Math.min(100, Math.round((newProducedQuantity / wo.quantity) * 100));
+                const newStatus = newProducedQuantity >= wo.quantity ? "مكتمل" as const : wo.status;
+                const newLogEntry: ProductionLogEntry = {
+                    date: values.productionDate,
+                    quantityProduced: values.quantityProducedThisBatch,
+                    notes: values.notes,
+                };
+                return { 
+                    ...wo, 
+                    producedQuantity: newProducedQuantity, 
+                    progress: newProgress, 
+                    status: newStatus,
+                    productionLog: [...(wo.productionLog || []), newLogEntry]
+                };
+            }
+            return wo;
+        }));
+        toast({ title: "تم تسجيل الإنتاج", description: `تم تسجيل إنتاج ${values.quantityProducedThisBatch} لأمر العمل ${workOrderToRecordProductionFor.id}.` });
     }
-    setShowUpdateProgressDialog(false);
-    setWorkOrderToUpdateProgress(null);
+    setShowRecordProductionDialog(false);
+    setWorkOrderToRecordProductionFor(null);
+  };
+  
+  const handleWorkOrderStatusUpdate = (workOrderId: string, newStatus: WorkOrderFormValues["status"]) => {
+     setWorkOrders(prev => prev.map(wo => {
+        if (wo.id === workOrderId) {
+            if (newStatus === "مكتمل" && wo.producedQuantity < wo.quantity) {
+                toast({ title: "تنبيه", description: "لا يمكن إكمال الأمر قبل إنتاج كامل الكمية. يرجى تسجيل الإنتاج أولاً.", variant: "destructive"});
+                return wo; // Return original if trying to complete without full production
+            }
+            toast({title: "تم تحديث الحالة", description: `تم تحديث حالة أمر العمل ${workOrderId} إلى ${newStatus}.`});
+            return { ...wo, status: newStatus};
+        }
+        return wo;
+     }));
   };
 
+
   const handleCancelWorkOrder = (workOrderId: string) => {
-    setWorkOrders(prev => prev.map(wo => wo.id === workOrderId ? { ...wo, status: "ملغي", progress: 0 } : wo));
+    setWorkOrders(prev => prev.map(wo => wo.id === workOrderId ? { ...wo, status: "ملغي", progress: wo.producedQuantity > 0 ? wo.progress : 0 } : wo));
     toast({ title: "تم الإلغاء", description: `تم إلغاء أمر العمل ${workOrderId}.`, variant: "destructive" });
   };
   
@@ -292,16 +357,17 @@ export default function ProductionPage() {
         <h1 className="text-2xl md:text-3xl font-bold">الإنتاج والتصنيع</h1>
         <Dialog open={showManageWorkOrderDialog} onOpenChange={(isOpen) => { setShowManageWorkOrderDialog(isOpen); if(!isOpen) setWorkOrderToEdit(null);}}>
             <DialogTrigger asChild>
-                <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setWorkOrderToEdit(null); workOrderForm.reset({ productId: '', quantity: 1, startDate: new Date(), endDate: new Date(), status: "مجدول", progress: 0, notes: '' }); setShowManageWorkOrderDialog(true); }}>
+                <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setWorkOrderToEdit(null); workOrderForm.reset({ productId: '', quantity: 1, startDate: new Date(), endDate: new Date(), status: "مجدول", progress: 0, producedQuantity:0, productionLog:[], notes: '' }); setShowManageWorkOrderDialog(true); }}>
                   <PlusCircle className="me-2 h-4 w-4" /> إنشاء أمر عمل جديد
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg" dir="rtl">
+            <DialogContent className="sm:max-w-2xl" dir="rtl">
                 <DialogHeader>
                     <DialogTitle>{workOrderToEdit ? "تعديل أمر عمل" : "إنشاء أمر عمل جديد"}</DialogTitle>
                 </DialogHeader>
                 <Form {...workOrderForm}>
                     <form onSubmit={workOrderForm.handleSubmit(handleWorkOrderSubmit)} className="space-y-4 py-4">
+                       <ScrollArea className="max-h-[70vh] p-1">
                         <FormField control={workOrderForm.control} name="productId" render={({ field }) => (
                             <FormItem><FormLabel>المنتج</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value} dir="rtl">
@@ -332,8 +398,23 @@ export default function ProductionPage() {
                                         <SelectItem value="ملغي">ملغي</SelectItem>
                                     </SelectContent>
                                 </Select><FormMessage /></FormItem> )} />
-                        <FormField control={workOrderForm.control} name="progress" render={({ field }) => (
-                            <FormItem><FormLabel>التقدم (%)</FormLabel><FormControl><Input type="number" min="0" max="100" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                        
+                        {selectedProductForWOBOM && (
+                            <Card className="mt-4 bg-muted/50">
+                                <CardHeader className="p-3"><CardTitle className="text-sm">قائمة المواد للمنتج: {mockProducts.find(p=>p.id === selectedProductForWOBOM)?.name}</CardTitle></CardHeader>
+                                <CardContent className="p-3 text-xs">
+                                    {bomForSelectedProductInWOForm ? (
+                                        <ul className="list-disc ps-5">
+                                            {bomForSelectedProductInWOForm.items.map(item => {
+                                                const material = mockProducts.find(m => m.id === item.materialId);
+                                                return <li key={item.materialId}>{material?.name || item.materialId}: {item.quantity} {material?.unit || ""}</li>
+                                            })}
+                                        </ul>
+                                    ) : <p className="text-muted-foreground">لا توجد قائمة مواد معرفة لهذا المنتج.</p>}
+                                </CardContent>
+                            </Card>
+                        )}
+                        </ScrollArea>
                         <DialogFooter>
                             <Button type="submit">{workOrderToEdit ? "حفظ التعديلات" : "حفظ أمر العمل"}</Button>
                             <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
@@ -395,9 +476,9 @@ export default function ProductionPage() {
                     <TableRow>
                       <TableHead>رقم الأمر</TableHead>
                       <TableHead>المنتج</TableHead>
-                      <TableHead>الكمية المطلوبة</TableHead>
+                      <TableHead>الكمية (المطلوبة/المنتجة)</TableHead>
                       <TableHead>تاريخ البدء</TableHead>
-                      <TableHead>تاريخ الانتهاء المتوقع</TableHead>
+                      <TableHead>تاريخ الانتهاء</TableHead>
                       <TableHead>الحالة</TableHead>
                       <TableHead>التقدم</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
@@ -408,7 +489,7 @@ export default function ProductionPage() {
                       <TableRow key={wo.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{wo.id}</TableCell>
                         <TableCell>{mockProducts.find(p => p.id === wo.productId)?.name || wo.productId}</TableCell>
-                        <TableCell>{wo.quantity}</TableCell>
+                        <TableCell>{wo.quantity} / {wo.producedQuantity}</TableCell>
                         <TableCell>{wo.startDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                         <TableCell>{wo.endDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                         <TableCell>
@@ -431,36 +512,18 @@ export default function ProductionPage() {
                             </div>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewWorkOrder(wo)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {wo.status !== "مكتمل" && wo.status !== "ملغي" && (
-                            <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setWorkOrderToEdit(wo); setShowManageWorkOrderDialog(true); }}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تحديث التقدم" onClick={() => {setWorkOrderToUpdateProgress(wo); setShowUpdateProgressDialog(true);}}>
-                                <PlayCircle className="h-4 w-4 text-green-600" />
-                            </Button>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="إلغاء الأمر">
-                                    <XCircle className="h-4 w-4" />
-                                </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent dir="rtl">
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>تأكيد الإلغاء</AlertDialogTitle>
-                                        <AlertDialogDescription>هل أنت متأكد من إلغاء أمر العمل "{wo.id}"؟ لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>تراجع</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleCancelWorkOrder(wo.id!)} className={buttonVariants({variant:"destructive"})}>تأكيد الإلغاء</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewWorkOrder(wo)}> <Eye className="h-4 w-4" /> </Button>
+                          {wo.status !== "مكتمل" && wo.status !== "ملغي" && ( <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setWorkOrderToEdit(wo); setShowManageWorkOrderDialog(true); }}> <Edit className="h-4 w-4" /> </Button>
+                            {wo.status === "مجدول" && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="بدء التنفيذ" onClick={() => handleWorkOrderStatusUpdate(wo.id!, "قيد التنفيذ")}> <PlayCircle className="h-4 w-4 text-green-600" /> </Button>}
+                            {wo.status === "قيد التنفيذ" && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إيقاف مؤقت" onClick={() => handleWorkOrderStatusUpdate(wo.id!, "متوقف مؤقتاً")}> <PauseCircle className="h-4 w-4 text-yellow-600" /> </Button>}
+                            {wo.status === "متوقف مؤقتاً" && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="استئناف التنفيذ" onClick={() => handleWorkOrderStatusUpdate(wo.id!, "قيد التنفيذ")}> <PlayCircle className="h-4 w-4 text-green-600" /> </Button>}
+                            {(wo.status === "قيد التنفيذ" || wo.status === "متوقف مؤقتاً" || wo.status === "مجدول") && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل إنتاج" onClick={() => {setWorkOrderToRecordProductionFor(wo); setShowRecordProductionDialog(true);}}> <Factory className="h-4 w-4 text-blue-600" /> </Button>}
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="إلغاء الأمر"><XCircle className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الإلغاء</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من إلغاء أمر العمل "{wo.id}"؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>تراجع</AlertDialogCancel><AlertDialogAction onClick={() => handleCancelWorkOrder(wo.id!)} className={buttonVariants({variant:"destructive"})}>تأكيد الإلغاء</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                             </AlertDialog>
-                            </>
-                          )}
+                          </>)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -489,6 +552,7 @@ export default function ProductionPage() {
                         <DialogHeader><DialogTitle>{bomToEdit ? "تعديل قائمة المواد" : "إنشاء قائمة مواد جديدة"}</DialogTitle></DialogHeader>
                         <Form {...bomForm}>
                             <form onSubmit={bomForm.handleSubmit(handleBomSubmit)} className="space-y-4 py-4">
+                              <ScrollArea className="max-h-[60vh] p-1">
                                 <FormField control={bomForm.control} name="productId" render={({ field }) => (
                                     <FormItem><FormLabel>المنتج النهائي</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value} dir="rtl">
@@ -497,9 +561,11 @@ export default function ProductionPage() {
                                         </Select><FormMessage /></FormItem> )} />
                                 <FormField control={bomForm.control} name="version" render={({ field }) => (
                                     <FormItem><FormLabel>إصدار القائمة</FormLabel><FormControl><Input placeholder="مثال: 1.0 أو 2.1" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
-                                <ScrollArea className="h-[250px] border rounded-md p-2">
-                                    {bomItemsFields.map((item, index) => (
-                                    <div key={item.id} className="grid grid-cols-12 gap-2 items-end mb-2 p-1 border-b">
+                                
+                                <FormLabel className="block pt-2">المواد الخام المكونة</FormLabel>
+                                {bomItemsFields.map((item, index) => (
+                                <Card key={item.id} className="p-3 space-y-2 bg-muted/20">
+                                    <div className="grid grid-cols-12 gap-2 items-end">
                                         <FormField control={bomForm.control} name={`items.${index}.materialId`} render={({ field }) => (
                                             <FormItem className="col-span-6"><FormLabel className="text-xs">المادة الخام</FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value} dir="rtl">
@@ -511,9 +577,10 @@ export default function ProductionPage() {
                                             <FormControl><Input type="number" {...field} className="bg-background h-9 text-xs" /></FormControl>
                                             <FormMessage className="text-xs"/></FormItem> )} />
                                         <Button type="button" variant="ghost" size="icon" onClick={() => removeBomItem(index)} className="col-span-2 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
-                                    </div>))}
-                                </ScrollArea>
+                                    </div>
+                                </Card>))}
                                 <Button type="button" variant="outline" onClick={() => appendBomItem({materialId: '', quantity:1})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة مادة</Button>
+                                </ScrollArea>
                                 <DialogFooter>
                                     <Button type="submit">{bomToEdit ? "حفظ التعديلات" : "حفظ القائمة"}</Button>
                                     <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
@@ -546,30 +613,13 @@ export default function ProductionPage() {
                         <TableCell>{mockProducts.find(p=>p.id === bom.productId)?.name || bom.productId}</TableCell>
                         <TableCell>{bom.version}</TableCell>
                         <TableCell>{bom.items.length}</TableCell>
-                        <TableCell>{bom.lastUpdated.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
+                        <TableCell>{bom.lastUpdated?.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewBom(bom)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل القائمة" onClick={() => {setBomToEdit(bom); setShowManageBomDialog(true);}}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewBom(bom)}> <Eye className="h-4 w-4" /> </Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل القائمة" onClick={() => {setBomToEdit(bom); setShowManageBomDialog(true);}}> <Edit className="h-4 w-4" /> </Button>
                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف القائمة">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent dir="rtl">
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                                        <AlertDialogDescription>هل أنت متأكد من حذف قائمة المواد للمنتج "{mockProducts.find(p=>p.id === bom.productId)?.name || bom.productId}" (إصدار {bom.version})؟</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>تراجع</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteBom(bom.id!)} className={buttonVariants({variant:"destructive"})}>تأكيد الحذف</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
+                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف القائمة"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف قائمة المواد للمنتج "{mockProducts.find(p=>p.id === bom.productId)?.name || bom.productId}" (إصدار {bom.version})؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>تراجع</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteBom(bom.id!)} className={buttonVariants({variant:"destructive"})}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                             </AlertDialog>
                         </TableCell>
                       </TableRow>
@@ -653,12 +703,8 @@ export default function ProductionPage() {
                             <Badge variant={plan.status === "نشطة" ? "default" : plan.status === "مكتملة" ? "secondary" : "outline"}>{plan.status}</Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض تفاصيل الخطة" onClick={() => handleViewProductionPlan(plan)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل الخطة" onClick={() => {setProductionPlanToEdit(plan); setShowManageProductionPlanDialog(true);}}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض تفاصيل الخطة" onClick={() => handleViewProductionPlan(plan)}> <Eye className="h-4 w-4" /> </Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل الخطة" onClick={() => {setProductionPlanToEdit(plan); setShowManageProductionPlanDialog(true);}}> <Edit className="h-4 w-4" /> </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -787,54 +833,93 @@ export default function ProductionPage() {
 
       {/* View Work Order Details Dialog */}
       <Dialog open={showViewWorkOrderDialog} onOpenChange={setShowViewWorkOrderDialog}>
-        <DialogContent className="sm:max-w-lg" dir="rtl">
+        <DialogContent className="sm:max-w-2xl" dir="rtl">
           <DialogHeader>
             <DialogTitle>تفاصيل أمر العمل: {selectedWorkOrderForView?.id}</DialogTitle>
             <DialogDescriptionComponent>عرض تفاصيل أمر العمل المسجل.</DialogDescriptionComponent>
           </DialogHeader>
           {selectedWorkOrderForView && (
+            <ScrollArea className="max-h-[70vh] p-1">
             <div className="py-4 space-y-3 text-sm">
-              <div><strong>رقم الأمر:</strong> {selectedWorkOrderForView.id}</div>
-              <div><strong>المنتج:</strong> {mockProducts.find(p => p.id === selectedWorkOrderForView.productId)?.name} ({selectedWorkOrderForView.productId})</div>
-              <div><strong>الكمية المطلوبة:</strong> {selectedWorkOrderForView.quantity}</div>
-              <div><strong>تاريخ البدء:</strong> {selectedWorkOrderForView.startDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
-              <div><strong>تاريخ الانتهاء المتوقع:</strong> {selectedWorkOrderForView.endDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
-              <div><strong>الحالة:</strong> <Badge variant={selectedWorkOrderForView.status === "مكتمل" ? "default" : "secondary"}>{selectedWorkOrderForView.status}</Badge></div>
-              <div><strong>التقدم:</strong> <Progress value={selectedWorkOrderForView.progress} className="h-2 w-full inline-block" /> {selectedWorkOrderForView.progress}%</div>
-              <div><strong>ملاحظات:</strong> {selectedWorkOrderForView.notes || "لا يوجد"}</div>
-              <h4 className="font-semibold pt-2 border-t mt-3">فحوصات الجودة المرتبطة:</h4>
-              {qualityChecks.filter(qc => qc.workOrderId === selectedWorkOrderForView.id).length > 0 ? (
-                <ul className="list-disc ps-5">
-                    {qualityChecks.filter(qc => qc.workOrderId === selectedWorkOrderForView.id).map(qc => (
-                        <li key={qc.id}>{qc.checkPoint} - <Badge variant={qc.result === "ناجح" ? "default" : "destructive"} className="text-xs">{qc.result}</Badge> ({qc.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })})</li>
-                    ))}
-                </ul>
-              ) : <p className="text-muted-foreground">لا توجد فحوصات جودة مسجلة لهذا الأمر.</p>}
+              <Card><CardHeader className="p-2"><CardTitle className="text-base">المعلومات الأساسية</CardTitle></CardHeader><CardContent className="p-2 space-y-1">
+                <p><strong>رقم الأمر:</strong> {selectedWorkOrderForView.id}</p>
+                <p><strong>المنتج:</strong> {mockProducts.find(p => p.id === selectedWorkOrderForView.productId)?.name} ({selectedWorkOrderForView.productId})</p>
+                <p><strong>الكمية المطلوبة:</strong> {selectedWorkOrderForView.quantity}</p>
+                <p><strong>الكمية المنتجة:</strong> {selectedWorkOrderForView.producedQuantity}</p>
+                <p><strong>تاريخ البدء:</strong> {selectedWorkOrderForView.startDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
+                <p><strong>تاريخ الانتهاء المتوقع:</strong> {selectedWorkOrderForView.endDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p>
+                <p><strong>الحالة:</strong> <Badge variant={selectedWorkOrderForView.status === "مكتمل" ? "default" : "secondary"}>{selectedWorkOrderForView.status}</Badge></p>
+                <p><strong>التقدم:</strong> <Progress value={selectedWorkOrderForView.progress} className="h-2 inline-block w-32 me-2"/> {selectedWorkOrderForView.progress}%</p>
+                <p><strong>ملاحظات:</strong> {selectedWorkOrderForView.notes || "لا يوجد"}</p>
+              </CardContent></Card>
+              
+              <Card><CardHeader className="p-2"><CardTitle className="text-base">قائمة المواد (BOM)</CardTitle></CardHeader><CardContent className="p-2">
+                {(() => {
+                    const bom = boms.find(b => b.productId === selectedWorkOrderForView.productId);
+                    if (!bom) return <p className="text-muted-foreground">لا توجد قائمة مواد معرفة لهذا المنتج.</p>;
+                    return (
+                        <ul className="list-disc ps-5 text-xs space-y-0.5">
+                            {bom.items.map(item => {
+                                const material = mockProducts.find(m => m.id === item.materialId);
+                                return <li key={item.materialId}>{material?.name || item.materialId}: {item.quantity} {material?.unit || ""}</li>;
+                            })}
+                        </ul>
+                    );
+                })()}
+              </CardContent></Card>
+
+              <Card><CardHeader className="p-2"><CardTitle className="text-base">سجل الإنتاج</CardTitle></CardHeader><CardContent className="p-2">
+                {selectedWorkOrderForView.productionLog && selectedWorkOrderForView.productionLog.length > 0 ? (
+                    <Table size="sm">
+                        <TableHeader><TableRow><TableHead className="text-xs p-1">التاريخ</TableHead><TableHead className="text-xs p-1">الكمية المنتجة</TableHead><TableHead className="text-xs p-1">ملاحظات</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {selectedWorkOrderForView.productionLog.map((log, idx) => (
+                                <TableRow key={idx}><TableCell className="text-xs p-1">{log.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell className="text-xs p-1">{log.quantityProduced}</TableCell><TableCell className="text-xs p-1">{log.notes || "-"}</TableCell></TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : <p className="text-muted-foreground text-xs">لا يوجد سجل إنتاج لهذا الأمر.</p>}
+              </CardContent></Card>
+
+              <Card><CardHeader className="p-2"><CardTitle className="text-base">فحوصات الجودة المرتبطة</CardTitle></CardHeader><CardContent className="p-2">
+                {qualityChecks.filter(qc => qc.workOrderId === selectedWorkOrderForView.id).length > 0 ? (
+                    <ul className="list-disc ps-5 text-xs space-y-0.5">
+                        {qualityChecks.filter(qc => qc.workOrderId === selectedWorkOrderForView.id).map(qc => (
+                            <li key={qc.id}>{qc.checkPoint} - <Badge variant={qc.result === "ناجح" ? "default" : "destructive"} className="text-xs">{qc.result}</Badge> ({qc.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })})</li>
+                        ))}
+                    </ul>
+                ) : <p className="text-muted-foreground text-xs">لا توجد فحوصات جودة مسجلة لهذا الأمر.</p>}
+              </CardContent></Card>
             </div>
+            </ScrollArea>
           )}
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
-          </DialogFooter>
+          <DialogFooter> <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose> </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Update Progress Dialog */}
-      <Dialog open={showUpdateProgressDialog} onOpenChange={(isOpen) => {setShowUpdateProgressDialog(isOpen); if(!isOpen) setWorkOrderToUpdateProgress(null);}}>
-          <DialogContent className="sm:max-w-xs" dir="rtl">
+      {/* Record Production Output Dialog */}
+      <Dialog open={showRecordProductionDialog} onOpenChange={(isOpen) => {setShowRecordProductionDialog(isOpen); if(!isOpen) setWorkOrderToRecordProductionFor(null);}}>
+          <DialogContent className="sm:max-w-md" dir="rtl">
               <DialogHeader>
-                  <DialogTitle>تحديث تقدم أمر العمل: {workOrderToUpdateProgress?.id}</DialogTitle>
+                  <DialogTitle>تسجيل إنتاج لأمر العمل: {workOrderToRecordProductionFor?.id}</DialogTitle>
+                  <DialogDescriptionComponent>الكمية المطلوبة: {workOrderToRecordProductionFor?.quantity}, المنتجة حتى الآن: {workOrderToRecordProductionFor?.producedQuantity}</DialogDescriptionComponent>
               </DialogHeader>
-              <Form {...updateProgressForm}>
-                  <form onSubmit={updateProgressForm.handleSubmit(handleUpdateProgressSubmit)} className="space-y-4 py-4">
-                      <FormField control={updateProgressForm.control} name="progress" render={({ field }) => (
+              <Form {...recordProductionOutputForm}>
+                  <form onSubmit={recordProductionOutputForm.handleSubmit(handleRecordProductionOutputSubmit)} className="space-y-4 py-4">
+                      <FormField control={recordProductionOutputForm.control} name="productionDate" render={({ field }) => (
+                          <FormItem className="flex flex-col"><FormLabel>تاريخ الإنتاج</FormLabel>
+                              <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                      <FormField control={recordProductionOutputForm.control} name="quantityProducedThisBatch" render={({ field }) => (
                           <FormItem>
-                              <FormLabel>نسبة التقدم الجديدة (%)</FormLabel>
-                              <FormControl><Input type="number" min="0" max="100" {...field} className="bg-background"/></FormControl>
+                              <FormLabel>الكمية المنتجة في هذه الدفعة</FormLabel>
+                              <FormControl><Input type="number" min="0" {...field} className="bg-background"/></FormControl>
                               <FormMessage />
                           </FormItem>
                       )} />
+                      <FormField control={recordProductionOutputForm.control} name="notes" render={({ field }) => (
+                          <FormItem><FormLabel>ملاحظات (اختياري)</FormLabel><FormControl><Textarea {...field} className="bg-background"/></FormControl><FormMessage /></FormItem> )} />
                       <DialogFooter>
-                          <Button type="submit">حفظ التقدم</Button>
+                          <Button type="submit">تسجيل الإنتاج</Button>
                           <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
                       </DialogFooter>
                   </form>
@@ -874,9 +959,7 @@ export default function ProductionPage() {
               ) : <p className="text-muted-foreground">لا توجد مواد خام في هذه القائمة.</p>}
             </div>
           )}
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
-          </DialogFooter>
+          <DialogFooter> <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose> </DialogFooter>
         </DialogContent>
       </Dialog>
       
@@ -894,12 +977,9 @@ export default function ProductionPage() {
               <div><strong>تاريخ الانتهاء:</strong> {selectedProductionPlanForView.endDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
               <div><strong>الحالة:</strong> <Badge variant={selectedProductionPlanForView.status === "نشطة" ? "default" : "outline"}>{selectedProductionPlanForView.status}</Badge></div>
               <div><strong>ملاحظات:</strong> {selectedProductionPlanForView.notes || "لا يوجد"}</div>
-              {/* Here you could list associated Work Orders if that link is established */}
             </div>
           )}
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
-          </DialogFooter>
+          <DialogFooter> <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose> </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -922,9 +1002,7 @@ export default function ProductionPage() {
               <div><strong>ملاحظات:</strong> {selectedQualityCheckForView.notes || "لا يوجد"}</div>
             </div>
           )}
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose>
-          </DialogFooter>
+          <DialogFooter> <DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose> </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -25,8 +24,6 @@ const Progress = React.forwardRef<
         "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
         className
       )}
-      // Pass dir attribute for clarity, though transform logic is custom.
-      // dir={dir} 
       {...props}
     >
       <ProgressPrimitive.Indicator
