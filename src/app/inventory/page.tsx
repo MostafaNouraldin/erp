@@ -197,8 +197,8 @@ export default function InventoryPage() {
   const [showManageStockRequisitionDialog, setShowManageStockRequisitionDialog] = useState(false);
   const [stockRequisitionToEdit, setStockRequisitionToEdit] = useState<StockRequisitionFormValues | null>(null);
 
-  const productForm = useForm<ProductFormValues>({ resolver: zodResolver(productSchema), defaultValues: { sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined, image: "", dataAiHint: "" },});
-  const stocktakeInitiationForm = useForm<StocktakeInitiationFormValues>({ resolver: zodResolver(stocktakeInitiationSchema), defaultValues: { stocktakeDate: new Date(), warehouseId: "", responsiblePerson: "", notes: "" },});
+  const productForm = useForm<ProductFormValues>({ resolver: zodResolver(productSchema), defaultValues: { sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined, image: "", dataAiHint: "" }});
+  const stocktakeInitiationForm = useForm<StocktakeInitiationFormValues>({ resolver: zodResolver(stocktakeInitiationSchema), defaultValues: { stocktakeDate: new Date(), warehouseId: "", responsiblePerson: "", notes: "" }});
 
   const stockIssueVoucherForm = useForm<StockIssueVoucherFormValues>({ resolver: zodResolver(stockIssueVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1}], status: "مسودة", notes: ""}});
   const { fields: stockIssueItemsFields, append: appendStockIssueItem, remove: removeStockIssueItem } = useFieldArray({ control: stockIssueVoucherForm.control, name: "items" });
@@ -225,15 +225,33 @@ export default function InventoryPage() {
     setShowManageProductDialog(false); 
     setProductToEdit(null); 
     setImagePreview(null);
-  };
+  }
   const handleDeleteProduct = (productId: string) => { 
     setProductsData(prev => prev.filter(p => p.id !== productId)); 
     toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
-  };
+  }
 
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) { try { const dataUri = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result as string); reader.onerror = reject; reader.readAsDataURL(file); }); setImagePreview(dataUri); productForm.setValue('image', dataUri); } catch (error) { console.error("Error converting file to data URI:", error); toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" }); }}};
-  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => { console.log("Starting new stocktake with values:", values); toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, }); setShowStartStocktakeDialog(false); stocktakeInitiationForm.reset();};
-  const handleViewStocktakeDetails = () => { setSelectedStocktakeForView(mockStocktakeDetail); setShowViewStocktakeDetailsDialog(true);};
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => { 
+    const file = event.target.files?.[0]; 
+    if (file) { 
+      try { 
+        const dataUri = await new Promise<string>((resolve, reject) => { 
+          const reader = new FileReader(); 
+          reader.onload = () => resolve(reader.result as string); 
+          reader.onerror = reject; 
+          reader.readAsDataURL(file); 
+        }); 
+        setImagePreview(dataUri); 
+        productForm.setValue('image', dataUri); 
+      } catch (error) { 
+        console.error("Error converting file to data URI:", error); 
+        toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" }); 
+      } 
+    } 
+  }
+  
+  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => { console.log("Starting new stocktake with values:", values); toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, }); setShowStartStocktakeDialog(false); stocktakeInitiationForm.reset();}
+  const handleViewStocktakeDetails = () => { setSelectedStocktakeForView(mockStocktakeDetail); setShowViewStocktakeDetailsDialog(true);}
 
   const handleStockIssueSubmit = (values: StockIssueVoucherFormValues) => {
     if (stockIssueToEdit) {
@@ -245,7 +263,7 @@ export default function InventoryPage() {
     }
     setShowManageStockIssueDialog(false);
     setStockIssueToEdit(null);
-  };
+  }
 
   const handleStockReceiptSubmit = (values: StockReceiptVoucherFormValues) => {
     if (stockReceiptToEdit) {
@@ -257,7 +275,7 @@ export default function InventoryPage() {
     }
     setShowManageStockReceiptDialog(false);
     setStockReceiptToEdit(null);
-  };
+  }
 
   const handleStockRequisitionSubmit = (values: StockRequisitionFormValues) => {
     if (stockRequisitionToEdit) {
@@ -269,7 +287,7 @@ export default function InventoryPage() {
     }
     setShowManageStockRequisitionDialog(false);
     setStockRequisitionToEdit(null);
-  };
+  }
   
   const selectedUnit = productForm.watch("unit");
   
