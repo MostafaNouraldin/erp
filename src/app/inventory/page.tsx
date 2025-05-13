@@ -214,44 +214,52 @@ export default function InventoryPage() {
   useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0 }], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
-  const handleProductSubmit = (values: ProductFormValues) => { 
-    if (productToEdit) { 
-      setProductsData(prev => prev.map(p => p.id === productToEdit.id ? { ...values, id: productToEdit.id! } : p)); 
-      toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." }); 
-    } else { 
-      setProductsData(prev => [...prev, { ...values, id: `ITEM${Date.now()}` }]); 
-      toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." }); 
-    } 
-    setShowManageProductDialog(false); 
-    setProductToEdit(null); 
+  const handleProductSubmit = (values: ProductFormValues) => {
+    if (productToEdit) {
+      setProductsData(prev => prev.map(p => p.id === productToEdit.id ? { ...values, id: productToEdit.id! } : p));
+      toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." });
+    } else {
+      setProductsData(prev => [...prev, { ...values, id: `ITEM${Date.now()}` }]);
+      toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." });
+    }
+    setShowManageProductDialog(false);
+    setProductToEdit(null);
     setImagePreview(null);
   };
-  const handleDeleteProduct = (productId: string) => { 
-    setProductsData(prev => prev.filter(p => p.id !== productId)); 
+  const handleDeleteProduct = (productId: string) => {
+    setProductsData(prev => prev.filter(p => p.id !== productId));
     toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
   };
 
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => { 
-    const file = event.target.files?.[0]; 
-    if (file) { 
-      try { 
-        const dataUri = await new Promise<string>((resolve, reject) => { 
-          const reader = new FileReader(); 
-          reader.onload = () => resolve(reader.result as string); 
-          reader.onerror = reject; 
-          reader.readAsDataURL(file); 
-        }); 
-        setImagePreview(dataUri); 
-        productForm.setValue('image', dataUri); 
-      } catch (error) { 
-        console.error("Error converting file to data URI:", error); 
-        toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" }); 
-      } 
-    } 
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const dataUri = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        setImagePreview(dataUri);
+        productForm.setValue('image', dataUri);
+      } catch (error) {
+        console.error("Error converting file to data URI:", error);
+        toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" });
+      }
+    }
   };
-  
-  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => { console.log("Starting new stocktake with values:", values); toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, }); setShowStartStocktakeDialog(false); stocktakeInitiationForm.reset();};
-  const handleViewStocktakeDetails = () => { setSelectedStocktakeForView(mockStocktakeDetail); setShowViewStocktakeDetailsDialog(true);};
+
+  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => {
+    console.log("Starting new stocktake with values:", values);
+    toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, });
+    setShowStartStocktakeDialog(false);
+    stocktakeInitiationForm.reset();
+  };
+  const handleViewStocktakeDetails = () => {
+    setSelectedStocktakeForView(mockStocktakeDetail);
+    setShowViewStocktakeDetailsDialog(true);
+  };
 
   const handleStockIssueSubmit = (values: StockIssueVoucherFormValues) => {
     if (stockIssueToEdit) {
@@ -288,7 +296,7 @@ export default function InventoryPage() {
     setShowManageStockRequisitionDialog(false);
     setStockRequisitionToEdit(null);
   };
-  
+
   const selectedUnit = productForm.watch("unit");
   
   return (
@@ -828,3 +836,5 @@ export default function InventoryPage() {
     </div>
   );
 }
+
+    
