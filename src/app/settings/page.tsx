@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -14,15 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCircle, Edit, Trash2, Save, Search, KeyRound, ToggleLeft, ToggleRight } from "lucide-react";
+import { Settings as SettingsIcon, Users, ShieldCheck, SlidersHorizontal, PlusCircle, Edit, Trash2, Save, Search, KeyRound, ToggleLeft, ToggleRight, FileCog, Palette } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponentClass, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Role } from '@/types/saas';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from '@/components/ui/textarea'; // Import Textarea
 
 // Mock data
 const initialUsers = [
@@ -67,6 +67,13 @@ const roleFormSchema = z.object({
 });
 type RoleFormValues = z.infer<typeof roleFormSchema>;
 
+interface InvoiceSettingsState {
+  headerText: string;
+  footerText: string;
+  showLogoInHeader: boolean;
+  showVatInHeader: boolean;
+  showPaymentTermsInFooter: boolean;
+}
 
 export default function SettingsPage() {
   const [users, setUsers] = useState(initialUsers);
@@ -78,18 +85,32 @@ export default function SettingsPage() {
   const [showManageRoleDialog, setShowManageRoleDialog] = useState(false);
   const [roleToEdit, setRoleToEdit] = useState<Role | null>(null); 
   const { toast } = useToast();
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const [logoPreview, setLogoPreview] = useState<string | null>("https://picsum.photos/200/200?random=1");
+  const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettingsState>({
+    headerText: "شكراً لتعاملكم معنا",
+    footerText: "تطبق الشروط والأحكام.\nللاستفسارات، يرجى التواصل على info@almustaqbal-erp.com\nهاتف: 9200XXXXX",
+    showLogoInHeader: true,
+    showVatInHeader: true,
+    showPaymentTermsInFooter: true,
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        const savedLogo = localStorage.getItem("companyLogo");
+        const savedLogo = localStorage.getItem("companyLogoAlMustaqbalERP");
         if (savedLogo) {
             setLogoPreview(savedLogo);
         }
+        const savedInvoiceSettings = localStorage.getItem("invoiceSettingsAlMustaqbalERP");
+        if (savedInvoiceSettings) {
+          try {
+            setInvoiceSettings(JSON.parse(savedInvoiceSettings));
+          } catch (e) {
+            console.error("Failed to parse invoice settings from localStorage", e);
+          }
+        }
     }
   }, []);
-
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -104,11 +125,19 @@ export default function SettingsPage() {
 
   const handleSaveCustomization = () => {
     if (typeof window !== 'undefined') {
-        if(logoPreview) localStorage.setItem("companyLogo", logoPreview);
-        else localStorage.removeItem("companyLogo");
+        if(logoPreview) localStorage.setItem("companyLogoAlMustaqbalERP", logoPreview);
+        else localStorage.removeItem("companyLogoAlMustaqbalERP");
     }
     toast({ title: "تم الحفظ", description: "تم حفظ إعدادات التخصيص بنجاح." });
   };
+
+  const handleSaveInvoiceSettings = () => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem("invoiceSettingsAlMustaqbalERP", JSON.stringify(invoiceSettings));
+    }
+    toast({ title: "تم الحفظ", description: "تم حفظ إعدادات الفواتير بنجاح." });
+  };
+
 
   const userForm = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
@@ -247,6 +276,9 @@ export default function SettingsPage() {
           <TabsTrigger value="general" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <SettingsIcon className="inline-block me-2 h-4 w-4" /> الإعدادات العامة
           </TabsTrigger>
+           <TabsTrigger value="invoiceSettings" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+            <FileCog className="inline-block me-2 h-4 w-4" /> إعدادات الفواتير
+          </TabsTrigger>
           <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <Users className="inline-block me-2 h-4 w-4" /> إدارة المستخدمين
           </TabsTrigger>
@@ -254,7 +286,7 @@ export default function SettingsPage() {
             <ShieldCheck className="inline-block me-2 h-4 w-4" /> الأدوار والصلاحيات
           </TabsTrigger>
           <TabsTrigger value="customization" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <SlidersHorizontal className="inline-block me-2 h-4 w-4" /> تخصيص النظام
+            <Palette className="inline-block me-2 h-4 w-4" /> تخصيص النظام
           </TabsTrigger>
         </TabsList>
 
@@ -298,6 +330,7 @@ export default function SettingsPage() {
                       <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>
                       <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
                       <SelectItem value="EUR">يورو (EUR)</SelectItem>
+                      <SelectItem value="EGP">جنيه مصري (EGP)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -307,7 +340,7 @@ export default function SettingsPage() {
                 <Input id="taxRate" type="number" defaultValue="15" className="bg-background" />
               </div>
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                <Switch id="autoBackup" defaultChecked className="align-middle" />
+                <Switch id="autoBackup" defaultChecked />
                 <Label htmlFor="autoBackup">تمكين النسخ الاحتياطي التلقائي</Label>
               </div>
               <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => toast({title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح."})}>
@@ -316,6 +349,67 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="invoiceSettings">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>إعدادات الفواتير</CardTitle>
+              <CardDescription>تخصيص نصوص رأس وتذييل الفاتورة والمعلومات المعروضة.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="invoiceHeaderText">نص رأس الفاتورة</Label>
+                <Textarea 
+                  id="invoiceHeaderText" 
+                  value={invoiceSettings.headerText} 
+                  onChange={(e) => setInvoiceSettings(prev => ({...prev, headerText: e.target.value}))} 
+                  placeholder="مثال: شروط الدفع، معلومات الاتصال"
+                  className="bg-background min-h-[80px]" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invoiceFooterText">نص تذييل الفاتورة</Label>
+                <Textarea 
+                  id="invoiceFooterText" 
+                  value={invoiceSettings.footerText} 
+                  onChange={(e) => setInvoiceSettings(prev => ({...prev, footerText: e.target.value}))} 
+                  placeholder="مثال: شكراً لتعاملكم معنا، تفاصيل البنك"
+                  className="bg-background min-h-[100px]" 
+                />
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <Switch 
+                        id="showLogoInHeader" 
+                        checked={invoiceSettings.showLogoInHeader} 
+                        onCheckedChange={(checked) => setInvoiceSettings(prev => ({...prev, showLogoInHeader: checked}))} 
+                    />
+                    <Label htmlFor="showLogoInHeader">إظهار شعار الشركة في رأس الفاتورة</Label>
+                </div>
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <Switch 
+                        id="showVatInHeader" 
+                        checked={invoiceSettings.showVatInHeader} 
+                        onCheckedChange={(checked) => setInvoiceSettings(prev => ({...prev, showVatInHeader: checked}))} 
+                    />
+                    <Label htmlFor="showVatInHeader">إظهار الرقم الضريبي للشركة في رأس الفاتورة</Label>
+                </div>
+                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <Switch 
+                        id="showPaymentTermsInFooter" 
+                        checked={invoiceSettings.showPaymentTermsInFooter} 
+                        onCheckedChange={(checked) => setInvoiceSettings(prev => ({...prev, showPaymentTermsInFooter: checked}))} 
+                    />
+                    <Label htmlFor="showPaymentTermsInFooter">إظهار شروط الدفع الافتراضية في تذييل الفاتورة</Label>
+                </div>
+              </div>
+              <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={handleSaveInvoiceSettings}>
+                <Save className="me-2 h-4 w-4" /> حفظ إعدادات الفواتير
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
 
         <TabsContent value="users">
           <Card className="shadow-lg">
@@ -457,7 +551,7 @@ export default function SettingsPage() {
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent dir="rtl">
-                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>تراجع</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => handleDeleteRole(role.id)}>تأكيد الحذف</AlertDialogAction>
@@ -547,3 +641,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+
