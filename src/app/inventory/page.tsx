@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, History, BarChart3, SlidersHorizontal, Eye, Download, PackagePlus, Upload, Printer, MinusCircle, PackageMinus, ArchiveRestore, ClipboardList, CheckCircle, AlertTriangle, Truck } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, History, BarChart3, SlidersHorizontal, Eye, Download, PackagePlus, Upload, Printer, MinusCircle, PackageMinus, ArchiveRestore, ClipboardList, CheckCircle, AlertTriangle, Truck, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -166,7 +166,7 @@ const initialStockRequisitions: StockRequisitionFormValues[] = [
 ];
 
 const stockMovements = [ { id: "MV001", date: "2024-07-20", type: "دخول (شراء)", item: "ITEM001", quantity: 20, fromTo: "مورد X", reference: "PO-123" }, { id: "MV002", date: "2024-07-21", type: "خروج (بيع)", item: "ITEM003", quantity: 10, fromTo: "عميل Y", reference: "SO-456" }, { id: "MV003", date: "2024-07-22", type: "تحويل داخلي", item: "ITEM002", quantity: 2, fromTo: "مستودع A -> مستودع B", reference: "TRN-001" }, { id: "MV004", date: "2024-07-23", type: "تعديل جرد (زيادة)", item: "ITEM005", quantity: 5, fromTo: "جرد سنوي", reference: "ADJ-001" },];
-const inventoryReportTypes = [ { name: "تقرير حركة صنف", icon: Package, description: "تتبع حركة صنف معين خلال فترة." }, { name: "تقرير تقييم المخزون", icon: Layers, description: "عرض قيمة المخزون الحالي بالتكلفة والسعر." }, { name: "تقرير الجرد والفروقات", icon: SlidersHorizontal, description: "مقارنة الكميات الفعلية بالمسجلة وكشف الفروقات." }, { name: "تقرير الأصناف الراكدة", icon: AlertTriangle, description: "تحديد الأصناف التي لم تشهد حركة لفترة." }, { name: "تقرير مواقع التخزين", icon: Warehouse, description: "عرض الأصناف وكمياتها في كل موقع تخزين." }, { name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },];
+const inventoryReportTypes = [ { name: "تقرير حركة صنف", icon: History, description: "تتبع حركة صنف معين خلال فترة." }, { name: "تقرير تقييم المخزون", icon: Layers, description: "عرض قيمة المخزون الحالي بالتكلفة والسعر." }, { name: "تقرير الجرد والفروقات", icon: SlidersHorizontal, description: "مقارنة الكميات الفعلية بالمسجلة وكشف الفروقات." }, { name: "تقرير الأصناف الراكدة", icon: AlertTriangle, description: "تحديد الأصناف التي لم تشهد حركة لفترة." }, { name: "تقرير مواقع التخزين", icon: Warehouse, description: "عرض الأصناف وكمياتها في كل موقع تخزين." }, { name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },];
 const sampleChartData = [ { month: "يناير", "ITEM001": 100, "ITEM002": 50 }, { month: "فبراير", "ITEM001": 120, "ITEM002": 60 }, { month: "مارس", "ITEM001": 80, "ITEM002": 40 }, { month: "ابريل", "ITEM001": 150, "ITEM002": 70 }, { month: "مايو", "ITEM001": 110, "ITEM002": 55 }, { month: "يونيو", "ITEM001": 130, "ITEM002": 65 },];
 const chartConfig = { "ITEM001": { label: "لابتوب Dell XPS 15", color: "hsl(var(--chart-1))" }, "ITEM002": { label: "طابعة HP LaserJet Pro", color: "hsl(var(--chart-2))" },} satisfies ChartConfig;
 const mockStocktakeDetail: StocktakeDetails = { id: "STK-2024-06-30-A", date: "2024-06-30", warehouse: "مستودع A", status: "مكتمل", responsible: "فريق الجرد ألف", itemsCounted: 3, discrepanciesFound: 2, notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.", items: [ { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0 }, { productId: "ITEM002", productName: "طابعة HP LaserJet Pro", expectedQuantity: 7, countedQuantity: 6, difference: -1 }, { productId: "ITEM003", productName: "ورق طباعة A4 (صندوق)", expectedQuantity: 195, countedQuantity: 198, difference: 3 },],};
@@ -231,35 +231,9 @@ export default function InventoryPage() {
     toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
   };
 
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const dataUri = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        setImagePreview(dataUri);
-        productForm.setValue('image', dataUri);
-      } catch (error) {
-        console.error("Error converting file to data URI:", error);
-        toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" });
-      }
-    }
-  };
-
-  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => { 
-    console.log("Starting new stocktake with values:", values); 
-    toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, }); 
-    setShowStartStocktakeDialog(false); 
-    stocktakeInitiationForm.reset();
-  };
-  const handleViewStocktakeDetails = () => { 
-    setSelectedStocktakeForView(mockStocktakeDetail); 
-    setShowViewStocktakeDetailsDialog(true);
-  };
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) { try { const dataUri = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result as string); reader.onerror = reject; reader.readAsDataURL(file); }); setImagePreview(dataUri); productForm.setValue('image', dataUri); } catch (error) { console.error("Error converting file to data URI:", error); toast({ title: "خطأ في رفع الصورة", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" }); }}};
+  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => { console.log("Starting new stocktake with values:", values); toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, }); setShowStartStocktakeDialog(false); stocktakeInitiationForm.reset();};
+  const handleViewStocktakeDetails = () => { setSelectedStocktakeForView(mockStocktakeDetail); setShowViewStocktakeDetailsDialog(true);};
 
   const handleStockIssueSubmit = (values: StockIssueVoucherFormValues) => {
     if (stockIssueToEdit) {
@@ -836,3 +810,4 @@ export default function InventoryPage() {
     </div>
   );
 }
+
