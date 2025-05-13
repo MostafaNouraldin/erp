@@ -390,150 +390,156 @@ export default function HRPayrollPage() {
                 <PlusCircle className="me-2 h-4 w-4" /> إضافة موظف جديد
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-3xl" dir="rtl">
-                <DialogHeader><DialogTitle>{employeeToEdit ? "تعديل بيانات موظف" : "إضافة موظف جديد"}</DialogTitle></DialogHeader>
-                <Form {...employeeForm}>
-                    <form onSubmit={employeeForm.handleSubmit(handleEmployeeSubmit)} className="space-y-4 py-4">
-                        <ScrollArea className="max-h-[70vh] p-1">
-                        <Tabs defaultValue="personal" className="w-full" dir="rtl">
-                            <TabsList className="w-full mb-4">
-                                <TabsTrigger value="personal" className="flex-1">معلومات شخصية ووظيفية</TabsTrigger>
-                                <TabsTrigger value="contract" className="flex-1">العقد والانتدابات</TabsTrigger>
-                                <TabsTrigger value="financial" className="flex-1">معلومات مالية وحوافز</TabsTrigger>
-                                <TabsTrigger value="insurance" className="flex-1">التأمين والطوارئ</TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="personal" className="space-y-4">
-                                <FormField control={employeeForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم الموظف</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={employeeForm.control} name="jobTitle" render={({ field }) => (<FormItem><FormLabel>المسمى الوظيفي</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المسمى" /></SelectTrigger></FormControl>
-                                        <SelectContent>{mockJobTitles.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                    <FormField control={employeeForm.control} name="department" render={({ field }) => (<FormItem><FormLabel>القسم</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر القسم" /></SelectTrigger></FormControl>
-                                        <SelectContent>{mockDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={employeeForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={employeeForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                </div>
-                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={employeeForm.control} name="nationality" render={({ field }) => (<FormItem><FormLabel>الجنسية</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={employeeForm.control} name="idNumber" render={({ field }) => (<FormItem><FormLabel>رقم الهوية/الإقامة</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                </div>
-                                <FormField control={employeeForm.control} name="workLocation" render={({ field }) => (<FormItem><FormLabel>موقع العمل</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={employeeForm.control} name="avatarUrl" render={({ field }) => (<FormItem><FormLabel>رابط صورة الموظف (اختياري)</FormLabel><FormControl><Input {...field} placeholder="https://example.com/avatar.jpg" className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={employeeForm.control} name="dataAiHint" render={({ field }) => (<FormItem><FormLabel>كلمات مفتاحية للصورة (AI Hint)</FormLabel><FormControl><Input {...field} placeholder="مثال: رجل أعمال (كلمتين كحد أقصى)" className="bg-background" /></FormControl><DialogDescriptionComponent className="text-xs text-muted-foreground">كلمة أو كلمتين لوصف الصورة (للبحث).</DialogDescriptionComponent><FormMessage /></FormItem>)} />
-                            </TabsContent>
-
-                            <TabsContent value="contract" className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={employeeForm.control} name="contractStartDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ بداية العقد</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
-                                    <FormField control={employeeForm.control} name="contractEndDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ نهاية العقد</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={employeeForm.control} name="contractDuration" render={({ field }) => (<FormItem><FormLabel>مدة العقد</FormLabel><FormControl><Input {...field} placeholder="مثال: سنة واحدة, سنتان" className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={employeeForm.control} name="probationEndDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>نهاية فترة التجربة (اختياري)</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <FormField control={employeeForm.control} name="employmentType" render={({ field }) => (<FormItem><FormLabel>نوع التوظيف</FormLabel>
-                                      <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl>
-                                      <SelectContent>{mockEmploymentTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                  <FormField control={employeeForm.control} name="contractType" render={({ field }) => (<FormItem><FormLabel>نوع العقد</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع العقد" /></SelectTrigger></FormControl>
-                                    <SelectContent>{mockContractTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                </div>
-                                <FormField control={employeeForm.control} name="canRenewContract" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm rtl:space-x-reverse"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="canRenewContractEmployee" /></FormControl><FormLabel htmlFor="canRenewContractEmployee" className="font-normal">العقد قابل للتجديد</FormLabel></FormItem>)} />
-                                <FormField control={employeeForm.control} name="status" render={({ field }) => (<FormItem><FormLabel>حالة الموظف</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl>
-                                    <SelectContent>{["نشط", "في إجازة", "منتهية خدمته", "متوقف مؤقتاً"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                <Separator className="my-3"/>
-                                <FormLabel>الانتدابات</FormLabel>
-                                {delegationFormFields.map((item, index) => (
-                                    <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
-                                        <FormField control={employeeForm.control} name={`delegations.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف الانتداب</FormLabel><FormControl><Input placeholder="وصف الانتداب" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <FormField control={employeeForm.control} name={`delegations.${index}.startDate`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel className="text-xs">تاريخ البدء</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
-                                          <FormField control={employeeForm.control} name={`delegations.${index}.endDate`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel className="text-xs">تاريخ الانتهاء</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+            <DialogContent className="sm:max-w-3xl flex flex-col max-h-[90vh]" dir="rtl">
+                <DialogHeader className="flex-shrink-0">
+                    <DialogTitle>{employeeToEdit ? "تعديل بيانات موظف" : "إضافة موظف جديد"}</DialogTitle>
+                </DialogHeader>
+                <div className="flex-grow overflow-y-auto min-h-0 py-4">
+                    <Form {...employeeForm}>
+                        <form onSubmit={employeeForm.handleSubmit(handleEmployeeSubmit)} className="space-y-4 px-2" id="employeeDialogForm">
+                            <Tabs defaultValue="personal" className="w-full flex flex-col" dir="rtl">
+                                <TabsList className="w-full mb-4 flex-shrink-0 sticky top-0 bg-background z-10 border-b">
+                                    <TabsTrigger value="personal" className="flex-1">معلومات شخصية ووظيفية</TabsTrigger>
+                                    <TabsTrigger value="contract" className="flex-1">العقد والانتدابات</TabsTrigger>
+                                    <TabsTrigger value="financial" className="flex-1">معلومات مالية وحوافز</TabsTrigger>
+                                    <TabsTrigger value="insurance" className="flex-1">التأمين والطوارئ</TabsTrigger>
+                                </TabsList>
+                                <div className="flex-grow overflow-y-auto min-h-0"> {/* Scrollable area for TabsContent */}
+                                    <TabsContent value="personal" className="space-y-4 mt-0">
+                                        <FormField control={employeeForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم الموظف</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={employeeForm.control} name="jobTitle" render={({ field }) => (<FormItem><FormLabel>المسمى الوظيفي</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المسمى" /></SelectTrigger></FormControl>
+                                                <SelectContent>{mockJobTitles.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                            <FormField control={employeeForm.control} name="department" render={({ field }) => (<FormItem><FormLabel>القسم</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر القسم" /></SelectTrigger></FormControl>
+                                                <SelectContent>{mockDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                         </div>
-                                        <FormField control={employeeForm.control} name={`delegations.${index}.location`} render={({ field }) => (<FormItem><FormLabel className="text-xs">الموقع</FormLabel><FormControl><Input placeholder="موقع الانتداب" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={employeeForm.control} name={`delegations.${index}.status`} render={({ field }) => (<FormItem><FormLabel className="text-xs">حالة الانتداب</FormLabel>
-                                          <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl>
-                                          <SelectContent>{["مخطط له", "جارٍ", "مكتمل", "ملغى"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => removeDelegationField(index)} className="text-destructive w-full justify-start p-1"><MinusCircle className="me-1 h-4 w-4" /> إزالة الانتداب</Button>
-                                    </Card>
-                                ))}
-                                <Button type="button" variant="outline" size="sm" onClick={() => appendDelegationField({ description: '', startDate: new Date(), endDate: new Date(), location: '', status: "مخطط له" })}><PlusCircle className="me-1 h-3 w-3" /> إضافة انتداب</Button>
-                            </TabsContent>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={employeeForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={employeeForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={employeeForm.control} name="nationality" render={({ field }) => (<FormItem><FormLabel>الجنسية</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={employeeForm.control} name="idNumber" render={({ field }) => (<FormItem><FormLabel>رقم الهوية/الإقامة</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <FormField control={employeeForm.control} name="workLocation" render={({ field }) => (<FormItem><FormLabel>موقع العمل</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={employeeForm.control} name="avatarUrl" render={({ field }) => (<FormItem><FormLabel>رابط صورة الموظف (اختياري)</FormLabel><FormControl><Input {...field} placeholder="https://example.com/avatar.jpg" className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={employeeForm.control} name="dataAiHint" render={({ field }) => (<FormItem><FormLabel>كلمات مفتاحية للصورة (AI Hint)</FormLabel><FormControl><Input {...field} placeholder="مثال: رجل أعمال (كلمتين كحد أقصى)" className="bg-background" /></FormControl><DialogDescriptionComponent className="text-xs text-muted-foreground">كلمة أو كلمتين لوصف الصورة (للبحث).</DialogDescriptionComponent><FormMessage /></FormItem>)} />
+                                    </TabsContent>
 
-                            <TabsContent value="financial" className="space-y-4">
-                                <FormField control={employeeForm.control} name="basicSalary" render={({ field }) => (<FormItem><FormLabel>الراتب الأساسي (SAR)</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={employeeForm.control} name="bankName" render={({ field }) => (<FormItem><FormLabel>اسم البنك</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={employeeForm.control} name="iban" render={({ field }) => (<FormItem><FormLabel>رقم الآيبان (IBAN)</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                </div>
-                                <FormField control={employeeForm.control} name="socialInsuranceNumber" render={({ field }) => (<FormItem><FormLabel>رقم التأمينات الاجتماعية</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                <Separator className="my-3"/>
-                                <FormLabel>البدلات</FormLabel>
-                                 {allowanceFormFields.map((item, index) => (
-                                    <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
-                                        <FormField control={employeeForm.control} name={`allowances.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف البدل</FormLabel><FormControl><Input placeholder="وصف البدل" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={employeeForm.control} name={`allowances.${index}.amount`} render={({ field }) => (<FormItem><FormLabel className="text-xs">المبلغ (SAR)</FormLabel><FormControl><Input type="number" placeholder="المبلغ" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={employeeForm.control} name={`allowances.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">نوع البدل</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع البدل" /></SelectTrigger></FormControl>
-                                            <SelectContent>{["ثابت", "متغير", "مرة واحدة"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => removeAllowanceField(index)} className="text-destructive w-full justify-start p-1"><MinusCircle className="me-1 h-4 w-4" /> إزالة البدل</Button>
-                                    </Card>
-                                ))}
-                                <Button type="button" variant="outline" size="sm" onClick={() => appendAllowanceField({description: '', amount: 0, type: "ثابت"})}><PlusCircle className="me-1 h-3 w-3" /> إضافة بدل</Button>
-                                <Separator className="my-3"/>
-                                <FormLabel>الخصومات</FormLabel>
-                                 {deductionFormFields.map((item, index) => (
-                                    <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
-                                        <FormField control={employeeForm.control} name={`deductions.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف الخصم</FormLabel><FormControl><Input placeholder="وصف الخصم" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={employeeForm.control} name={`deductions.${index}.amount`} render={({ field }) => (<FormItem><FormLabel className="text-xs">المبلغ (SAR)</FormLabel><FormControl><Input type="number" placeholder="المبلغ" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={employeeForm.control} name={`deductions.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">نوع الخصم</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع الخصم" /></SelectTrigger></FormControl>
-                                            <SelectContent>{["ثابت", "متغير", "مرة واحدة"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => removeDeductionField(index)} className="text-destructive w-full justify-start p-1"><MinusCircle className="me-1 h-4 w-4" /> إزالة الخصم</Button>
-                                    </Card>
-                                ))}
-                                <Button type="button" variant="outline" size="sm" onClick={() => appendDeductionField({description: '', amount: 0, type: "ثابت"})}><PlusCircle className="me-1 h-3 w-3" /> إضافة خصم</Button>
+                                    <TabsContent value="contract" className="space-y-4 mt-0">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={employeeForm.control} name="contractStartDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ بداية العقد</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                            <FormField control={employeeForm.control} name="contractEndDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ نهاية العقد</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={employeeForm.control} name="contractDuration" render={({ field }) => (<FormItem><FormLabel>مدة العقد</FormLabel><FormControl><Input {...field} placeholder="مثال: سنة واحدة, سنتان" className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={employeeForm.control} name="probationEndDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>نهاية فترة التجربة (اختياري)</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={employeeForm.control} name="employmentType" render={({ field }) => (<FormItem><FormLabel>نوع التوظيف</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl>
+                                            <SelectContent>{mockEmploymentTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                        <FormField control={employeeForm.control} name="contractType" render={({ field }) => (<FormItem><FormLabel>نوع العقد</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع العقد" /></SelectTrigger></FormControl>
+                                            <SelectContent>{mockContractTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <FormField control={employeeForm.control} name="canRenewContract" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm rtl:space-x-reverse"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="canRenewContractEmployee" /></FormControl><FormLabel htmlFor="canRenewContractEmployee" className="font-normal">العقد قابل للتجديد</FormLabel></FormItem>)} />
+                                        <FormField control={employeeForm.control} name="status" render={({ field }) => (<FormItem><FormLabel>حالة الموظف</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl>
+                                            <SelectContent>{["نشط", "في إجازة", "منتهية خدمته", "متوقف مؤقتاً"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                        <Separator className="my-3"/>
+                                        <FormLabel>الانتدابات</FormLabel>
+                                        {delegationFormFields.map((item, index) => (
+                                            <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
+                                                <FormField control={employeeForm.control} name={`delegations.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف الانتداب</FormLabel><FormControl><Input placeholder="وصف الانتداب" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <div className="grid grid-cols-2 gap-2">
+                                                <FormField control={employeeForm.control} name={`delegations.${index}.startDate`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel className="text-xs">تاريخ البدء</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`delegations.${index}.endDate`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel className="text-xs">تاريخ الانتهاء</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                                </div>
+                                                <FormField control={employeeForm.control} name={`delegations.${index}.location`} render={({ field }) => (<FormItem><FormLabel className="text-xs">الموقع</FormLabel><FormControl><Input placeholder="موقع الانتداب" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`delegations.${index}.status`} render={({ field }) => (<FormItem><FormLabel className="text-xs">حالة الانتداب</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl>
+                                                <SelectContent>{["مخطط له", "جارٍ", "مكتمل", "ملغى"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => removeDelegationField(index)} className="text-destructive w-full justify-start p-1"><MinusCircle className="me-1 h-4 w-4" /> إزالة الانتداب</Button>
+                                            </Card>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendDelegationField({ description: '', startDate: new Date(), endDate: new Date(), location: '', status: "مخطط له" })}><PlusCircle className="me-1 h-3 w-3" /> إضافة انتداب</Button>
+                                    </TabsContent>
 
-                                 <Separator className="my-3"/>
-                                <FormLabel>الحوافز والمكافآت</FormLabel>
-                                {incentiveFormFields.map((item, index) => (
-                                     <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
-                                        <FormField control={employeeForm.control} name={`incentives.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف الحافز</FormLabel><FormControl><Input placeholder="وصف الحافز/المكافأة" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={employeeForm.control} name={`incentives.${index}.amount`} render={({ field }) => (<FormItem><FormLabel className="text-xs">المبلغ (SAR)</FormLabel><FormControl><Input type="number" placeholder="المبلغ" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={employeeForm.control} name={`incentives.${index}.date`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel className="text-xs">تاريخ الاستحقاق</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
-                                        <FormField control={employeeForm.control} name={`incentives.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">نوع الحافز</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع الحافز" /></SelectTrigger></FormControl>
-                                            <SelectContent>{["شهري", "ربع سنوي", "سنوي", "مرة واحدة"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => removeIncentiveField(index)} className="text-destructive w-full justify-start p-1"><MinusCircle className="me-1 h-4 w-4" /> إزالة الحافز</Button>
-                                    </Card>
-                                ))}
-                                <Button type="button" variant="outline" size="sm" onClick={() => appendIncentiveField({description: '', amount: 0, date: new Date(), type: "مرة واحدة"})}><PlusCircle className="me-1 h-3 w-3" /> إضافة حافز</Button>
-                            </TabsContent>
-                             <TabsContent value="insurance" className="space-y-4">
-                                <FormLabel>التأمين الطبي</FormLabel>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={employeeForm.control} name="medicalInsuranceProvider" render={({ field }) => (<FormItem><FormLabel>شركة التأمين</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={employeeForm.control} name="medicalInsurancePolicyNumber" render={({ field }) => (<FormItem><FormLabel>رقم البوليصة</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                    <TabsContent value="financial" className="space-y-4 mt-0">
+                                        <FormField control={employeeForm.control} name="basicSalary" render={({ field }) => (<FormItem><FormLabel>الراتب الأساسي (SAR)</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={employeeForm.control} name="bankName" render={({ field }) => (<FormItem><FormLabel>اسم البنك</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={employeeForm.control} name="iban" render={({ field }) => (<FormItem><FormLabel>رقم الآيبان (IBAN)</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <FormField control={employeeForm.control} name="socialInsuranceNumber" render={({ field }) => (<FormItem><FormLabel>رقم التأمينات الاجتماعية</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        <Separator className="my-3"/>
+                                        <FormLabel>البدلات</FormLabel>
+                                        {allowanceFormFields.map((item, index) => (
+                                            <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
+                                                <FormField control={employeeForm.control} name={`allowances.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف البدل</FormLabel><FormControl><Input placeholder="وصف البدل" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`allowances.${index}.amount`} render={({ field }) => (<FormItem><FormLabel className="text-xs">المبلغ (SAR)</FormLabel><FormControl><Input type="number" placeholder="المبلغ" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`allowances.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">نوع البدل</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع البدل" /></SelectTrigger></FormControl>
+                                                    <SelectContent>{["ثابت", "متغير", "مرة واحدة"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => removeAllowanceField(index)} className="text-destructive w-full justify-start p-1"><MinusCircle className="me-1 h-4 w-4" /> إزالة البدل</Button>
+                                            </Card>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendAllowanceField({description: '', amount: 0, type: "ثابت"})}><PlusCircle className="me-1 h-3 w-3" /> إضافة بدل</Button>
+                                        <Separator className="my-3"/>
+                                        <FormLabel>الخصومات</FormLabel>
+                                        {deductionFormFields.map((item, index) => (
+                                            <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
+                                                <FormField control={employeeForm.control} name={`deductions.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف الخصم</FormLabel><FormControl><Input placeholder="وصف الخصم" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`deductions.${index}.amount`} render={({ field }) => (<FormItem><FormLabel className="text-xs">المبلغ (SAR)</FormLabel><FormControl><Input type="number" placeholder="المبلغ" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`deductions.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">نوع الخصم</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع الخصم" /></SelectTrigger></FormControl>
+                                                    <SelectContent>{["ثابت", "متغير", "مرة واحدة"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => removeDeductionField(index)} className="text-destructive w-full justify-start p-1"><MinusCircle className="me-1 h-4 w-4" /> إزالة الخصم</Button>
+                                            </Card>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendDeductionField({description: '', amount: 0, type: "ثابت"})}><PlusCircle className="me-1 h-3 w-3" /> إضافة خصم</Button>
+
+                                        <Separator className="my-3"/>
+                                        <FormLabel>الحوافز والمكافآت</FormLabel>
+                                        {incentiveFormFields.map((item, index) => (
+                                            <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
+                                                <FormField control={employeeForm.control} name={`incentives.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف الحافز</FormLabel><FormControl><Input placeholder="وصف الحافز/المكافأة" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`incentives.${index}.amount`} render={({ field }) => (<FormItem><FormLabel className="text-xs">المبلغ (SAR)</FormLabel><FormControl><Input type="number" placeholder="المبلغ" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`incentives.${index}.date`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel className="text-xs">تاريخ الاستحقاق</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`incentives.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">نوع الحافز</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر نوع الحافز" /></SelectTrigger></FormControl>
+                                                    <SelectContent>{["شهري", "ربع سنوي", "سنوي", "مرة واحدة"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => removeIncentiveField(index)} className="text-destructive w-full justify-start p-1"><MinusCircle className="me-1 h-4 w-4" /> إزالة الحافز</Button>
+                                            </Card>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendIncentiveField({description: '', amount: 0, date: new Date(), type: "مرة واحدة"})}><PlusCircle className="me-1 h-3 w-3" /> إضافة حافز</Button>
+                                    </TabsContent>
+                                    <TabsContent value="insurance" className="space-y-4 mt-0">
+                                        <FormLabel>التأمين الطبي</FormLabel>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={employeeForm.control} name="medicalInsuranceProvider" render={({ field }) => (<FormItem><FormLabel>شركة التأمين</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={employeeForm.control} name="medicalInsurancePolicyNumber" render={({ field }) => (<FormItem><FormLabel>رقم البوليصة</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <FormField control={employeeForm.control} name="medicalInsuranceExpiryDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ انتهاء التأمين</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                        <Separator className="my-3"/>
+                                        <FormLabel>معلومات الاتصال في الطوارئ</FormLabel>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={employeeForm.control} name="emergencyContactName" render={({ field }) => (<FormItem><FormLabel>اسم جهة الاتصال</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={employeeForm.control} name="emergencyContactPhone" render={({ field }) => (<FormItem><FormLabel>رقم هاتف جهة الاتصال</FormLabel><FormControl><Input type="tel" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
+                                    </TabsContent>
                                 </div>
-                                <FormField control={employeeForm.control} name="medicalInsuranceExpiryDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ انتهاء التأمين</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
-                                <Separator className="my-3"/>
-                                <FormLabel>معلومات الاتصال في الطوارئ</FormLabel>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={employeeForm.control} name="emergencyContactName" render={({ field }) => (<FormItem><FormLabel>اسم جهة الاتصال</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={employeeForm.control} name="emergencyContactPhone" render={({ field }) => (<FormItem><FormLabel>رقم هاتف جهة الاتصال</FormLabel><FormControl><Input type="tel" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                        </ScrollArea>
-                        <DialogFooter><Button type="submit">{employeeToEdit ? "حفظ التعديلات" : "إضافة الموظف"}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
-                    </form>
-                </Form>
+                            </Tabs>
+                        </form>
+                    </Form>
+                </div>
+                <DialogFooter className="flex-shrink-0 border-t pt-4">
+                    <Button type="submit" form="employeeDialogForm">{employeeToEdit ? "حفظ التعديلات" : "إضافة الموظف"}</Button>
+                    <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                </DialogFooter>
             </DialogContent>
           </Dialog>
           <Dialog open={showCreatePayrollDialog} onOpenChange={(isOpen) => {setShowCreatePayrollDialog(isOpen); if(!isOpen) setPayrollToEdit(null);}}>
@@ -963,106 +969,107 @@ export default function HRPayrollPage() {
 
       {/* View Employee Dialog */}
         <Dialog open={showViewEmployeeDialog} onOpenChange={setShowViewEmployeeDialog}>
-            <DialogContent className="sm:max-w-2xl" dir="rtl">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh]" dir="rtl">
+                <DialogHeader className="flex-shrink-0">
                     <DialogTitle>ملف الموظف: {selectedEmployeeForView?.name}</DialogTitle>
                 </DialogHeader>
                 {selectedEmployeeForView && (
-                    <ScrollArea className="max-h-[70vh] p-1">
-                    <div className="py-4 space-y-3 text-sm">
-                        <div className="flex justify-center mb-4">
-                            <Avatar className="h-24 w-24"><AvatarImage src={selectedEmployeeForView.avatarUrl} alt={selectedEmployeeForView.name} data-ai-hint={selectedEmployeeForView.dataAiHint || selectedEmployeeForView.name.split(' ').slice(0,2).join(' ') } /><AvatarFallback>{selectedEmployeeForView.name?.substring(0,1)}</AvatarFallback></Avatar>
+                    <div className="flex-grow overflow-y-auto min-h-0 py-4">
+                        <div className="space-y-3 text-sm px-2">
+                            <div className="flex justify-center mb-4">
+                                <Avatar className="h-24 w-24"><AvatarImage src={selectedEmployeeForView.avatarUrl} alt={selectedEmployeeForView.name} data-ai-hint={selectedEmployeeForView.dataAiHint || selectedEmployeeForView.name.split(' ').slice(0,2).join(' ') } /><AvatarFallback>{selectedEmployeeForView.name?.substring(0,1)}</AvatarFallback></Avatar>
+                            </div>
+                            <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><UserCog className="me-2 h-4 w-4 text-primary" /> معلومات أساسية</CardTitle></CardHeader>
+                            <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                                <p><strong>الرقم الوظيفي:</strong> {selectedEmployeeForView.id}</p>
+                                <p><strong>الاسم:</strong> {selectedEmployeeForView.name}</p>
+                                <p><strong>المسمى الوظيفي:</strong> {selectedEmployeeForView.jobTitle}</p>
+                                <p><strong>القسم:</strong> {selectedEmployeeForView.department}</p>
+                                <p><strong>البريد الإلكتروني:</strong> {selectedEmployeeForView.email || "-"}</p>
+                                <p><strong>الهاتف:</strong> {selectedEmployeeForView.phone || "-"}</p>
+                                <p><strong>الجنسية:</strong> {selectedEmployeeForView.nationality || "-"}</p>
+                                <p><strong>رقم الهوية/الإقامة:</strong> {selectedEmployeeForView.idNumber || "-"}</p>
+                                <p><strong>موقع العمل:</strong> {selectedEmployeeForView.workLocation || "-"}</p>
+                                <div className="flex items-center gap-1 col-span-2"><strong>الحالة:</strong> <span className="inline-block"><Badge variant={selectedEmployeeForView.status === "نشط" ? "default" : selectedEmployeeForView.status === "منتهية خدمته" ? "destructive" : "outline"}>{selectedEmployeeForView.status}</Badge></span></div>
+                            </CardContent>
+                            </Card>
+
+                            <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><CalendarCheck2 className="me-2 h-4 w-4 text-primary" /> معلومات العقد</CardTitle></CardHeader>
+                                <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                                    <p><strong>تاريخ بداية العقد:</strong> {selectedEmployeeForView.contractStartDate?.toLocaleDateString('ar-SA', {calendar:'gregory'})}</p>
+                                    <p><strong>تاريخ نهاية العقد:</strong> {selectedEmployeeForView.contractEndDate?.toLocaleDateString('ar-SA', {calendar:'gregory'})}</p>
+                                    <p><strong>مدة العقد:</strong> {selectedEmployeeForView.contractDuration || "-"}</p>
+                                    <p><strong>نهاية فترة التجربة:</strong> {selectedEmployeeForView.probationEndDate ? selectedEmployeeForView.probationEndDate.toLocaleDateString('ar-SA', {calendar:'gregory'}) : "-"}</p>
+                                    <p><strong>نوع التوظيف:</strong> {selectedEmployeeForView.employmentType}</p>
+                                    <p><strong>نوع العقد:</strong> {selectedEmployeeForView.contractType}</p>
+                                    <p><strong>قابل للتجديد:</strong> {selectedEmployeeForView.canRenewContract ? "نعم" : "لا"}</p>
+                                </CardContent>
+                            </Card>
+
+                            <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><Banknote className="me-2 h-4 w-4 text-primary" /> معلومات مالية</CardTitle></CardHeader>
+                                <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                                    <p><strong>الراتب الأساسي:</strong> {(selectedEmployeeForView.basicSalary || 0)?.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})}</p>
+                                    <p><strong>اسم البنك:</strong> {selectedEmployeeForView.bankName || "-"}</p>
+                                    <p><strong>رقم الآيبان:</strong> {selectedEmployeeForView.iban || "-"}</p>
+                                    <p><strong>رقم التأمينات:</strong> {selectedEmployeeForView.socialInsuranceNumber || "-"}</p>
+                                    {(selectedEmployeeForView.allowances && selectedEmployeeForView.allowances.length > 0) && (
+                                        <div className="col-span-2 mt-1">
+                                            <p><strong>البدلات:</strong></p>
+                                            <ul className="list-disc ms-4">
+                                                {selectedEmployeeForView.allowances.map((allow, i) => (
+                                                    <li key={i}>{allow.description}: {allow.amount.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})} ({allow.type})</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {(selectedEmployeeForView.deductions && selectedEmployeeForView.deductions.length > 0) && (
+                                        <div className="col-span-2 mt-1">
+                                            <p><strong>الخصومات الثابتة:</strong></p>
+                                            <ul className="list-disc ms-4">
+                                                {selectedEmployeeForView.deductions.map((ded, i) => (
+                                                    <li key={i}>{ded.description}: {ded.amount.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})} ({ded.type})</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {(selectedEmployeeForView.incentives && selectedEmployeeForView.incentives.length > 0) && (
+                                        <div className="col-span-2 mt-1">
+                                            <p><strong>الحوافز:</strong></p>
+                                            <ul className="list-disc ms-4">
+                                                {selectedEmployeeForView.incentives.map((inc, i) => (
+                                                    <li key={i}>{inc.description}: {inc.amount.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})} ({inc.type} - {inc.date.toLocaleDateString('ar-SA', {calendar:'gregory'})})</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                            <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><Plane className="me-2 h-4 w-4 text-primary" /> الانتدابات</CardTitle></CardHeader>
+                                <CardContent className="p-3 text-xs">
+                                    {(selectedEmployeeForView.delegations && selectedEmployeeForView.delegations.length > 0) ? (
+                                        <ul className="list-disc ms-4 space-y-1">
+                                            {selectedEmployeeForView.delegations.map((del, i) => (
+                                                <li key={i}>{del.description} إلى {del.location} (من {del.startDate.toLocaleDateString('ar-SA', {calendar:'gregory'})} إلى {del.endDate.toLocaleDateString('ar-SA', {calendar:'gregory'})}) - الحالة: {del.status}</li>
+                                            ))}
+                                        </ul>
+                                    ) : <p className="text-muted-foreground">لا توجد انتدابات مسجلة.</p>}
+                                </CardContent>
+                            </Card>
+
+                            <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><Shield className="me-2 h-4 w-4 text-primary" /> التأمين والاتصال بالطوارئ</CardTitle></CardHeader>
+                                <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
+                                    <p><strong>شركة التأمين:</strong> {selectedEmployeeForView.medicalInsuranceProvider || "-"}</p>
+                                    <p><strong>رقم البوليصة:</strong> {selectedEmployeeForView.medicalInsurancePolicyNumber || "-"}</p>
+                                    <p><strong>انتهاء التأمين:</strong> {selectedEmployeeForView.medicalInsuranceExpiryDate ? selectedEmployeeForView.medicalInsuranceExpiryDate.toLocaleDateString('ar-SA', {calendar:'gregory'}) : "-"}</p>
+                                    <p className="col-span-2 border-t pt-1 mt-1"><strong>جهة اتصال الطوارئ:</strong> {selectedEmployeeForView.emergencyContactName || "-"} ({selectedEmployeeForView.emergencyContactPhone || "-"})</p>
+                                </CardContent>
+                            </Card>
                         </div>
-                        <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><UserCog className="me-2 h-4 w-4 text-primary" /> معلومات أساسية</CardTitle></CardHeader>
-                          <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
-                            <p><strong>الرقم الوظيفي:</strong> {selectedEmployeeForView.id}</p>
-                            <p><strong>الاسم:</strong> {selectedEmployeeForView.name}</p>
-                            <p><strong>المسمى الوظيفي:</strong> {selectedEmployeeForView.jobTitle}</p>
-                            <p><strong>القسم:</strong> {selectedEmployeeForView.department}</p>
-                            <p><strong>البريد الإلكتروني:</strong> {selectedEmployeeForView.email || "-"}</p>
-                            <p><strong>الهاتف:</strong> {selectedEmployeeForView.phone || "-"}</p>
-                            <p><strong>الجنسية:</strong> {selectedEmployeeForView.nationality || "-"}</p>
-                            <p><strong>رقم الهوية/الإقامة:</strong> {selectedEmployeeForView.idNumber || "-"}</p>
-                            <p><strong>موقع العمل:</strong> {selectedEmployeeForView.workLocation || "-"}</p>
-                            <div className="flex items-center gap-1 col-span-2"><strong>الحالة:</strong> <span className="inline-block"><Badge variant={selectedEmployeeForView.status === "نشط" ? "default" : selectedEmployeeForView.status === "منتهية خدمته" ? "destructive" : "outline"}>{selectedEmployeeForView.status}</Badge></span></div>
-                          </CardContent>
-                        </Card>
-
-                        <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><CalendarCheck2 className="me-2 h-4 w-4 text-primary" /> معلومات العقد</CardTitle></CardHeader>
-                            <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
-                                <p><strong>تاريخ بداية العقد:</strong> {selectedEmployeeForView.contractStartDate?.toLocaleDateString('ar-SA', {calendar:'gregory'})}</p>
-                                <p><strong>تاريخ نهاية العقد:</strong> {selectedEmployeeForView.contractEndDate?.toLocaleDateString('ar-SA', {calendar:'gregory'})}</p>
-                                <p><strong>مدة العقد:</strong> {selectedEmployeeForView.contractDuration || "-"}</p>
-                                <p><strong>نهاية فترة التجربة:</strong> {selectedEmployeeForView.probationEndDate ? selectedEmployeeForView.probationEndDate.toLocaleDateString('ar-SA', {calendar:'gregory'}) : "-"}</p>
-                                <p><strong>نوع التوظيف:</strong> {selectedEmployeeForView.employmentType}</p>
-                                <p><strong>نوع العقد:</strong> {selectedEmployeeForView.contractType}</p>
-                                <p><strong>قابل للتجديد:</strong> {selectedEmployeeForView.canRenewContract ? "نعم" : "لا"}</p>
-                            </CardContent>
-                        </Card>
-
-                        <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><Banknote className="me-2 h-4 w-4 text-primary" /> معلومات مالية</CardTitle></CardHeader>
-                            <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
-                                <p><strong>الراتب الأساسي:</strong> {(selectedEmployeeForView.basicSalary || 0)?.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})}</p>
-                                <p><strong>اسم البنك:</strong> {selectedEmployeeForView.bankName || "-"}</p>
-                                <p><strong>رقم الآيبان:</strong> {selectedEmployeeForView.iban || "-"}</p>
-                                <p><strong>رقم التأمينات:</strong> {selectedEmployeeForView.socialInsuranceNumber || "-"}</p>
-                                {(selectedEmployeeForView.allowances && selectedEmployeeForView.allowances.length > 0) && (
-                                    <div className="col-span-2 mt-1">
-                                        <p><strong>البدلات:</strong></p>
-                                        <ul className="list-disc ms-4">
-                                            {selectedEmployeeForView.allowances.map((allow, i) => (
-                                                <li key={i}>{allow.description}: {allow.amount.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})} ({allow.type})</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                                 {(selectedEmployeeForView.deductions && selectedEmployeeForView.deductions.length > 0) && (
-                                    <div className="col-span-2 mt-1">
-                                        <p><strong>الخصومات الثابتة:</strong></p>
-                                        <ul className="list-disc ms-4">
-                                            {selectedEmployeeForView.deductions.map((ded, i) => (
-                                                <li key={i}>{ded.description}: {ded.amount.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})} ({ded.type})</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                                 {(selectedEmployeeForView.incentives && selectedEmployeeForView.incentives.length > 0) && (
-                                    <div className="col-span-2 mt-1">
-                                        <p><strong>الحوافز:</strong></p>
-                                        <ul className="list-disc ms-4">
-                                            {selectedEmployeeForView.incentives.map((inc, i) => (
-                                                <li key={i}>{inc.description}: {inc.amount.toLocaleString('ar-SA', {style:'currency', currency: 'SAR'})} ({inc.type} - {inc.date.toLocaleDateString('ar-SA', {calendar:'gregory'})})</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                         <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><Plane className="me-2 h-4 w-4 text-primary" /> الانتدابات</CardTitle></CardHeader>
-                            <CardContent className="p-3 text-xs">
-                                 {(selectedEmployeeForView.delegations && selectedEmployeeForView.delegations.length > 0) ? (
-                                    <ul className="list-disc ms-4 space-y-1">
-                                        {selectedEmployeeForView.delegations.map((del, i) => (
-                                            <li key={i}>{del.description} إلى {del.location} (من {del.startDate.toLocaleDateString('ar-SA', {calendar:'gregory'})} إلى {del.endDate.toLocaleDateString('ar-SA', {calendar:'gregory'})}) - الحالة: {del.status}</li>
-                                        ))}
-                                    </ul>
-                                ) : <p className="text-muted-foreground">لا توجد انتدابات مسجلة.</p>}
-                            </CardContent>
-                        </Card>
-
-                        <Card><CardHeader className="p-3"><CardTitle className="text-base flex items-center"><Shield className="me-2 h-4 w-4 text-primary" /> التأمين والاتصال بالطوارئ</CardTitle></CardHeader>
-                            <CardContent className="p-3 text-xs grid grid-cols-2 gap-x-4 gap-y-1">
-                                <p><strong>شركة التأمين:</strong> {selectedEmployeeForView.medicalInsuranceProvider || "-"}</p>
-                                <p><strong>رقم البوليصة:</strong> {selectedEmployeeForView.medicalInsurancePolicyNumber || "-"}</p>
-                                <p><strong>انتهاء التأمين:</strong> {selectedEmployeeForView.medicalInsuranceExpiryDate ? selectedEmployeeForView.medicalInsuranceExpiryDate.toLocaleDateString('ar-SA', {calendar:'gregory'}) : "-"}</p>
-                                <p className="col-span-2 border-t pt-1 mt-1"><strong>جهة اتصال الطوارئ:</strong> {selectedEmployeeForView.emergencyContactName || "-"} ({selectedEmployeeForView.emergencyContactPhone || "-"})</p>
-                            </CardContent>
-                        </Card>
-
                     </div>
-                    </ScrollArea>
                 )}
-                <DialogFooter><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+                <DialogFooter className="flex-shrink-0 border-t pt-4">
+                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
 
@@ -1127,6 +1134,7 @@ export default function HRPayrollPage() {
     </div>
   );
 }
+
 
 
 
