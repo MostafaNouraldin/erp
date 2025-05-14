@@ -24,7 +24,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Role } from '@/types/saas';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from '@/components/ui/textarea';
-import { availableCurrencies, useCurrency } from '@/contexts/currency-context'; // Import currency context and available currencies
+import { availableCurrencies } from '@/contexts/currency-context'; 
+import { useCurrency } from '@/hooks/use-currency'; // Corrected import path
 
 
 // Mock data
@@ -567,7 +568,7 @@ export default function SettingsPage() {
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}><Trash2 className="h-4 w-4"/></Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent dir="rtl">
-                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
+                                                    <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الدور "{role.name}"؟</AlertDialogDescription></AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>تراجع</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => handleDeleteRole(role.id)}>تأكيد الحذف</AlertDialogAction>
@@ -657,3 +658,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+
