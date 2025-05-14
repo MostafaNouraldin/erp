@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -22,6 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import { useCurrency } from '@/hooks/use-currency'; // Import useCurrency
 
 
 // Schemas
@@ -71,7 +73,7 @@ const supplierInvoiceSchema = z.object({
   dueDate: z.date({ required_error: "تاريخ الاستحقاق مطلوب" }),
   items: z.array(supplierInvoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   totalAmount: z.coerce.number().default(0),
-  paidAmount: z.coerce.number().default(0).optional(), // Added for payment tracking
+  paidAmount: z.coerce.number().default(0).optional(), 
   status: z.enum(["غير مدفوع", "مدفوع جزئياً", "مدفوع", "متأخر"]).default("غير مدفوع"),
   notes: z.string().optional(),
 });
@@ -100,7 +102,7 @@ const goodsReceivedNoteSchema = z.object({
   items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل مستلم"),
   notes: z.string().optional(),
   status: z.enum(["مستلم جزئياً", "مستلم بالكامل"]).default("مستلم جزئياً"),
-  receivedBy: z.string().optional(), // User who received
+  receivedBy: z.string().optional(), 
 });
 type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
 
@@ -116,7 +118,7 @@ const purchaseReturnSchema = z.object({
   id: z.string().optional(),
   supplierId: z.string().min(1, "المورد مطلوب"),
   date: z.date({ required_error: "تاريخ المرتجع مطلوب" }),
-  originalInvoiceId: z.string().optional(), // Link to original supplier invoice if applicable
+  originalInvoiceId: z.string().optional(), 
   items: z.array(purchaseReturnItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   notes: z.string().optional(),
   totalAmount: z.coerce.number().default(0),
@@ -124,7 +126,6 @@ const purchaseReturnSchema = z.object({
 });
 type PurchaseReturnFormValues = z.infer<typeof purchaseReturnSchema>;
 
-// Mock data (can be replaced with API calls)
 const initialSuppliersData: SupplierFormValues[] = [
   { id: "SUP001", name: "مورد التقنية الحديثة", email: "sales@techsupplier.com", phone: "0112345678", address: "الرياض, برج الفيصلية", vatNumber: "3000123456", contactPerson: "أحمد خالد", notes: "موثوق وسريع الاستجابة" },
   { id: "SUP002", name: "مورد المواد الخام", email: "info@rawmaterials.co", phone: "0123456789", address: "جدة, المنطقة الصناعية", vatNumber: "3100987654", contactPerson: "فاطمة علي", notes: "جودة عالية للمواد" },
@@ -155,7 +156,6 @@ const initialPurchaseReturnsData: PurchaseReturnFormValues[] = [
   { id: "PR001", supplierId: "SUP001", date: new Date("2024-07-28"), originalInvoiceId: "INV-S001", items: [{itemId: "ITEM001", description: "لابتوب ديل - عطل مصنعي", quantity:1, unitPrice:6000, total:6000, reason: "عطل مصنعي"}], totalAmount: 6000, status: "معتمد" },
 ];
 
-// Placeholder for amount to words conversion
 const convertAmountToWords = (amount: number) => {
   return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
 };
@@ -203,6 +203,7 @@ export default function PurchasesPage() {
 
 
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency(); // Use the currency context
 
   const supplierForm = useForm<SupplierFormValues>({ resolver: zodResolver(supplierSchema) });
   const poForm = useForm<PurchaseOrderFormValues>({ resolver: zodResolver(purchaseOrderSchema) });
@@ -674,7 +675,7 @@ export default function PurchasesPage() {
                         <TableCell>{suppliersData.find(s=>s.id === po.supplierId)?.name || po.supplierId}</TableCell>
                         <TableCell>{formatDateForDisplay(po.date)}</TableCell>
                         <TableCell>{formatDateForDisplay(po.expectedDeliveryDate)}</TableCell>
-                        <TableCell>{po.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                        <TableCell>{formatCurrency(po.totalAmount)}</TableCell>
                         <TableCell><Badge variant={po.status === "معتمد" || po.status === "مستلم بالكامل" ? "default" : po.status === "ملغي" ? "destructive" : "outline"} className="whitespace-nowrap">{po.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => handleViewPo(po)}><Eye className="h-4 w-4" /></Button>
@@ -791,7 +792,7 @@ export default function PurchasesPage() {
                         <TableCell>{suppliersData.find(s=>s.id === inv.supplierId)?.name || inv.supplierId}</TableCell>
                         <TableCell>{formatDateForDisplay(inv.invoiceDate)}</TableCell>
                         <TableCell>{formatDateForDisplay(inv.dueDate)}</TableCell>
-                        <TableCell>{inv.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                        <TableCell>{formatCurrency(inv.totalAmount)}</TableCell>
                         <TableCell><Badge variant={inv.status === "مدفوع" ? "default" : inv.status === "غير مدفوع" ? "destructive" : "secondary"} className="whitespace-nowrap">{inv.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={()=> handleViewSupplierInvoice(inv)}><Eye className="h-4 w-4" /></Button>
@@ -1022,7 +1023,7 @@ export default function PurchasesPage() {
                         <TableCell>{suppliersData.find(s=>s.id === pr.supplierId)?.name || pr.supplierId}</TableCell>
                         <TableCell>{formatDateForDisplay(pr.date)}</TableCell>
                         <TableCell>{pr.originalInvoiceId || "-"}</TableCell>
-                        <TableCell>{pr.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                        <TableCell>{formatCurrency(pr.totalAmount)}</TableCell>
                         <TableCell><Badge variant={pr.status === "معتمد" || pr.status === "معالج" ? "default" : "outline"} className="whitespace-nowrap">{pr.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => handleViewPurchaseReturn(pr)}><Eye className="h-4 w-4" /></Button>
@@ -1060,7 +1061,7 @@ export default function PurchasesPage() {
                     <p><strong>المورد:</strong> {suppliersData.find(s => s.id === selectedPoForView.supplierId)?.name}</p>
                     <p><strong>تاريخ الأمر:</strong> {formatDateForDisplay(selectedPoForView.date)}</p>
                     <p><strong>التسليم المتوقع:</strong> {formatDateForDisplay(selectedPoForView.expectedDeliveryDate)}</p>
-                    <p><strong>الإجمالي:</strong> {selectedPoForView.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
+                    <p><strong>الإجمالي:</strong> {formatCurrency(selectedPoForView.totalAmount)}</p>
                     <p><strong>الحالة:</strong> <Badge variant={selectedPoForView.status === "معتمد" ? "default" : "outline"}>{selectedPoForView.status}</Badge></p>
                     <p><strong>ملاحظات:</strong> {selectedPoForView.notes || "لا يوجد"}</p>
                   </CardContent>
@@ -1076,8 +1077,8 @@ export default function PurchasesPage() {
                             <TableRow key={idx}>
                               <TableCell>{mockItems.find(mi => mi.id === item.itemId)?.name || item.description}</TableCell>
                               <TableCell className="text-center">{item.quantity}</TableCell>
-                              <TableCell className="text-center">{item.unitPrice.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
-                              <TableCell className="text-left">{item.total.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                              <TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell>
+                              <TableCell className="text-left">{formatCurrency(item.total)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -1111,8 +1112,8 @@ export default function PurchasesPage() {
                     {selectedSupplierInvoiceForView.poId && <p><strong>أمر الشراء المرتبط:</strong> {selectedSupplierInvoiceForView.poId}</p>}
                     <p><strong>تاريخ الفاتورة:</strong> {formatDateForDisplay(selectedSupplierInvoiceForView.invoiceDate)}</p>
                     <p><strong>تاريخ الاستحقاق:</strong> {formatDateForDisplay(selectedSupplierInvoiceForView.dueDate)}</p>
-                    <p><strong>الإجمالي:</strong> {selectedSupplierInvoiceForView.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
-                     <p><strong>المدفوع:</strong> {(selectedSupplierInvoiceForView.paidAmount || 0).toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
+                    <p><strong>الإجمالي:</strong> {formatCurrency(selectedSupplierInvoiceForView.totalAmount)}</p>
+                     <p><strong>المدفوع:</strong> {formatCurrency(selectedSupplierInvoiceForView.paidAmount || 0)}</p>
                     <p><strong>الحالة:</strong> <Badge variant={selectedSupplierInvoiceForView.status === "مدفوع" ? "default" : "destructive"}>{selectedSupplierInvoiceForView.status}</Badge></p>
                     <p><strong>ملاحظات:</strong> {selectedSupplierInvoiceForView.notes || "لا يوجد"}</p>
                   </CardContent>
@@ -1128,8 +1129,8 @@ export default function PurchasesPage() {
                             <TableRow key={idx}>
                               <TableCell>{mockItems.find(mi => mi.id === item.itemId)?.name || item.description}</TableCell>
                               <TableCell className="text-center">{item.quantity}</TableCell>
-                              <TableCell className="text-center">{item.unitPrice.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
-                              <TableCell className="text-left">{item.total.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                              <TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell>
+                              <TableCell className="text-left">{formatCurrency(item.total)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -1151,7 +1152,7 @@ export default function PurchasesPage() {
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle>تسجيل دفعة لفاتورة مورد: {supplierInvoiceToPay?.id}</DialogTitle>
-            <DialogDescriptionComponent>الفاتورة بمبلغ {supplierInvoiceToPay?.totalAmount.toFixed(2)} SAR، متبقي منها {(supplierInvoiceToPay?.totalAmount || 0) - (supplierInvoiceToPay?.paidAmount || 0)} SAR.</DialogDescriptionComponent>
+            <DialogDescriptionComponent>الفاتورة بمبلغ {formatCurrency(supplierInvoiceToPay?.totalAmount || 0)}، متبقي منها {formatCurrency((supplierInvoiceToPay?.totalAmount || 0) - (supplierInvoiceToPay?.paidAmount || 0))}.</DialogDescriptionComponent>
           </DialogHeader>
           <Form {...supplierPaymentForm}>
             <form onSubmit={supplierPaymentForm.handleSubmit(handleRecordSupplierPaymentSubmit)} className="space-y-4 py-4">
@@ -1280,7 +1281,7 @@ export default function PurchasesPage() {
                     <p><strong>المورد:</strong> {selectedPurchaseReturnForView.supplierName || selectedPurchaseReturnForView.supplierId}</p>
                     <p><strong>تاريخ المرتجع:</strong> {formatDateForDisplay(selectedPurchaseReturnForView.date)}</p>
                     {selectedPurchaseReturnForView.originalInvoiceId && <p><strong>الفاتورة الأصلية:</strong> {selectedPurchaseReturnForView.originalInvoiceId}</p>}
-                    <p><strong>الإجمالي:</strong> {selectedPurchaseReturnForView.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
+                    <p><strong>الإجمالي:</strong> {formatCurrency(selectedPurchaseReturnForView.totalAmount)}</p>
                     <p><strong>الحالة:</strong> <Badge variant={selectedPurchaseReturnForView.status === "معتمد" ? "default" : "outline"}>{selectedPurchaseReturnForView.status}</Badge></p>
                     <p><strong>ملاحظات:</strong> {selectedPurchaseReturnForView.notes || "لا يوجد"}</p>
                   </CardContent>
@@ -1296,8 +1297,8 @@ export default function PurchasesPage() {
                             <TableRow key={idx}>
                               <TableCell>{mockItems.find(mi => mi.id === item.itemId)?.name || item.description}</TableCell>
                               <TableCell className="text-center">{item.quantity}</TableCell>
-                              <TableCell className="text-center">{item.unitPrice.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
-                              <TableCell className="text-left">{item.total.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                              <TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell>
+                              <TableCell className="text-left">{formatCurrency(item.total)}</TableCell>
                               <TableCell>{item.reason || "-"}</TableCell>
                             </TableRow>
                           ))}
@@ -1333,13 +1334,13 @@ export default function PurchasesPage() {
               <Table size="sm" className="mb-6"><TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead className="text-center">الكمية</TableHead><TableHead className="text-center">سعر الوحدة</TableHead><TableHead className="text-left">الإجمالي</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {selectedPoForPrint.items.map((item, index) => (
-                    <TableRow key={index}><TableCell>{mockItems.find(i=>i.id === item.itemId)?.name || item.description}</TableCell><TableCell className="text-center">{item.quantity}</TableCell><TableCell className="text-center">{item.unitPrice.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell><TableCell className="text-left">{item.total.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell></TableRow>
+                    <TableRow key={index}><TableCell>{mockItems.find(i=>i.id === item.itemId)?.name || item.description}</TableCell><TableCell className="text-center">{item.quantity}</TableCell><TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell><TableCell className="text-left">{formatCurrency(item.total)}</TableCell></TableRow>
                   ))}
                 </TableBody>
               </Table>
               <div className="flex justify-end mb-6">
                 <div className="w-full max-w-xs space-y-1 text-xs">
-                  <div className="flex justify-between font-bold text-base border-t pt-2 mt-2 text-primary"><span>إجمالي أمر الشراء:</span><span>{selectedPoForPrint.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</span></div>
+                  <div className="flex justify-between font-bold text-base border-t pt-2 mt-2 text-primary"><span>إجمالي أمر الشراء:</span><span>{formatCurrency(selectedPoForPrint.totalAmount)}</span></div>
                 </div>
               </div>
               {selectedPoForPrint.notes && <div className="text-xs mb-6"><p><strong>ملاحظات:</strong> {selectedPoForPrint.notes}</p></div>}
@@ -1378,8 +1379,8 @@ export default function PurchasesPage() {
                     <TableRow key={index}>
                       <TableCell>{mockItems.find(i=>i.id === item.itemId)?.name || item.description}</TableCell>
                       <TableCell className="text-center">{item.quantity}</TableCell>
-                      <TableCell className="text-center">{item.unitPrice.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
-                      <TableCell className="text-left">{item.total.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                      <TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell>
+                      <TableCell className="text-left">{formatCurrency(item.total)}</TableCell>
                       <TableCell>{item.reason || '-'}</TableCell>
                     </TableRow>
                   ))}
@@ -1389,7 +1390,7 @@ export default function PurchasesPage() {
                 <div className="w-full max-w-xs space-y-1 text-xs">
                   <div className="flex justify-between font-bold text-sm border-t pt-1 mt-1 text-primary">
                     <span>إجمالي قيمة المرتجع:</span>
-                    <span>{selectedReturnForPrint.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</span>
+                    <span>{formatCurrency(selectedReturnForPrint.totalAmount)}</span>
                   </div>
                 </div>
               </div>

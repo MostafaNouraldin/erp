@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -22,7 +23,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import type { Role } from '@/types/saas';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from '@/components/ui/textarea'; // Import Textarea
+import { Textarea } from '@/components/ui/textarea';
+import { availableCurrencies, useCurrency } from '@/contexts/currency-context'; // Import currency context and available currencies
+
 
 // Mock data
 const initialUsers = [
@@ -86,6 +89,8 @@ export default function SettingsPage() {
   const [roleToEdit, setRoleToEdit] = useState<Role | null>(null); 
   const { toast } = useToast();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const { selectedCurrency, setSelectedCurrency } = useCurrency();
+
 
   const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettingsState>({
     headerText: "شكراً لتعاملكم معنا",
@@ -237,7 +242,6 @@ export default function SettingsPage() {
 
   const handleSelectRoleForPermissions = (role: Role) => {
     setSelectedRole(role);
-    // Permissions will be set by the useEffect hook watching selectedRole
   };
 
   const handlePermissionChange = (permissionKey: string, checked: boolean | string) => {
@@ -264,6 +268,19 @@ export default function SettingsPage() {
       toast({ title: "تم الحفظ", description: `تم حفظ صلاحيات الدور ${selectedRole.name}.` });
     }
   };
+  
+  const handleCurrencyChange = (currencyCode: string) => {
+    const newCurrency = availableCurrencies.find(c => c.code === currencyCode);
+    if (newCurrency) {
+      setSelectedCurrency(newCurrency);
+    }
+  };
+
+  const handleSaveGeneralSettings = () => {
+    toast({title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح."});
+    // Here you would also save other general settings if they were part of a form
+  };
+
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -322,15 +339,14 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">العملة الأساسية</Label>
-                  <Select dir="rtl" defaultValue="SAR">
+                  <Select dir="rtl" value={selectedCurrency.code} onValueChange={handleCurrencyChange}>
                     <SelectTrigger id="currency" className="bg-background">
                       <SelectValue placeholder="اختر عملة" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>
-                      <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
-                      <SelectItem value="EUR">يورو (EUR)</SelectItem>
-                      <SelectItem value="EGP">جنيه مصري (EGP)</SelectItem>
+                      {availableCurrencies.map(curr => (
+                        <SelectItem key={curr.code} value={curr.code}>{curr.name} ({curr.code})</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -341,9 +357,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Switch id="autoBackup" defaultChecked />
-                <Label htmlFor="autoBackup">تمكين النسخ الاحتياطي التلقائي</Label>
+                <Label htmlFor="autoBackup" className="cursor-pointer">تمكين النسخ الاحتياطي التلقائي</Label>
               </div>
-              <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => toast({title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح."})}>
+              <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={handleSaveGeneralSettings}>
                 <Save className="me-2 h-4 w-4" /> حفظ الإعدادات العامة
               </Button>
             </CardContent>
@@ -384,7 +400,7 @@ export default function SettingsPage() {
                         checked={invoiceSettings.showLogoInHeader} 
                         onCheckedChange={(checked) => setInvoiceSettings(prev => ({...prev, showLogoInHeader: checked}))} 
                     />
-                    <Label htmlFor="showLogoInHeader">إظهار شعار الشركة في رأس الفاتورة</Label>
+                    <Label htmlFor="showLogoInHeader" className="cursor-pointer">إظهار شعار الشركة في رأس الفاتورة</Label>
                 </div>
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
                     <Switch 
@@ -392,7 +408,7 @@ export default function SettingsPage() {
                         checked={invoiceSettings.showVatInHeader} 
                         onCheckedChange={(checked) => setInvoiceSettings(prev => ({...prev, showVatInHeader: checked}))} 
                     />
-                    <Label htmlFor="showVatInHeader">إظهار الرقم الضريبي للشركة في رأس الفاتورة</Label>
+                    <Label htmlFor="showVatInHeader" className="cursor-pointer">إظهار الرقم الضريبي للشركة في رأس الفاتورة</Label>
                 </div>
                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
                     <Switch 
@@ -400,7 +416,7 @@ export default function SettingsPage() {
                         checked={invoiceSettings.showPaymentTermsInFooter} 
                         onCheckedChange={(checked) => setInvoiceSettings(prev => ({...prev, showPaymentTermsInFooter: checked}))} 
                     />
-                    <Label htmlFor="showPaymentTermsInFooter">إظهار شروط الدفع الافتراضية في تذييل الفاتورة</Label>
+                    <Label htmlFor="showPaymentTermsInFooter" className="cursor-pointer">إظهار شروط الدفع الافتراضية في تذييل الفاتورة</Label>
                 </div>
               </div>
               <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={handleSaveInvoiceSettings}>
@@ -641,4 +657,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

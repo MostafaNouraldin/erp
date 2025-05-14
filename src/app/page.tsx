@@ -3,10 +3,11 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Users, Package, TrendingUp, ArrowUpRight, Activity, CreditCardIcon, Percent, FilePlus, FileCheck, FileClock } from "lucide-react"; // Changed CreditCard to CreditCardIcon
+import { DollarSign, Users, Package, TrendingUp, ArrowUpRight, Activity, CreditCardIcon, Percent, FilePlus, FileCheck, FileClock } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, ResponsiveContainer } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
+import { useCurrency } from "@/hooks/use-currency"; // Import useCurrency
 
 const chartData = [
   { month: "يناير", desktop: 186, mobile: 80 },
@@ -44,6 +45,8 @@ const pieChartConfig = {
 
 
 export default function DashboardPage() {
+  const { formatCurrency } = useCurrency(); // Use the currency context
+
   return (
     <div className="flex flex-col gap-6" dir="rtl">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -53,7 +56,7 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">SAR 45,231.89</div>
+            <div className="text-2xl font-bold">{formatCurrency(45231.89)}</div>
             <p className="text-xs text-muted-foreground">
               +20.1% عن الشهر الماضي
             </p>
@@ -102,7 +105,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>نظرة عامة على المبيعات</CardTitle>
           </CardHeader>
-          <CardContent className="pe-2"> {/* Changed pr-2 to pe-2 for RTL */}
+          <CardContent className="pe-2">
             <ChartContainer config={chartConfig} className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart accessibilityLayer data={chartData}>
@@ -174,7 +177,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">قيمة المخزون</span>
-              <span className="font-semibold">SAR 350,720.00</span>
+              <span className="font-semibold">{formatCurrency(350720.00)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">أصناف قاربت على النفاد</span>
@@ -199,7 +202,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">نسبة الحضور</span>
-              <span className="font-semibold">98.5%</span> {/* Removed text-green-600 for theme consistency */}
+              <span className="font-semibold">98.5%</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">طلبات إجازة معلقة</span>
@@ -226,7 +229,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary"> {/* Changed green to primary for theme consistency */}
+             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <FileCheck className="h-4 w-4" />
               </div>
               <div>
@@ -235,7 +238,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary"> {/* Changed yellow to primary for theme consistency */}
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <FileClock className="h-4 w-4" />
               </div>
               <div>
