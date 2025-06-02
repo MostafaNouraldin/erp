@@ -8,10 +8,11 @@ export default {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    fontFamily: { // Moved fontFamily outside of extend and set 'sans'
+      sans: ["var(--font-cairo)", "sans-serif"],
+    },
   	extend: {
-      fontFamily: { // Added fontFamily
-        cairo: ["var(--font-cairo)", "sans-serif"], // Added Cairo font
-      },
+      // fontFamily is removed from here or other custom fonts could remain
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

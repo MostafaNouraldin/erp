@@ -133,7 +133,7 @@ export default function RootLayout({
   if (!mounted) {
     return (
         <html lang="ar" dir="rtl" suppressHydrationWarning>
-            <body className={`${cairo.variable} font-cairo antialiased bg-secondary/50`}>
+            <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
             </body>
         </html>
     );
@@ -153,7 +153,7 @@ export default function RootLayout({
         <title>Al-Mustaqbal ERP</title>
         <meta name="description" content="نظام ERP متكامل للشركات المتوسطة والكبيرة" />
       </head>
-      <body className={`${cairo.variable} font-cairo antialiased bg-secondary/50`}>
+      <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
         <AuthProvider>
           <CurrencyProvider> {/* Added CurrencyProvider */}
             <ThemeProvider
