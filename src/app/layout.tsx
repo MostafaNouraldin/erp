@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette } from "lucide-react";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
-import { CurrencyProvider } from "@/contexts/currency-context"; // Import CurrencyProvider
+import { CurrencyProvider } from "@/contexts/currency-context";
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import AppLogo from "@/components/app-logo";
@@ -155,7 +155,7 @@ export default function RootLayout({
       </head>
       <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
         <AuthProvider>
-          <CurrencyProvider> {/* Added CurrencyProvider */}
+          <CurrencyProvider>
             <ThemeProvider
               attribute="class"
               defaultTheme="system"
@@ -291,7 +291,7 @@ export default function RootLayout({
                 <Toaster />
               </SidebarProvider>
             </ThemeProvider>
-          </CurrencyProvider> {/* Close CurrencyProvider */}
+          </CurrencyProvider>
         </AuthProvider>
       </body>
     </html>
