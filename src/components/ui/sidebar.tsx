@@ -603,7 +603,7 @@ const SidebarMenuItem = React.forwardRef<
     );
   } else if (item.href) {
     // Simple link item
-    return ( // Added missing opening parenthesis
+    return (
       <li ref={ref} data-sidebar="menu-item" className={cn("group/menu-item relative", className)} {...props}>
         <Link href={item.href} passHref legacyBehavior>
           <SidebarMenuButton
