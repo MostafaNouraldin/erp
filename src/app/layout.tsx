@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton, type SidebarMenuItemProps } from "@/components/ui/sidebar"; // Import SidebarMenuItemProps
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -64,7 +64,7 @@ const currentTenantSubscription = {
 };
 
 
-const allNavItems = [
+const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
   { href: "/", label: "لوحة التحكم", icon: LayoutDashboard, module: "Dashboard" },
   {
     label: "الحسابات",
@@ -144,8 +144,9 @@ export default function RootLayout({
     if (typeof moduleAccess === 'boolean') {
       return moduleAccess;
     }
-    return false;
+    return false; // Default to false if module key not found or value isn't boolean
   });
+
 
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
@@ -173,35 +174,7 @@ export default function RootLayout({
                     <SidebarContent>
                       <SidebarMenu>
                         {navItems.map((item) => (
-                          <SidebarMenuItem key={item.label}>
-                            {item.subItems ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <SidebarMenuButton tooltip={{children: item.label, side: 'left', align: 'center'}} className="w-full justify-start">
-                                    <item.icon className="h-5 w-5" />
-                                    <span className="truncate">{item.label}</span>
-                                  </SidebarMenuButton>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent side="left" align="start" className="w-56" dir="rtl">
-                                  {item.subItems.map(subItem => (
-                                    <Link href={subItem.href} key={subItem.label} passHref>
-                                      <DropdownMenuItem className="cursor-pointer">
-                                        <subItem.icon className="me-2 h-4 w-4" />
-                                        {subItem.label}
-                                      </DropdownMenuItem>
-                                    </Link>
-                                  ))}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : (
-                              <Link href={item.href} passHref>
-                                <SidebarMenuButton tooltip={{children: item.label, side: 'left', align: 'center'}} className="w-full justify-start">
-                                  <item.icon className="h-5 w-5" />
-                                  <span className="truncate">{item.label}</span>
-                                </SidebarMenuButton>
-                              </Link>
-                            )}
-                          </SidebarMenuItem>
+                          <SidebarMenuItem key={item.label} item={item} />
                         ))}
                       </SidebarMenu>
                     </SidebarContent>
@@ -297,3 +270,4 @@ export default function RootLayout({
     </html>
   );
 }
+
