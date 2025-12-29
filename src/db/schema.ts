@@ -82,6 +82,44 @@ export const bankAccounts = pgTable('bank_accounts', {
     isActive: boolean('is_active').default(true).notNull(),
 });
 
+export const bankExpenses = pgTable('bank_expenses', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull(),
+    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull(),
+    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    referenceNumber: varchar('reference_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
+});
+
+export const bankReceipts = pgTable('bank_receipts', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull(),
+    revenueAccountId: varchar('revenue_account_id', { length: 256 }).notNull(),
+    payerName: varchar('payer_name', { length: 256 }).notNull(),
+    customerId: varchar('customer_id', { length: 256 }),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    referenceNumber: varchar('reference_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
+});
+
+export const cashExpenses = pgTable('cash_expenses', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    cashAccountId: varchar('cash_account_id', { length: 256 }).notNull(),
+    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull(),
+    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    voucherNumber: varchar('voucher_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
+});
+
+
 export const purchaseOrders = pgTable('purchase_orders', {
   id: varchar('id', { length: 256 }).primaryKey(),
   supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),

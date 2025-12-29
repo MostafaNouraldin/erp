@@ -47,12 +47,6 @@ const bankExpenseSchema = z.object({
 
 type BankExpenseFormValues = z.infer<typeof bankExpenseSchema>;
 
-const initialBankExpensesData: BankExpenseFormValues[] = [
-  { id: "BEXP001", date: new Date("2024-07-10"), bankAccountId: "BANK001", expenseAccountId: "5030", beneficiary: "شركة عقارات المتحدة", description: "إيجار مكتب شهر يوليو", amount: 12000, referenceNumber: "TRN-JULY-RENT", status: "مرحل" },
-  { id: "BEXP002", date: new Date("2024-07-15"), bankAccountId: "BANK002", expenseAccountId: "5040", beneficiary: "بنك الرياض", description: "رسوم خدمات بنكية", amount: 150, referenceNumber: "FEE-JULY24", status: "مرحل" },
-  { id: "BEXP003", date: new Date("2024-07-20"), bankAccountId: "BANK001", expenseAccountId: "5010", beneficiary: "مورد خدمات عامة", description: "فاتورة خدمات تنظيف", amount: 800, referenceNumber: "INV-CLN-07", status: "مسودة" },
-];
-
 // Placeholder for amount to words conversion
 const convertAmountToWords = (amount: number) => {
   // This is a placeholder. A full implementation is complex.
@@ -61,7 +55,7 @@ const convertAmountToWords = (amount: number) => {
 
 
 export default function BankExpensesPage() {
-  const [bankExpenses, setBankExpenses] = useState(initialBankExpensesData);
+  const [bankExpenses, setBankExpenses] = useState<BankExpenseFormValues[]>([]);
   const [showManageExpenseDialog, setShowManageExpenseDialog] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<BankExpenseFormValues | null>(null);
   const [showPrintExpenseDialog, setShowPrintExpenseDialog] = useState(false);
@@ -101,11 +95,7 @@ export default function BankExpensesPage() {
   };
 
   const handleUnpostExpense = (expenseId: string) => {
-    if(expenseId !== "BEXP001" && expenseId !== "BEXP002"){ 
-        setBankExpenses(prev => prev.map(exp => exp.id === expenseId ? { ...exp, status: "مسودة" } : exp));
-    } else {
-        alert("لا يمكن إلغاء ترحيل هذا المصروف لارتباطه بعمليات أخرى.");
-    }
+    setBankExpenses(prev => prev.map(exp => exp.id === expenseId ? { ...exp, status: "مسودة" } : exp));
   };
 
   const handlePrintExpense = (expense: BankExpenseFormValues) => {
@@ -345,5 +335,3 @@ export default function BankExpensesPage() {
     </div>
   );
 }
-
-

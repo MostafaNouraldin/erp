@@ -47,12 +47,6 @@ const cashExpenseSchema = z.object({
 
 type CashExpenseFormValues = z.infer<typeof cashExpenseSchema>;
 
-const initialCashExpensesData: CashExpenseFormValues[] = [
-  { id: "CEXP001", date: new Date("2024-07-05"), cashAccountId: "CASH001", expenseAccountId: "5015", beneficiary: "سائق الشركة", description: "مصروف وقود للسيارة", amount: 150, voucherNumber: "VN-2024-101", status: "مرحل" },
-  { id: "CEXP002", date: new Date("2024-07-12"), cashAccountId: "CASH002", expenseAccountId: "5050", beneficiary: "مكتبة النهضة", description: "شراء أدوات مكتبية عاجلة", amount: 250, voucherNumber: "VN-2024-102", status: "مرحل" },
-  { id: "CEXP003", date: new Date("2024-07-18"), cashAccountId: "CASH001", expenseAccountId: "5010", beneficiary: "عامل نظافة", description: "أجرة تنظيف طارئة", amount: 100, voucherNumber: "VN-2024-103", status: "مسودة" },
-];
-
 // Placeholder for amount to words conversion
 const convertAmountToWords = (amount: number) => {
   // This is a placeholder. A full implementation is complex.
@@ -61,7 +55,7 @@ const convertAmountToWords = (amount: number) => {
 
 
 export default function CashExpensesPage() {
-  const [cashExpenses, setCashExpenses] = useState(initialCashExpensesData);
+  const [cashExpenses, setCashExpenses] = useState<CashExpenseFormValues[]>([]);
   const [showManageExpenseDialog, setShowManageExpenseDialog] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState<CashExpenseFormValues | null>(null);
   const [showPrintExpenseDialog, setShowPrintExpenseDialog] = useState(false); // Added state for print dialog
@@ -100,11 +94,7 @@ export default function CashExpensesPage() {
   };
 
   const handleUnpostExpense = (expenseId: string) => {
-    if(expenseId !== "CEXP001" && expenseId !== "CEXP002"){ // Mock check
-        setCashExpenses(prev => prev.map(exp => exp.id === expenseId ? { ...exp, status: "مسودة" } : exp));
-    } else {
-        alert("لا يمكن إلغاء ترحيل هذا المصروف.");
-    }
+    setCashExpenses(prev => prev.map(exp => exp.id === expenseId ? { ...exp, status: "مسودة" } : exp));
   };
   
   const handlePrintExpense = (expense: CashExpenseFormValues) => { // Added print handler
@@ -343,5 +333,3 @@ export default function CashExpensesPage() {
     </div>
   );
 }
-
-

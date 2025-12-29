@@ -50,12 +50,6 @@ const bankReceiptSchema = z.object({
 
 type BankReceiptFormValues = z.infer<typeof bankReceiptSchema>;
 
-const initialBankReceiptsData: BankReceiptFormValues[] = [
-  { id: "BREC001", date: new Date("2024-07-08"), bankAccountId: "BANK001", revenueAccountId: "4010", payerName: "شركة الأمل", customerId: "CUST001", description: "دفعة مقدمة لمشروع تطوير", amount: 25000, referenceNumber: "DEP-JULY-001", status: "مرحل" },
-  { id: "BREC002", date: new Date("2024-07-14"), bankAccountId: "BANK002", revenueAccountId: "4020", payerName: "مؤسسة النجاح", customerId: "CUST002", description: "أتعاب استشارات", amount: 8500, referenceNumber: "TRN-CONSULT-005", status: "مرحل" },
-  { id: "BREC003", date: new Date("2024-07-19"), bankAccountId: "BANK001", revenueAccountId: "4030", payerName: "جهة خارجية", description: "إيرادات متنوعة", amount: 1200, referenceNumber: "MISC-REV-002", status: "مسودة" },
-];
-
 // Placeholder for amount to words conversion
 const convertAmountToWords = (amount: number) => {
   // This is a placeholder. A full implementation is complex.
@@ -64,7 +58,7 @@ const convertAmountToWords = (amount: number) => {
 
 
 export default function BankReceiptsPage() {
-  const [bankReceipts, setBankReceipts] = useState(initialBankReceiptsData);
+  const [bankReceipts, setBankReceipts] = useState<BankReceiptFormValues[]>([]);
   const [showManageReceiptDialog, setShowManageReceiptDialog] = useState(false);
   const [receiptToEdit, setReceiptToEdit] = useState<BankReceiptFormValues | null>(null);
   const [showPrintReceiptDialog, setShowPrintReceiptDialog] = useState(false);
@@ -104,11 +98,7 @@ export default function BankReceiptsPage() {
   };
 
   const handleUnpostReceipt = (receiptId: string) => {
-    if(receiptId !== "BREC001" && receiptId !== "BREC002"){ // Mock check
-        setBankReceipts(prev => prev.map(rec => rec.id === receiptId ? { ...rec, status: "مسودة" } : rec));
-    } else {
-        alert("لا يمكن إلغاء ترحيل هذه المقبوضات لارتباطها بعمليات أخرى.");
-    }
+    setBankReceipts(prev => prev.map(rec => rec.id === receiptId ? { ...rec, status: "مسودة" } : rec));
   };
   
   const handlePrintReceipt = (receipt: BankReceiptFormValues) => {
@@ -356,5 +346,3 @@ export default function BankReceiptsPage() {
     </div>
   );
 }
-
-
