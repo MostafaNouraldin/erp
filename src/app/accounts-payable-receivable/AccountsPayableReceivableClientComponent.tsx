@@ -20,9 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
-// TODO: Re-enable actions when properly connected
-// import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from '@/app/sales/actions';
-// import { addSupplierInvoice, updateSupplierInvoice, deleteSupplierInvoice, updateSupplierInvoicePayment } from '@/app/purchases/actions';
+import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from '@/app/sales/actions';
+import { addSupplierInvoice, updateSupplierInvoice, deleteSupplierInvoice, updateSupplierInvoicePayment } from '@/app/purchases/actions';
 
 
 const customerInvoiceItemSchema = z.object({
@@ -41,6 +40,8 @@ const customerInvoiceSchema = z.object({
   items: z.array(customerInvoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   status: z.enum(["مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
   isDeferredPayment: z.boolean().default(false),
+  numericTotalAmount: z.number().optional(), // Added for calculation
+  source: z.enum(["POS", "Manual"]).optional().default("Manual"),
 });
 type CustomerInvoiceFormValues = z.infer<typeof customerInvoiceSchema>;
 
@@ -110,12 +111,22 @@ export default function AccountsPayableReceivableClientComponent({ initialData }
   });
 
   const paymentForm = useForm<PaymentFormValues>({ resolver: zodResolver(paymentSchema) });
+  
+  useEffect(() => {
+    setCustomerInvoices(initialData.customerInvoices);
+    setSupplierInvoices(initialData.supplierInvoices);
+    setCustomers(initialData.customers);
+    setSuppliers(initialData.suppliers);
+  }, [initialData]);
 
   const calculateItemTotalForForm = (form: any, index: number) => {
     const quantity = form.getValues(`items.${index}.quantity`);
     const unitPrice = form.getValues(`items.${index}.unitPrice`);
     form.setValue(`items.${index}.total`, quantity * unitPrice);
   };
+
+  const calculateTotalAmount = (items: any[]) => items.reduce((sum, item) => sum + item.total, 0);
+
   
   useEffect(() => {
     if (customerInvoiceToEdit) {
@@ -150,67 +161,67 @@ useEffect(() => {
 
 
 const handleCustomerInvoiceSubmit = async (values: any) => {
-    toast({ title: "متوقف مؤقتاً", description: "حفظ فواتير العملاء معطل حالياً.", variant: "destructive"});
-    // try {
-    //     if (customerInvoiceToEdit) {
-    //         await updateSalesInvoice({ ...values, id: customerInvoiceToEdit.id! });
-    //         toast({ title: "تم التعديل", description: "تم تعديل فاتورة العميل." });
-    //     } else {
-    //         await addSalesInvoice(values);
-    //         toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة العميل." });
-    //     }
-    //     setShowManageCustomerInvoiceDialog(false);
-    //     setCustomerInvoiceToEdit(null);
-    // } catch (error) {
-    //     toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
-    // }
+    const totalAmount = calculateTotalAmount(values.items);
+    const finalValues = { ...values, numericTotalAmount: totalAmount };
+    try {
+        if (customerInvoiceToEdit) {
+            await updateSalesInvoice({ ...finalValues, id: customerInvoiceToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل فاتورة العميل." });
+        } else {
+            await addSalesInvoice(finalValues);
+            toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة العميل." });
+        }
+        setShowManageCustomerInvoiceDialog(false);
+        setCustomerInvoiceToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
+    }
 };
 
 const handleSupplierInvoiceSubmit = async (values: any) => {
-    toast({ title: "متوقف مؤقتاً", description: "حفظ فواتير الموردين معطل حالياً.", variant: "destructive"});
-    // try {
-    //     if (supplierInvoiceToEdit) {
-    //         await updateSupplierInvoice({ ...values, id: supplierInvoiceToEdit.id! });
-    //         toast({ title: "تم التعديل", description: "تم تعديل فاتورة المورد." });
-    //     } else {
-    //         await addSupplierInvoice(values);
-    //         toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة المورد." });
-    //     }
-    //     setShowManageSupplierInvoiceDialog(false);
-    //     setSupplierInvoiceToEdit(null);
-    // } catch (error) {
-    //     toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
-    // }
+    const totalAmount = calculateTotalAmount(values.items);
+    const finalValues = { ...values, totalAmount };
+    try {
+        if (supplierInvoiceToEdit) {
+            await updateSupplierInvoice({ ...finalValues, id: supplierInvoiceToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل فاتورة المورد." });
+        } else {
+            await addSupplierInvoice(finalValues);
+            toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة المورد." });
+        }
+        setShowManageSupplierInvoiceDialog(false);
+        setSupplierInvoiceToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
+    }
 };
 
 const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: string) => {
-    toast({ title: "متوقف مؤقتاً", description: "حذف الفواتير معطل حالياً.", variant: "destructive"});
-    // try {
-    //     if (type === 'customer') {
-    //         await deleteSalesInvoice(invoiceId);
-    //     } else {
-    //         await deleteSupplierInvoice(invoiceId);
-    //     }
-    //     toast({ title: "تم الحذف", description: "تم حذف الفاتورة بنجاح.", variant: "destructive" });
-    // } catch (error) {
-    //     toast({ title: "خطأ", description: "لم يتم حذف الفاتورة.", variant: "destructive" });
-    // }
+    try {
+        if (type === 'customer') {
+            await deleteSalesInvoice(invoiceId);
+        } else {
+            await deleteSupplierInvoice(invoiceId);
+        }
+        toast({ title: "تم الحذف", description: "تم حذف الفاتورة بنجاح.", variant: "destructive" });
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حذف الفاتورة.", variant: "destructive" });
+    }
 };
 
 
   const handleRecordPaymentSubmit = async (paymentValues: PaymentFormValues) => {
     if (!invoiceToPay) return;
-    toast({ title: "متوقف مؤقتاً", description: "تسجيل الدفعات معطل حالياً.", variant: "destructive"});
-    // try {
-    //     const newPaidAmount = (invoiceToPay.paidAmount || 0) + paymentValues.paymentAmount;
-    //     const newStatus = newPaidAmount >= invoiceToPay.totalAmount ? "مدفوع" as const : "مدفوع جزئياً" as const;
-    //     await updateSupplierInvoicePayment(invoiceToPay.id, newPaidAmount, newStatus);
-    //     toast({ title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة المورد بنجاح." });
-    //     setShowRecordPaymentDialog(false);
-    //     setInvoiceToPay(null);
-    // } catch(error) {
-    //     toast({ title: "خطأ", description: "لم يتم تسجيل الدفعة.", variant: "destructive" });
-    // }
+    try {
+        const newPaidAmount = (invoiceToPay.paidAmount || 0) + paymentValues.paymentAmount;
+        const newStatus = newPaidAmount >= invoiceToPay.totalAmount ? "مدفوع" as const : "مدفوع جزئياً" as const;
+        await updateSupplierInvoicePayment(invoiceToPay.id, newPaidAmount, newStatus);
+        toast({ title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة المورد بنجاح." });
+        setShowRecordPaymentDialog(false);
+        setInvoiceToPay(null);
+    } catch(error) {
+        toast({ title: "خطأ", description: "لم يتم تسجيل الدفعة.", variant: "destructive" });
+    }
   };
 
 
@@ -420,5 +431,4 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
   );
 }
 
-    
     
