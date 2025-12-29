@@ -17,6 +17,7 @@ export const products = pgTable('products', {
   supplierId: varchar('supplier_id', { length: 256 }),
   image: text('image'),
   dataAiHint: varchar('data_ai_hint', { length: 256 }),
+  isRawMaterial: boolean('is_raw_material').default(false),
 });
 
 export const suppliers = pgTable('suppliers', {
@@ -293,5 +294,58 @@ export const projectBudgetItems = pgTable('project_budget_items', {
     item: varchar('item', { length: 256 }).notNull(),
     allocated: numeric('allocated', { precision: 15, scale: 2 }).notNull().default('0'),
     spent: numeric('spent', { precision: 15, scale: 2 }).notNull().default('0'),
+    notes: text('notes'),
+});
+
+export const workOrders = pgTable('work_orders', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
+    quantity: integer('quantity').notNull(),
+    producedQuantity: integer('produced_quantity').default(0),
+    startDate: timestamp('start_date').notNull(),
+    endDate: timestamp('end_date').notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مجدول'),
+    progress: integer('progress').default(0),
+    notes: text('notes'),
+});
+
+export const workOrderProductionLogs = pgTable('work_order_production_logs', {
+    id: serial('id').primaryKey(),
+    workOrderId: varchar('work_order_id', { length: 256 }).notNull().references(() => workOrders.id),
+    date: timestamp('date').notNull(),
+    quantityProduced: integer('quantity_produced').notNull(),
+    notes: text('notes'),
+});
+
+export const billsOfMaterial = pgTable('bills_of_material', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
+    version: varchar('version', { length: 50 }).notNull(),
+    lastUpdated: timestamp('last_updated'),
+});
+
+export const billOfMaterialItems = pgTable('bill_of_material_items', {
+    id: serial('id').primaryKey(),
+    bomId: varchar('bom_id', { length: 256 }).notNull().references(() => billsOfMaterial.id),
+    materialId: varchar('material_id', { length: 256 }).notNull().references(() => products.id),
+    quantity: numeric('quantity', { precision: 10, scale: 4 }).notNull(),
+});
+
+export const productionPlans = pgTable('production_plans', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    startDate: timestamp('start_date').notNull(),
+    endDate: timestamp('end_date').notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+    notes: text('notes'),
+});
+
+export const qualityChecks = pgTable('quality_checks', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    workOrderId: varchar('work_order_id', { length: 256 }).notNull().references(() => workOrders.id),
+    checkPoint: varchar('check_point', { length: 256 }).notNull(),
+    result: varchar('result', { length: 50 }).notNull(),
+    date: timestamp('date').notNull(),
+    inspectorId: varchar('inspector_id', { length: 256 }).notNull(),
     notes: text('notes'),
 });
