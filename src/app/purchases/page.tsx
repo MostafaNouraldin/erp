@@ -23,7 +23,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { useCurrency } from '@/hooks/use-currency'; // Import useCurrency
+import { useCurrency } from '@/hooks/use-currency';
+import { db } from '@/db';
+import { suppliers as suppliersSchema } from '@/db/schema';
+import { addSupplier, updateSupplier, deleteSupplier } from './actions';
 
 
 // Schemas
@@ -126,13 +129,6 @@ const purchaseReturnSchema = z.object({
 });
 type PurchaseReturnFormValues = z.infer<typeof purchaseReturnSchema>;
 
-const initialSuppliersData: SupplierFormValues[] = [
-  { id: "SUP001", name: "مورد التقنية الحديثة", email: "sales@techsupplier.com", phone: "0112345678", address: "الرياض, برج الفيصلية", vatNumber: "3000123456", contactPerson: "أحمد خالد", notes: "موثوق وسريع الاستجابة" },
-  { id: "SUP002", name: "مورد المواد الخام", email: "info@rawmaterials.co", phone: "0123456789", address: "جدة, المنطقة الصناعية", vatNumber: "3100987654", contactPerson: "فاطمة علي", notes: "جودة عالية للمواد" },
-  { id: "SUP003", name: "مورد الخدمات اللوجستية", email: "ops@logistics.sa", phone: "0134567890", address: "الدمام, ميناء الملك عبدالعزيز", vatNumber: "3200543210", contactPerson: "سالم حسن", notes: "توصيل في الوقت المحدد" },
-  { id: "SUP004", name: "مورد الأثاث المكتبي", email: "sales@officefurn.com", phone: "0145678901", address: "الخبر, طريق الكورنيش", vatNumber: "3300678901", contactPerson: "ليلى محمد", notes: "تشكيلة واسعة" },
-];
-
 const mockItems = [
     {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 5800, unit: "قطعة"}, 
     {id: "ITEM002", name: "شاشة 27 بوصة", price: 800, unit: "قطعة"},
@@ -160,8 +156,26 @@ const convertAmountToWords = (amount: number) => {
   return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
 };
 
+// Server Component to fetch initial data
+async function SuppliersDataFetcher({ 
+    setSuppliersData
+}: { 
+    setSuppliersData: (data: any[]) => void; 
+}) {
+    useEffect(() => {
+        const fetchData = async () => {
+            const suppliersResult = await db.select().from(suppliersSchema);
+            setSuppliersData(suppliersResult);
+        };
+        fetchData();
+    }, [setSuppliersData]);
+
+    return null; // This component doesn't render anything
+}
+
+
 export default function PurchasesPage() {
-  const [suppliersData, setSuppliersData] = useState(initialSuppliersData);
+  const [suppliersData, setSuppliersData] = useState<SupplierFormValues[]>([]);
   const [purchaseOrders, setPurchaseOrdersData] = useState(initialPurchaseOrdersData);
   const [supplierInvoices, setSupplierInvoicesData] = useState(initialSupplierInvoicesData);
   const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState(initialGoodsReceivedNotesData);
@@ -285,16 +299,20 @@ export default function PurchasesPage() {
     return items.reduce((sum, item) => sum + (item.total || 0), 0);
   };
 
-  const handleSupplierSubmit = (values: SupplierFormValues) => {
-    if (supplierToEdit) {
-      setSuppliersData(prev => prev.map(s => s.id === supplierToEdit.id ? { ...values, id: supplierToEdit.id! } : s));
-      toast({ title: "تم التعديل", description: "تم تعديل بيانات المورد." });
-    } else {
-      setSuppliersData(prev => [...prev, { ...values, id: `SUP${Date.now()}` }]);
-      toast({ title: "تمت الإضافة", description: "تم إضافة المورد." });
+  const handleSupplierSubmit = async (values: SupplierFormValues) => {
+    try {
+      if (supplierToEdit) {
+        await updateSupplier({ ...values, id: supplierToEdit.id! });
+        toast({ title: "تم التعديل", description: "تم تعديل بيانات المورد." });
+      } else {
+        await addSupplier(values);
+        toast({ title: "تمت الإضافة", description: "تم إضافة المورد." });
+      }
+      setShowCreateSupplierDialog(false);
+      setSupplierToEdit(null);
+    } catch (error) {
+      toast({ title: "خطأ", description: "لم يتم حفظ بيانات المورد.", variant: "destructive" });
     }
-    setShowCreateSupplierDialog(false);
-    setSupplierToEdit(null);
   };
 
   const handlePoSubmit = (values: PurchaseOrderFormValues) => {
@@ -436,9 +454,13 @@ export default function PurchasesPage() {
   }
 
 
-  const handleDeleteSupplier = (supplierId: string) => {
-      setSuppliersData(prev => prev.filter(s => s.id !== supplierId));
-      toast({title: "تم الحذف", description: `تم حذف المورد ${supplierId}`, variant:"destructive"});
+  const handleDeleteSupplier = async (supplierId: string) => {
+      try {
+        await deleteSupplier(supplierId);
+        toast({title: "تم الحذف", description: `تم حذف المورد ${supplierId}`, variant:"destructive"});
+      } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حذف المورد.", variant: "destructive" });
+      }
   };
   const handleDeletePo = (poId: string) => {
       setPurchaseOrdersData(prev => prev.filter(p => p.id !== poId));
@@ -482,6 +504,7 @@ export default function PurchasesPage() {
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
+      <SuppliersDataFetcher setSuppliersData={setSuppliersData} />
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">المشتريات</h1>
         <div className="flex gap-2">
@@ -550,7 +573,7 @@ export default function PurchasesPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="purchaseOrders" className="w-full" dir="rtl">
+      <Tabs defaultValue="suppliers" className="w-full" dir="rtl">
         <TabsList className="w-full mb-6 bg-muted p-1 rounded-md" dir="rtl">
           <TabsTrigger value="suppliers" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <Users className="inline-block me-2 h-4 w-4" /> الموردين
