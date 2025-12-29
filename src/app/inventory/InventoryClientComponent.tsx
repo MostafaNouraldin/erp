@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
+// TODO: Re-enable when actions are properly connected
 // import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory } from './actions';
 
 
@@ -236,8 +237,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
   const handleProductSubmit = async (values: ProductFormValues) => {
-    // TODO: Re-enable when actions are properly connected
-    toast({ title: "متوقف مؤقتاً", description: "حفظ المنتجات متوقف مؤقتاً.", variant: "destructive" });
+    toast({ title: "متوقف مؤقتاً", description: "حفظ المنتجات معطل حالياً.", variant: "destructive"});
     // try {
     //   if (productToEdit) {
     //     await updateProduct({ ...values, id: productToEdit.id! });
@@ -255,8 +255,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   };
   
   const handleCategorySubmit = async (values: CategoryFormValues) => {
-    // TODO: Re-enable when actions are properly connected
-    toast({ title: "متوقف مؤقتاً", description: "حفظ الفئات متوقف مؤقتاً.", variant: "destructive" });
+    toast({ title: "متوقف مؤقتاً", description: "حفظ الفئات معطل حالياً.", variant: "destructive"});
     //  try {
     //     if (categoryToEdit) {
     //         await updateCategory({ ...values, id: categoryToEdit.id! });
@@ -273,8 +272,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    // TODO: Re-enable when actions are properly connected
-    toast({ title: "متوقف مؤقتاً", description: "حذف المنتجات متوقف مؤقتاً.", variant: "destructive" });
+    toast({ title: "متوقف مؤقتاً", description: "حذف المنتجات معطل حالياً.", variant: "destructive"});
     // try {
     //     await deleteProduct(productId);
     //     toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
@@ -284,13 +282,12 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   };
   
   const handleDeleteCategory = async (categoryId: string) => {
-    const isCategoryInUse = productsData.some(p => p.category === categoriesData.find(c => c.id === categoryId)?.name);
-    if(isCategoryInUse) {
-        toast({ title: "خطأ", description: "لا يمكن حذف الفئة لأنها مستخدمة في بعض المنتجات.", variant: "destructive" });
-        return;
-    }
-    // TODO: Re-enable when actions are properly connected
-    toast({ title: "متوقف مؤقتاً", description: "حذف الفئات متوقف مؤقتاً.", variant: "destructive" });
+    toast({ title: "متوقف مؤقتاً", description: "حذف الفئات معطل حالياً.", variant: "destructive"});
+    // const isCategoryInUse = productsData.some(p => p.category === categoriesData.find(c => c.id === categoryId)?.name);
+    // if(isCategoryInUse) {
+    //     toast({ title: "خطأ", description: "لا يمكن حذف الفئة لأنها مستخدمة في بعض المنتجات.", variant: "destructive" });
+    //     return;
+    // }
     // try {
     //     await deleteCategory(categoryId);
     //     toast({ title: "تم الحذف", description: "تم حذف الفئة بنجاح.", variant: "destructive" });
@@ -520,4 +517,4 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   );
 }
 
-
+    

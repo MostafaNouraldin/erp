@@ -17,13 +17,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle, Tag, Eye } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-// TODO: Re-enable actions when properly connected
+// TODO: Re-enable when actions are properly connected
 // import { addCustomer, updateCustomer, deleteCustomer, addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from './actions';
 
 // Mock data
@@ -326,6 +326,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   };
 
   const handleCustomerSubmit = async (values: CustomerFormValues) => {
+    toast({ title: "متوقف مؤقتاً", description: "حفظ العملاء معطل حالياً.", variant: "destructive"});
     // try {
     //   if (customerToEdit) {
     //     await updateCustomer({ ...values, id: customerToEdit.id! });
@@ -339,7 +340,6 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     // } catch (error) {
     //   toast({ title: "خطأ", description: "لم يتم حفظ بيانات العميل.", variant: "destructive" });
     // }
-    toast({title: "متوقف مؤقتاً", description: "حفظ العملاء معطل حالياً."});
   };
 
 
@@ -374,6 +374,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   };
 
   const handleInvoiceSubmit = async (values: InvoiceFormValues) => {
+    toast({ title: "متوقف مؤقتاً", description: "حفظ الفواتير معطل حالياً.", variant: "destructive"});
     // const totalAmount = calculateItemTotals(values.items);
     // const finalValues = {...values, numericTotalAmount: totalAmount};
 
@@ -390,18 +391,16 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     // } catch (error) {
     //     toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
     // }
-    toast({title: "متوقف مؤقتاً", description: "حفظ الفواتير معطل حالياً."});
-
   };
 
   const handleDeleteInvoice = async (invoiceId: string) => {
+    toast({ title: "متوقف مؤقتاً", description: "حذف الفواتير معطل حالياً.", variant: "destructive"});
     // try {
     //     await deleteSalesInvoice(invoiceId);
     //     toast({ title: "تم الحذف", description: "تم حذف الفاتورة بنجاح.", variant: "destructive" });
     // } catch (error) {
     //     toast({ title: "خطأ", description: "لم يتم حذف الفاتورة.", variant: "destructive" });
     // }
-    toast({title: "متوقف مؤقتاً", description: "حذف الفواتير معطل حالياً."});
   };
 
   const getInvoiceStatusText = (invoice: Invoice) => {
@@ -481,13 +480,13 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   };
 
   const handleDeleteCustomer = async (customerId: string) => {
+    toast({ title: "متوقف مؤقتاً", description: "حذف العملاء معطل حالياً.", variant: "destructive"});
     // try {
     //     await deleteCustomer(customerId);
     //     toast({ title: "تم الحذف", description: "تم حذف العميل بنجاح.", variant: "destructive" });
     // } catch(error) {
     //     toast({ title: "خطأ", description: "لم يتم حذف العميل.", variant: "destructive" });
     // }
-    toast({title: "متوقف مؤقتاً", description: "حذف العملاء معطل حالياً."});
   }
 
 
@@ -1272,3 +1271,5 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     </div>
   );
 }
+
+    

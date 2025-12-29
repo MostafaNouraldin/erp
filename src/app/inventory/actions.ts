@@ -1,5 +1,4 @@
-// This file contains server-side actions for the inventory page.
-// These actions are responsible for interacting with the database.
+
 'use server';
 
 import { db } from '@/db';

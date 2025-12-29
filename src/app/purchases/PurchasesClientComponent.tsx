@@ -24,15 +24,20 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useCurrency } from '@/hooks/use-currency';
-import { 
-    addSupplier, 
-    updateSupplier, 
-    deleteSupplier, 
-    addPurchaseOrder, 
-    updatePurchaseOrder, 
-    deletePurchaseOrder, 
-    updatePurchaseOrderStatus 
-} from './actions';
+// TODO: Re-enable when actions are properly connected
+// import { 
+//     addSupplier, 
+//     updateSupplier, 
+//     deleteSupplier, 
+//     addPurchaseOrder, 
+//     updatePurchaseOrder, 
+//     deletePurchaseOrder, 
+//     updatePurchaseOrderStatus,
+//     addSupplierInvoice,
+//     updateSupplierInvoice,
+//     deleteSupplierInvoice,
+//     updateSupplierInvoicePayment
+// } from './actions';
 
 
 // Schemas
@@ -287,37 +292,39 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
   };
 
   const handleSupplierSubmit = async (values: SupplierFormValues) => {
-    try {
-      if (supplierToEdit) {
-        await updateSupplier({ ...values, id: supplierToEdit.id! });
-        toast({ title: "تم التعديل", description: "تم تعديل بيانات المورد." });
-      } else {
-        await addSupplier(values);
-        toast({ title: "تمت الإضافة", description: "تم إضافة المورد." });
-      }
-      setShowCreateSupplierDialog(false);
-      setSupplierToEdit(null);
-    } catch (error) {
-      toast({ title: "خطأ", description: "لم يتم حفظ بيانات المورد.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حفظ الموردين معطل حالياً.", variant: "destructive"});
+    // try {
+    //   if (supplierToEdit) {
+    //     await updateSupplier({ ...values, id: supplierToEdit.id! });
+    //     toast({ title: "تم التعديل", description: "تم تعديل بيانات المورد." });
+    //   } else {
+    //     await addSupplier(values);
+    //     toast({ title: "تمت الإضافة", description: "تم إضافة المورد." });
+    //   }
+    //   setShowCreateSupplierDialog(false);
+    //   setSupplierToEdit(null);
+    // } catch (error) {
+    //   toast({ title: "خطأ", description: "لم يتم حفظ بيانات المورد.", variant: "destructive" });
+    // }
   };
 
   const handlePoSubmit = async (values: PurchaseOrderFormValues) => {
-    const totalAmount = calculateTotalAmountForForm(values.items);
-    const finalValues = {...values, totalAmount};
-    try {
-        if (poToEdit) {
-            await updatePurchaseOrder({ ...finalValues, id: poToEdit.id! });
-            toast({ title: "تم التعديل", description: "تم تعديل أمر الشراء." });
-        } else {
-            await addPurchaseOrder(finalValues);
-            toast({ title: "تم الإنشاء", description: "تم إنشاء أمر الشراء." });
-        }
-        setShowCreatePoDialog(false);
-        setPoToEdit(null);
-    } catch (error) {
-        toast({ title: "خطأ", description: "لم يتم حفظ أمر الشراء.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حفظ أوامر الشراء معطل حالياً.", variant: "destructive"});
+    // const totalAmount = calculateTotalAmountForForm(values.items);
+    // const finalValues = {...values, totalAmount};
+    // try {
+    //     if (poToEdit) {
+    //         await updatePurchaseOrder({ ...finalValues, id: poToEdit.id! });
+    //         toast({ title: "تم التعديل", description: "تم تعديل أمر الشراء." });
+    //     } else {
+    //         await addPurchaseOrder(finalValues);
+    //         toast({ title: "تم الإنشاء", description: "تم إنشاء أمر الشراء." });
+    //     }
+    //     setShowCreatePoDialog(false);
+    //     setPoToEdit(null);
+    // } catch (error) {
+    //     toast({ title: "خطأ", description: "لم يتم حفظ أمر الشراء.", variant: "destructive" });
+    // }
   };
 
 
@@ -332,18 +339,23 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     setShowPrintPoDialog(true);
   };
 
-  const handleSupplierInvoiceSubmit = (values: SupplierInvoiceFormValues) => {
-    const totalAmount = calculateTotalAmountForForm(values.items);
-    const finalValues = { ...values, totalAmount };
-    if (supplierInvoiceToEdit) {
-      setSupplierInvoicesData(prev => prev.map(inv => inv.id === supplierInvoiceToEdit.id ? { ...finalValues, id: supplierInvoiceToEdit.id! } : inv));
-      toast({ title: "تم التعديل", description: "تم تعديل فاتورة المورد." });
-    } else {
-      setSupplierInvoicesData(prev => [...prev, { ...finalValues, id: `INV-S${Date.now()}` }]);
-      toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة المورد." });
-    }
-    setShowCreateSupplierInvoiceDialog(false);
-    setSupplierInvoiceToEdit(null);
+  const handleSupplierInvoiceSubmit = async (values: SupplierInvoiceFormValues) => {
+    toast({ title: "متوقف مؤقتاً", description: "حفظ فواتير الموردين معطل حالياً.", variant: "destructive"});
+    // const totalAmount = calculateTotalAmountForForm(values.items);
+    // const finalValues = { ...values, totalAmount };
+    // try {
+    //     if (supplierInvoiceToEdit) {
+    //     await updateSupplierInvoice({ ...finalValues, id: supplierInvoiceToEdit.id! });
+    //     toast({ title: "تم التعديل", description: "تم تعديل فاتورة المورد." });
+    //     } else {
+    //     await addSupplierInvoice(finalValues);
+    //     toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة المورد." });
+    //     }
+    //     setShowCreateSupplierInvoiceDialog(false);
+    //     setSupplierInvoiceToEdit(null);
+    // } catch(e) {
+    //     toast({ title: "خطأ", description: "لم يتم حفظ فاتورة المورد.", variant: "destructive" });
+    // }
   };
   
   const handleViewSupplierInvoice = (invoice: SupplierInvoiceFormValues) => {
@@ -357,21 +369,19 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     setShowRecordPaymentDialog(true);
   };
   
-  const handleRecordSupplierPaymentSubmit = (paymentValues: SupplierPaymentFormValues) => {
+  const handleRecordSupplierPaymentSubmit = async (paymentValues: SupplierPaymentFormValues) => {
     if (!supplierInvoiceToPay) return;
-
-    const newPaidAmount = (supplierInvoiceToPay.paidAmount || 0) + paymentValues.paymentAmount;
-    const newStatus = newPaidAmount >= supplierInvoiceToPay.totalAmount ? "مدفوع" as const : "مدفوع جزئياً" as const;
-
-    setSupplierInvoicesData(prev => prev.map(inv =>
-      inv.id === supplierInvoiceToPay.id
-        ? { ...inv, paidAmount: newPaidAmount, status: newStatus }
-        : inv
-    ));
-
-    toast({title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة المورد بنجاح."});
-    setShowRecordPaymentDialog(false);
-    setSupplierInvoiceToPay(null);
+    toast({ title: "متوقف مؤقتاً", description: "تسجيل الدفعات معطل حالياً.", variant: "destructive"});
+    // try {
+    //     const newPaidAmount = (supplierInvoiceToPay.paidAmount || 0) + paymentValues.paymentAmount;
+    //     const newStatus = newPaidAmount >= supplierInvoiceToPay.totalAmount ? "مدفوع" as const : "مدفوع جزئياً" as const;
+    //     await updateSupplierInvoicePayment(supplierInvoiceToPay.id!, newPaidAmount, newStatus);
+    //     toast({title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة المورد بنجاح."});
+    //     setShowRecordPaymentDialog(false);
+    //     setSupplierInvoiceToPay(null);
+    // } catch(e){
+    //     toast({ title: "خطأ", description: "لم يتم تسجيل الدفعة.", variant: "destructive" });
+    // }
   };
   
   const handleGrnSubmit = (values: GoodsReceivedNoteFormValues) => {
@@ -451,24 +461,31 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
 
 
   const handleDeleteSupplier = async (supplierId: string) => {
-      try {
-        await deleteSupplier(supplierId);
-        toast({title: "تم الحذف", description: `تم حذف المورد ${supplierId}`, variant:"destructive"});
-      } catch (error) {
-        toast({ title: "خطأ", description: "لم يتم حذف المورد.", variant: "destructive" });
-      }
+      toast({ title: "متوقف مؤقتاً", description: "حذف الموردين معطل حالياً.", variant: "destructive"});
+    //   try {
+    //     await deleteSupplier(supplierId);
+    //     toast({title: "تم الحذف", description: `تم حذف المورد ${supplierId}`, variant:"destructive"});
+    //   } catch (error) {
+    //     toast({ title: "خطأ", description: "لم يتم حذف المورد.", variant: "destructive" });
+    //   }
   };
   const handleDeletePo = async (poId: string) => {
-    try {
-        await deletePurchaseOrder(poId);
-        toast({title: "تم الحذف", description: `تم حذف أمر الشراء ${poId}`, variant:"destructive"});
-    } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم حذف أمر الشراء.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حذف أوامر الشراء معطل حالياً.", variant: "destructive"});
+    // try {
+    //     await deletePurchaseOrder(poId);
+    //     toast({title: "تم الحذف", description: `تم حذف أمر الشراء ${poId}`, variant:"destructive"});
+    // } catch (e) {
+    //     toast({ title: "خطأ", description: "لم يتم حذف أمر الشراء.", variant: "destructive" });
+    // }
   };
-  const handleDeleteSupplierInvoice = (invId: string) => {
-      setSupplierInvoicesData(prev => prev.filter(inv => inv.id !== invId));
-      toast({title: "تم الحذف", description: `تم حذف فاتورة المورد ${invId}`, variant:"destructive"});
+  const handleDeleteSupplierInvoice = async (invId: string) => {
+    toast({ title: "متوقف مؤقتاً", description: "حذف فواتير الموردين معطل حالياً.", variant: "destructive"});
+    //   try {
+    //     await deleteSupplierInvoice(invId);
+    //     toast({title: "تم الحذف", description: `تم حذف فاتورة المورد ${invId}`, variant:"destructive"});
+    //   } catch (e) {
+    //     toast({title: "خطأ", description: "لم يتم حذف فاتورة المورد.", variant:"destructive"});
+    //   }
   };
   const handleDeleteGrn = (grnId: string) => {
       setGoodsReceivedNotesData(prev => prev.filter(grn => grn.id !== grnId));
@@ -481,12 +498,13 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
 
 
   const handleApprovePo = async (poId: string) => {
-    try {
-        await updatePurchaseOrderStatus(poId, "معتمد");
-        toast({title: "تم الاعتماد", description: `تم اعتماد أمر الشراء ${poId}.`});
-    } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم اعتماد أمر الشراء.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "اعتماد أوامر الشراء معطل حالياً.", variant: "destructive"});
+    // try {
+    //     await updatePurchaseOrderStatus(poId, "معتمد");
+    //     toast({title: "تم الاعتماد", description: `تم اعتماد أمر الشراء ${poId}.`});
+    // } catch (e) {
+    //     toast({ title: "خطأ", description: "لم يتم اعتماد أمر الشراء.", variant: "destructive" });
+    // }
   };
 
   const openCreateGrnDialogFromPo = (po: PurchaseOrderFormValues) => {
@@ -598,3 +616,5 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
+
+    

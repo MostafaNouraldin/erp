@@ -1,3 +1,4 @@
+
 // This is now a true Server Component that fetches data and passes it to the client.
 import { db } from '@/db';
 import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems } from '@/db/schema';

@@ -1,3 +1,4 @@
+
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean } from 'drizzle-orm/pg-core';
 
 export const products = pgTable('products', {
@@ -159,6 +160,3 @@ export const employeeDeductions = pgTable('employee_deductions', {
     amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
     type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
 });
-
-
-// Add other schemas from the application here as needed...
