@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, History, BarChart3, SlidersHorizontal, Eye, Download, PackagePlus, Upload, Printer, MinusCircle, PackageMinus, ArchiveRestore, ClipboardList, CheckCircle, AlertTriangle, Truck, Layers, FileSpreadsheet } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Filter, Package, Warehouse, History, BarChart3, SlidersHorizontal, Eye, Download, PackagePlus, Upload, Printer, MinusCircle, PackageMinus, ArchiveRestore, ClipboardList, CheckCircle, AlertTriangle, Truck, Layers, FileSpreadsheet, ListTree } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label"; // Import Label instead of FormLabel for non-form contexts
@@ -50,6 +50,14 @@ const productSchema = z.object({
   dataAiHint: z.string().max(30, "الكلمات المفتاحية يجب ألا تتجاوز 30 حرفًا").optional(),
 });
 type ProductFormValues = z.infer<typeof productSchema>;
+
+const categorySchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "اسم الفئة مطلوب"),
+  description: z.string().optional(),
+});
+type CategoryFormValues = z.infer<typeof categorySchema>;
+
 
 // Stocktake Initiation Schema
 const stocktakeInitiationSchema = z.object({
@@ -147,7 +155,13 @@ const initialProductsData: ProductFormValues[] = [
   { id: "ITEM005", sku: "BLUE-PEN-BOX", name: "أقلام حبر أزرق (علبة)", description: "علبة أقلام حبر زرقاء، 12 قلم", category: "قرطاسية", unit: "علبة", costPrice: 20, sellingPrice: 25, quantity: 500, reorderLevel: 100, location: "مستودع B - قسم 1", barcode: "5678901234567", supplierId: "SUP002", image: "https://picsum.photos/200/200?random=5", dataAiHint: "pens stationery" },
 ];
 const mockSuppliers = [ { id: "SUP001", name: "مورد الإلكترونيات الحديثة" }, { id: "SUP002", name: "شركة القرطاسية المتحدة" }, { id: "SUP003", name: "مصنع الأثاث العصري" },];
-const mockCategories = ["إلكترونيات", "قرطاسية", "أثاث مكتبي", "مواد خام", "أخرى"];
+const initialCategoriesData: CategoryFormValues[] = [
+    { id: "CAT001", name: "إلكترونيات", description: "جميع الأجهزة الإلكترونية والكهربائية" },
+    { id: "CAT002", name: "قرطاسية", description: "الأدوات المكتبية والورقيات" },
+    { id: "CAT003", name: "أثاث مكتبي", description: "المكاتب والكراسي وأثاث المكاتب" },
+    { id: "CAT004", name: "مواد خام", description: "المواد المستخدمة في عمليات الإنتاج" },
+    { id: "CAT005", name: "أخرى", description: "فئة عامة للأصناف الأخرى" },
+];
 const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة", "سنتيمتر"];
 const mockSubUnits = ["قطعة", "حبة", "متر", "سنتيمتر"];
 const mockWarehouses = [{ id: "WH001", name: "المستودع الرئيسي" }, { id: "WH002", name: "مستودع فرعي أ" }];
@@ -183,9 +197,14 @@ const mockStocktakeDetail: StocktakeDetails = { id: "STK-2024-06-30-A", date: ne
 
 export default function InventoryPage() {
   const [productsData, setProductsData] = useState(initialProductsData);
+  const [categories, setCategories] = useState(initialCategoriesData);
   const [showManageProductDialog, setShowManageProductDialog] = useState(false);
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const [showManageCategoryDialog, setShowManageCategoryDialog] = useState(false);
+  const [categoryToEdit, setCategoryToEdit] = useState<CategoryFormValues | null>(null);
+
 
   const [currentReport, setCurrentReport] = useState<{key: string, name: string, description: string, icon: React.ElementType} | null>(null);
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -211,6 +230,7 @@ export default function InventoryPage() {
   const [stockRequisitionToEdit, setStockRequisitionToEdit] = useState<StockRequisitionFormValues | null>(null);
 
   const productForm = useForm<ProductFormValues>({ resolver: zodResolver(productSchema), defaultValues: { sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined, image: "", dataAiHint: "" }});
+  const categoryForm = useForm<CategoryFormValues>({ resolver: zodResolver(categorySchema), defaultValues: { name: "", description: "" }});
   const stocktakeInitiationForm = useForm<StocktakeInitiationFormValues>({ resolver: zodResolver(stocktakeInitiationSchema), defaultValues: { stocktakeDate: new Date(), warehouseId: "", responsiblePerson: "", notes: "" }});
 
   const stockIssueVoucherForm = useForm<StockIssueVoucherFormValues>({ resolver: zodResolver(stockIssueVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1}], status: "مسودة", notes: ""}});
@@ -223,6 +243,7 @@ export default function InventoryPage() {
   const { fields: stockRequisitionItemsFields, append: appendStockRequisitionItem, remove: removeStockRequisitionItem } = useFieldArray({ control: stockRequisitionForm.control, name: "items" });
 
   useEffect(() => { if (productToEdit) { productForm.reset(productToEdit); setImagePreview(productToEdit.image || null); } else { productForm.reset({ sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined, image: "", dataAiHint: "" }); setImagePreview(null); }}, [productToEdit, productForm, showManageProductDialog]);
+  useEffect(() => { if (categoryToEdit) { categoryForm.reset(categoryToEdit); } else { categoryForm.reset({ name: "", description: "" }); }}, [categoryToEdit, categoryForm, showManageCategoryDialog]);
   useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
   useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0 }], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
@@ -239,11 +260,34 @@ export default function InventoryPage() {
     setProductToEdit(null);
     setImagePreview(null);
   };
+  
+  const handleCategorySubmit = (values: CategoryFormValues) => {
+    if (categoryToEdit) {
+      setCategories(prev => prev.map(c => c.id === categoryToEdit.id ? { ...values, id: categoryToEdit.id! } : c));
+      toast({ title: "تم التعديل", description: "تم تعديل الفئة بنجاح." });
+    } else {
+      setCategories(prev => [...prev, { ...values, id: `CAT${Date.now()}` }]);
+      toast({ title: "تمت الإضافة", description: "تمت إضافة الفئة بنجاح." });
+    }
+    setShowManageCategoryDialog(false);
+    setCategoryToEdit(null);
+  };
 
   const handleDeleteProduct = (productId: string) => {
     setProductsData(prev => prev.filter(p => p.id !== productId));
     toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
   };
+  
+  const handleDeleteCategory = (categoryId: string) => {
+    const isCategoryInUse = productsData.some(p => p.category === categories.find(c => c.id === categoryId)?.name);
+    if(isCategoryInUse) {
+        toast({ title: "خطأ", description: "لا يمكن حذف الفئة لأنها مستخدمة في بعض المنتجات.", variant: "destructive" });
+        return;
+    }
+    setCategories(prev => prev.filter(c => c.id !== categoryId));
+    toast({ title: "تم الحذف", description: "تم حذف الفئة بنجاح.", variant: "destructive" });
+  };
+
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -396,7 +440,7 @@ export default function InventoryPage() {
               </div>
               <FormField control={productForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>الوصف</FormLabel><FormControl><Textarea {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={productForm.control} name="category" render={({ field }) => (<FormItem><FormLabel>الفئة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفئة" /></SelectTrigger></FormControl><SelectContent>{mockCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={productForm.control} name="category" render={({ field }) => (<FormItem><FormLabel>الفئة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفئة" /></SelectTrigger></FormControl><SelectContent>{categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                 <FormField control={productForm.control} name="unit" render={({ field }) => (<FormItem><FormLabel>الوحدة الأساسية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الوحدة" /></SelectTrigger></FormControl><SelectContent>{mockUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
               </div>
                 {(selectedUnit === "صندوق" || selectedUnit === "كرتون" || selectedUnit === "علبة") && (
@@ -449,6 +493,7 @@ export default function InventoryPage() {
       <Tabs defaultValue="itemsList" className="w-full" dir="rtl">
         <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="itemsList" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Package className="inline-block me-2 h-4 w-4" /> قائمة المنتجات</TabsTrigger>
+          <TabsTrigger value="categories" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><ListTree className="inline-block me-2 h-4 w-4" /> فئات الأصناف</TabsTrigger>
           <TabsTrigger value="stockIssue" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><PackageMinus className="inline-block me-2 h-4 w-4" /> أذونات الصرف</TabsTrigger>
           <TabsTrigger value="stockReceipt" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><ArchiveRestore className="inline-block me-2 h-4 w-4" /> أذونات الإضافة</TabsTrigger>
           <TabsTrigger value="stockRequisition" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><ClipboardList className="inline-block me-2 h-4 w-4" /> طلبات الصرف</TabsTrigger>
@@ -481,7 +526,7 @@ export default function InventoryPage() {
                         <DropdownMenuContent align="end" dir="rtl">
                         <DropdownMenuLabel>تصفية حسب الفئة</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {mockCategories.map(cat => <DropdownMenuCheckboxItem key={cat}>{cat}</DropdownMenuCheckboxItem>)}
+                        {categories.map(cat => <DropdownMenuCheckboxItem key={cat.id}>{cat.name}</DropdownMenuCheckboxItem>)}
                         </DropdownMenuContent>
                     </DropdownMenu>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
@@ -520,7 +565,7 @@ export default function InventoryPage() {
                             </TableCell>
                             <TableCell>{product.category}</TableCell>
                             <TableCell>{product.unit}</TableCell>
-                            <TableCell>{product.sellingPrice.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                            <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(product.sellingPrice) }}></TableCell>
                             <TableCell className={product.quantity < product.reorderLevel ? 'text-destructive font-semibold' : ''}>{product.quantity}</TableCell>
                             <TableCell>{product.reorderLevel}</TableCell>
                             <TableCell>{product.location}</TableCell>
@@ -553,6 +598,61 @@ export default function InventoryPage() {
                     </TableBody>
                     </Table>
                 </div>
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="categories">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle>إدارة فئات الأصناف</CardTitle>
+                    <CardDescription>إنشاء وتعديل فئات الأصناف لتنظيم المخزون.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                <div className="mb-4">
+                    <Dialog open={showManageCategoryDialog} onOpenChange={(isOpen) => { setShowManageCategoryDialog(isOpen); if(!isOpen) setCategoryToEdit(null); }}>
+                        <DialogTrigger asChild>
+                            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setCategoryToEdit(null); categoryForm.reset(); setShowManageCategoryDialog(true); }}>
+                                <PlusCircle className="me-2 h-4 w-4" /> إضافة فئة جديدة
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md" dir="rtl">
+                            <DialogHeader><DialogTitle>{categoryToEdit ? 'تعديل فئة' : 'إضافة فئة جديدة'}</DialogTitle></DialogHeader>
+                            <Form {...categoryForm}>
+                                <form onSubmit={categoryForm.handleSubmit(handleCategorySubmit)} className="space-y-4 py-4">
+                                    <FormField control={categoryForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الفئة</FormLabel><FormControl><Input placeholder="مثال: إلكترونيات" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField control={categoryForm.control} name="description" render={({ field }) => ( <FormItem><FormLabel>الوصف (اختياري)</FormLabel><FormControl><Input placeholder="وصف موجز للفئة" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem> )}/>
+                                    <DialogFooter><Button type="submit">{categoryToEdit ? 'حفظ التعديلات' : 'حفظ الفئة'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+                 <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow><TableHead>اسم الفئة</TableHead><TableHead>الوصف</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {categories.map((cat) => (
+                                <TableRow key={cat.id} className="hover:bg-muted/50">
+                                    <TableCell className="font-medium">{cat.name}</TableCell>
+                                    <TableCell>{cat.description || "-"}</TableCell>
+                                    <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setCategoryToEdit(cat); setShowManageCategoryDialog(true); }}><Edit className="h-4 w-4" /></Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                            <AlertDialogContent dir="rtl">
+                                                <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponentClass>سيتم حذف الفئة "{cat.name}" نهائياً. لا يمكن حذف الفئة إذا كانت مستخدمة في أي منتج.</AlertDialogDescriptionComponentClass></AlertDialogHeader>
+                                                <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteCategory(cat.id!)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                 </div>
                 </CardContent>
             </Card>
         </TabsContent>
@@ -962,24 +1062,24 @@ export default function InventoryPage() {
                         <>
                         <Table>
                             <TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead>الكمية</TableHead><TableHead>تكلفة الوحدة</TableHead><TableHead>إجمالي التكلفة</TableHead><TableHead>سعر البيع</TableHead><TableHead>إجمالي البيع</TableHead></TableRow></TableHeader>
-                            <TableBody>{(reportData as (ProductFormValues & {totalCostValue: number, totalSellingValue: number})[]).map(p => <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell>{p.costPrice.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell><TableCell>{p.totalCostValue.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell><TableCell>{p.sellingPrice.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell><TableCell>{p.totalSellingValue.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell></TableRow>)}</TableBody>
+                            <TableBody>{(reportData as (ProductFormValues & {totalCostValue: number, totalSellingValue: number})[]).map(p => <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.costPrice) }}></TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.totalCostValue) }}></TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.sellingPrice) }}></TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.totalSellingValue) }}></TableCell></TableRow>)}</TableBody>
                         </Table>
                          <CardFooter className="flex justify-end gap-4 mt-4 border-t pt-4 text-sm font-semibold">
-                            <div>إجمالي قيمة المخزون (التكلفة): {reportData.reduce((sum, p) => sum + p.totalCostValue, 0).toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</div>
-                            <div>إجمالي قيمة المخزون (البيع): {reportData.reduce((sum, p) => sum + p.totalSellingValue, 0).toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</div>
+                            <div>إجمالي قيمة المخزون (التكلفة): <span dangerouslySetInnerHTML={{ __html: formatCurrency(reportData.reduce((sum, p) => sum + p.totalCostValue, 0)) }}></span></div>
+                            <div>إجمالي قيمة المخزون (البيع): <span dangerouslySetInnerHTML={{ __html: formatCurrency(reportData.reduce((sum, p) => sum + p.totalSellingValue, 0)) }}></span></div>
                         </CardFooter>
                         </>
                     )}
                      {currentReport?.key === "stocktakeDiscrepancy" && (
                         <Table>
                             <TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead>المتوقع</TableHead><TableHead>المعدود</TableHead><TableHead>الفرق</TableHead><TableHead>قيمة الفرق (تكلفة)</TableHead></TableRow></TableHeader>
-                            <TableBody>{(reportData as StocktakeItemDetail[]).map(item => <TableRow key={item.productId}><TableCell>{item.productName}</TableCell><TableCell>{item.expectedQuantity}</TableCell><TableCell>{item.countedQuantity}</TableCell><TableCell className={item.difference !== 0 ? (item.difference > 0 ? 'text-green-600' : 'text-destructive') : ''}>{item.difference}</TableCell><TableCell>{(item.differenceValue || 0).toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell></TableRow>)}</TableBody>
+                            <TableBody>{(reportData as StocktakeItemDetail[]).map(item => <TableRow key={item.productId}><TableCell>{item.productName}</TableCell><TableCell>{item.expectedQuantity}</TableCell><TableCell>{item.countedQuantity}</TableCell><TableCell className={item.difference !== 0 ? (item.difference > 0 ? 'text-green-600' : 'text-destructive') : ''}>{item.difference}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(item.differenceValue || 0) }}></TableCell></TableRow>)}</TableBody>
                         </Table>
                     )}
                     {currentReport?.key === "obsoleteStock" && (
                          <Table>
                             <TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead>آخر حركة</TableHead><TableHead>الكمية الحالية</TableHead><TableHead>القيمة (تكلفة)</TableHead></TableRow></TableHeader>
-                            <TableBody>{(reportData as (ProductFormValues & {lastMovementDate: string, value: number})[]).map(p => <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.lastMovementDate}</TableCell><TableCell>{p.quantity}</TableCell><TableCell>{p.value.toLocaleString('ar-SA',{style:'currency',currency:'SAR'})}</TableCell></TableRow>)}</TableBody>
+                            <TableBody>{(reportData as (ProductFormValues & {lastMovementDate: string, value: number})[]).map(p => <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.lastMovementDate}</TableCell><TableCell>{p.quantity}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.value) }}></TableCell></TableRow>)}</TableBody>
                         </Table>
                     )}
                     {currentReport?.key === "locationReport" && (
@@ -1012,5 +1112,6 @@ export default function InventoryPage() {
     
 
     
+
 
 
