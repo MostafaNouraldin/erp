@@ -25,48 +25,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCurrency } from '@/hooks/use-currency';
 
 
-// Mock data initial state
-const initialCustomerInvoicesData = [
-  { id: "INV-C001", customerId: "CUST001", date: new Date("2024-07-01"), dueDate: new Date("2024-07-31"), totalAmount: 15000, paidAmount: 10000, remainingAmount: 5000, status: "جزئي" as const, notes: "دفعة مقدمة لخدمات استشارية", items: [{itemId: 'SERV001', description: 'خدمة استشارية A', quantity: 1, unitPrice: 15000, total: 15000}], isDeferredPayment: false },
-  { id: "INV-C002", customerId: "CUST002", date: new Date("2024-06-15"), dueDate: new Date("2024-07-15"), totalAmount: 8200, paidAmount: 8200, remainingAmount: 0, status: "مدفوع" as const, notes: "", items: [{itemId: 'ITEM001', description: 'لابتوب', quantity:1, unitPrice: 8200, total: 8200}], isDeferredPayment: false },
-  { id: "INV-C003", customerId: "CUST003", date: new Date("2024-07-10"), dueDate: new Date("2024-08-10"), totalAmount: 22500, paidAmount: 0, remainingAmount: 22500, status: "غير مدفوع" as const, notes: "", items: [{itemId: 'ITEM002', description: 'طابعة', quantity:3, unitPrice: 7500, total: 22500}], isDeferredPayment: true },
-  { id: "INV-C004", customerId: "CUST004", date: new Date("2024-05-20"), dueDate: new Date("2024-06-20"), totalAmount: 12000, paidAmount: 0, remainingAmount: 12000, status: "متأخر" as const, notes: "", items: [{itemId: 'SERV001', description: 'خدمة استشارية B', quantity:1, unitPrice: 12000, total: 12000}], isDeferredPayment: true },
-];
-
-const initialSupplierInvoicesData = [
-  { id: "INV-S001", supplierId: "SUP001", date: new Date("2024-07-05"), dueDate: new Date("2024-08-05"), totalAmount: 30000, paidAmount: 15000, remainingAmount: 15000, status: "جزئي" as const, notes: "", items: [{itemId: 'ITEM001', description: 'لابتوبات', quantity:4, unitPrice: 7500, total: 30000}] },
-  { id: "INV-S002", supplierId: "SUP002", date: new Date("2024-06-20"), dueDate: new Date("2024-07-20"), totalAmount: 7500, paidAmount: 7500, remainingAmount: 0, status: "مدفوع" as const, notes: "", items: [] },
-  { id: "INV-S003", supplierId: "SUP003", date: new Date("2024-07-12"), dueDate: new Date("2024-08-12"), totalAmount: 18000, paidAmount: 0, remainingAmount: 18000, status: "غير مدفوع" as const, notes: "", items: [] },
-];
-
-const agingReportData = {
-  receivables: [
-    { range: "0-30 يوم", amount: 25000, percent: 40 },
-    { range: "31-60 يوم", amount: 15000, percent: 25 },
-    { range: "61-90 يوم", amount: 10000, percent: 15 },
-    { range: ">90 يوم", amount: 12500, percent: 20 },
-  ],
-  payables: [
-    { range: "0-30 يوم", amount: 20000, percent: 50 },
-    { range: "31-60 يوم", amount: 12000, percent: 30 },
-    { range: "61-90 يوم", amount: 5000, percent: 12.5 },
-    { range: ">90 يوم", amount: 3000, percent: 7.5 },
-  ],
-};
-
-const mockCustomers = [
-    {id: "CUST001", name: "شركة الأمل"}, {id: "CUST002", name: "مؤسسة النجاح"},
-    {id: "CUST003", name: "شركة التطور"}, {id: "CUST004", name: "مؤسسة الإبداع"},
-];
-const mockSuppliers = [
-    {id: "SUP001", name: "مورد التقنية الحديثة"}, {id: "SUP002", name: "مورد الخدمات اللوجستية"},
-    {id: "SUP003", name: "مورد المواد الخام"},
-];
-const mockItems = [
-    {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 6500}, {id: "SERV001", name: "خدمة استشارية A", price: 15000},
-    {id: "ITEM002", name: "طابعة HP LaserJet", price: 1200},
-];
-
 // Schemas
 const invoiceItemSchema = z.object({
   itemId: z.string().min(1, "الصنف مطلوب"),
@@ -96,7 +54,7 @@ type CustomerInvoiceFormValues = z.infer<typeof customerInvoiceSchema>;
 
 const supplierInvoiceSchema = baseInvoiceSchema.extend({
   supplierId: z.string().min(1, "المورد مطلوب"),
-  status: z.enum(["جزئي", "مدفوع", "غير مدفوع"]).default("غير مدفوع"),
+  status: z.enum(["جزئي", "مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
 });
 type SupplierInvoiceFormValues = z.infer<typeof supplierInvoiceSchema>;
 
@@ -111,8 +69,12 @@ type AnyInvoice = CustomerInvoiceFormValues | SupplierInvoiceFormValues;
 
 
 export default function AccountsPayableReceivablePage() {
-  const [customerInvoices, setCustomerInvoices] = useState(initialCustomerInvoicesData);
-  const [supplierInvoices, setSupplierInvoices] = useState(initialSupplierInvoicesData);
+    // This component will be updated later to fetch real data.
+    // For now, we'll use placeholder empty arrays.
+  const [customerInvoices, setCustomerInvoices] = useState<any[]>([]);
+  const [supplierInvoices, setSupplierInvoices] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const { formatCurrency } = useCurrency();
 
   const [showAddCustomerInvoiceDialog, setShowAddCustomerInvoiceDialog] = useState(false);
@@ -127,6 +89,12 @@ export default function AccountsPayableReceivablePage() {
   const [showRecordPaymentDialog, setShowRecordPaymentDialog] = useState(false);
   const [invoiceToPay, setInvoiceToPay] = useState<AnyInvoice | null>(null);
   const [invoiceTypeForPayment, setInvoiceTypeForPayment] = useState<'customer' | 'supplier' | null>(null);
+  
+  const agingReportData = {
+    receivables: [],
+    payables: [],
+  };
+  const mockItems: any[] = [];
 
 
   const customerInvoiceForm = useForm<CustomerInvoiceFormValues>({
@@ -150,67 +118,18 @@ export default function AccountsPayableReceivablePage() {
     defaultValues: { paymentDate: new Date(), paymentMethod: "نقدي" },
   });
 
-  useEffect(() => {
-    if (customerInvoiceToEdit) customerInvoiceForm.reset(customerInvoiceToEdit);
-    else customerInvoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0, isDeferredPayment: false });
-  }, [customerInvoiceToEdit, customerInvoiceForm, showAddCustomerInvoiceDialog]);
-  
-  useEffect(() => {
-    if (supplierInvoiceToEdit) supplierInvoiceForm.reset(supplierInvoiceToEdit);
-    else supplierInvoiceForm.reset({ supplierId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0 });
-  }, [supplierInvoiceToEdit, supplierInvoiceForm, showAddSupplierInvoiceDialog]);
-
-  const calculateInvoiceTotals = (items: any[]) => {
-    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
-    return totalAmount;
-  };
-
-  const updateInvoiceStatus = (invoice: AnyInvoice): AnyInvoice['status'] => {
-    if (invoice.paidAmount >= invoice.totalAmount) return "مدفوع";
-    if (invoice.paidAmount > 0) return "جزئي";
-    
-    if ('customerId' in invoice && (invoice as CustomerInvoiceFormValues).isDeferredPayment) { // Customer invoice specific logic
-        if (invoice.dueDate && invoice.dueDate < new Date() && invoice.paidAmount === 0) return "متأخر";
-        return "غير مدفوع"; // For deferred, "غير مدفوع" means it's on account until due or paid
-    }
-    // Default for supplier or non-deferred customer
-    if ('dueDate' in invoice && invoice.dueDate && invoice.dueDate < new Date() && invoice.paidAmount === 0 && invoice.status !== "مدفوع") return "متأخر";
-    return "غير مدفوع";
-  };
-
   const handleCustomerInvoiceSubmit = (values: CustomerInvoiceFormValues) => {
-    const totalAmount = calculateInvoiceTotals(values.items);
-    const remainingAmount = totalAmount - (values.paidAmount || 0);
-    const status = updateInvoiceStatus({...values, totalAmount, remainingAmount});
-    const finalValues = {...values, totalAmount, remainingAmount, status};
-
-    if (customerInvoiceToEdit) {
-      setCustomerInvoices(prev => prev.map(inv => inv.id === customerInvoiceToEdit.id ? { ...finalValues, id: customerInvoiceToEdit.id } : inv));
-    } else {
-      setCustomerInvoices(prev => [...prev, { ...finalValues, id: `INV-C${Date.now()}` }]);
-    }
-    setShowAddCustomerInvoiceDialog(false);
-    setCustomerInvoiceToEdit(null);
+    // This will be implemented later with server actions
+    console.log("Submitting customer invoice (disabled)", values);
   };
 
   const handleSupplierInvoiceSubmit = (values: SupplierInvoiceFormValues) => {
-    const totalAmount = calculateInvoiceTotals(values.items);
-    const remainingAmount = totalAmount - (values.paidAmount || 0);
-    const status = updateInvoiceStatus({...values, totalAmount, remainingAmount});
-    const finalValues = {...values, totalAmount, remainingAmount, status};
-    
-    if (supplierInvoiceToEdit) {
-      setSupplierInvoices(prev => prev.map(inv => inv.id === supplierInvoiceToEdit.id ? { ...finalValues, id: supplierInvoiceToEdit.id } : inv));
-    } else {
-      setSupplierInvoices(prev => [...prev, { ...finalValues, id: `INV-S${Date.now()}` }]);
-    }
-    setShowAddSupplierInvoiceDialog(false);
-    setSupplierInvoiceToEdit(null);
+     // This will be implemented later with server actions
+    console.log("Submitting supplier invoice (disabled)", values);
   };
   
   const handleViewInvoice = (invoice: any, type: 'customer' | 'supplier') => {
-    setSelectedInvoiceForView({...invoice, type, customer: mockCustomers.find(c=>c.id === invoice.customerId)?.name, supplier: mockSuppliers.find(s=>s.id === invoice.supplierId)?.name});
-    setShowViewInvoiceDialog(true);
+    // This will be updated later
   }
 
   const calculateItemTotal = (form: any, index: number) => {
@@ -220,42 +139,15 @@ export default function AccountsPayableReceivablePage() {
   };
   
   const handleDeleteInvoice = (invoiceId: string, type: 'customer' | 'supplier') => {
-    if (type === 'customer') {
-      setCustomerInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
-    } else {
-      setSupplierInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
-    }
+    // This will be implemented later with server actions
   }
 
   const openRecordPaymentDialog = (invoice: AnyInvoice, type: 'customer' | 'supplier') => {
-    setInvoiceToPay(invoice);
-    setInvoiceTypeForPayment(type);
-    paymentForm.reset({ paymentDate: new Date(), paymentMethod: "نقدي", paymentAmount: invoice.remainingAmount });
-    setShowRecordPaymentDialog(true);
+    // This will be implemented later
   };
 
   const handleRecordPaymentSubmit = (paymentValues: PaymentFormValues) => {
-    if (!invoiceToPay || !invoiceTypeForPayment) return;
-
-    const newPaidAmount = invoiceToPay.paidAmount + paymentValues.paymentAmount;
-    const newRemainingAmount = Math.max(0, invoiceToPay.totalAmount - newPaidAmount);
-    
-    const updatedInvoiceBase = {
-        ...invoiceToPay,
-        paidAmount: newPaidAmount,
-        remainingAmount: newRemainingAmount,
-    };
-    const newStatus = updateInvoiceStatus(updatedInvoiceBase);
-
-    const updatedInvoice = { ...updatedInvoiceBase, status: newStatus };
-
-    if (invoiceTypeForPayment === 'customer') {
-        setCustomerInvoices(prev => prev.map(inv => inv.id === invoiceToPay.id ? updatedInvoice as CustomerInvoiceFormValues : inv));
-    } else {
-        setSupplierInvoices(prev => prev.map(inv => inv.id === invoiceToPay.id ? updatedInvoice as SupplierInvoiceFormValues : inv));
-    }
-    setShowRecordPaymentDialog(false);
-    setInvoiceToPay(null);
+    // This will be implemented later
   };
 
   const getCustomerInvoiceStatusText = (invoice: CustomerInvoiceFormValues) => {
@@ -273,7 +165,7 @@ export default function AccountsPayableReceivablePage() {
         <div className="flex gap-2">
           <Dialog open={showAddCustomerInvoiceDialog} onOpenChange={(isOpen) => { setShowAddCustomerInvoiceDialog(isOpen); if(!isOpen) setCustomerInvoiceToEdit(null);}}>
             <DialogTrigger asChild>
-              <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setCustomerInvoiceToEdit(null); customerInvoiceForm.reset(); setShowAddCustomerInvoiceDialog(true);}}>
+              <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setCustomerInvoiceToEdit(null); customerInvoiceForm.reset(); setShowAddCustomerInvoiceDialog(true);}} disabled>
                 <PlusCircle className="me-2 h-4 w-4" /> إضافة فاتورة عميل
               </Button>
             </DialogTrigger>
@@ -288,7 +180,7 @@ export default function AccountsPayableReceivablePage() {
                         <FormItem><FormLabel>اسم العميل</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                             <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
-                            <SelectContent>{mockCustomers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}</SelectContent>
+                            <SelectContent>{customers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}</SelectContent>
                           </Select><FormMessage /></FormItem> )} />
                     <FormField control={customerInvoiceForm.control} name="date" render={({ field }) => (
                         <FormItem className="flex flex-col"><FormLabel>تاريخ الفاتورة</FormLabel>
@@ -344,7 +236,7 @@ export default function AccountsPayableReceivablePage() {
 
           <Dialog open={showAddSupplierInvoiceDialog} onOpenChange={(isOpen) => { setShowAddSupplierInvoiceDialog(isOpen); if(!isOpen) setSupplierInvoiceToEdit(null);}}>
             <DialogTrigger asChild>
-              <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSupplierInvoiceToEdit(null); supplierInvoiceForm.reset(); setShowAddSupplierInvoiceDialog(true);}}>
+              <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSupplierInvoiceToEdit(null); supplierInvoiceForm.reset(); setShowAddSupplierInvoiceDialog(true);}} disabled>
                 <PlusCircle className="me-2 h-4 w-4" /> إضافة فاتورة مورد
               </Button>
             </DialogTrigger>
@@ -359,7 +251,7 @@ export default function AccountsPayableReceivablePage() {
                         <FormItem><FormLabel>اسم المورد</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                             <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المورد" /></SelectTrigger></FormControl>
-                            <SelectContent>{mockSuppliers.map(sup => <SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>)}</SelectContent>
+                            <SelectContent>{suppliers.map(sup => <SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>)}</SelectContent>
                           </Select><FormMessage /></FormItem> )} />
                      <FormField control={supplierInvoiceForm.control} name="date" render={({ field }) => (
                         <FormItem className="flex flex-col"><FormLabel>تاريخ الفاتورة</FormLabel>
@@ -466,35 +358,34 @@ export default function AccountsPayableReceivablePage() {
                     {customerInvoices.map((invoice) => (
                       <TableRow key={invoice.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{invoice.id}</TableCell>
-                        <TableCell>{mockCustomers.find(c=>c.id === invoice.customerId)?.name}</TableCell>
-                        <TableCell>{invoice.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
-                        <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
-                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.totalAmount) }}></TableCell>
-                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.paidAmount) }}></TableCell>
-                        <TableCell className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.remainingAmount) }}></TableCell>
+                        <TableCell>{invoice.customer?.name}</TableCell>
+                        <TableCell>{new Date(invoice.date).toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.numericTotalAmount) }}></TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(0) }}></TableCell> 
+                        <TableCell className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.numericTotalAmount) }}></TableCell>
                         <TableCell>
                           <Badge 
                             variant={ 
                                 invoice.status === "مدفوع" ? "default" : 
-                                invoice.status === "جزئي" ? "secondary" : 
                                 invoice.status === "متأخر" ? "destructive" : 
                                 "outline" 
                             } 
                             className="whitespace-nowrap"
                           >
-                            {getCustomerInvoiceStatusText(invoice)}
+                           {invoice.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'customer')}><FileText className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'customer')} disabled><FileText className="h-4 w-4" /></Button>
                           {invoice.status !== "مدفوع" && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة" onClick={() => openRecordPaymentDialog(invoice, 'customer')}><Banknote className="h-4 w-4 text-green-600" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة" onClick={() => openRecordPaymentDialog(invoice, 'customer')} disabled><Banknote className="h-4 w-4 text-green-600" /></Button>
                           )}
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إرسال كشف حساب" onClick={() => alert(`إرسال كشف حساب للعميل: ${invoice.customerId}`)}><Mail className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setCustomerInvoiceToEdit(invoice); setShowAddCustomerInvoiceDialog(true);}}><Edit className="h-4 w-4" /></Button>
-                          {invoice.status !== "مدفوع" && invoice.paidAmount === 0 && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إرسال كشف حساب" onClick={() => alert(`إرسال كشف حساب للعميل: ${invoice.customerId}`)} disabled><Mail className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setCustomerInvoiceToEdit(invoice); setShowAddCustomerInvoiceDialog(true);}} disabled><Edit className="h-4 w-4" /></Button>
+                          {invoice.status !== "مدفوع" && (
                              <AlertDialog>
-                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف" disabled><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                 <AlertDialogContent dir="rtl">
                                     <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponent>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescriptionComponent></AlertDialogHeader>
                                     <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id!, 'customer')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
@@ -534,7 +425,7 @@ export default function AccountsPayableReceivablePage() {
                       <DropdownMenuLabel>تصفية حسب الحالة</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuCheckboxItem>مدفوع</DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem>جزئي</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>مدفوع جزئياً</DropdownMenuCheckboxItem>
                       <DropdownMenuCheckboxItem>غير مدفوع</DropdownMenuCheckboxItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -554,26 +445,26 @@ export default function AccountsPayableReceivablePage() {
                     {supplierInvoices.map((invoice) => (
                       <TableRow key={invoice.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{invoice.id}</TableCell>
-                        <TableCell>{mockSuppliers.find(s=>s.id === invoice.supplierId)?.name}</TableCell>
-                        <TableCell>{invoice.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
-                        <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
+                        <TableCell>{invoice.supplier?.name}</TableCell>
+                        <TableCell>{new Date(invoice.invoiceDate).toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.totalAmount) }}></TableCell>
                         <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.paidAmount) }}></TableCell>
-                        <TableCell className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.remainingAmount) }}></TableCell>
+                        <TableCell className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.totalAmount - invoice.paidAmount) }}></TableCell>
                         <TableCell>
-                          <Badge variant={invoice.status === "مدفوع" ? "default" : invoice.status === "جزئي" ? "secondary" : "outline"} className="whitespace-nowrap">
+                          <Badge variant={invoice.status === "مدفوع" ? "default" : invoice.status === "مدفوع جزئياً" ? "secondary" : "outline"} className="whitespace-nowrap">
                             {invoice.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'supplier')}><FileText className="h-4 w-4" /></Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل" onClick={() => handleViewInvoice(invoice, 'supplier')} disabled><FileText className="h-4 w-4" /></Button>
                            {invoice.status !== "مدفوع" && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة" onClick={() => openRecordPaymentDialog(invoice, 'supplier')}><Banknote className="h-4 w-4 text-green-600" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة" onClick={() => openRecordPaymentDialog(invoice, 'supplier')} disabled><Banknote className="h-4 w-4 text-green-600" /></Button>
                            )}
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setSupplierInvoiceToEdit(invoice); setShowAddSupplierInvoiceDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setSupplierInvoiceToEdit(invoice); setShowAddSupplierInvoiceDialog(true);}} disabled><Edit className="h-4 w-4" /></Button>
                           {invoice.status !== "مدفوع" && invoice.paidAmount === 0 && (
                              <AlertDialog>
-                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف" disabled><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                 <AlertDialogContent dir="rtl">
                                     <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponent>سيتم حذف الفاتورة "{invoice.id}" نهائياً.</AlertDialogDescriptionComponent></AlertDialogHeader>
                                     <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id!, 'supplier')}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
@@ -598,7 +489,7 @@ export default function AccountsPayableReceivablePage() {
                 <CardDescription>تحليل لأعمار المبالغ المستحقة من العملاء.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {agingReportData.receivables.map((item) => (
+                {agingReportData.receivables.map((item: any) => (
                   <div key={item.range}>
                     <div className="flex justify-between mb-1">
                       <span>{item.range}</span>
@@ -615,7 +506,7 @@ export default function AccountsPayableReceivablePage() {
                 <CardDescription>تحليل لأعمار المبالغ المستحقة للموردين.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {agingReportData.payables.map((item) => (
+                {agingReportData.payables.map((item: any) => (
                   <div key={item.range}>
                     <div className="flex justify-between mb-1">
                       <span>{item.range}</span>
@@ -654,7 +545,7 @@ export default function AccountsPayableReceivablePage() {
                         "outline"
                     }
                 >
-                    {selectedInvoiceForView.type === 'customer' ? getCustomerInvoiceStatusText(selectedInvoiceForView as CustomerInvoiceFormValues) : selectedInvoiceForView.status}
+                   {selectedInvoiceForView.status}
                 </Badge>
               </div>
               {selectedInvoiceForView.type === 'customer' && selectedInvoiceForView.isDeferredPayment && (
@@ -723,5 +614,3 @@ export default function AccountsPayableReceivablePage() {
     </div>
   );
 }
-
-
