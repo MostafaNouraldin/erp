@@ -193,6 +193,7 @@ export async function addSupplierInvoice(invoiceData: SupplierInvoiceFormValues)
     }
   });
   revalidatePath('/purchases');
+  revalidatePath('/accounts-payable-receivable');
 }
 
 export async function updateSupplierInvoice(invoiceData: SupplierInvoiceFormValues) {
@@ -227,6 +228,7 @@ export async function updateSupplierInvoice(invoiceData: SupplierInvoiceFormValu
     }
   });
   revalidatePath('/purchases');
+  revalidatePath('/accounts-payable-receivable');
 }
 
 export async function deleteSupplierInvoice(invoiceId: string) {
@@ -235,6 +237,7 @@ export async function deleteSupplierInvoice(invoiceId: string) {
     await tx.delete(supplierInvoices).where(eq(supplierInvoices.id, invoiceId));
   });
   revalidatePath('/purchases');
+  revalidatePath('/accounts-payable-receivable');
 }
 
 export async function updateSupplierInvoicePayment(
@@ -249,4 +252,5 @@ export async function updateSupplierInvoicePayment(
     })
     .where(eq(supplierInvoices.id, invoiceId));
   revalidatePath('/purchases');
+  revalidatePath('/accounts-payable-receivable');
 }
