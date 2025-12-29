@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
-import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory } from './actions';
+// import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory } from './actions';
 
 
 // Product Schema
@@ -236,45 +236,51 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
   const handleProductSubmit = async (values: ProductFormValues) => {
-    try {
-      if (productToEdit) {
-        await updateProduct({ ...values, id: productToEdit.id! });
-        toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." });
-      } else {
-        await addProduct(values);
-        toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." });
-      }
-      setShowManageProductDialog(false);
-      setProductToEdit(null);
-      setImagePreview(null);
-    } catch (error) {
-      toast({ title: "خطأ", description: "لم يتم حفظ المنتج.", variant: "destructive" });
-    }
+    // TODO: Re-enable when actions are properly connected
+    toast({ title: "متوقف مؤقتاً", description: "حفظ المنتجات متوقف مؤقتاً.", variant: "destructive" });
+    // try {
+    //   if (productToEdit) {
+    //     await updateProduct({ ...values, id: productToEdit.id! });
+    //     toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." });
+    //   } else {
+    //     await addProduct(values);
+    //     toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." });
+    //   }
+    //   setShowManageProductDialog(false);
+    //   setProductToEdit(null);
+    //   setImagePreview(null);
+    // } catch (error) {
+    //   toast({ title: "خطأ", description: "لم يتم حفظ المنتج.", variant: "destructive" });
+    // }
   };
   
   const handleCategorySubmit = async (values: CategoryFormValues) => {
-     try {
-        if (categoryToEdit) {
-            await updateCategory({ ...values, id: categoryToEdit.id! });
-            toast({ title: "تم التعديل", description: "تم تعديل الفئة بنجاح." });
-        } else {
-            await addCategory(values);
-            toast({ title: "تمت الإضافة", description: "تم إضافة الفئة بنجاح." });
-        }
-        setShowManageCategoryDialog(false);
-        setCategoryToEdit(null);
-    } catch (error) {
-        toast({ title: "خطأ", description: "لم يتم حفظ الفئة.", variant: "destructive" });
-    }
+    // TODO: Re-enable when actions are properly connected
+    toast({ title: "متوقف مؤقتاً", description: "حفظ الفئات متوقف مؤقتاً.", variant: "destructive" });
+    //  try {
+    //     if (categoryToEdit) {
+    //         await updateCategory({ ...values, id: categoryToEdit.id! });
+    //         toast({ title: "تم التعديل", description: "تم تعديل الفئة بنجاح." });
+    //     } else {
+    //         await addCategory(values);
+    //         toast({ title: "تمت الإضافة", description: "تم إضافة الفئة بنجاح." });
+    //     }
+    //     setShowManageCategoryDialog(false);
+    //     setCategoryToEdit(null);
+    // } catch (error) {
+    //     toast({ title: "خطأ", description: "لم يتم حفظ الفئة.", variant: "destructive" });
+    // }
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    try {
-        await deleteProduct(productId);
-        toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
-    } catch (error) {
-        toast({ title: "خطأ", description: "لم يتم حذف المنتج.", variant: "destructive" });
-    }
+    // TODO: Re-enable when actions are properly connected
+    toast({ title: "متوقف مؤقتاً", description: "حذف المنتجات متوقف مؤقتاً.", variant: "destructive" });
+    // try {
+    //     await deleteProduct(productId);
+    //     toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
+    // } catch (error) {
+    //     toast({ title: "خطأ", description: "لم يتم حذف المنتج.", variant: "destructive" });
+    // }
   };
   
   const handleDeleteCategory = async (categoryId: string) => {
@@ -283,12 +289,14 @@ export default function InventoryClientComponent({ initialData }: { initialData:
         toast({ title: "خطأ", description: "لا يمكن حذف الفئة لأنها مستخدمة في بعض المنتجات.", variant: "destructive" });
         return;
     }
-    try {
-        await deleteCategory(categoryId);
-        toast({ title: "تم الحذف", description: "تم حذف الفئة بنجاح.", variant: "destructive" });
-    } catch (error) {
-        toast({ title: "خطأ", description: "لم يتم حذف الفئة.", variant: "destructive" });
-    }
+    // TODO: Re-enable when actions are properly connected
+    toast({ title: "متوقف مؤقتاً", description: "حذف الفئات متوقف مؤقتاً.", variant: "destructive" });
+    // try {
+    //     await deleteCategory(categoryId);
+    //     toast({ title: "تم الحذف", description: "تم حذف الفئة بنجاح.", variant: "destructive" });
+    // } catch (error) {
+    //     toast({ title: "خطأ", description: "لم يتم حذف الفئة.", variant: "destructive" });
+    // }
   };
 
 
@@ -511,4 +519,5 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     </div>
   );
 }
+
 
