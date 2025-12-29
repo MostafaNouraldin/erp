@@ -1,4 +1,4 @@
-@import "@emran-alhaddad/saudi-riyal-font/dist/index.css";
+@import "@emran-alhaddad/saudi-riyal-font";
 
 @tailwind base;
 @tailwind components;
