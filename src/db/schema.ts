@@ -81,4 +81,24 @@ export const bankAccounts = pgTable('bank_accounts', {
     isActive: boolean('is_active').default(true).notNull(),
 });
 
+export const purchaseOrders = pgTable('purchase_orders', {
+  id: varchar('id', { length: 256 }).primaryKey(),
+  supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+  date: timestamp('date').notNull(),
+  expectedDeliveryDate: timestamp('expected_delivery_date').notNull(),
+  notes: text('notes'),
+  totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(), // "مسودة", "معتمد", ...
+});
+
+export const purchaseOrderItems = pgTable('purchase_order_items', {
+  id: serial('id').primaryKey(),
+  poId: varchar('po_id', { length: 256 }).notNull().references(() => purchaseOrders.id),
+  itemId: varchar('item_id', { length: 256 }).notNull(),
+  description: text('description'),
+  quantity: integer('quantity').notNull(),
+  unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+  total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+});
+
 // Add other schemas from the application here as needed...

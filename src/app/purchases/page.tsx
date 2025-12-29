@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -24,9 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useCurrency } from '@/hooks/use-currency';
-import { db } from '@/db';
-import { suppliers as suppliersSchema } from '@/db/schema';
-import { addSupplier, updateSupplier, deleteSupplier } from './actions';
+import { addSupplier, updateSupplier, deleteSupplier, addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, updatePurchaseOrderStatus } from './actions';
 
 
 // Schemas
@@ -137,10 +136,7 @@ const mockItems = [
     {id: "MAT001", name: "خشب زان", price: 200, unit: "متر مكعب"},
 ];
 
-const initialPurchaseOrdersData: PurchaseOrderFormValues[] = [
-  { id: "PO001", supplierId: "SUP001", date: new Date("2024-07-10"), expectedDeliveryDate: new Date("2024-07-25"), totalAmount: 30000, status: "معتمد", items: [{itemId: "ITEM001", description: "لابتوب ديل", quantity:5, unitPrice:6000, total:30000}]},
-  { id: "PO002", supplierId: "SUP002", date: new Date("2024-07-15"), expectedDeliveryDate: new Date("2024-08-01"), totalAmount: 18000, status: "مسودة", items: [{itemId: "MAT001", description: "خشب زان", quantity:90, unitPrice:200, total:18000}] },
-];
+
 const initialSupplierInvoicesData: SupplierInvoiceFormValues[] = [
   { id: "INV-S001", poId: "PO001", supplierId: "SUP001", invoiceDate: new Date("2024-07-26"), dueDate: new Date("2024-08-26"), totalAmount: 30000, paidAmount: 0, status: "غير مدفوع", items: [{itemId:"ITEM001", description: "لابتوب ديل", quantity:5, unitPrice:6000, total:30000}] },
   { id: "INV-S002", supplierId: "SUP002", invoiceDate: new Date("2024-07-28"), dueDate: new Date("2024-08-28"), totalAmount: 18000, paidAmount: 10000, status: "مدفوع جزئياً", items: [{itemId:"MAT001", description: "خشب زان", quantity:90, unitPrice:200, total:18000}] },
@@ -156,27 +152,42 @@ const convertAmountToWords = (amount: number) => {
   return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
 };
 
-// Server Component to fetch initial data
-async function SuppliersDataFetcher({ 
-    setSuppliersData
-}: { 
-    setSuppliersData: (data: any[]) => void; 
-}) {
+// This is now a wrapper component for the client-side logic
+export default function PurchasesPage() {
+    const [initialData, setInitialData] = useState<{ suppliers: any[], purchaseOrders: any[] } | null>(null);
+
     useEffect(() => {
         const fetchData = async () => {
-            const suppliersResult = await db.select().from(suppliersSchema);
-            setSuppliersData(suppliersResult);
+            const { db, suppliers, purchaseOrders, purchaseOrderItems } = await import('@/db/loader');
+            
+            const suppliersResult = await db.select().from(suppliers);
+            const purchaseOrdersResult = await db.select().from(purchaseOrders);
+            // In a real app, you might want to fetch items for each PO here as well
+            
+            setInitialData({
+                suppliers: suppliersResult,
+                purchaseOrders: purchaseOrdersResult.map(po => ({
+                    ...po,
+                    totalAmount: parseFloat(po.totalAmount),
+                    items: [] // Initially empty, can be lazy-loaded
+                })),
+            });
         };
         fetchData();
-    }, [setSuppliersData]);
+    }, []);
 
-    return null; // This component doesn't render anything
+    if (!initialData) {
+        // You can render a loading skeleton here
+        return <div>Loading...</div>;
+    }
+
+    return <PurchasesClientComponent initialData={initialData} />;
 }
 
 
-export default function PurchasesPage() {
-  const [suppliersData, setSuppliersData] = useState<SupplierFormValues[]>([]);
-  const [purchaseOrders, setPurchaseOrdersData] = useState(initialPurchaseOrdersData);
+function PurchasesClientComponent({ initialData }: { initialData: { suppliers: any[], purchaseOrders: any[] } }) {
+  const [suppliersData, setSuppliersData] = useState<SupplierFormValues[]>(initialData.suppliers);
+  const [purchaseOrders, setPurchaseOrdersData] = useState<PurchaseOrderFormValues[]>(initialData.purchaseOrders);
   const [supplierInvoices, setSupplierInvoicesData] = useState(initialSupplierInvoicesData);
   const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState(initialGoodsReceivedNotesData);
   const [purchaseReturns, setPurchaseReturnsData] = useState(initialPurchaseReturnsData);
@@ -315,23 +326,28 @@ export default function PurchasesPage() {
     }
   };
 
-  const handlePoSubmit = (values: PurchaseOrderFormValues) => {
+  const handlePoSubmit = async (values: PurchaseOrderFormValues) => {
     const totalAmount = calculateTotalAmountForForm(values.items);
     const finalValues = {...values, totalAmount};
-    if (poToEdit) {
-      setPurchaseOrdersData(prev => prev.map(p => p.id === poToEdit.id ? { ...finalValues, id: poToEdit.id! } : p));
-      toast({ title: "تم التعديل", description: "تم تعديل أمر الشراء." });
-    } else {
-      setPurchaseOrdersData(prev => [...prev, { ...finalValues, id: `PO${Date.now()}` }]);
-      toast({ title: "تم الإنشاء", description: "تم إنشاء أمر الشراء." });
+    try {
+        if (poToEdit) {
+            await updatePurchaseOrder({ ...finalValues, id: poToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل أمر الشراء." });
+        } else {
+            await addPurchaseOrder(finalValues);
+            toast({ title: "تم الإنشاء", description: "تم إنشاء أمر الشراء." });
+        }
+        setShowCreatePoDialog(false);
+        setPoToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ أمر الشراء.", variant: "destructive" });
     }
-    setShowCreatePoDialog(false);
-    setPoToEdit(null);
   };
 
-  const handleViewPo = (po: PurchaseOrderFormValues) => {
-    setSelectedPoForView(po);
-    setShowViewPoDialog(true);
+
+  const handleViewPo = async (po: PurchaseOrderFormValues) => {
+      setSelectedPoForView(po);
+      setShowViewPoDialog(true);
   };
   
   const handlePrintPo = (po: PurchaseOrderFormValues) => {
@@ -462,9 +478,13 @@ export default function PurchasesPage() {
         toast({ title: "خطأ", description: "لم يتم حذف المورد.", variant: "destructive" });
       }
   };
-  const handleDeletePo = (poId: string) => {
-      setPurchaseOrdersData(prev => prev.filter(p => p.id !== poId));
-      toast({title: "تم الحذف", description: `تم حذف أمر الشراء ${poId}`, variant:"destructive"});
+  const handleDeletePo = async (poId: string) => {
+    try {
+        await deletePurchaseOrder(poId);
+        toast({title: "تم الحذف", description: `تم حذف أمر الشراء ${poId}`, variant:"destructive"});
+    } catch (e) {
+        toast({ title: "خطأ", description: "لم يتم حذف أمر الشراء.", variant: "destructive" });
+    }
   };
   const handleDeleteSupplierInvoice = (invId: string) => {
       setSupplierInvoicesData(prev => prev.filter(inv => inv.id !== invId));
@@ -480,9 +500,13 @@ export default function PurchasesPage() {
   };
 
 
-  const handleApprovePo = (poId: string) => {
-      setPurchaseOrdersData(prev => prev.map(p => p.id === poId ? {...p, status: "معتمد"} : p));
-      toast({title: "تم الاعتماد", description: `تم اعتماد أمر الشراء ${poId}.`});
+  const handleApprovePo = async (poId: string) => {
+    try {
+        await updatePurchaseOrderStatus(poId, "معتمد");
+        toast({title: "تم الاعتماد", description: `تم اعتماد أمر الشراء ${poId}.`});
+    } catch (e) {
+        toast({ title: "خطأ", description: "لم يتم اعتماد أمر الشراء.", variant: "destructive" });
+    }
   };
 
   const openCreateGrnDialogFromPo = (po: PurchaseOrderFormValues) => {
@@ -504,7 +528,6 @@ export default function PurchasesPage() {
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
-      <SuppliersDataFetcher setSuppliersData={setSuppliersData} />
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">المشتريات</h1>
         <div className="flex gap-2">
@@ -1435,3 +1458,5 @@ export default function PurchasesPage() {
     </div>
   );
 }
+
+    

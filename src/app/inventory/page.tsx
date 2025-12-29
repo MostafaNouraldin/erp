@@ -183,37 +183,37 @@ const chartConfig = { "ITEM001": { label: "لابتوب Dell XPS 15", color: "hs
 
 const mockStocktakeDetail: StocktakeDetails = { id: "STK-2024-06-30-A", date: new Date("2024-06-30").toLocaleDateString('ar-SA'), warehouse: "مستودع A", status: "مكتمل", responsible: "فريق الجرد ألف", itemsCounted: 3, discrepanciesFound: 2, notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.", items: [ { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0, differenceValue: 0 }, { productId: "ITEM002", productName: "طابعة HP LaserJet Pro", expectedQuantity: 7, countedQuantity: 6, difference: -1, differenceValue: -1000 }, { productId: "ITEM003", productName: "ورق طباعة A4 (صندوق)", expectedQuantity: 195, countedQuantity: 198, difference: 3, differenceValue: 360 },],};
 
-// Server Component to fetch initial data
-async function InventoryDataFetcher({ 
-    setProductsData, 
-    setCategoriesData, 
-    setSuppliersData 
-}: { 
-    setProductsData: (data: any[]) => void; 
-    setCategoriesData: (data: any[]) => void;
-    setSuppliersData: (data: any[]) => void;
-}) {
+// This is now a wrapper component for the client-side logic
+export default function InventoryPage() {
+    const [initialData, setInitialData] = useState<{ products: any[], categories: any[], suppliers: any[] } | null>(null);
+
     useEffect(() => {
         const fetchData = async () => {
             const productsResult = await db.select().from(products);
             const categoriesResult = await db.select().from(categories);
             const suppliersResult = await db.select().from(suppliers);
-            setProductsData(productsResult.map(p => ({...p, costPrice: Number(p.costPrice), sellingPrice: Number(p.sellingPrice)})));
-            setCategoriesData(categoriesResult);
-            setSuppliersData(suppliersResult);
+            setInitialData({
+                products: productsResult.map(p => ({ ...p, costPrice: Number(p.costPrice), sellingPrice: Number(p.sellingPrice) })),
+                categories: categoriesResult,
+                suppliers: suppliersResult,
+            });
         };
         fetchData();
-    }, [setProductsData, setCategoriesData, setSuppliersData]);
+    }, []);
 
-    return null; // This component doesn't render anything
+    if (!initialData) {
+        // You can render a loading skeleton here
+        return <div>Loading...</div>;
+    }
+
+    return <InventoryClientComponent initialData={initialData} />;
 }
 
 
-export default function InventoryPage() {
-  const [productsData, setProductsData] = useState<ProductFormValues[]>([]);
-  const [categoriesData, setCategoriesData] = useState<CategoryFormValues[]>([]);
-  const [suppliersData, setSuppliersData] = useState<any[]>([]);
-
+function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[] } }) {
+  const [productsData, setProductsData] = useState<ProductFormValues[]>(initialData.products);
+  const [categoriesData, setCategoriesData] = useState<CategoryFormValues[]>(initialData.categories);
+  const [suppliersData, setSuppliersData] = useState<any[]>(initialData.suppliers);
   const [showManageProductDialog, setShowManageProductDialog] = useState(false);
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -287,7 +287,7 @@ export default function InventoryPage() {
             toast({ title: "تم التعديل", description: "تم تعديل الفئة بنجاح." });
         } else {
             await addCategory(values);
-            toast({ title: "تمت الإضافة", description: "تمت إضافة الفئة بنجاح." });
+            toast({ title: "تمت الإضافة", description: "تم إضافة الفئة بنجاح." });
         }
         setShowManageCategoryDialog(false);
         setCategoryToEdit(null);
@@ -457,11 +457,6 @@ export default function InventoryPage() {
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
-        <InventoryDataFetcher 
-            setProductsData={setProductsData} 
-            setCategoriesData={setCategoriesData}
-            setSuppliersData={setSuppliersData}
-        />
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">إدارة المخزون والمستودعات</h1>
         <Dialog open={showManageProductDialog} onOpenChange={(isOpen) => { setShowManageProductDialog(isOpen); if (!isOpen) {setProductToEdit(null); setImagePreview(null);} }}>
@@ -1155,3 +1150,6 @@ export default function InventoryPage() {
 
     
 
+
+
+    
