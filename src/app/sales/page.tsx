@@ -25,7 +25,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from "@/components/ui/checkbox";
 import { db } from '@/db';
 import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema } from '@/db/schema';
-import { addCustomer, updateCustomer, deleteCustomer } from './actions';
+import { addCustomer, updateCustomer, deleteCustomer, addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from './actions';
 
 
 // Mock data
@@ -230,6 +230,8 @@ export default function SalesPage() {
     async function fetchData() {
         const customersResult = await db.select().from(customersSchema);
         const invoicesResult = await db.select().from(salesInvoicesSchema);
+        // In a real app, you would also fetch items for each invoice
+        // const invoiceItemsResult = await db.select().from(salesInvoiceItemsSchema);
 
         setCustomers(customersResult.map(c => ({
             ...c,
@@ -239,7 +241,7 @@ export default function SalesPage() {
         setInvoicesData(invoicesResult.map(i => ({
             ...i,
             numericTotalAmount: parseFloat(i.numericTotalAmount),
-            items: [], // This would require another query to fetch items
+            items: [], // This would require another query and mapping
             status: i.status as "مدفوع" | "غير مدفوع" | "متأخر",
             source: i.source as "POS" | "Manual" | undefined,
         })));
@@ -384,19 +386,32 @@ export default function SalesPage() {
     setSalesOrderToEdit(null);
   };
 
-  const handleInvoiceSubmit = (values: InvoiceFormValues) => {
+  const handleInvoiceSubmit = async (values: InvoiceFormValues) => {
     const totalAmount = calculateItemTotals(values.items);
     const finalValues = {...values, numericTotalAmount: totalAmount};
 
-    if (invoiceToEdit) {
-      setInvoicesData(prev => prev.map(inv => inv.id === invoiceToEdit.id ? { ...finalValues, id: invoiceToEdit.id! } : inv));
-      toast({ title: "تم التعديل", description: "تم تعديل الفاتورة بنجاح." });
-    } else {
-      setInvoicesData(prev => [...prev, { ...finalValues, id: `INV-C${Date.now()}` }]);
-      toast({ title: "تم الإنشاء", description: "تم إنشاء الفاتورة بنجاح." });
+    try {
+        if (invoiceToEdit) {
+            await updateSalesInvoice({ ...finalValues, id: invoiceToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل الفاتورة بنجاح." });
+        } else {
+            await addSalesInvoice(finalValues);
+            toast({ title: "تم الإنشاء", description: "تم إنشاء الفاتورة بنجاح." });
+        }
+        setShowCreateInvoiceDialog(false);
+        setInvoiceToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
     }
-    setShowCreateInvoiceDialog(false);
-    setInvoiceToEdit(null);
+  };
+
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    try {
+        await deleteSalesInvoice(invoiceId);
+        toast({ title: "تم الحذف", description: "تم حذف الفاتورة بنجاح.", variant: "destructive" });
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حذف الفاتورة.", variant: "destructive" });
+    }
   };
 
   const getInvoiceStatusText = (invoice: Invoice) => {
@@ -920,6 +935,23 @@ export default function SalesPage() {
                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل الفاتورة" onClick={() => {setInvoiceToEdit(inv as InvoiceFormValues); setShowCreateInvoiceDialog(true);}}>
                                 <Edit className="h-4 w-4" />
                              </Button>
+                             <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف الفاتورة">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent dir="rtl">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                                  <AlertDialogDescription>سيتم حذف الفاتورة "{inv.id}" نهائياً.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteInvoice(inv.id!)}>تأكيد الحذف</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))}
