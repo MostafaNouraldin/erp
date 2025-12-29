@@ -253,3 +253,45 @@ export const checks = pgTable('checks', {
     notes: text('notes'),
     status: varchar('status', { length: 50 }).notNull().default('صادر'), // "صادر", "مسدد", "ملغي", "مرتجع"
 });
+
+export const projects = pgTable('projects', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    clientId: varchar('client_id', { length: 256 }).notNull(),
+    startDate: timestamp('start_date').notNull(),
+    endDate: timestamp('end_date').notNull(),
+    budget: numeric('budget', { precision: 15, scale: 2 }).notNull().default('0'),
+    status: varchar('status', { length: 50 }).notNull().default('مخطط له'),
+    progress: integer('progress').default(0),
+    managerId: varchar('manager_id', { length: 256 }).notNull(),
+    notes: text('notes'),
+});
+
+export const projectTasks = pgTable('project_tasks', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    projectId: varchar('project_id', { length: 256 }).notNull().references(() => projects.id),
+    name: varchar('name', { length: 256 }).notNull(),
+    assigneeId: varchar('assignee_id', { length: 256 }).notNull(),
+    dueDate: timestamp('due_date').notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مخطط لها'),
+    priority: varchar('priority', { length: 50 }).notNull().default('متوسطة'),
+    notes: text('notes'),
+});
+
+export const projectResources = pgTable('project_resources', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    projectId: varchar('project_id', { length: 256 }).notNull().references(() => projects.id),
+    employeeId: varchar('employee_id', { length: 256 }).notNull(),
+    role: varchar('role', { length: 256 }).notNull(),
+    allocation: integer('allocation').default(100),
+    notes: text('notes'),
+});
+
+export const projectBudgetItems = pgTable('project_budget_items', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    projectId: varchar('project_id', { length: 256 }).notNull().references(() => projects.id),
+    item: varchar('item', { length: 256 }).notNull(),
+    allocated: numeric('allocated', { precision: 15, scale: 2 }).notNull().default('0'),
+    spent: numeric('spent', { precision: 15, scale: 2 }).notNull().default('0'),
+    notes: text('notes'),
+});
