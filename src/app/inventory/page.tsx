@@ -28,6 +28,10 @@ import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
+import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory } from './actions';
+import { db } from '@/db';
+import { products, suppliers, categories } from '@/db/schema';
+
 
 // Product Schema
 const productSchema = z.object({
@@ -147,15 +151,13 @@ const stockRequisitionSchema = z.object({
 });
 type StockRequisitionFormValues = z.infer<typeof stockRequisitionSchema>;
 
-// Mock data
-const mockSuppliers = [ { id: "SUP001", name: "مورد الإلكترونيات الحديثة" }, { id: "SUP002", name: "شركة القرطاسية المتحدة" }, { id: "SUP003", name: "مصنع الأثاث العصري" },];
+// Mock data (some are kept for selection inputs)
 const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة", "سنتيمتر"];
 const mockSubUnits = ["قطعة", "حبة", "متر", "سنتيمتر"];
 const mockWarehouses = [{ id: "WH001", name: "المستودع الرئيسي" }, { id: "WH002", name: "مستودع فرعي أ" }];
 const mockUsers = [{ id: "USR001", name: "فريق الجرد أ" }, { id: "USR002", name: "أحمد المسؤول" }, { id: "USR003", name: "مدير المخازن" }];
 const mockDepartments = [{id: "DEP001", name: "قسم المبيعات"}, {id: "DEP002", name: "قسم الصيانة"}];
 const mockRecipients = [...mockDepartments, {id: "CUST001", name: "عميل X"}, {id: "WH002", name: "مستودع فرعي أ (تحويل)"}];
-const mockReceiptSources = [...mockSuppliers, {id: "PROD001", name: "أمر إنتاج #P123"}, {id: "WH001", name: "مستودع رئيسي (تحويل)"}];
 
 const initialStockIssueVouchers: StockIssueVoucherFormValues[] = [
     {id: "SIV001", date: new Date("2024-07-28"), warehouseId: "WH001", recipient: "DEP001", reason: "استخدام داخلي لقسم المبيعات", items: [{productId: "ITEM003", quantityIssued: 2}, {productId: "ITEM005", quantityIssued: 5}], status: "معتمد", issuedBy: "USR003"},
@@ -181,12 +183,37 @@ const chartConfig = { "ITEM001": { label: "لابتوب Dell XPS 15", color: "hs
 
 const mockStocktakeDetail: StocktakeDetails = { id: "STK-2024-06-30-A", date: new Date("2024-06-30").toLocaleDateString('ar-SA'), warehouse: "مستودع A", status: "مكتمل", responsible: "فريق الجرد ألف", itemsCounted: 3, discrepanciesFound: 2, notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.", items: [ { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0, differenceValue: 0 }, { productId: "ITEM002", productName: "طابعة HP LaserJet Pro", expectedQuantity: 7, countedQuantity: 6, difference: -1, differenceValue: -1000 }, { productId: "ITEM003", productName: "ورق طباعة A4 (صندوق)", expectedQuantity: 195, countedQuantity: 198, difference: 3, differenceValue: 360 },],};
 
-// This component now fetches data directly from the database.
-// It is marked as 'use client' because it contains interactive elements 
-// like forms and dialogs that require client-side JavaScript.
+// Server Component to fetch initial data
+async function InventoryDataFetcher({ 
+    setProductsData, 
+    setCategoriesData, 
+    setSuppliersData 
+}: { 
+    setProductsData: (data: any[]) => void; 
+    setCategoriesData: (data: any[]) => void;
+    setSuppliersData: (data: any[]) => void;
+}) {
+    useEffect(() => {
+        const fetchData = async () => {
+            const productsResult = await db.select().from(products);
+            const categoriesResult = await db.select().from(categories);
+            const suppliersResult = await db.select().from(suppliers);
+            setProductsData(productsResult.map(p => ({...p, costPrice: Number(p.costPrice), sellingPrice: Number(p.sellingPrice)})));
+            setCategoriesData(categoriesResult);
+            setSuppliersData(suppliersResult);
+        };
+        fetchData();
+    }, [setProductsData, setCategoriesData, setSuppliersData]);
+
+    return null; // This component doesn't render anything
+}
+
+
 export default function InventoryPage() {
   const [productsData, setProductsData] = useState<ProductFormValues[]>([]);
-  const [categories, setCategories] = useState<CategoryFormValues[]>([]);
+  const [categoriesData, setCategoriesData] = useState<CategoryFormValues[]>([]);
+  const [suppliersData, setSuppliersData] = useState<any[]>([]);
+
   const [showManageProductDialog, setShowManageProductDialog] = useState(false);
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -195,12 +222,10 @@ export default function InventoryPage() {
   const [showManageCategoryDialog, setShowManageCategoryDialog] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState<CategoryFormValues | null>(null);
 
-
   const [currentReport, setCurrentReport] = useState<{key: string, name: string, description: string, icon: React.ElementType} | null>(null);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportData, setReportData] = useState<any[]>([]);
   const [reportFilters, setReportFilters] = useState<{itemId?:string, dateRange?: {from?: Date, to?:Date}, warehouseId?: string, supplierId?: string, lastMovementDate?: Date}>({});
-
 
   const [showStartStocktakeDialog, setShowStartStocktakeDialog] = useState(false);
   const [showViewStocktakeDetailsDialog, setShowViewStocktakeDetailsDialog] = useState(false);
@@ -238,44 +263,60 @@ export default function InventoryPage() {
   useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0 }], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
-  const handleProductSubmit = (values: ProductFormValues) => {
-    if (productToEdit) {
-      setProductsData(prev => prev.map(p => p.id === productToEdit.id ? { ...values, id: productToEdit.id! } : p));
-      toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." });
-    } else {
-      setProductsData(prev => [...prev, { ...values, id: `ITEM${Date.now()}` }]);
-      toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." });
+  const handleProductSubmit = async (values: ProductFormValues) => {
+    try {
+      if (productToEdit) {
+        await updateProduct({ ...values, id: productToEdit.id! });
+        toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." });
+      } else {
+        await addProduct(values);
+        toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." });
+      }
+      setShowManageProductDialog(false);
+      setProductToEdit(null);
+      setImagePreview(null);
+    } catch (error) {
+      toast({ title: "خطأ", description: "لم يتم حفظ المنتج.", variant: "destructive" });
     }
-    setShowManageProductDialog(false);
-    setProductToEdit(null);
-    setImagePreview(null);
   };
   
-  const handleCategorySubmit = (values: CategoryFormValues) => {
-    if (categoryToEdit) {
-      setCategories(prev => prev.map(c => c.id === categoryToEdit.id ? { ...values, id: categoryToEdit.id! } : c));
-      toast({ title: "تم التعديل", description: "تم تعديل الفئة بنجاح." });
-    } else {
-      setCategories(prev => [...prev, { ...values, id: `CAT${Date.now()}` }]);
-      toast({ title: "تمت الإضافة", description: "تمت إضافة الفئة بنجاح." });
+  const handleCategorySubmit = async (values: CategoryFormValues) => {
+     try {
+        if (categoryToEdit) {
+            await updateCategory({ ...values, id: categoryToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل الفئة بنجاح." });
+        } else {
+            await addCategory(values);
+            toast({ title: "تمت الإضافة", description: "تمت إضافة الفئة بنجاح." });
+        }
+        setShowManageCategoryDialog(false);
+        setCategoryToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ الفئة.", variant: "destructive" });
     }
-    setShowManageCategoryDialog(false);
-    setCategoryToEdit(null);
   };
 
-  const handleDeleteProduct = (productId: string) => {
-    setProductsData(prev => prev.filter(p => p.id !== productId));
-    toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+        await deleteProduct(productId);
+        toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حذف المنتج.", variant: "destructive" });
+    }
   };
   
-  const handleDeleteCategory = (categoryId: string) => {
-    const isCategoryInUse = productsData.some(p => p.category === categories.find(c => c.id === categoryId)?.name);
+  const handleDeleteCategory = async (categoryId: string) => {
+    const isCategoryInUse = productsData.some(p => p.category === categoriesData.find(c => c.id === categoryId)?.name);
     if(isCategoryInUse) {
         toast({ title: "خطأ", description: "لا يمكن حذف الفئة لأنها مستخدمة في بعض المنتجات.", variant: "destructive" });
         return;
     }
-    setCategories(prev => prev.filter(c => c.id !== categoryId));
-    toast({ title: "تم الحذف", description: "تم حذف الفئة بنجاح.", variant: "destructive" });
+    try {
+        await deleteCategory(categoryId);
+        toast({ title: "تم الحذف", description: "تم حذف الفئة بنجاح.", variant: "destructive" });
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حذف الفئة.", variant: "destructive" });
+    }
   };
 
 
@@ -389,7 +430,7 @@ export default function InventoryPage() {
                 .filter(p => !filters.supplierId || p.supplierId === filters.supplierId)
                 .map(p => ({
                     ...p,
-                    lastPurchaseDate: stockMovements.find(m => m.item === p.id && m.type.includes("شراء") && m.fromTo === mockSuppliers.find(s=>s.id === p.supplierId)?.name)?.date.toLocaleDateString('ar-SA') || "N/A"
+                    lastPurchaseDate: stockMovements.find(m => m.item === p.id && m.type.includes("شراء") && m.fromTo === suppliersData.find(s=>s.id === p.supplierId)?.name)?.date.toLocaleDateString('ar-SA') || "N/A"
                 }));
         }
         return [];
@@ -416,6 +457,11 @@ export default function InventoryPage() {
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
+        <InventoryDataFetcher 
+            setProductsData={setProductsData} 
+            setCategoriesData={setCategoriesData}
+            setSuppliersData={setSuppliersData}
+        />
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">إدارة المخزون والمستودعات</h1>
         <Dialog open={showManageProductDialog} onOpenChange={(isOpen) => { setShowManageProductDialog(isOpen); if (!isOpen) {setProductToEdit(null); setImagePreview(null);} }}>
@@ -430,7 +476,7 @@ export default function InventoryPage() {
               </div>
               <FormField control={productForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>الوصف</FormLabel><FormControl><Textarea {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={productForm.control} name="category" render={({ field }) => (<FormItem><FormLabel>الفئة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفئة" /></SelectTrigger></FormControl><SelectContent>{categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={productForm.control} name="category" render={({ field }) => (<FormItem><FormLabel>الفئة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفئة" /></SelectTrigger></FormControl><SelectContent>{categoriesData.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                 <FormField control={productForm.control} name="unit" render={({ field }) => (<FormItem><FormLabel>الوحدة الأساسية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الوحدة" /></SelectTrigger></FormControl><SelectContent>{mockUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
               </div>
                 {(selectedUnit === "صندوق" || selectedUnit === "كرتون" || selectedUnit === "علبة") && (
@@ -452,7 +498,7 @@ export default function InventoryPage() {
                 <FormField control={productForm.control} name="location" render={({ field }) => (<FormItem><FormLabel>الموقع بالمستودع</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={productForm.control} name="barcode" render={({ field }) => (<FormItem><FormLabel>الباركود</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
               </div>
-              <FormField control={productForm.control} name="supplierId" render={({ field }) => (<FormItem><FormLabel>المورد الافتراضي (اختياري)</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المورد" /></SelectTrigger></FormControl><SelectContent>{mockSuppliers.map(sup => <SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+              <FormField control={productForm.control} name="supplierId" render={({ field }) => (<FormItem><FormLabel>المورد الافتراضي (اختياري)</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المورد" /></SelectTrigger></FormControl><SelectContent>{suppliersData.map(sup => <SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
               <FormField control={productForm.control} name="image" render={({ field }) => (
                     <FormItem>
                         <FormLabel>صورة المنتج</FormLabel>
@@ -516,7 +562,7 @@ export default function InventoryPage() {
                         <DropdownMenuContent align="end" dir="rtl">
                         <DropdownMenuLabel>تصفية حسب الفئة</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {categories.map(cat => <DropdownMenuCheckboxItem key={cat.id}>{cat.name}</DropdownMenuCheckboxItem>)}
+                        {categoriesData.map(cat => <DropdownMenuCheckboxItem key={cat.id}>{cat.name}</DropdownMenuCheckboxItem>)}
                         </DropdownMenuContent>
                     </DropdownMenu>
                     <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
@@ -560,12 +606,12 @@ export default function InventoryPage() {
                             <TableCell>{product.reorderLevel}</TableCell>
                             <TableCell>{product.location}</TableCell>
                             <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" disabled>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setProductToEdit(product); setShowManageProductDialog(true); }}>
                                 <Edit className="h-4 w-4" />
                             </Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف" disabled>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                                 </AlertDialogTrigger>
@@ -602,7 +648,7 @@ export default function InventoryPage() {
                 <div className="mb-4">
                     <Dialog open={showManageCategoryDialog} onOpenChange={(isOpen) => { setShowManageCategoryDialog(isOpen); if(!isOpen) setCategoryToEdit(null); }}>
                         <DialogTrigger asChild>
-                            <Button className="shadow-md hover:shadow-lg transition-shadow" disabled>
+                            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setCategoryToEdit(null); categoryForm.reset({ name: "", description: ""}); setShowManageCategoryDialog(true); }}>
                                 <PlusCircle className="me-2 h-4 w-4" /> إضافة فئة جديدة
                             </Button>
                         </DialogTrigger>
@@ -612,7 +658,7 @@ export default function InventoryPage() {
                                 <form onSubmit={categoryForm.handleSubmit(handleCategorySubmit)} className="space-y-4 py-4">
                                     <FormField control={categoryForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الفئة</FormLabel><FormControl><Input placeholder="مثال: إلكترونيات" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem> )}/>
                                     <FormField control={categoryForm.control} name="description" render={({ field }) => ( <FormItem><FormLabel>الوصف (اختياري)</FormLabel><FormControl><Input placeholder="وصف موجز للفئة" {...field} className="bg-background"/></FormControl><FormMessage /></FormItem> )}/>
-                                    <DialogFooter><Button type="submit">{categoryToEdit ? 'حفظ التعديلات' : 'حفظ الفئة'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                    <DialogFooter><Button type="submit">{categoryToEdit ? 'حفظ التعديلات' : 'حفظ الفئة'}</Button><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose></DialogFooter>
                                 </form>
                             </Form>
                         </DialogContent>
@@ -624,14 +670,14 @@ export default function InventoryPage() {
                             <TableRow><TableHead>اسم الفئة</TableHead><TableHead>الوصف</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow>
                         </TableHeader>
                         <TableBody>
-                            {categories.map((cat) => (
+                            {categoriesData.map((cat) => (
                                 <TableRow key={cat.id} className="hover:bg-muted/50">
                                     <TableCell className="font-medium">{cat.name}</TableCell>
                                     <TableCell>{cat.description || "-"}</TableCell>
                                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" disabled><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setCategoryToEdit(cat); setShowManageCategoryDialog(true); }}><Edit className="h-4 w-4" /></Button>
                                         <AlertDialog>
-                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف" disabled><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                             <AlertDialogContent dir="rtl">
                                                 <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponentClass>سيتم حذف الفئة "{cat.name}" نهائياً. لا يمكن حذف الفئة إذا كانت مستخدمة في أي منتج.</AlertDialogDescriptionComponentClass></AlertDialogHeader>
                                                 <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteCategory(cat.id!)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
@@ -694,7 +740,7 @@ export default function InventoryPage() {
                         <Form {...stockReceiptVoucherForm}><form onSubmit={stockReceiptVoucherForm.handleSubmit(handleStockReceiptSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-2">
                             <FormField control={stockReceiptVoucherForm.control} name="date" render={({ field }) => ( <FormItem className="flex flex-col"><FormLabel>التاريخ</FormLabel><DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange}/><FormMessage/></FormItem>)}/>
                             <FormField control={stockReceiptVoucherForm.control} name="warehouseId" render={({ field }) => ( <FormItem><FormLabel>المستودع المستلم</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المستودع"/></SelectTrigger></FormControl><SelectContent>{mockWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)}/>
-                            <FormField control={stockReceiptVoucherForm.control} name="source" render={({ field }) => ( <FormItem><FormLabel>المصدر</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المصدر"/></SelectTrigger></FormControl><SelectContent>{mockReceiptSources.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)}/>
+                            <FormField control={stockReceiptVoucherForm.control} name="source" render={({ field }) => ( <FormItem><FormLabel>المصدر</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المصدر"/></SelectTrigger></FormControl><SelectContent>{suppliersData.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)}/>
                             <FormField control={stockReceiptVoucherForm.control} name="reference" render={({ field }) => ( <FormItem><FormLabel>المرجع (PO/فاتورة مورد)</FormLabel><FormControl><Input placeholder="رقم أمر الشراء أو فاتورة المورد" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem>)}/>
                             <ScrollArea className="h-[200px] border rounded-md p-2">
                                 {stockReceiptItemsFields.map((item, index) => (
@@ -715,7 +761,7 @@ export default function InventoryPage() {
                 </Dialog>
                 <Table>
                     <TableHeader><TableRow><TableHead>رقم الإذن</TableHead><TableHead>التاريخ</TableHead><TableHead>المستودع</TableHead><TableHead>المصدر</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                    <TableBody>{stockReceiptVouchers.map(v => (<TableRow key={v.id}><TableCell>{v.id}</TableCell><TableCell>{formatDateForDisplay(v.date)}</TableCell><TableCell>{mockWarehouses.find(w=>w.id === v.warehouseId)?.name}</TableCell><TableCell>{mockReceiptSources.find(s=>s.id === v.source)?.name || v.source}</TableCell><TableCell><Badge variant={v.status === "مرحل للمخزون" ? "default" : "outline"}>{v.status}</Badge></TableCell><TableCell className="text-center"><Button variant="ghost" size="icon" onClick={() => {setStockReceiptToEdit(v);setShowManageStockReceiptDialog(true);}}><Edit className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
+                    <TableBody>{stockReceiptVouchers.map(v => (<TableRow key={v.id}><TableCell>{v.id}</TableCell><TableCell>{formatDateForDisplay(v.date)}</TableCell><TableCell>{mockWarehouses.find(w=>w.id === v.warehouseId)?.name}</TableCell><TableCell>{suppliersData.find(s=>s.id === v.source)?.name || v.source}</TableCell><TableCell><Badge variant={v.status === "مرحل للمخزون" ? "default" : "outline"}>{v.status}</Badge></TableCell><TableCell className="text-center"><Button variant="ghost" size="icon" onClick={() => {setStockReceiptToEdit(v);setShowManageStockReceiptDialog(true);}}><Edit className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
                 </Table>
             </CardContent>
           </Card>
@@ -1029,7 +1075,7 @@ export default function InventoryPage() {
                             <div className="flex-1 min-w-[200px]"> <Label htmlFor="reportSupplierFilter">المورد</Label>
                                 <Select dir="rtl" onValueChange={(value) => setReportFilters(prev => ({ ...prev, supplierId: value === "all" ? undefined : value }))}>
                                     <SelectTrigger id="reportSupplierFilter" className="bg-background"><SelectValue placeholder="كل الموردين" /></SelectTrigger>
-                                    <SelectContent><SelectItem value="all">كل الموردين</SelectItem>{mockSuppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                                    <SelectContent><SelectItem value="all">كل الموردين</SelectItem>{suppliersData.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                         )}
@@ -1108,3 +1154,4 @@ export default function InventoryPage() {
 
 
     
+
