@@ -226,3 +226,16 @@ export const journalEntryLines = pgTable('journal_entry_lines', {
     credit: numeric('credit', { precision: 15, scale: 2 }).notNull().default('0'),
     description: text('description'),
 });
+
+export const employeeSettlements = pgTable('employee_settlements', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id),
+    settlementType: varchar('settlement_type', { length: 100 }).notNull(), // "سلفة", "قرض", "تسوية عهدة", "خصم", "مكافأة"
+    accountId: varchar('account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    description: text('description').notNull(),
+    paymentMethod: varchar('payment_method', { length: 100 }).notNull(), // "نقدي", "راتب", "تحويل بنكي"
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "معتمدة", "مسددة جزئياً", "مسددة بالكامل", "ملغاة"
+    reference: varchar('reference', { length: 256 }),
+});
