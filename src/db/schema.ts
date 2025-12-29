@@ -236,6 +236,20 @@ export const employeeSettlements = pgTable('employee_settlements', {
     amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
     description: text('description').notNull(),
     paymentMethod: varchar('payment_method', { length: 100 }).notNull(), // "نقدي", "راتب", "تحويل بنكي"
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "معتمدة", "مسددة جزئياً", "مسددة بالكامل", "ملغاة"
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "معتمدة", "مسددة بالكامل", "ملغاة"
     reference: varchar('reference', { length: 256 }),
+});
+
+export const checks = pgTable('checks', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    checkNumber: varchar('check_number', { length: 100 }).notNull(),
+    issueDate: timestamp('issue_date').notNull(),
+    dueDate: timestamp('due_date').notNull(),
+    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
+    beneficiaryName: varchar('beneficiary_name', { length: 256 }).notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    currency: varchar('currency', { length: 10 }).notNull().default('SAR'),
+    purpose: text('purpose').notNull(),
+    notes: text('notes'),
+    status: varchar('status', { length: 50 }).notNull().default('صادر'), // "صادر", "مسدد", "ملغي", "مرتجع"
 });
