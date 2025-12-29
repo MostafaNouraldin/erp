@@ -24,7 +24,19 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useCurrency } from '@/hooks/use-currency';
-import { addSupplier, updateSupplier, deleteSupplier, addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, updatePurchaseOrderStatus } from './actions';
+import { 
+    addSupplier, 
+    updateSupplier, 
+    deleteSupplier, 
+    addPurchaseOrder, 
+    updatePurchaseOrder, 
+    deletePurchaseOrder, 
+    updatePurchaseOrderStatus,
+    addSupplierInvoice,
+    updateSupplierInvoice,
+    deleteSupplierInvoice,
+    updateSupplierInvoicePayment 
+} from './actions';
 
 
 // Schemas
@@ -324,18 +336,22 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     setShowPrintPoDialog(true);
   };
 
-  const handleSupplierInvoiceSubmit = (values: SupplierInvoiceFormValues) => {
+  const handleSupplierInvoiceSubmit = async (values: SupplierInvoiceFormValues) => {
     const totalAmount = calculateTotalAmountForForm(values.items);
-    const finalValues = {...values, totalAmount, paidAmount: values.paidAmount || 0};
-    if (supplierInvoiceToEdit) {
-      setSupplierInvoicesData(prev => prev.map(inv => inv.id === supplierInvoiceToEdit.id ? { ...finalValues, id: supplierInvoiceToEdit.id! } : inv));
-      toast({ title: "تم التعديل", description: "تم تعديل فاتورة المورد." });
-    } else {
-      setSupplierInvoicesData(prev => [...prev, { ...finalValues, id: `INV-S${Date.now()}` }]);
-      toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة المورد." });
+    const finalValues = { ...values, totalAmount, paidAmount: values.paidAmount || 0 };
+    try {
+        if (supplierInvoiceToEdit) {
+            await updateSupplierInvoice({ ...finalValues, id: supplierInvoiceToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل فاتورة المورد." });
+        } else {
+            await addSupplierInvoice(finalValues);
+            toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة المورد." });
+        }
+        setShowCreateSupplierInvoiceDialog(false);
+        setSupplierInvoiceToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ فاتورة المورد.", variant: "destructive" });
     }
-    setShowCreateSupplierInvoiceDialog(false);
-    setSupplierInvoiceToEdit(null);
   };
   
   const handleViewSupplierInvoice = (invoice: SupplierInvoiceFormValues) => {
@@ -349,15 +365,18 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     setShowRecordPaymentDialog(true);
   };
   
-  const handleRecordSupplierPaymentSubmit = (paymentValues: SupplierPaymentFormValues) => {
+  const handleRecordSupplierPaymentSubmit = async (paymentValues: SupplierPaymentFormValues) => {
     if (!supplierInvoiceToPay) return;
     const newPaidAmount = (supplierInvoiceToPay.paidAmount || 0) + paymentValues.paymentAmount;
     const newStatus = newPaidAmount >= supplierInvoiceToPay.totalAmount ? "مدفوع" as const : "مدفوع جزئياً" as const;
 
-    setSupplierInvoicesData(prev => prev.map(inv => 
-        inv.id === supplierInvoiceToPay.id ? {...inv, paidAmount: newPaidAmount, status: newStatus} : inv
-    ));
-    toast({title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة المورد بنجاح."});
+    try {
+        await updateSupplierInvoicePayment(supplierInvoiceToPay.id!, newPaidAmount, newStatus);
+        toast({title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة المورد بنجاح."});
+    } catch(error) {
+        toast({title: "خطأ", description: "لم يتم تسجيل الدفعة.", variant: "destructive"});
+    }
+
     setShowRecordPaymentDialog(false);
     setSupplierInvoiceToPay(null);
   };
@@ -454,9 +473,13 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
         toast({ title: "خطأ", description: "لم يتم حذف أمر الشراء.", variant: "destructive" });
     }
   };
-  const handleDeleteSupplierInvoice = (invId: string) => {
-      setSupplierInvoicesData(prev => prev.filter(inv => inv.id !== invId));
-      toast({title: "تم الحذف", description: `تم حذف فاتورة المورد ${invId}`, variant:"destructive"});
+  const handleDeleteSupplierInvoice = async (invId: string) => {
+    try {
+        await deleteSupplierInvoice(invId);
+        toast({title: "تم الحذف", description: `تم حذف فاتورة المورد ${invId}`, variant:"destructive"});
+    } catch (e) {
+      toast({title: "خطأ", description: "لم يتم حذف فاتورة المورد.", variant: "destructive"});
+    }
   };
   const handleDeleteGrn = (grnId: string) => {
       setGoodsReceivedNotesData(prev => prev.filter(grn => grn.id !== grnId));
@@ -586,4 +609,3 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
-
