@@ -361,10 +361,6 @@ export default function SubscriptionInvoicesPage() {
                               <Banknote className="h-4 w-4 text-green-600" />
                           </Button>
                       )}
-                      {/* Add Edit button if needed later */}
-                      {/* <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل الفاتورة" onClick={() => { setInvoiceToEdit(invoice); setShowCreateInvoiceDialog(true);}}>
-                          <Edit className="h-4 w-4" />
-                      </Button> */}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -376,3 +372,4 @@ export default function SubscriptionInvoicesPage() {
     </div>
   );
 }
+

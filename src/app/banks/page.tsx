@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Switch } from "@/components/ui/switch"; // Added import for Switch
+import { Switch } from "@/components/ui/switch"; 
+import { useCurrency } from '@/hooks/use-currency';
 
 const bankAccountSchema = z.object({
   id: z.string().optional(),
@@ -41,6 +42,7 @@ export default function BanksPage() {
   const [bankAccounts, setBankAccounts] = useState(initialBankAccountsData);
   const [showManageBankAccountDialog, setShowManageBankAccountDialog] = useState(false);
   const [bankAccountToEdit, setBankAccountToEdit] = useState<BankAccountFormValues | null>(null);
+  const { formatCurrency } = useCurrency();
 
   const form = useForm<BankAccountFormValues>({
     resolver: zodResolver(bankAccountSchema),
@@ -172,7 +174,7 @@ export default function BanksPage() {
                     <TableCell>{account.accountNumber}</TableCell>
                     <TableCell>{account.accountType}</TableCell>
                     <TableCell>{account.currency}</TableCell>
-                    <TableCell>{account.balance.toLocaleString('ar-SA', { style: 'currency', currency: account.currency })}</TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(account.balance) }}></TableCell>
                     <TableCell><Badge variant={account.isActive ? "default" : "outline"}>{account.isActive ? "نشط" : "غير نشط"}</Badge></TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل/كشف حساب (مثال)" onClick={() => alert(`عرض كشف حساب لـ ${account.bankName}`)}>
@@ -209,3 +211,4 @@ export default function BanksPage() {
     </div>
   );
 }
+

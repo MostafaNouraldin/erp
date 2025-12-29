@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from "@/components/ui/checkbox";
+import { useCurrency } from '@/hooks/use-currency';
 
 
 // Mock data initial state
@@ -112,6 +113,7 @@ type AnyInvoice = CustomerInvoiceFormValues | SupplierInvoiceFormValues;
 export default function AccountsPayableReceivablePage() {
   const [customerInvoices, setCustomerInvoices] = useState(initialCustomerInvoicesData);
   const [supplierInvoices, setSupplierInvoices] = useState(initialSupplierInvoicesData);
+  const { formatCurrency } = useCurrency();
 
   const [showAddCustomerInvoiceDialog, setShowAddCustomerInvoiceDialog] = useState(false);
   const [customerInvoiceToEdit, setCustomerInvoiceToEdit] = useState<CustomerInvoiceFormValues | null>(null);
@@ -467,9 +469,9 @@ export default function AccountsPayableReceivablePage() {
                         <TableCell>{mockCustomers.find(c=>c.id === invoice.customerId)?.name}</TableCell>
                         <TableCell>{invoice.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                         <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
-                        <TableCell>{invoice.totalAmount.toFixed(2)} SAR</TableCell>
-                        <TableCell>{invoice.paidAmount.toFixed(2)} SAR</TableCell>
-                        <TableCell className="font-semibold">{invoice.remainingAmount.toFixed(2)} SAR</TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.totalAmount) }}></TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.paidAmount) }}></TableCell>
+                        <TableCell className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.remainingAmount) }}></TableCell>
                         <TableCell>
                           <Badge 
                             variant={ 
@@ -555,9 +557,9 @@ export default function AccountsPayableReceivablePage() {
                         <TableCell>{mockSuppliers.find(s=>s.id === invoice.supplierId)?.name}</TableCell>
                         <TableCell>{invoice.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                         <TableCell>{invoice.dueDate.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
-                        <TableCell>{invoice.totalAmount.toFixed(2)} SAR</TableCell>
-                        <TableCell>{invoice.paidAmount.toFixed(2)} SAR</TableCell>
-                        <TableCell className="font-semibold">{invoice.remainingAmount.toFixed(2)} SAR</TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.totalAmount) }}></TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.paidAmount) }}></TableCell>
+                        <TableCell className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.remainingAmount) }}></TableCell>
                         <TableCell>
                           <Badge variant={invoice.status === "مدفوع" ? "default" : invoice.status === "جزئي" ? "secondary" : "outline"} className="whitespace-nowrap">
                             {invoice.status}
@@ -600,7 +602,7 @@ export default function AccountsPayableReceivablePage() {
                   <div key={item.range}>
                     <div className="flex justify-between mb-1">
                       <span>{item.range}</span>
-                      <span className="font-semibold">{item.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })} ({item.percent}%)</span>
+                      <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(item.amount) + ` (${item.percent}%)` }}></span>
                     </div>
                     <Progress value={item.percent} aria-label={`${item.percent}% للعملاء في نطاق ${item.range}`} className="h-2" />
                   </div>
@@ -617,7 +619,7 @@ export default function AccountsPayableReceivablePage() {
                   <div key={item.range}>
                     <div className="flex justify-between mb-1">
                       <span>{item.range}</span>
-                       <span className="font-semibold">{item.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })} ({item.percent}%)</span>
+                       <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(item.amount) + ` (${item.percent}%)` }}></span>
                     </div>
                     <Progress value={item.percent} aria-label={`${item.percent}% للموردين في نطاق ${item.range}`} className="h-2" />
                   </div>
@@ -639,9 +641,9 @@ export default function AccountsPayableReceivablePage() {
               <div><strong>{selectedInvoiceForView.type === 'customer' ? 'العميل' : 'المورد'}:</strong> {selectedInvoiceForView.type === 'customer' ? selectedInvoiceForView.customer : selectedInvoiceForView.supplier}</div>
               <div><strong>تاريخ الفاتورة:</strong> {selectedInvoiceForView.date?.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
               <div><strong>تاريخ الاستحقاق:</strong> {selectedInvoiceForView.dueDate?.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
-              <div><strong>المبلغ الإجمالي:</strong> {selectedInvoiceForView.totalAmount?.toFixed(2)} SAR</div>
-              <div><strong>المبلغ المدفوع:</strong> {selectedInvoiceForView.paidAmount?.toFixed(2)} SAR</div>
-              <div><strong>المبلغ المتبقي:</strong> {selectedInvoiceForView.remainingAmount?.toFixed(2)} SAR</div>
+              <div dangerouslySetInnerHTML={{ __html: `<strong>المبلغ الإجمالي:</strong> ${formatCurrency(selectedInvoiceForView.totalAmount)}` }}></div>
+              <div dangerouslySetInnerHTML={{ __html: `<strong>المبلغ المدفوع:</strong> ${formatCurrency(selectedInvoiceForView.paidAmount)}` }}></div>
+              <div dangerouslySetInnerHTML={{ __html: `<strong>المبلغ المتبقي:</strong> ${formatCurrency(selectedInvoiceForView.remainingAmount)}` }}></div>
               <div className="flex items-center gap-2">
                 <strong>الحالة:</strong>{' '}
                 <Badge
@@ -670,8 +672,8 @@ export default function AccountsPayableReceivablePage() {
                                 <TableRow key={idx}>
                                     <TableCell>{mockItems.find(i => i.id === it.itemId)?.name || it.description || it.itemId}</TableCell>
                                     <TableCell>{it.quantity}</TableCell>
-                                    <TableCell>{it.unitPrice.toFixed(2)}</TableCell>
-                                    <TableCell>{it.total.toFixed(2)}</TableCell>
+                                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(it.unitPrice) }}></TableCell>
+                                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(it.total) }}></TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -690,7 +692,7 @@ export default function AccountsPayableReceivablePage() {
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle>تسجيل دفعة لـ {invoiceTypeForPayment === 'customer' ? 'فاتورة عميل' : 'فاتورة مورد'} رقم: {invoiceToPay?.id}</DialogTitle>
-            <DialogDescription>الفاتورة بمبلغ إجمالي {invoiceToPay?.totalAmount.toFixed(2)} SAR، متبقي منها {invoiceToPay?.remainingAmount.toFixed(2)} SAR.</DialogDescription>
+            <DialogDescription>الفاتورة بمبلغ إجمالي <span dangerouslySetInnerHTML={{ __html: formatCurrency(invoiceToPay?.totalAmount || 0) }}></span>، متبقي منها <span dangerouslySetInnerHTML={{ __html: formatCurrency(invoiceToPay?.remainingAmount || 0) }}></span>.</DialogDescription>
           </DialogHeader>
           <Form {...paymentForm}>
             <form onSubmit={paymentForm.handleSubmit(handleRecordPaymentSubmit)} className="space-y-4 py-4">
@@ -721,4 +723,5 @@ export default function AccountsPayableReceivablePage() {
     </div>
   );
 }
+
 

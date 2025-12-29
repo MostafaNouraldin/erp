@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import AppLogo from '@/components/app-logo'; // Assuming AppLogo exists for company logo
+import { useCurrency } from '@/hooks/use-currency';
 
 // Mock Data
 const mockBankAccounts = [
@@ -65,6 +66,7 @@ export default function BankExpensesPage() {
   const [expenseToEdit, setExpenseToEdit] = useState<BankExpenseFormValues | null>(null);
   const [showPrintExpenseDialog, setShowPrintExpenseDialog] = useState(false);
   const [selectedExpenseForPrint, setSelectedExpenseForPrint] = useState<BankExpenseFormValues | null>(null);
+  const { formatCurrency } = useCurrency();
 
 
   const form = useForm<BankExpenseFormValues>({
@@ -229,7 +231,7 @@ export default function BankExpensesPage() {
                     <TableCell>{mockExpenseAccounts.find(e => e.id === expense.expenseAccountId)?.name}</TableCell>
                     <TableCell>{expense.beneficiary}</TableCell>
                     <TableCell>{expense.description}</TableCell>
-                    <TableCell>{expense.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(expense.amount) }}></TableCell>
                     <TableCell>{expense.referenceNumber || "-"}</TableCell>
                     <TableCell><Badge variant={expense.status === "مرحل" ? "default" : "outline"}>{expense.status}</Badge></TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
@@ -308,7 +310,7 @@ export default function BankExpensesPage() {
                 <p><strong>الوصف (البيان):</strong> {selectedExpenseForPrint.description}</p>
               </div>
               <div className="mb-8 p-3 border border-gray-300 rounded-md bg-muted/30 text-xs">
-                  <p><strong>المبلغ:</strong> <span className="font-bold text-base">{selectedExpenseForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</span></p>
+                  <p><strong>المبلغ:</strong> <span className="font-bold text-base" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedExpenseForPrint.amount) }}></span></p>
                   <p data-ai-hint="amount to words function"><strong>المبلغ كتابة:</strong> {convertAmountToWords(selectedExpenseForPrint.amount)}</p>
               </div>
 
@@ -343,4 +345,5 @@ export default function BankExpensesPage() {
     </div>
   );
 }
+
 

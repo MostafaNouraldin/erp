@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import type { Module } from '@/types/saas';
+import { useCurrency } from '@/hooks/use-currency';
 
 // Initial module data (could be derived from navItems or a central config)
 const initialModulesData: Module[] = [
@@ -51,6 +52,7 @@ type ModulesFormValues = z.infer<typeof modulesFormSchema>;
 export default function ModulesConfigPage() {
   const [modulesConfig, setModulesConfig] = useState<Module[]>(initialModulesData);
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
 
   const form = useForm<ModulesFormValues>({
     resolver: zodResolver(modulesFormSchema),
@@ -101,8 +103,8 @@ export default function ModulesConfigPage() {
                       <TableHead className="w-[200px]">اسم الوحدة (Module)</TableHead>
                       <TableHead>الوصف</TableHead>
                       <TableHead className="w-[120px] text-center">متاحة للتأجير؟</TableHead>
-                      <TableHead className="w-[150px]">السعر الشهري (SAR)</TableHead>
-                      <TableHead className="w-[150px]">السعر السنوي (SAR)</TableHead>
+                      <TableHead className="w-[150px]">السعر الشهري</TableHead>
+                      <TableHead className="w-[150px]">السعر السنوي</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -181,3 +183,4 @@ export default function ModulesConfigPage() {
     </div>
   );
 }
+

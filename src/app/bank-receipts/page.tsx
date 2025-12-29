@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import AppLogo from '@/components/app-logo'; // Assuming AppLogo exists for company logo
+import { useCurrency } from '@/hooks/use-currency';
 
 // Mock Data
 const mockBankAccounts = [
@@ -68,6 +69,7 @@ export default function BankReceiptsPage() {
   const [receiptToEdit, setReceiptToEdit] = useState<BankReceiptFormValues | null>(null);
   const [showPrintReceiptDialog, setShowPrintReceiptDialog] = useState(false);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<BankReceiptFormValues | null>(null);
+  const { formatCurrency } = useCurrency();
 
 
   const form = useForm<BankReceiptFormValues>({
@@ -239,7 +241,7 @@ export default function BankReceiptsPage() {
                     <TableCell>{mockRevenueAccounts.find(e => e.id === receipt.revenueAccountId)?.name}</TableCell>
                     <TableCell>{receipt.payerName}</TableCell>
                     <TableCell>{receipt.description}</TableCell>
-                    <TableCell>{receipt.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(receipt.amount) }}></TableCell>
                     <TableCell>{receipt.referenceNumber || "-"}</TableCell>
                     <TableCell><Badge variant={receipt.status === "مرحل" ? "default" : "outline"}>{receipt.status}</Badge></TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
@@ -319,7 +321,7 @@ export default function BankReceiptsPage() {
                 <p><strong>الوصف (البيان):</strong> {selectedReceiptForPrint.description}</p>
               </div>
               <div className="mb-8 p-3 border border-gray-300 rounded-md bg-muted/30 text-xs">
-                  <p><strong>المبلغ:</strong> <span className="font-bold text-base">{selectedReceiptForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</span></p>
+                  <p><strong>المبلغ:</strong> <span className="font-bold text-base" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedReceiptForPrint.amount) }}></span></p>
                   <p data-ai-hint="amount words"><strong>المبلغ كتابة:</strong> {convertAmountToWords(selectedReceiptForPrint.amount)}</p>
               </div>
 
@@ -354,4 +356,5 @@ export default function BankReceiptsPage() {
     </div>
   );
 }
+
 
