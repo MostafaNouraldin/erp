@@ -23,6 +23,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { db } from '@/db';
+import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema } from '@/db/schema';
 
 
 // Mock data
@@ -65,80 +67,28 @@ export interface InvoiceItem {
 }
 export interface Invoice {
   id: string;
-  orderId?: string;
+  orderId?: string | null;
   customerId: string;
   date: Date;
   dueDate: Date;
   numericTotalAmount: number; 
   status: "مدفوع" | "غير مدفوع" | "متأخر";
   items: InvoiceItem[];
-  notes?: string;
-  isDeferredPayment?: boolean;
-  source?: "POS" | "Manual";
+  notes?: string | null;
+  isDeferredPayment?: boolean | null;
+  source?: "POS" | "Manual" | null;
 }
-
-const initialInvoicesData: Invoice[] = [
-  {
-    id: "INV-C001",
-    orderId: "SO001",
-    customerId: "CUST002",
-    date: new Date("2024-07-20"),
-    dueDate: new Date("2024-08-20"),
-    numericTotalAmount: 8200, 
-    status: "مدفوع",
-    items: [
-      {itemId: "SERV001", description: "خدمة استشارية لتطوير الأعمال", quantity: 1, unitPrice: 7130.43, total: 7130.43 }, 
-    ],
-    isDeferredPayment: false,
-    source: "Manual",
-  },
-  {
-    id: "INV-C002",
-    customerId: "CUST001",
-    date: new Date("2024-07-15"),
-    dueDate: new Date("2024-08-15"),
-    numericTotalAmount: 15500,
-    status: "غير مدفوع",
-    items: [
-      {itemId: "ITEM001", description: "تطوير واجهة مستخدم لتطبيق موبايل", quantity: 1, unitPrice: 10000, total: 10000 },
-      {itemId: "ITEM002", description: "تصميم شعار وهوية بصرية", quantity: 1, unitPrice: 3478.26, total: 3478.26 }, 
-    ],
-    isDeferredPayment: true,
-    source: "Manual",
-  },
-  {
-    id: "INV-POS-12345", // Sample POS invoice
-    customerId: "__cash_customer__", // Cash customer
-    date: new Date("2024-07-28"),
-    dueDate: new Date("2024-07-28"),
-    numericTotalAmount: 35,
-    status: "مدفوع",
-    items: [
-      {itemId: "PROD001", description: "قهوة سوداء", quantity: 2, unitPrice: 10, total: 20 },
-      {itemId: "PROD003", description: "كرواسون بالجبنة", quantity: 1, unitPrice: 12, total: 12 },
-    ],
-    isDeferredPayment: false,
-    notes: "فاتورة من نقطة البيع للعميل: عميل نقدي - طريقة الدفع: cash",
-    source: "POS",
-  },
-];
 
 interface Customer {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  type: string;
+  email: string | null;
+  phone: string | null;
+  type: string | null;
   balance: string;
-  address?: string;
+  address?: string | null;
   vatNumber?: string | null;
 }
-const customers: Customer[] = [
-  { id: "CUST001", name: "شركة الأمل", email: "contact@alamal.com", phone: "0501234567", type: "شركة", balance: "15,500 SAR", address: "طريق الملك فهد، الرياض، المملكة العربية السعودية", vatNumber: "300123456700003" },
-  { id: "CUST002", name: "مؤسسة النجاح", email: "info@najjsuccess.org", phone: "0559876543", type: "مؤسسة", balance: "0 SAR", address: "شارع الأمير سلطان، جدة، المملكة العربية السعودية", vatNumber: "300765432100003" },
-  { id: "CUST003", name: "أحمد خالد (فرد)", email: "ahmed.k@mail.com", phone: "0533332222", type: "فرد", balance: "0 SAR", address: "حي النزهة، الدمام، المملكة العربية السعودية", vatNumber: null },
-  { id: "CUST004", name: "مؤسسة الإبداع", email: "info@ibdaa.com", phone: "0551112222", type: "مؤسسة", balance: "12,000 SAR", address: "شارع التحلية، الرياض", vatNumber: "30099988800003" },
-];
 
 const mockItems = [
     {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 6500}, {id: "SERV001", name: "خدمة استشارية A", price: 15000},
@@ -147,7 +97,7 @@ const mockItems = [
 
 interface PrintableInvoice extends Invoice {
     customerName: string;
-    customerAddress?: string;
+    customerAddress?: string | null;
     customerVatNumber?: string | null;
     subTotalForPrint: number;
     vatAmountForPrint: number;
@@ -236,8 +186,9 @@ const convertAmountToWords = (amount: number) => {
 
 export default function SalesPage() {
   const [quotations, setQuotationsData] = useState<QuotationFormValues[]>(initialQuotationsData);
-  const [invoices, setInvoicesData] = useState<Invoice[]>(initialInvoicesData);
+  const [invoices, setInvoicesData] = useState<Invoice[]>([]);
   const [salesOrders, setSalesOrdersData] = useState<SalesOrder[]>(initialSalesOrdersData);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   
   const [showPrintInvoiceDialog, setShowPrintInvoiceDialog] = useState(false);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<PrintableInvoice | null>(null);
@@ -259,6 +210,27 @@ export default function SalesPage() {
 
 
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchData() {
+        const customersResult = await db.select().from(customersSchema);
+        const invoicesResult = await db.select().from(salesInvoicesSchema);
+
+        setCustomers(customersResult.map(c => ({
+            ...c,
+            balance: (c.balance ?? '0').toString(),
+        })));
+        
+        setInvoicesData(invoicesResult.map(i => ({
+            ...i,
+            numericTotalAmount: parseFloat(i.numericTotalAmount),
+            items: [], // This would require another query to fetch items
+            status: i.status as "مدفوع" | "غير مدفوع" | "متأخر",
+            source: i.source as "POS" | "Manual" | undefined,
+        })));
+    }
+    fetchData();
+  }, []);
 
   const quotationForm = useForm<QuotationFormValues>({
     resolver: zodResolver(quotationSchema),
@@ -467,7 +439,7 @@ export default function SalesPage() {
         <div className="flex gap-2">
             <Dialog open={showCreateQuotationDialog} onOpenChange={(isOpen) => { setShowCreateQuotationDialog(isOpen); if(!isOpen) setQuotationToEdit(null); }}>
               <DialogTrigger asChild>
-                <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setQuotationToEdit(null); quotationForm.reset(); setShowCreateQuotationDialog(true);}}>
+                <Button disabled className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setQuotationToEdit(null); quotationForm.reset(); setShowCreateQuotationDialog(true);}}>
                     <PlusCircle className="me-2 h-4 w-4" /> إنشاء عرض سعر جديد
                 </Button>
               </DialogTrigger>
@@ -530,7 +502,7 @@ export default function SalesPage() {
 
             <Dialog open={showCreateSalesOrderDialog} onOpenChange={(isOpen) => { setShowCreateSalesOrderDialog(isOpen); if(!isOpen) setSalesOrderToEdit(null); }}>
               <DialogTrigger asChild>
-                <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSalesOrderToEdit(null); salesOrderForm.reset(); setShowCreateSalesOrderDialog(true);}}>
+                <Button disabled variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSalesOrderToEdit(null); salesOrderForm.reset(); setShowCreateSalesOrderDialog(true);}}>
                     <PlusCircle className="me-2 h-4 w-4" /> إنشاء أمر بيع مباشر
                 </Button>
               </DialogTrigger>
@@ -769,7 +741,7 @@ export default function SalesPage() {
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                     <Dialog open={showCreateInvoiceDialog} onOpenChange={(isOpen) => { setShowCreateInvoiceDialog(isOpen); if(!isOpen) setInvoiceToEdit(null); }}>
                       <DialogTrigger asChild>
-                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setInvoiceToEdit(null); invoiceForm.reset(); setShowCreateInvoiceDialog(true);}}>
+                        <Button disabled className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setInvoiceToEdit(null); invoiceForm.reset(); setShowCreateInvoiceDialog(true);}}>
                             <PlusCircle className="me-2 h-4 w-4" /> إنشاء فاتورة مبيعات جديدة
                         </Button>
                       </DialogTrigger>
@@ -888,11 +860,11 @@ export default function SalesPage() {
                                 <Printer className="h-4 w-4" />
                             </Button>
                              {inv.status === "غير مدفوع" && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة">
+                                <Button disabled variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة">
                                     <CheckCircle className="h-4 w-4 text-green-600" />
                                 </Button>
                              )}
-                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل الفاتورة" onClick={() => {setInvoiceToEdit(inv); setShowCreateInvoiceDialog(true);}}>
+                             <Button disabled variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل الفاتورة" onClick={() => {setInvoiceToEdit(inv as InvoiceFormValues); setShowCreateInvoiceDialog(true);}}>
                                 <Edit className="h-4 w-4" />
                              </Button>
                         </TableCell>
@@ -913,7 +885,7 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
-                    <Button className="shadow-md hover:shadow-lg transition-shadow">
+                    <Button disabled className="shadow-md hover:shadow-lg transition-shadow">
                         <PlusCircle className="me-2 h-4 w-4" /> إضافة عميل جديد
                     </Button>
                     <div className="relative w-full sm:w-auto grow sm:grow-0">
@@ -949,7 +921,7 @@ export default function SalesPage() {
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض ملف العميل" onClick={() => handleViewCustomerDetails(cust)}>
                                 <Eye className="h-4 w-4" />
                             </Button>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل بيانات العميل">
+                             <Button disabled variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل بيانات العميل">
                                 <Edit className="h-4 w-4" />
                             </Button>
                         </TableCell>
