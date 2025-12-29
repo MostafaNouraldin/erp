@@ -1,6 +1,8 @@
 
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean } from 'drizzle-orm/pg-core';
 
+// --- Core Tables ---
+
 export const customers = pgTable('customers', {
   id: varchar('id', { length: 256 }).primaryKey(),
   name: varchar('name', { length: 256 }).notNull(),
@@ -21,6 +23,27 @@ export const suppliers = pgTable('suppliers', {
     vatNumber: varchar('vat_number', { length: 256 }),
     contactPerson: varchar('contact_person', { length: 256 }),
     notes: text('notes'),
+});
+
+export const employees = pgTable('employees', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    jobTitle: varchar('job_title', { length: 256 }).notNull(),
+    department: varchar('department', { length: 256 }).notNull(),
+    contractStartDate: timestamp('contract_start_date').notNull(),
+    contractEndDate: timestamp('contract_end_date').notNull(),
+    employmentType: varchar('employment_type', { length: 50 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull(),
+    basicSalary: numeric('basic_salary', { precision: 10, scale: 2 }).notNull(),
+    email: varchar('email', { length: 256 }),
+    phone: varchar('phone', { length: 50 }),
+    avatarUrl: text('avatar_url'),
+    dataAiHint: varchar('data_ai_hint', { length: 256 }),
+    nationality: varchar('nationality', { length: 100 }),
+    idNumber: varchar('id_number', { length: 50 }),
+    bankName: varchar('bank_name', { length: 256 }),
+    iban: varchar('iban', { length: 256 }),
+    socialInsuranceNumber: varchar('social_insurance_number', { length: 100 }),
 });
 
 export const products = pgTable('products', {
@@ -48,6 +71,28 @@ export const categories = pgTable('categories', {
     description: text('description'),
 });
 
+export const chartOfAccounts = pgTable('chart_of_accounts', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // "رئيسي", "فرعي", "تحليلي"
+    parentId: varchar('parent_id', { length: 256 }),
+    balance: numeric('balance', { precision: 15, scale: 2 }).default('0'),
+});
+
+export const bankAccounts = pgTable('bank_accounts', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    bankName: varchar('bank_name', { length: 256 }).notNull(),
+    accountNumber: varchar('account_number', { length: 256 }).notNull(),
+    iban: varchar('iban', { length: 256 }),
+    accountType: varchar('account_type', { length: 50 }).notNull(), // "جارى", "توفير", "وديعة"
+    currency: varchar('currency', { length: 10 }).notNull(), // "SAR", "USD", "EUR"
+    balance: numeric('balance', { precision: 15, scale: 2 }).notNull().default('0'),
+    branchName: varchar('branch_name', { length: 256 }),
+    isActive: boolean('is_active').default(true).notNull(),
+});
+
+// --- Transactional Tables ---
+
 export const salesInvoices = pgTable('sales_invoices', {
   id: varchar('id', { length: 256 }).primaryKey(),
   orderId: varchar('order_id', { length: 256 }),
@@ -63,61 +108,12 @@ export const salesInvoices = pgTable('sales_invoices', {
 
 export const salesInvoiceItems = pgTable('sales_invoice_items', {
     id: serial('id').primaryKey(),
-    invoiceId: varchar('invoice_id', { length: 256 }).notNull().references(() => salesInvoices.id),
+    invoiceId: varchar('invoice_id', { length: 256 }).notNull().references(() => salesInvoices.id, { onDelete: 'cascade' }),
     itemId: varchar('item_id', { length: 256 }).notNull(),
     description: text('description').notNull(),
     quantity: integer('quantity').notNull(),
     unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
-});
-
-export const bankAccounts = pgTable('bank_accounts', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    bankName: varchar('bank_name', { length: 256 }).notNull(),
-    accountNumber: varchar('account_number', { length: 256 }).notNull(),
-    iban: varchar('iban', { length: 256 }),
-    accountType: varchar('account_type', { length: 50 }).notNull(), // "جارى", "توفير", "وديعة"
-    currency: varchar('currency', { length: 10 }).notNull(), // "SAR", "USD", "EUR"
-    balance: numeric('balance', { precision: 15, scale: 2 }).notNull().default('0'),
-    branchName: varchar('branch_name', { length: 256 }),
-    isActive: boolean('is_active').default(true).notNull(),
-});
-
-export const bankExpenses = pgTable('bank_expenses', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    date: timestamp('date').notNull(),
-    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
-    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull(),
-    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
-    description: text('description').notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    referenceNumber: varchar('reference_number', { length: 256 }),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
-});
-
-export const bankReceipts = pgTable('bank_receipts', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    date: timestamp('date').notNull(),
-    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
-    revenueAccountId: varchar('revenue_account_id', { length: 256 }).notNull(),
-    payerName: varchar('payer_name', { length: 256 }).notNull(),
-    customerId: varchar('customer_id', { length: 256 }).references(() => customers.id),
-    description: text('description').notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    referenceNumber: varchar('reference_number', { length: 256 }),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
-});
-
-export const cashExpenses = pgTable('cash_expenses', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    date: timestamp('date').notNull(),
-    cashAccountId: varchar('cash_account_id', { length: 256 }).notNull(),
-    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull(),
-    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
-    description: text('description').notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    voucherNumber: varchar('voucher_number', { length: 256 }),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
 });
 
 export const purchaseOrders = pgTable('purchase_orders', {
@@ -132,7 +128,7 @@ export const purchaseOrders = pgTable('purchase_orders', {
 
 export const purchaseOrderItems = pgTable('purchase_order_items', {
   id: serial('id').primaryKey(),
-  poId: varchar('po_id', { length: 256 }).notNull().references(() => purchaseOrders.id),
+  poId: varchar('po_id', { length: 256 }).notNull().references(() => purchaseOrders.id, { onDelete: 'cascade' }),
   itemId: varchar('item_id', { length: 256 }).notNull(),
   description: text('description'),
   quantity: integer('quantity').notNull(),
@@ -154,58 +150,12 @@ export const supplierInvoices = pgTable('supplier_invoices', {
 
 export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
     id: serial('id').primaryKey(),
-    invoiceId: varchar('invoice_id', { length: 256 }).notNull().references(() => supplierInvoices.id),
+    invoiceId: varchar('invoice_id', { length: 256 }).notNull().references(() => supplierInvoices.id, { onDelete: 'cascade' }),
     itemId: varchar('item_id', { length: 256 }).notNull(),
     description: text('description'),
     quantity: integer('quantity').notNull(),
     unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
-});
-
-export const employees = pgTable('employees', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    name: varchar('name', { length: 256 }).notNull(),
-    jobTitle: varchar('job_title', { length: 256 }).notNull(),
-    department: varchar('department', { length: 256 }).notNull(),
-    contractStartDate: timestamp('contract_start_date').notNull(),
-    contractEndDate: timestamp('contract_end_date').notNull(),
-    employmentType: varchar('employment_type', { length: 50 }).notNull(),
-    status: varchar('status', { length: 50 }).notNull(),
-    basicSalary: numeric('basic_salary', { precision: 10, scale: 2 }).notNull(),
-    email: varchar('email', { length: 256 }),
-    phone: varchar('phone', { length: 50 }),
-    avatarUrl: text('avatar_url'),
-    dataAiHint: varchar('data_ai_hint', { length: 256 }),
-    nationality: varchar('nationality', { length: 100 }),
-    idNumber: varchar('id_number', { length: 50 }),
-    bankName: varchar('bank_name', { length: 256 }),
-    iban: varchar('iban', { length: 256 }),
-    socialInsuranceNumber: varchar('social_insurance_number', { length: 100 }),
-});
-
-export const employeeAllowances = pgTable('employee_allowances', {
-    id: serial('id').primaryKey(),
-    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id),
-    description: varchar('description', { length: 256 }).notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
-});
-
-export const employeeDeductions = pgTable('employee_deductions', {
-    id: serial('id').primaryKey(),
-    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id),
-    description: varchar('description', { length: 256 }).notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
-});
-
-
-export const chartOfAccounts = pgTable('chart_of_accounts', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    name: varchar('name', { length: 256 }).notNull(),
-    type: varchar('type', { length: 50 }).notNull(), // "رئيسي", "فرعي", "تحليلي"
-    parentId: varchar('parent_id', { length: 256 }),
-    balance: numeric('balance', { precision: 15, scale: 2 }).default('0'),
 });
 
 export const journalEntries = pgTable('journal_entries', {
@@ -220,11 +170,30 @@ export const journalEntries = pgTable('journal_entries', {
 
 export const journalEntryLines = pgTable('journal_entry_lines', {
     id: serial('id').primaryKey(),
-    journalEntryId: varchar('journal_entry_id', { length: 256 }).notNull().references(() => journalEntries.id),
+    journalEntryId: varchar('journal_entry_id', { length: 256 }).notNull().references(() => journalEntries.id, { onDelete: 'cascade' }),
     accountId: varchar('account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
     debit: numeric('debit', { precision: 15, scale: 2 }).notNull().default('0'),
     credit: numeric('credit', { precision: 15, scale: 2 }).notNull().default('0'),
     description: text('description'),
+});
+
+
+// --- HR & Payroll Tables ---
+
+export const employeeAllowances = pgTable('employee_allowances', {
+    id: serial('id').primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    description: varchar('description', { length: 256 }).notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
+});
+
+export const employeeDeductions = pgTable('employee_deductions', {
+    id: serial('id').primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    description: varchar('description', { length: 256 }).notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
 });
 
 export const employeeSettlements = pgTable('employee_settlements', {
@@ -240,19 +209,7 @@ export const employeeSettlements = pgTable('employee_settlements', {
     reference: varchar('reference', { length: 256 }),
 });
 
-export const checks = pgTable('checks', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    checkNumber: varchar('check_number', { length: 100 }).notNull(),
-    issueDate: timestamp('issue_date').notNull(),
-    dueDate: timestamp('due_date').notNull(),
-    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
-    beneficiaryName: varchar('beneficiary_name', { length: 256 }).notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    currency: varchar('currency', { length: 10 }).notNull().default('SAR'),
-    purpose: text('purpose').notNull(),
-    notes: text('notes'),
-    status: varchar('status', { length: 50 }).notNull().default('صادر'), // "صادر", "مسدد", "ملغي", "مرتجع"
-});
+// --- Projects Tables ---
 
 export const projects = pgTable('projects', {
     id: varchar('id', { length: 256 }).primaryKey(),
@@ -269,7 +226,7 @@ export const projects = pgTable('projects', {
 
 export const projectTasks = pgTable('project_tasks', {
     id: varchar('id', { length: 256 }).primaryKey(),
-    projectId: varchar('project_id', { length: 256 }).notNull().references(() => projects.id),
+    projectId: varchar('project_id', { length: 256 }).notNull().references(() => projects.id, { onDelete: 'cascade' }),
     name: varchar('name', { length: 256 }).notNull(),
     assigneeId: varchar('assignee_id', { length: 256 }).notNull().references(() => employees.id),
     dueDate: timestamp('due_date').notNull(),
@@ -280,7 +237,7 @@ export const projectTasks = pgTable('project_tasks', {
 
 export const projectResources = pgTable('project_resources', {
     id: varchar('id', { length: 256 }).primaryKey(),
-    projectId: varchar('project_id', { length: 256 }).notNull().references(() => projects.id),
+    projectId: varchar('project_id', { length: 256 }).notNull().references(() => projects.id, { onDelete: 'cascade' }),
     employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id),
     role: varchar('role', { length: 256 }).notNull(),
     allocation: integer('allocation').default(100),
@@ -289,12 +246,14 @@ export const projectResources = pgTable('project_resources', {
 
 export const projectBudgetItems = pgTable('project_budget_items', {
     id: varchar('id', { length: 256 }).primaryKey(),
-    projectId: varchar('project_id', { length: 256 }).notNull().references(() => projects.id),
+    projectId: varchar('project_id', { length: 256 }).notNull().references(() => projects.id, { onDelete: 'cascade' }),
     item: varchar('item', { length: 256 }).notNull(),
     allocated: numeric('allocated', { precision: 15, scale: 2 }).notNull().default('0'),
     spent: numeric('spent', { precision: 15, scale: 2 }).notNull().default('0'),
     notes: text('notes'),
 });
+
+// --- Production Tables ---
 
 export const workOrders = pgTable('work_orders', {
     id: varchar('id', { length: 256 }).primaryKey(),
@@ -310,7 +269,7 @@ export const workOrders = pgTable('work_orders', {
 
 export const workOrderProductionLogs = pgTable('work_order_production_logs', {
     id: serial('id').primaryKey(),
-    workOrderId: varchar('work_order_id', { length: 256 }).notNull().references(() => workOrders.id),
+    workOrderId: varchar('work_order_id', { length: 256 }).notNull().references(() => workOrders.id, { onDelete: 'cascade' }),
     date: timestamp('date').notNull(),
     quantityProduced: integer('quantity_produced').notNull(),
     notes: text('notes'),
@@ -325,7 +284,7 @@ export const billsOfMaterial = pgTable('bills_of_material', {
 
 export const billOfMaterialItems = pgTable('bill_of_material_items', {
     id: serial('id').primaryKey(),
-    bomId: varchar('bom_id', { length: 256 }).notNull().references(() => billsOfMaterial.id),
+    bomId: varchar('bom_id', { length: 256 }).notNull().references(() => billsOfMaterial.id, { onDelete: 'cascade' }),
     materialId: varchar('material_id', { length: 256 }).notNull().references(() => products.id),
     quantity: numeric('quantity', { precision: 10, scale: 4 }).notNull(),
 });
@@ -349,3 +308,55 @@ export const qualityChecks = pgTable('quality_checks', {
     notes: text('notes'),
 });
 
+// --- Other Financial Transaction Tables ---
+
+export const checks = pgTable('checks', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    checkNumber: varchar('check_number', { length: 100 }).notNull(),
+    issueDate: timestamp('issue_date').notNull(),
+    dueDate: timestamp('due_date').notNull(),
+    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
+    beneficiaryName: varchar('beneficiary_name', { length: 256 }).notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    currency: varchar('currency', { length: 10 }).notNull().default('SAR'),
+    purpose: text('purpose').notNull(),
+    notes: text('notes'),
+    status: varchar('status', { length: 50 }).notNull().default('صادر'), // "صادر", "مسدد", "ملغي", "مرتجع"
+});
+
+export const bankExpenses = pgTable('bank_expenses', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
+    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    referenceNumber: varchar('reference_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
+});
+
+export const bankReceipts = pgTable('bank_receipts', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
+    revenueAccountId: varchar('revenue_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    payerName: varchar('payer_name', { length: 256 }).notNull(),
+    customerId: varchar('customer_id', { length: 256 }).references(() => customers.id),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    referenceNumber: varchar('reference_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
+});
+
+export const cashExpenses = pgTable('cash_expenses', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    cashAccountId: varchar('cash_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    voucherNumber: varchar('voucher_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
+});
