@@ -101,4 +101,27 @@ export const purchaseOrderItems = pgTable('purchase_order_items', {
   total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
+export const supplierInvoices = pgTable('supplier_invoices', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    poId: varchar('po_id', { length: 256 }),
+    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+    invoiceDate: timestamp('invoice_date').notNull(),
+    dueDate: timestamp('due_date').notNull(),
+    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
+    paidAmount: numeric('paid_amount', { precision: 10, scale: 2 }).notNull().default('0'),
+    status: varchar('status', { length: 50 }).notNull(), // "غير مدفوع", "مدفوع جزئياً", "مدفوع", "متأخر"
+    notes: text('notes'),
+});
+
+export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
+    id: serial('id').primaryKey(),
+    invoiceId: varchar('invoice_id', { length: 256 }).notNull().references(() => supplierInvoices.id),
+    itemId: varchar('item_id', { length: 256 }).notNull(),
+    description: text('description'),
+    quantity: integer('quantity').notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+});
+
+
 // Add other schemas from the application here as needed...

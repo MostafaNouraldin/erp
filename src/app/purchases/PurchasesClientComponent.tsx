@@ -136,10 +136,6 @@ const mockItems = [
 ];
 
 
-const initialSupplierInvoicesData: SupplierInvoiceFormValues[] = [
-  { id: "INV-S001", poId: "PO001", supplierId: "SUP001", invoiceDate: new Date("2024-07-26"), dueDate: new Date("2024-08-26"), totalAmount: 30000, paidAmount: 0, status: "غير مدفوع", items: [{itemId:"ITEM001", description: "لابتوب ديل", quantity:5, unitPrice:6000, total:30000}] },
-  { id: "INV-S002", supplierId: "SUP002", invoiceDate: new Date("2024-07-28"), dueDate: new Date("2024-08-28"), totalAmount: 18000, paidAmount: 10000, status: "مدفوع جزئياً", items: [{itemId:"MAT001", description: "خشب زان", quantity:90, unitPrice:200, total:18000}] },
-];
 const initialGoodsReceivedNotesData: GoodsReceivedNoteFormValues[] = [
   { id: "GRN001", poId: "PO001", supplierId: "SUP001", grnDate: new Date("2024-07-25"), items: [{ itemId: "ITEM001", orderedQuantity: 5, receivedQuantity: 5, description: "لابتوبات Dell" }], status: "مستلم بالكامل", receivedBy: "أحمد" },
 ];
@@ -151,10 +147,10 @@ const convertAmountToWords = (amount: number) => {
   return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
 };
 
-export default function PurchasesClientComponent({ initialData }: { initialData: { suppliers: any[], purchaseOrders: any[] } }) {
+export default function PurchasesClientComponent({ initialData }: { initialData: { suppliers: any[], purchaseOrders: any[], supplierInvoices: any[] } }) {
   const [suppliersData, setSuppliersData] = useState<SupplierFormValues[]>(initialData.suppliers);
   const [purchaseOrdersData, setPurchaseOrdersData] = useState<PurchaseOrderFormValues[]>(initialData.purchaseOrders);
-  const [supplierInvoices, setSupplierInvoicesData] = useState(initialSupplierInvoicesData);
+  const [supplierInvoices, setSupplierInvoicesData] = useState(initialData.supplierInvoices);
   const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState(initialGoodsReceivedNotesData);
   const [purchaseReturns, setPurchaseReturnsData] = useState(initialPurchaseReturnsData);
 
@@ -264,6 +260,12 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     if (purchaseReturnToEdit) purchaseReturnForm.reset(purchaseReturnToEdit);
     else purchaseReturnForm.reset({ supplierId: '', date: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0, reason:''}], status: "مسودة" });
   }, [purchaseReturnToEdit, purchaseReturnForm, showCreatePurchaseReturnDialog]);
+
+  useEffect(() => {
+    setSuppliersData(initialData.suppliers);
+    setPurchaseOrdersData(initialData.purchaseOrders);
+    setSupplierInvoicesData(initialData.supplierInvoices);
+  }, [initialData]);
 
 
   const calculateItemTotalForForm = (form: any, index: number) => {
