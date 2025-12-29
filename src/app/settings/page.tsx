@@ -64,9 +64,15 @@ interface InvoiceSettingsState {
   showPaymentTermsInFooter: boolean;
 }
 
+// Mock Data, to be replaced by data from `page.tsx`
+const mockInitialData = {
+    users: [],
+    roles: [],
+};
+
 export default function SettingsPage() {
-  const [users, setUsers] = useState<UserFormValues[]>([]);
-  const [roles, setRolesData] = useState<Role[]>([]);
+  const [users, setUsers] = useState<UserFormValues[]>(mockInitialData.users);
+  const [roles, setRolesData] = useState<Role[]>(mockInitialData.roles);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedRolePermissions, setSelectedRolePermissions] = useState<string[]>([]);
   const [showManageUserDialog, setShowManageUserDialog] = useState(false);
