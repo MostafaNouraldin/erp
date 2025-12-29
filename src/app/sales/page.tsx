@@ -25,6 +25,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from "@/components/ui/checkbox";
 import { db } from '@/db';
 import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema } from '@/db/schema';
+import { addCustomer, updateCustomer, deleteCustomer } from './actions';
 
 
 // Mock data
@@ -177,6 +178,18 @@ const invoiceSchema = z.object({
 });
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
+const customerSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "اسم العميل مطلوب"),
+  email: z.string().email("بريد إلكتروني غير صالح").optional().or(z.literal('')),
+  phone: z.string().optional(),
+  type: z.string().optional(),
+  address: z.string().optional(),
+  vatNumber: z.string().optional(),
+  balance: z.coerce.number().default(0),
+});
+type CustomerFormValues = z.infer<typeof customerSchema>;
+
 
 // Placeholder for amount to words conversion
 const convertAmountToWords = (amount: number) => {
@@ -207,7 +220,9 @@ export default function SalesPage() {
   const [selectedCustomerForDetails, setSelectedCustomerForDetails] = useState<Customer | null>(null);
   const [customerInvoicesForDetails, setCustomerInvoicesForDetails] = useState<Invoice[]>([]);
   const [customerStatement, setCustomerStatement] = useState<StatementEntry[]>([]);
-
+  
+  const [showManageCustomerDialog, setShowManageCustomerDialog] = useState(false);
+  const [customerToEdit, setCustomerToEdit] = useState<CustomerFormValues | null>(null);
 
   const { toast } = useToast();
 
@@ -256,6 +271,11 @@ export default function SalesPage() {
     control: invoiceForm.control, name: "items",
   });
 
+  const customerForm = useForm<CustomerFormValues>({
+    resolver: zodResolver(customerSchema),
+    defaultValues: { name: "", email: "", phone: "", type: "فرد", balance: 0, address: "", vatNumber: ""},
+  });
+
 
   useEffect(() => {
     setIsClient(true);
@@ -275,6 +295,14 @@ export default function SalesPage() {
     if (invoiceToEdit) invoiceForm.reset(invoiceToEdit);
     else invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual" });
   }, [invoiceToEdit, invoiceForm, showCreateInvoiceDialog]);
+
+  useEffect(() => {
+    if (customerToEdit) {
+      customerForm.reset(customerToEdit);
+    } else {
+      customerForm.reset({ name: "", email: "", phone: "", type: "فرد", balance: 0, address: "", vatNumber: "" });
+    }
+  }, [customerToEdit, customerForm, showManageCustomerDialog]);
 
 
   const handlePrintInvoice = (invoice: Invoice) => {
@@ -307,6 +335,22 @@ export default function SalesPage() {
     const quantity = form.getValues(`items.${index}.quantity`);
     const unitPrice = form.getValues(`items.${index}.unitPrice`);
     form.setValue(`items.${index}.total`, quantity * unitPrice);
+  };
+
+  const handleCustomerSubmit = async (values: CustomerFormValues) => {
+    try {
+      if (customerToEdit) {
+        await updateCustomer({ ...values, id: customerToEdit.id! });
+        toast({ title: "تم التعديل", description: "تم تعديل بيانات العميل." });
+      } else {
+        await addCustomer(values);
+        toast({ title: "تمت الإضافة", description: "تمت إضافة العميل بنجاح." });
+      }
+      setShowManageCustomerDialog(false);
+      setCustomerToEdit(null);
+    } catch (error) {
+      toast({ title: "خطأ", description: "لم يتم حفظ بيانات العميل.", variant: "destructive" });
+    }
   };
 
 
@@ -431,6 +475,15 @@ export default function SalesPage() {
     }
   };
 
+  const handleDeleteCustomer = async (customerId: string) => {
+    try {
+        await deleteCustomer(customerId);
+        toast({ title: "تم الحذف", description: "تم حذف العميل بنجاح.", variant: "destructive" });
+    } catch(error) {
+        toast({ title: "خطأ", description: "لم يتم حذف العميل.", variant: "destructive" });
+    }
+  }
+
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -439,7 +492,7 @@ export default function SalesPage() {
         <div className="flex gap-2">
             <Dialog open={showCreateQuotationDialog} onOpenChange={(isOpen) => { setShowCreateQuotationDialog(isOpen); if(!isOpen) setQuotationToEdit(null); }}>
               <DialogTrigger asChild>
-                <Button disabled className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setQuotationToEdit(null); quotationForm.reset(); setShowCreateQuotationDialog(true);}}>
+                <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setQuotationToEdit(null); quotationForm.reset(); setShowCreateQuotationDialog(true);}}>
                     <PlusCircle className="me-2 h-4 w-4" /> إنشاء عرض سعر جديد
                 </Button>
               </DialogTrigger>
@@ -452,7 +505,7 @@ export default function SalesPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={quotationForm.control} name="customerId" render={({ field }) => (
                           <FormItem><FormLabel>اسم العميل</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                            <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                               <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
                               <SelectContent>{customers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}</SelectContent>
                             </Select><FormMessage /></FormItem> )} />
@@ -468,7 +521,7 @@ export default function SalesPage() {
                           <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                               <FormField control={quotationForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                   <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { quotationForm.setValue(`items.${index}.unitPrice`, selectedItem.price); quotationForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(quotationForm, index); }} defaultValue={field.value} dir="rtl">
+                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { quotationForm.setValue(`items.${index}.unitPrice`, selectedItem.price); quotationForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(quotationForm, index); }} value={field.value} dir="rtl">
                                       <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
                                       <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                   </Select><FormMessage className="text-xs"/></FormItem> )} />
@@ -502,7 +555,7 @@ export default function SalesPage() {
 
             <Dialog open={showCreateSalesOrderDialog} onOpenChange={(isOpen) => { setShowCreateSalesOrderDialog(isOpen); if(!isOpen) setSalesOrderToEdit(null); }}>
               <DialogTrigger asChild>
-                <Button disabled variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSalesOrderToEdit(null); salesOrderForm.reset(); setShowCreateSalesOrderDialog(true);}}>
+                <Button variant="secondary" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setSalesOrderToEdit(null); salesOrderForm.reset(); setShowCreateSalesOrderDialog(true);}}>
                     <PlusCircle className="me-2 h-4 w-4" /> إنشاء أمر بيع مباشر
                 </Button>
               </DialogTrigger>
@@ -515,7 +568,7 @@ export default function SalesPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={salesOrderForm.control} name="customerId" render={({ field }) => (
                           <FormItem><FormLabel>اسم العميل</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                            <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                               <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
                               <SelectContent>{customers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}</SelectContent>
                             </Select><FormMessage /></FormItem> )} />
@@ -531,7 +584,7 @@ export default function SalesPage() {
                           <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                               <FormField control={salesOrderForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                   <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { salesOrderForm.setValue(`items.${index}.unitPrice`, selectedItem.price); salesOrderForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(salesOrderForm, index); }} defaultValue={field.value} dir="rtl">
+                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { salesOrderForm.setValue(`items.${index}.unitPrice`, selectedItem.price); salesOrderForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(salesOrderForm, index); }} value={field.value} dir="rtl">
                                       <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
                                       <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                   </Select><FormMessage className="text-xs"/></FormItem> )} />
@@ -565,7 +618,7 @@ export default function SalesPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="quotations" className="w-full" dir="rtl">
+      <Tabs defaultValue="customers" className="w-full" dir="rtl">
         <TabsList className="w-full mb-6 bg-muted p-1 rounded-md" dir="rtl">
           <TabsTrigger value="quotations" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <FileSignature className="inline-block me-2 h-4 w-4" /> عروض الأسعار
@@ -741,7 +794,7 @@ export default function SalesPage() {
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                     <Dialog open={showCreateInvoiceDialog} onOpenChange={(isOpen) => { setShowCreateInvoiceDialog(isOpen); if(!isOpen) setInvoiceToEdit(null); }}>
                       <DialogTrigger asChild>
-                        <Button disabled className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setInvoiceToEdit(null); invoiceForm.reset(); setShowCreateInvoiceDialog(true);}}>
+                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setInvoiceToEdit(null); invoiceForm.reset(); setShowCreateInvoiceDialog(true);}}>
                             <PlusCircle className="me-2 h-4 w-4" /> إنشاء فاتورة مبيعات جديدة
                         </Button>
                       </DialogTrigger>
@@ -754,7 +807,7 @@ export default function SalesPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField control={invoiceForm.control} name="customerId" render={({ field }) => (
                                   <FormItem><FormLabel>اسم العميل</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                                       <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
                                       <SelectContent>{customers.map(cust => <SelectItem key={cust.id} value={cust.id}>{cust.name}</SelectItem>)}</SelectContent>
                                     </Select><FormMessage /></FormItem> )} />
@@ -778,7 +831,7 @@ export default function SalesPage() {
                                   <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                                       <FormField control={invoiceForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                           <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                          <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { invoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); invoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(invoiceForm, index); }} defaultValue={field.value} dir="rtl">
+                                          <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { invoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); invoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(invoiceForm, index); }} value={field.value} dir="rtl">
                                               <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
                                               <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                           </Select><FormMessage className="text-xs"/></FormItem> )} />
@@ -860,11 +913,11 @@ export default function SalesPage() {
                                 <Printer className="h-4 w-4" />
                             </Button>
                              {inv.status === "غير مدفوع" && (
-                                <Button disabled variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تسجيل دفعة">
                                     <CheckCircle className="h-4 w-4 text-green-600" />
                                 </Button>
                              )}
-                             <Button disabled variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل الفاتورة" onClick={() => {setInvoiceToEdit(inv as InvoiceFormValues); setShowCreateInvoiceDialog(true);}}>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل الفاتورة" onClick={() => {setInvoiceToEdit(inv as InvoiceFormValues); setShowCreateInvoiceDialog(true);}}>
                                 <Edit className="h-4 w-4" />
                              </Button>
                         </TableCell>
@@ -885,9 +938,37 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
                 <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
-                    <Button disabled className="shadow-md hover:shadow-lg transition-shadow">
-                        <PlusCircle className="me-2 h-4 w-4" /> إضافة عميل جديد
-                    </Button>
+                    <Dialog open={showManageCustomerDialog} onOpenChange={(isOpen) => { setShowManageCustomerDialog(isOpen); if(!isOpen) setCustomerToEdit(null); }}>
+                      <DialogTrigger asChild>
+                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setCustomerToEdit(null); customerForm.reset(); setShowManageCustomerDialog(true);}}>
+                            <PlusCircle className="me-2 h-4 w-4" /> إضافة عميل جديد
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-lg" dir="rtl">
+                        <DialogHeader>
+                          <DialogTitle>{customerToEdit ? 'تعديل بيانات عميل' : 'إضافة عميل جديد'}</DialogTitle>
+                        </DialogHeader>
+                        <Form {...customerForm}>
+                          <form onSubmit={customerForm.handleSubmit(handleCustomerSubmit)} className="space-y-4 py-4">
+                            <FormField control={customerForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم العميل</FormLabel><FormControl><Input placeholder="اسم العميل أو الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={customerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" placeholder="example@customer.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={customerForm.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={customerForm.control} name="type" render={({ field }) => ( <FormItem><FormLabel>نوع العميل</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value || "فرد"} dir="rtl">
+                                    <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl>
+                                    <SelectContent><SelectItem value="فرد">فرد</SelectItem><SelectItem value="شركة">شركة</SelectItem></SelectContent>
+                                </Select>
+                                <FormMessage/></FormItem> )}/>
+                            <FormField control={customerForm.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان العميل" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={customerForm.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للعميل" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <DialogFooter>
+                              <Button type="submit">{customerToEdit ? 'حفظ التعديلات' : 'إضافة العميل'}</Button>
+                              <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                            </DialogFooter>
+                          </form>
+                        </Form>
+                      </DialogContent>
+                    </Dialog>
                     <div className="relative w-full sm:w-auto grow sm:grow-0">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث باسم العميل أو الرقم..." className="pr-10 w-full sm:w-64 bg-background" />
@@ -921,9 +1002,26 @@ export default function SalesPage() {
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض ملف العميل" onClick={() => handleViewCustomerDetails(cust)}>
                                 <Eye className="h-4 w-4" />
                             </Button>
-                             <Button disabled variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل بيانات العميل">
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل بيانات العميل" onClick={() => {setCustomerToEdit(cust as CustomerFormValues); setShowManageCustomerDialog(true);}}>
                                 <Edit className="h-4 w-4" />
                             </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف العميل">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent dir="rtl">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                                  <AlertDialogDescription>سيتم حذف العميل "{cust.name}" نهائياً. لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteCustomer(cust.id!)}>تأكيد الحذف</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))}
