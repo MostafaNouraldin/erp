@@ -23,8 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-// TODO: Re-enable when actions are properly connected
-// import { addCustomer, updateCustomer, deleteCustomer, addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from './actions';
+import { addCustomer, updateCustomer, deleteCustomer, addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from './actions';
 
 // Mock data
 const initialQuotationsData = [
@@ -326,20 +325,19 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   };
 
   const handleCustomerSubmit = async (values: CustomerFormValues) => {
-    toast({ title: "متوقف مؤقتاً", description: "حفظ العملاء معطل حالياً.", variant: "destructive"});
-    // try {
-    //   if (customerToEdit) {
-    //     await updateCustomer({ ...values, id: customerToEdit.id! });
-    //     toast({ title: "تم التعديل", description: "تم تعديل بيانات العميل." });
-    //   } else {
-    //     await addCustomer(values);
-    //     toast({ title: "تمت الإضافة", description: "تمت إضافة العميل بنجاح." });
-    //   }
-    //   setShowManageCustomerDialog(false);
-    //   setCustomerToEdit(null);
-    // } catch (error) {
-    //   toast({ title: "خطأ", description: "لم يتم حفظ بيانات العميل.", variant: "destructive" });
-    // }
+    try {
+      if (customerToEdit) {
+        await updateCustomer({ ...values, id: customerToEdit.id! });
+        toast({ title: "تم التعديل", description: "تم تعديل بيانات العميل." });
+      } else {
+        await addCustomer(values);
+        toast({ title: "تمت الإضافة", description: "تمت إضافة العميل بنجاح." });
+      }
+      setShowManageCustomerDialog(false);
+      setCustomerToEdit(null);
+    } catch (error) {
+      toast({ title: "خطأ", description: "لم يتم حفظ بيانات العميل.", variant: "destructive" });
+    }
   };
 
 
@@ -374,33 +372,31 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   };
 
   const handleInvoiceSubmit = async (values: InvoiceFormValues) => {
-    toast({ title: "متوقف مؤقتاً", description: "حفظ الفواتير معطل حالياً.", variant: "destructive"});
-    // const totalAmount = calculateItemTotals(values.items);
-    // const finalValues = {...values, numericTotalAmount: totalAmount};
+    const totalAmount = calculateItemTotals(values.items);
+    const finalValues = {...values, numericTotalAmount: totalAmount};
 
-    // try {
-    //     if (invoiceToEdit) {
-    //         await updateSalesInvoice({ ...finalValues, id: invoiceToEdit.id! });
-    //         toast({ title: "تم التعديل", description: "تم تعديل الفاتورة بنجاح." });
-    //     } else {
-    //         await addSalesInvoice(finalValues);
-    //         toast({ title: "تم الإنشاء", description: "تم إنشاء الفاتورة بنجاح." });
-    //     }
-    //     setShowCreateInvoiceDialog(false);
-    //     setInvoiceToEdit(null);
-    // } catch (error) {
-    //     toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
-    // }
+    try {
+        if (invoiceToEdit) {
+            await updateSalesInvoice({ ...finalValues, id: invoiceToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل الفاتورة بنجاح." });
+        } else {
+            await addSalesInvoice(finalValues);
+            toast({ title: "تم الإنشاء", description: "تم إنشاء الفاتورة بنجاح." });
+        }
+        setShowCreateInvoiceDialog(false);
+        setInvoiceToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
+    }
   };
 
   const handleDeleteInvoice = async (invoiceId: string) => {
-    toast({ title: "متوقف مؤقتاً", description: "حذف الفواتير معطل حالياً.", variant: "destructive"});
-    // try {
-    //     await deleteSalesInvoice(invoiceId);
-    //     toast({ title: "تم الحذف", description: "تم حذف الفاتورة بنجاح.", variant: "destructive" });
-    // } catch (error) {
-    //     toast({ title: "خطأ", description: "لم يتم حذف الفاتورة.", variant: "destructive" });
-    // }
+    try {
+        await deleteSalesInvoice(invoiceId);
+        toast({ title: "تم الحذف", description: "تم حذف الفاتورة بنجاح.", variant: "destructive" });
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حذف الفاتورة.", variant: "destructive" });
+    }
   };
 
   const getInvoiceStatusText = (invoice: Invoice) => {
@@ -480,13 +476,12 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   };
 
   const handleDeleteCustomer = async (customerId: string) => {
-    toast({ title: "متوقف مؤقتاً", description: "حذف العملاء معطل حالياً.", variant: "destructive"});
-    // try {
-    //     await deleteCustomer(customerId);
-    //     toast({ title: "تم الحذف", description: "تم حذف العميل بنجاح.", variant: "destructive" });
-    // } catch(error) {
-    //     toast({ title: "خطأ", description: "لم يتم حذف العميل.", variant: "destructive" });
-    // }
+    try {
+        await deleteCustomer(customerId);
+        toast({ title: "تم الحذف", description: "تم حذف العميل بنجاح.", variant: "destructive" });
+    } catch(error) {
+        toast({ title: "خطأ", description: "لم يتم حذف العميل.", variant: "destructive" });
+    }
   }
 
 
@@ -1271,5 +1266,3 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     </div>
   );
 }
-
-    
