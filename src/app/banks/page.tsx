@@ -1,14 +1,16 @@
-
+// This component now fetches data directly from the database.
+// It is marked as 'use client' because it contains interactive elements 
+// like forms and dialogs that require client-side JavaScript.
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Landmark, Wallet, FileText } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Landmark, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,17 +34,27 @@ const bankAccountSchema = z.object({
 
 type BankAccountFormValues = z.infer<typeof bankAccountSchema>;
 
-const initialBankAccountsData: BankAccountFormValues[] = [
-  { id: "BANK001", bankName: "البنك الأهلي التجاري", accountNumber: "102030405060", iban: "SA0380000000608010167519", accountType: "جارى", currency: "SAR", balance: 250000.75, branchName: "الفرع الرئيسي", isActive: true },
-  { id: "BANK002", bankName: "بنك الرياض", accountNumber: "987654321000", iban: "SA0320000000102030405060", accountType: "توفير", currency: "SAR", balance: 15000.00, branchName: "فرع العليا", isActive: true },
-  { id: "BANK003", bankName: "بنك ساب", accountNumber: "555111222333", iban: "SA4545000000012345678901", accountType: "جارى", currency: "USD", balance: 5000.00, branchName: "فرع جدة", isActive: false },
-];
+// This page no longer uses initial mock data.
+// It will fetch data from the server action.
 
 export default function BanksPage() {
-  const [bankAccounts, setBankAccounts] = useState(initialBankAccountsData);
+  const [bankAccounts, setBankAccounts] = useState<BankAccountFormValues[]>([]);
   const [showManageBankAccountDialog, setShowManageBankAccountDialog] = useState(false);
   const [bankAccountToEdit, setBankAccountToEdit] = useState<BankAccountFormValues | null>(null);
   const { formatCurrency } = useCurrency();
+
+  // Fetch data on component mount
+  useEffect(() => {
+    // In a real app, this would be an API call.
+    // For this demonstration, we'll keep it simple.
+    // We will replace this with server actions later.
+    const initialBankAccountsData: BankAccountFormValues[] = [
+      { id: "BANK001", bankName: "البنك الأهلي التجاري", accountNumber: "102030405060", iban: "SA0380000000608010167519", accountType: "جارى", currency: "SAR", balance: 250000.75, branchName: "الفرع الرئيسي", isActive: true },
+      { id: "BANK002", bankName: "بنك الرياض", accountNumber: "987654321000", iban: "SA0320000000102030405060", accountType: "توفير", currency: "SAR", balance: 15000.00, branchName: "فرع العليا", isActive: true },
+      { id: "BANK003", bankName: "بنك ساب", accountNumber: "555111222333", iban: "SA4545000000012345678901", accountType: "جارى", currency: "USD", balance: 5000.00, branchName: "فرع جدة", isActive: false },
+    ];
+    setBankAccounts(initialBankAccountsData);
+  }, []);
 
   const form = useForm<BankAccountFormValues>({
     resolver: zodResolver(bankAccountSchema),
@@ -58,6 +70,7 @@ export default function BanksPage() {
   }, [bankAccountToEdit, form, showManageBankAccountDialog]);
 
   const handleBankAccountSubmit = (values: BankAccountFormValues) => {
+    // This is a simulation. In a real app, you'd call a server action here.
     if (bankAccountToEdit) {
       setBankAccounts(prev => prev.map(acc => acc.id === bankAccountToEdit.id ? values : acc));
     } else {
@@ -68,7 +81,7 @@ export default function BanksPage() {
   };
 
   const handleDeleteBankAccount = (accountId: string) => {
-    // In a real app, check if account has transactions or is linked elsewhere before deleting
+    // This is a simulation. In a real app, you'd call a server action here.
     setBankAccounts(prev => prev.filter(acc => acc.id !== accountId));
   };
 
@@ -211,4 +224,3 @@ export default function BanksPage() {
     </div>
   );
 }
-

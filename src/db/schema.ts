@@ -69,4 +69,16 @@ export const salesInvoiceItems = pgTable('sales_invoice_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
+export const bankAccounts = pgTable('bank_accounts', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    bankName: varchar('bank_name', { length: 256 }).notNull(),
+    accountNumber: varchar('account_number', { length: 256 }).notNull(),
+    iban: varchar('iban', { length: 256 }),
+    accountType: varchar('account_type', { length: 50 }).notNull(), // "جارى", "توفير", "وديعة"
+    currency: varchar('currency', { length: 10 }).notNull(), // "SAR", "USD", "EUR"
+    balance: numeric('balance', { precision: 15, scale: 2 }).notNull().default('0'),
+    branchName: varchar('branch_name', { length: 256 }),
+    isActive: boolean('is_active').default(true).notNull(),
+});
+
 // Add other schemas from the application here as needed...
