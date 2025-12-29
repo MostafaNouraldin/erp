@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import AppLogo from '@/components/app-logo';
+import { useCurrency } from '@/hooks/use-currency';
 
 // Mock Data
 const mockBankAccounts = [
@@ -61,6 +62,7 @@ export default function CheckbookRegisterPage() {
   const [showPrintCheckDialog, setShowPrintCheckDialog] = useState(false);
   const [selectedCheckForPrint, setSelectedCheckForPrint] = useState<CheckFormValues | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const { formatCurrency } = useCurrency();
 
   useEffect(() => {
     setIsClient(true);
@@ -254,7 +256,7 @@ export default function CheckbookRegisterPage() {
                     <TableCell>{formatDate(check.dueDate)}</TableCell>
                     <TableCell>{mockBankAccounts.find(b => b.id === check.bankAccountId)?.name}</TableCell>
                     <TableCell>{check.beneficiaryName}</TableCell>
-                    <TableCell>{check.amount.toLocaleString('ar-SA', { style: 'currency', currency: check.currency })}</TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(check.amount) }}></TableCell>
                     <TableCell>
                         <Badge 
                             variant={
@@ -391,8 +393,8 @@ export default function CheckbookRegisterPage() {
                 <div className="flex justify-between items-center mb-8 text-md">
                     <span>مبلغ وقدره:</span>
                     <span className="text-lg border-b-2 border-dotted border-foreground flex-grow mx-4 text-center py-1" data-ai-hint="amount words">{convertAmountToWords(selectedCheckForPrint.amount)}</span>
-                    <div className="border-2 border-foreground p-2 rounded-md min-w-[180px] text-center"> {/* Increased min-width */}
-                        <span className="text-xl font-bold">{selectedCheckForPrint.amount.toLocaleString('ar-SA', { style: 'currency', currency: selectedCheckForPrint.currency, minimumFractionDigits: 2 })}</span>
+                    <div className="border-2 border-foreground p-2 rounded-md min-w-[180px] text-center">
+                        <span className="text-xl font-bold" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedCheckForPrint.amount) }}></span>
                     </div>
                 </div>
                 
@@ -419,4 +421,3 @@ export default function CheckbookRegisterPage() {
     </div>
   );
 }
-

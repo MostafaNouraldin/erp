@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast"; 
+import { useCurrency } from '@/hooks/use-currency';
 
 // Mock Data
 const mockEmployees = [
@@ -61,6 +62,7 @@ export default function EmployeeSettlementsPage() {
   const [showViewSettlementDialog, setShowViewSettlementDialog] = useState(false);
   const [selectedSettlementForView, setSelectedSettlementForView] = useState<SettlementFormValues | null>(null);
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
 
 
   const form = useForm<SettlementFormValues>({
@@ -338,7 +340,7 @@ export default function EmployeeSettlementsPage() {
                     <TableCell>{set.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                     <TableCell className="font-medium">{mockEmployees.find(e => e.id === set.employeeId)?.name}</TableCell>
                     <TableCell>{set.settlementType}</TableCell>
-                    <TableCell>{set.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(set.amount) }}></TableCell>
                     <TableCell>{set.paymentMethod}</TableCell>
                     <TableCell>
                         <Badge 
@@ -422,7 +424,7 @@ export default function EmployeeSettlementsPage() {
               <div><strong>الموظف:</strong> {mockEmployees.find(e => e.id === selectedSettlementForView.employeeId)?.name}</div>
               <div><strong>نوع التسوية:</strong> {selectedSettlementForView.settlementType}</div>
               <div><strong>حساب التسوية:</strong> {mockSettlementAccounts.find(a => a.id === selectedSettlementForView.accountId)?.name}</div>
-              <div><strong>المبلغ:</strong> {selectedSettlementForView.amount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</div>
+              <div><strong>المبلغ:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedSettlementForView.amount) }}></span></div>
               <div><strong>الوصف:</strong> {selectedSettlementForView.description}</div>
               <div><strong>طريقة الدفع/الاسترداد:</strong> {selectedSettlementForView.paymentMethod}</div>
               <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge 
@@ -445,4 +447,3 @@ export default function EmployeeSettlementsPage() {
     </div>
   );
 }
-

@@ -56,7 +56,7 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(45231.89)}</div>
+            <div className="text-2xl font-bold" dangerouslySetInnerHTML={{ __html: formatCurrency(45231.89) }}></div>
             <p className="text-xs text-muted-foreground">
               +20.1% عن الشهر الماضي
             </p>
@@ -177,7 +177,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">قيمة المخزون</span>
-              <span className="font-semibold">{formatCurrency(350720.00)}</span>
+              <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(350720.00) }}></span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">أصناف قاربت على النفاد</span>

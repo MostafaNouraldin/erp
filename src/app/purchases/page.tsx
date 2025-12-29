@@ -675,7 +675,7 @@ export default function PurchasesPage() {
                         <TableCell>{suppliersData.find(s=>s.id === po.supplierId)?.name || po.supplierId}</TableCell>
                         <TableCell>{formatDateForDisplay(po.date)}</TableCell>
                         <TableCell>{formatDateForDisplay(po.expectedDeliveryDate)}</TableCell>
-                        <TableCell>{formatCurrency(po.totalAmount)}</TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(po.totalAmount) }}></TableCell>
                         <TableCell><Badge variant={po.status === "معتمد" || po.status === "مستلم بالكامل" ? "default" : po.status === "ملغي" ? "destructive" : "outline"} className="whitespace-nowrap">{po.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => handleViewPo(po)}><Eye className="h-4 w-4" /></Button>
@@ -792,7 +792,7 @@ export default function PurchasesPage() {
                         <TableCell>{suppliersData.find(s=>s.id === inv.supplierId)?.name || inv.supplierId}</TableCell>
                         <TableCell>{formatDateForDisplay(inv.invoiceDate)}</TableCell>
                         <TableCell>{formatDateForDisplay(inv.dueDate)}</TableCell>
-                        <TableCell>{formatCurrency(inv.totalAmount)}</TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(inv.totalAmount) }}></TableCell>
                         <TableCell><Badge variant={inv.status === "مدفوع" ? "default" : inv.status === "غير مدفوع" ? "destructive" : "secondary"} className="whitespace-nowrap">{inv.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={()=> handleViewSupplierInvoice(inv)}><Eye className="h-4 w-4" /></Button>
@@ -1023,7 +1023,7 @@ export default function PurchasesPage() {
                         <TableCell>{suppliersData.find(s=>s.id === pr.supplierId)?.name || pr.supplierId}</TableCell>
                         <TableCell>{formatDateForDisplay(pr.date)}</TableCell>
                         <TableCell>{pr.originalInvoiceId || "-"}</TableCell>
-                        <TableCell>{formatCurrency(pr.totalAmount)}</TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(pr.totalAmount) }}></TableCell>
                         <TableCell><Badge variant={pr.status === "معتمد" || pr.status === "معالج" ? "default" : "outline"} className="whitespace-nowrap">{pr.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => handleViewPurchaseReturn(pr)}><Eye className="h-4 w-4" /></Button>
@@ -1061,7 +1061,7 @@ export default function PurchasesPage() {
                     <p><strong>المورد:</strong> {suppliersData.find(s => s.id === selectedPoForView.supplierId)?.name}</p>
                     <p><strong>تاريخ الأمر:</strong> {formatDateForDisplay(selectedPoForView.date)}</p>
                     <p><strong>التسليم المتوقع:</strong> {formatDateForDisplay(selectedPoForView.expectedDeliveryDate)}</p>
-                    <p><strong>الإجمالي:</strong> {formatCurrency(selectedPoForView.totalAmount)}</p>
+                    <p><strong>الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedPoForView.totalAmount) }}></span></p>
                     <p><strong>الحالة:</strong> <Badge variant={selectedPoForView.status === "معتمد" ? "default" : "outline"}>{selectedPoForView.status}</Badge></p>
                     <p><strong>ملاحظات:</strong> {selectedPoForView.notes || "لا يوجد"}</p>
                   </CardContent>
@@ -1077,8 +1077,8 @@ export default function PurchasesPage() {
                             <TableRow key={idx}>
                               <TableCell>{mockItems.find(mi => mi.id === item.itemId)?.name || item.description}</TableCell>
                               <TableCell className="text-center">{item.quantity}</TableCell>
-                              <TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell>
-                              <TableCell className="text-left">{formatCurrency(item.total)}</TableCell>
+                              <TableCell className="text-center" dangerouslySetInnerHTML={{ __html: formatCurrency(item.unitPrice) }}></TableCell>
+                              <TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(item.total) }}></TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -1112,8 +1112,8 @@ export default function PurchasesPage() {
                     {selectedSupplierInvoiceForView.poId && <p><strong>أمر الشراء المرتبط:</strong> {selectedSupplierInvoiceForView.poId}</p>}
                     <p><strong>تاريخ الفاتورة:</strong> {formatDateForDisplay(selectedSupplierInvoiceForView.invoiceDate)}</p>
                     <p><strong>تاريخ الاستحقاق:</strong> {formatDateForDisplay(selectedSupplierInvoiceForView.dueDate)}</p>
-                    <p><strong>الإجمالي:</strong> {formatCurrency(selectedSupplierInvoiceForView.totalAmount)}</p>
-                     <p><strong>المدفوع:</strong> {formatCurrency(selectedSupplierInvoiceForView.paidAmount || 0)}</p>
+                    <p><strong>الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedSupplierInvoiceForView.totalAmount) }}></span></p>
+                     <p><strong>المدفوع:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedSupplierInvoiceForView.paidAmount || 0) }}></span></p>
                     <p><strong>الحالة:</strong> <Badge variant={selectedSupplierInvoiceForView.status === "مدفوع" ? "default" : "destructive"}>{selectedSupplierInvoiceForView.status}</Badge></p>
                     <p><strong>ملاحظات:</strong> {selectedSupplierInvoiceForView.notes || "لا يوجد"}</p>
                   </CardContent>
@@ -1129,8 +1129,8 @@ export default function PurchasesPage() {
                             <TableRow key={idx}>
                               <TableCell>{mockItems.find(mi => mi.id === item.itemId)?.name || item.description}</TableCell>
                               <TableCell className="text-center">{item.quantity}</TableCell>
-                              <TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell>
-                              <TableCell className="text-left">{formatCurrency(item.total)}</TableCell>
+                              <TableCell className="text-center" dangerouslySetInnerHTML={{ __html: formatCurrency(item.unitPrice) }}></TableCell>
+                              <TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(item.total) }}></TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -1152,7 +1152,7 @@ export default function PurchasesPage() {
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle>تسجيل دفعة لفاتورة مورد: {supplierInvoiceToPay?.id}</DialogTitle>
-            <DialogDescriptionComponent>الفاتورة بمبلغ {formatCurrency(supplierInvoiceToPay?.totalAmount || 0)}، متبقي منها {formatCurrency((supplierInvoiceToPay?.totalAmount || 0) - (supplierInvoiceToPay?.paidAmount || 0))}.</DialogDescriptionComponent>
+            <DialogDescriptionComponent>الفاتورة بمبلغ <span dangerouslySetInnerHTML={{ __html: formatCurrency(supplierInvoiceToPay?.totalAmount || 0) }}></span>، متبقي منها <span dangerouslySetInnerHTML={{ __html: formatCurrency((supplierInvoiceToPay?.totalAmount || 0) - (supplierInvoiceToPay?.paidAmount || 0)) }}></span>.</DialogDescriptionComponent>
           </DialogHeader>
           <Form {...supplierPaymentForm}>
             <form onSubmit={supplierPaymentForm.handleSubmit(handleRecordSupplierPaymentSubmit)} className="space-y-4 py-4">
@@ -1281,7 +1281,7 @@ export default function PurchasesPage() {
                     <p><strong>المورد:</strong> {selectedPurchaseReturnForView.supplierName || selectedPurchaseReturnForView.supplierId}</p>
                     <p><strong>تاريخ المرتجع:</strong> {formatDateForDisplay(selectedPurchaseReturnForView.date)}</p>
                     {selectedPurchaseReturnForView.originalInvoiceId && <p><strong>الفاتورة الأصلية:</strong> {selectedPurchaseReturnForView.originalInvoiceId}</p>}
-                    <p><strong>الإجمالي:</strong> {formatCurrency(selectedPurchaseReturnForView.totalAmount)}</p>
+                    <p><strong>الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedPurchaseReturnForView.totalAmount) }}></span></p>
                     <p><strong>الحالة:</strong> <Badge variant={selectedPurchaseReturnForView.status === "معتمد" ? "default" : "outline"}>{selectedPurchaseReturnForView.status}</Badge></p>
                     <p><strong>ملاحظات:</strong> {selectedPurchaseReturnForView.notes || "لا يوجد"}</p>
                   </CardContent>
@@ -1297,8 +1297,8 @@ export default function PurchasesPage() {
                             <TableRow key={idx}>
                               <TableCell>{mockItems.find(mi => mi.id === item.itemId)?.name || item.description}</TableCell>
                               <TableCell className="text-center">{item.quantity}</TableCell>
-                              <TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell>
-                              <TableCell className="text-left">{formatCurrency(item.total)}</TableCell>
+                              <TableCell className="text-center" dangerouslySetInnerHTML={{ __html: formatCurrency(item.unitPrice) }}></TableCell>
+                              <TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(item.total) }}></TableCell>
                               <TableCell>{item.reason || "-"}</TableCell>
                             </TableRow>
                           ))}
@@ -1334,13 +1334,13 @@ export default function PurchasesPage() {
               <Table size="sm" className="mb-6"><TableHeader><TableRow><TableHead>الصنف</TableHead><TableHead className="text-center">الكمية</TableHead><TableHead className="text-center">سعر الوحدة</TableHead><TableHead className="text-left">الإجمالي</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {selectedPoForPrint.items.map((item, index) => (
-                    <TableRow key={index}><TableCell>{mockItems.find(i=>i.id === item.itemId)?.name || item.description}</TableCell><TableCell className="text-center">{item.quantity}</TableCell><TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell><TableCell className="text-left">{formatCurrency(item.total)}</TableCell></TableRow>
+                    <TableRow key={index}><TableCell>{mockItems.find(i=>i.id === item.itemId)?.name || item.description}</TableCell><TableCell className="text-center">{item.quantity}</TableCell><TableCell className="text-center" dangerouslySetInnerHTML={{ __html: formatCurrency(item.unitPrice) }}></TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(item.total) }}></TableCell></TableRow>
                   ))}
                 </TableBody>
               </Table>
               <div className="flex justify-end mb-6">
                 <div className="w-full max-w-xs space-y-1 text-xs">
-                  <div className="flex justify-between font-bold text-base border-t pt-2 mt-2 text-primary"><span>إجمالي أمر الشراء:</span><span>{formatCurrency(selectedPoForPrint.totalAmount)}</span></div>
+                  <div className="flex justify-between font-bold text-base border-t pt-2 mt-2 text-primary"><span>إجمالي أمر الشراء:</span><span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedPoForPrint.totalAmount) }}></span></div>
                 </div>
               </div>
               {selectedPoForPrint.notes && <div className="text-xs mb-6"><p><strong>ملاحظات:</strong> {selectedPoForPrint.notes}</p></div>}
@@ -1379,8 +1379,8 @@ export default function PurchasesPage() {
                     <TableRow key={index}>
                       <TableCell>{mockItems.find(i=>i.id === item.itemId)?.name || item.description}</TableCell>
                       <TableCell className="text-center">{item.quantity}</TableCell>
-                      <TableCell className="text-center">{formatCurrency(item.unitPrice)}</TableCell>
-                      <TableCell className="text-left">{formatCurrency(item.total)}</TableCell>
+                      <TableCell className="text-center" dangerouslySetInnerHTML={{ __html: formatCurrency(item.unitPrice) }}></TableCell>
+                      <TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(item.total) }}></TableCell>
                       <TableCell>{item.reason || '-'}</TableCell>
                     </TableRow>
                   ))}
@@ -1390,7 +1390,7 @@ export default function PurchasesPage() {
                 <div className="w-full max-w-xs space-y-1 text-xs">
                   <div className="flex justify-between font-bold text-sm border-t pt-1 mt-1 text-primary">
                     <span>إجمالي قيمة المرتجع:</span>
-                    <span>{formatCurrency(selectedReturnForPrint.totalAmount)}</span>
+                    <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedReturnForPrint.totalAmount) }}></span>
                   </div>
                 </div>
               </div>

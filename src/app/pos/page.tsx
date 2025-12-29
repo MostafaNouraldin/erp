@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; 
 import type { InvoiceItem as SalesInvoiceItem, Invoice as SalesInvoice } from '@/app/sales/page'; 
 import type { JournalEntry as GLJournalEntry } from '@/app/general-ledger/page'; 
+import { useCurrency } from '@/hooks/use-currency';
 
 // Mock data
 const categories = ["الكل", "مشروبات", "مأكولات خفيفة", "حلويات", "مخبوزات", "منتجات ورقية"];
@@ -50,15 +51,15 @@ interface RecentTransaction {
   id: string;
   time: string;
   items: number;
-  total: string;
+  total: number;
   paymentMethod: string;
   customerName?: string;
 }
 
 const initialRecentTransactions: RecentTransaction[] = [
-    { id: "TRX001", time: "10:30 ص", items: 2, total: "30 SAR", paymentMethod: "نقدي" },
-    { id: "TRX002", time: "10:35 ص", items: 1, total: "15 SAR", paymentMethod: "بطاقة" },
-    { id: "TRX003", time: "10:42 ص", items: 3, total: "45 SAR", paymentMethod: "نقدي" },
+    { id: "TRX001", time: "10:30 ص", items: 2, total: 30, paymentMethod: "نقدي" },
+    { id: "TRX002", time: "10:35 ص", items: 1, total: 15, paymentMethod: "بطاقة" },
+    { id: "TRX003", time: "10:42 ص", items: 3, total: 45, paymentMethod: "نقدي" },
 ];
 
 
@@ -72,6 +73,7 @@ export default function POSPage() {
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const { toast } = useToast();
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>(initialRecentTransactions);
+  const { formatCurrency } = useCurrency();
 
 
   useEffect(() => {
@@ -201,7 +203,7 @@ export default function POSPage() {
         id: transactionId,
         time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
         items: cart.reduce((sum, item) => sum + item.quantity, 0),
-        total: `${totalAmount.toFixed(2)} SAR`,
+        total: totalAmount,
         paymentMethod: paymentMethod === 'deferred' ? 'آجل' : (paymentMethod || "غير محدد"),
         customerName: selectedCustomerId === CASH_CUSTOMER_ID ? undefined : customer?.name,
     };
@@ -212,7 +214,7 @@ export default function POSPage() {
   const handlePostToGL = () => {
     const settledSalesTotal = recentTransactions
         .filter(trx => trx.paymentMethod === "نقدي" || trx.paymentMethod === "بطاقة" || trx.paymentMethod === "تحويل")
-        .reduce((sum, trx) => sum + parseFloat(trx.total.split(" ")[0]), 0);
+        .reduce((sum, trx) => sum + trx.total, 0);
 
     if (settledSalesTotal <= 0) {
         toast({
@@ -313,7 +315,7 @@ export default function POSPage() {
                       <CardTitle className="text-sm font-semibold truncate">{product.name}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-2 pt-0 w-full">
-                      <p className="text-primary font-bold text-sm">{product.price} SAR</p>
+                      <p className="text-primary font-bold text-sm" dangerouslySetInnerHTML={{ __html: formatCurrency(product.price) }}></p>
                       <p className="text-xs text-muted-foreground">المخزون: {product.stock}</p>
                     </CardContent>
                   </Card>
@@ -347,7 +349,7 @@ export default function POSPage() {
                       <Image src={item.image} alt={item.name} width={48} height={48} className="rounded-md object-cover" data-ai-hint={products.find(p=>p.id===item.id)?.dataAiHint}/>
                       <div className="flex-grow">
                         <p className="font-semibold truncate text-sm">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.price} SAR</p>
+                        <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: formatCurrency(item.price) }}></p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.id, -1)}>
@@ -372,7 +374,7 @@ export default function POSPage() {
                 <CardContent className="p-4 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span>المجموع الفرعي:</span>
-                    <span className="font-semibold">{subtotal.toFixed(2)} SAR</span>
+                    <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(subtotal) }}></span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span>الخصم:</span>
@@ -390,7 +392,7 @@ export default function POSPage() {
                    <Separator />
                   <div className="flex justify-between text-lg font-bold text-primary">
                     <span>الإجمالي للدفع:</span>
-                    <span>{totalAmount.toFixed(2)} SAR</span>
+                    <span dangerouslySetInnerHTML={{ __html: formatCurrency(totalAmount) }}></span>
                   </div>
                   <Dialog>
                     <DialogTrigger asChild>
@@ -406,7 +408,7 @@ export default function POSPage() {
                       <div className="space-y-4 py-4">
                         <div className="text-center">
                             <p className="text-muted-foreground">المبلغ الإجمالي للدفع</p>
-                            <p className="text-3xl font-bold text-primary">{totalAmount.toFixed(2)} SAR</p>
+                            <p className="text-3xl font-bold text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(totalAmount) }}></p>
                         </div>
                         <div>
                             <Label htmlFor="posCustomer">العميل</Label>
@@ -481,7 +483,7 @@ export default function POSPage() {
                                 <TableRow key={trx.id} className="text-xs">
                                     <TableCell className="p-1">{trx.time}</TableCell>
                                     <TableCell className="p-1">#{trx.id.slice(-3)} {trx.customerName && `(${trx.customerName.substring(0,10)}..)`}</TableCell>
-                                    <TableCell className="p-1">{trx.total}</TableCell>
+                                    <TableCell className="p-1" dangerouslySetInnerHTML={{ __html: formatCurrency(trx.total) }}></TableCell>
                                     <TableCell className="p-1">
                                         <Badge variant={trx.paymentMethod === 'آجل' ? 'destructive' : 'secondary'} className="text-xs">{trx.paymentMethod}</Badge>
                                     </TableCell>

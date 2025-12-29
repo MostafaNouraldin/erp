@@ -15,6 +15,7 @@ import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useCurrency } from '@/hooks/use-currency';
 
 // Mock chart of accounts (should ideally come from a shared service or context)
 const mockChartOfAccounts = [
@@ -50,6 +51,7 @@ export default function OpeningBalancesPage() {
   const [openingBalances, setOpeningBalances] = useState(initialOpeningBalancesData);
   const [showManageBalanceDialog, setShowManageBalanceDialog] = useState(false);
   const [balanceToEdit, setBalanceToEdit] = useState<OpeningBalanceFormValues | null>(null);
+  const { formatCurrency } = useCurrency();
 
   const form = useForm<OpeningBalanceFormValues>({
     resolver: zodResolver(openingBalanceSchema),
@@ -166,8 +168,8 @@ export default function OpeningBalancesPage() {
                   <TableRow key={balance.id} className="hover:bg-muted/50">
                     <TableCell>{balance.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                     <TableCell className="font-medium">{mockChartOfAccounts.find(acc => acc.id === balance.accountId)?.name || balance.accountId}</TableCell>
-                    <TableCell>{balance.debit.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
-                    <TableCell>{balance.credit.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(balance.debit) }}></TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(balance.credit) }}></TableCell>
                     <TableCell>{balance.notes}</TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setBalanceToEdit(balance); setShowManageBalanceDialog(true); }}>
@@ -196,10 +198,10 @@ export default function OpeningBalancesPage() {
               </TableBody>
                <TableRow className="font-semibold bg-muted/50">
                   <TableCell colSpan={2} className="text-center">الإجماليات</TableCell>
-                  <TableCell>{totalDebit.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
-                  <TableCell>{totalCredit.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                  <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(totalDebit) }}></TableCell>
+                  <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(totalCredit) }}></TableCell>
                   <TableCell colSpan={2} className="text-center">
-                    {totalDebit === totalCredit ? "متوازن" : `الفرق: ${(totalDebit - totalCredit).toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}`}
+                    {totalDebit === totalCredit ? "متوازن" : <span dangerouslySetInnerHTML={{ __html: `الفرق: ${formatCurrency(totalDebit - totalCredit)}`}}></span>}
                   </TableCell>
                 </TableRow>
             </Table>

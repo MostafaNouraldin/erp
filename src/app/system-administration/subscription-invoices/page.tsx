@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import type { SubscriptionInvoice, SubscriptionInvoiceItem, Module } from '@/types/saas';
+import { useCurrency } from '@/hooks/use-currency';
 
 // Mock data for tenants (ID and Name)
 const mockTenantsData = [
@@ -74,6 +75,7 @@ export default function SubscriptionInvoicesPage() {
   const [showCreateInvoiceDialog, setShowCreateInvoiceDialog] = useState(false);
   const [invoiceToEdit, setInvoiceToEdit] = useState<SubscriptionInvoiceFormValues | null>(null);
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
 
   const form = useForm<SubscriptionInvoiceFormValues>({
     resolver: zodResolver(subscriptionInvoiceFormSchema),
@@ -338,7 +340,7 @@ export default function SubscriptionInvoicesPage() {
                     <TableCell>{mockTenantsData.find(t => t.id === invoice.tenantId)?.name || invoice.tenantId}</TableCell>
                     <TableCell>{new Date(invoice.issueDate).toLocaleDateString('ar-SA')}</TableCell>
                     <TableCell>{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</TableCell>
-                    <TableCell>{invoice.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.totalAmount) }}></TableCell>
                     <TableCell>
                       <Badge 
                           variant={
@@ -374,4 +376,3 @@ export default function SubscriptionInvoicesPage() {
     </div>
   );
 }
-

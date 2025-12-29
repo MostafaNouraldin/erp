@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -21,27 +22,28 @@ import { DatePickerWithPresets } from '@/components/date-picker-with-presets';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useCurrency } from '@/hooks/use-currency';
 
 
 // Mock data initial state
 const initialChartOfAccountsData = [
-  { id: "1000", name: "الأصول", type: "رئيسي" as const, parentId: null, balance: "1,500,000 SAR" },
-  { id: "1010", name: "النقدية وما في حكمها", type: "فرعي" as const, parentId: "1000", balance: "250,000 SAR" },
-  { id: "1011", name: "صندوق الفرع الرئيسي", type: "تفصيلي" as const, parentId: "1010", balance: "100,000 SAR" },
-  { id: "1012", name: "حساب البنك الأهلي", type: "تفصيلي" as const, parentId: "1010", balance: "150,000 SAR" },
-  { id: "1013", name: "صندوق نقاط البيع", type: "تفصيلي" as const, parentId: "1010", balance: "0 SAR" },
-  { id: "1020", name: "العملاء", type: "فرعي" as const, parentId: "1000", balance: "300,000 SAR"},
-  { id: "1210", name: "سلف الموظفين", type: "تفصيلي" as const, parentId: "1000", balance: "0 SAR" }, 
-  { id: "2000", name: "الخصوم", type: "رئيسي" as const, parentId: null, balance: "800,000 SAR" },
-  { id: "2010", name: "الموردون", type: "فرعي" as const, parentId: "2000", balance: "400,000 SAR"},
-  { id: "2100", name: "رواتب مستحقة", type: "تفصيلي" as const, parentId: "2000", balance: "0 SAR" },
-  { id: "3000", name: "حقوق الملكية", type: "رئيسي" as const, parentId: null, balance: "700,000 SAR" },
-  { id: "4000", name: "الإيرادات", type: "رئيسي" as const, parentId: null, balance: "1,200,000 SAR"},
-  { id: "4010", name: "إيرادات مبيعات منتجات", type: "تفصيلي" as const, parentId: "4000", balance: "1,200,000 SAR"},
-  { id: "5000", name: "المصروفات", type: "رئيسي" as const, parentId: null, balance: "600,000 SAR"},
-  { id: "5010", name: "مصروفات الرواتب", type: "فرعي" as const, parentId: "5000", balance: "300,000 SAR"},
-  { id: "5011", name: "مصروف رواتب الشهر", type: "تفصيلي" as const, parentId: "5010", balance: "300,000 SAR"},
-  { id: "5100", name: "مصروف مكافآت", type: "تفصيلي" as const, parentId: "5000", balance: "0 SAR" },
+  { id: "1000", name: "الأصول", type: "رئيسي" as const, parentId: null, balance: 1500000 },
+  { id: "1010", name: "النقدية وما في حكمها", type: "فرعي" as const, parentId: "1000", balance: 250000 },
+  { id: "1011", name: "صندوق الفرع الرئيسي", type: "تفصيلي" as const, parentId: "1010", balance: 100000 },
+  { id: "1012", name: "حساب البنك الأهلي", type: "تفصيلي" as const, parentId: "1010", balance: 150000 },
+  { id: "1013", name: "صندوق نقاط البيع", type: "تفصيلي" as const, parentId: "1010", balance: 0 },
+  { id: "1020", name: "العملاء", type: "فرعي" as const, parentId: "1000", balance: 300000},
+  { id: "1210", name: "سلف الموظفين", type: "تفصيلي" as const, parentId: "1000", balance: 0 }, 
+  { id: "2000", name: "الخصوم", type: "رئيسي" as const, parentId: null, balance: 800000 },
+  { id: "2010", name: "الموردون", type: "فرعي" as const, parentId: "2000", balance: 400000},
+  { id: "2100", name: "رواتب مستحقة", type: "تفصيلي" as const, parentId: "2000", balance: 0 },
+  { id: "3000", name: "حقوق الملكية", type: "رئيسي" as const, parentId: null, balance: 700000 },
+  { id: "4000", name: "الإيرادات", type: "رئيسي" as const, parentId: null, balance: 1200000},
+  { id: "4010", name: "إيرادات مبيعات منتجات", type: "تفصيلي" as const, parentId: "4000", balance: 1200000},
+  { id: "5000", name: "المصروفات", type: "رئيسي" as const, parentId: null, balance: 600000},
+  { id: "5010", name: "مصروفات الرواتب", type: "فرعي" as const, parentId: "5000", balance: 300000},
+  { id: "5011", name: "مصروف رواتب الشهر", type: "تفصيلي" as const, parentId: "5010", balance: 300000},
+  { id: "5100", name: "مصروف مكافآت", type: "تفصيلي" as const, parentId: "5000", balance: 0 },
 ];
 
 type JournalEntryStatus = "مسودة" | "مرحل";
@@ -79,7 +81,7 @@ const accountSchema = z.object({
   name: z.string().min(1, "اسم الحساب مطلوب"),
   type: z.enum(["رئيسي", "فرعي", "تفصيلي"], { required_error: "نوع الحساب مطلوب" }),
   parentId: z.string().nullable().optional(),
-  balance: z.string().optional(), 
+  balance: z.number().optional(), 
 });
 type AccountFormValues = z.infer<typeof accountSchema>;
 
@@ -118,6 +120,7 @@ type JournalEntryFormValues = z.infer<typeof journalEntrySchema>;
 export default function GeneralLedgerPage() {
   const [chartOfAccounts, setChartOfAccounts] = useState(initialChartOfAccountsData);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(initialJournalEntriesData);
+  const { formatCurrency } = useCurrency();
   
   const [externallyGeneratedJournalEntries, setExternallyGeneratedJournalEntries] = useState<JournalEntry[]>([]);
 
@@ -150,7 +153,7 @@ export default function GeneralLedgerPage() {
 
   const accountForm = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
-    defaultValues: { id: '', name: '', type: undefined, parentId: null, balance: '0 SAR' },
+    defaultValues: { id: '', name: '', type: undefined, parentId: null, balance: 0 },
   });
 
   const journalEntryForm = useForm<JournalEntryFormValues>({
@@ -168,7 +171,7 @@ export default function GeneralLedgerPage() {
 
   useEffect(() => {
     if (accountToEdit) accountForm.reset(accountToEdit);
-    else accountForm.reset({ id: '', name: '', type: undefined, parentId: null, balance: '0 SAR' });
+    else accountForm.reset({ id: '', name: '', type: undefined, parentId: null, balance: 0 });
   }, [accountToEdit, accountForm, showAddAccountDialog]);
 
   useEffect(() => {
@@ -193,7 +196,7 @@ export default function GeneralLedgerPage() {
     if (accountToEdit) {
       setChartOfAccounts(prev => prev.map(acc => acc.id === accountToEdit.id ? { ...finalValues, balance: acc.balance } : acc)); 
     } else {
-      setChartOfAccounts(prev => [...prev, { ...finalValues, balance: '0 SAR' }]);
+      setChartOfAccounts(prev => [...prev, { ...finalValues, balance: 0 }]);
     }
     setShowAddAccountDialog(false);
     setAccountToEdit(null);
@@ -201,7 +204,7 @@ export default function GeneralLedgerPage() {
   
   const handleDeleteAccount = (accountId: string) => {
     const hasChildren = chartOfAccounts.some(acc => acc.parentId === accountId);
-    const isInitialSystemAccount = initialChartOfAccountsData.some(acc => acc.id === accountId && acc.balance !== '0 SAR' && acc.balance !== undefined); 
+    const isInitialSystemAccount = initialChartOfAccountsData.some(acc => acc.id === accountId && acc.balance !== 0 && acc.balance !== undefined); 
 
     if (hasChildren) {
         alert("لا يمكن حذف حساب رئيسي أو فرعي لديه حسابات تابعة.");
@@ -328,8 +331,8 @@ export default function GeneralLedgerPage() {
                 </ScrollArea>
                 <Button type="button" variant="outline" onClick={() => appendJournalLine({ accountId: "", debit: 0, credit: 0, description: "" })} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة سطر جديد</Button>
                 <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t">
-                    <div className="font-semibold">إجمالي المدين: {totalDebit.toFixed(2)} SAR</div>
-                    <div className="font-semibold">إجمالي الدائن: {totalCredit.toFixed(2)} SAR</div>
+                    <div className="font-semibold">إجمالي المدين: <span dangerouslySetInnerHTML={{ __html: formatCurrency(totalDebit) }}></span></div>
+                    <div className="font-semibold">إجمالي الدائن: <span dangerouslySetInnerHTML={{ __html: formatCurrency(totalCredit) }}></span></div>
                 </div>
                 {journalEntryForm.formState.errors.lines && <FormMessage>{journalEntryForm.formState.errors.lines.message || journalEntryForm.formState.errors.lines.root?.message}</FormMessage>}
                 <DialogFooter>
@@ -362,7 +365,7 @@ export default function GeneralLedgerPage() {
                 </div>
                 <Dialog open={showAddAccountDialog} onOpenChange={(isOpen) => { setShowAddAccountDialog(isOpen); if (!isOpen) setAccountToEdit(null); }}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow" onClick={() => { setAccountToEdit(null); accountForm.reset({ id: '', name: '', type: undefined, parentId: null, balance: '0 SAR' }); setShowAddAccountDialog(true); }}>
+                    <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow" onClick={() => { setAccountToEdit(null); accountForm.reset({ id: '', name: '', type: undefined, parentId: null, balance: 0 }); setShowAddAccountDialog(true); }}>
                       <PlusCircle className="me-2 h-4 w-4" /> إضافة حساب جديد
                     </Button>
                   </DialogTrigger>
@@ -402,7 +405,7 @@ export default function GeneralLedgerPage() {
                   <TableBody>{chartOfAccounts.map((account) => (<TableRow key={account.id} className="hover:bg-muted/50">
                         <TableCell>{account.id}</TableCell><TableCell className="font-medium">{account.name}</TableCell>
                         <TableCell><Badge variant={account.type === "رئيسي" ? "default" : account.type === "فرعي" ? "secondary" : "outline"}>{account.type}</Badge></TableCell>
-                        <TableCell>{chartOfAccounts.find(a => a.id === account.parentId)?.name || "-"}</TableCell><TableCell>{account.balance}</TableCell>
+                        <TableCell>{chartOfAccounts.find(a => a.id === account.parentId)?.name || "-"}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(account.balance) }}></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setAccountToEdit(account); setShowAddAccountDialog(true); }}><Edit className="h-4 w-4" /></Button>
                           <AlertDialog>
@@ -435,7 +438,7 @@ export default function GeneralLedgerPage() {
                 <Table>
                   <TableHeader><TableRow><TableHead>رقم القيد</TableHead><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>المبلغ</TableHead><TableHead>المصدر</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
                   <TableBody>{allJournalEntries.map((entry) => (<TableRow key={entry.id} className="hover:bg-muted/50">
-                        <TableCell>{entry.id}</TableCell><TableCell>{entry.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell>{entry.description}</TableCell><TableCell>{entry.totalAmount?.toFixed(2)} SAR</TableCell>
+                        <TableCell>{entry.id}</TableCell><TableCell>{entry.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell>{entry.description}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.totalAmount || 0) }}></TableCell>
                         <TableCell><Badge variant="outline" className="text-xs">{entry.sourceModule === "POS" ? "نقاط البيع" : entry.sourceModule === "EmployeeSettlements" ? "تسويات موظفين" : "عام"}</Badge></TableCell>
                         <TableCell><Badge variant={entry.status === "مرحل" ? "default" : "outline"}>{entry.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
@@ -483,7 +486,7 @@ export default function GeneralLedgerPage() {
           {selectedJournalEntry && (<div className="py-4 space-y-3">
               <div><strong>التاريخ:</strong> {selectedJournalEntry.date.toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
               <div><strong>الوصف العام:</strong> {selectedJournalEntry.description}</div>
-              <div><strong>المبلغ الإجمالي:</strong> {selectedJournalEntry.totalAmount?.toFixed(2)} SAR</div>
+              <div><strong>المبلغ الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedJournalEntry.totalAmount || 0) }}></span></div>
               <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedJournalEntry.status === "مرحل" ? "default" : "outline"}>{selectedJournalEntry.status}</Badge></div>
               <div><strong>المصدر:</strong> <Badge variant="outline" className="text-xs">{selectedJournalEntry.sourceModule === "POS" ? "نقاط البيع" : selectedJournalEntry.sourceModule === "EmployeeSettlements" ? "تسويات موظفين" : "عام"} {selectedJournalEntry.sourceDocumentId ? `(${selectedJournalEntry.sourceDocumentId})` : ''}</Badge></div>
 
@@ -492,7 +495,8 @@ export default function GeneralLedgerPage() {
                   <TableHeader><TableRow><TableHead>الحساب</TableHead><TableHead>مدين</TableHead><TableHead>دائن</TableHead><TableHead>الوصف</TableHead></TableRow></TableHeader>
                   <TableBody>{selectedJournalEntry.lines.map((line, idx) => (<TableRow key={idx}>
                         <TableCell>{chartOfAccounts.find(acc => acc.id === line.accountId)?.name || line.accountId}</TableCell>
-                        <TableCell>{line.debit > 0 ? line.debit.toFixed(2) : '-'}</TableCell><TableCell>{line.credit > 0 ? line.credit.toFixed(2) : '-'}</TableCell>
+                        <TableCell><span dangerouslySetInnerHTML={{ __html: line.debit > 0 ? formatCurrency(line.debit) : '-' }}></span></TableCell>
+                        <TableCell><span dangerouslySetInnerHTML={{ __html: line.credit > 0 ? formatCurrency(line.credit) : '-' }}></span></TableCell>
                         <TableCell>{line.description || '-'}</TableCell></TableRow>))}
                   </TableBody></Table>) : <p className="text-muted-foreground">لا توجد تفاصيل حركات لهذا القيد.</p>}</div>)}
           <DialogFooter><DialogClose asChild><Button type="button">إغلاق</Button></DialogClose></DialogFooter>
@@ -510,4 +514,3 @@ export default function GeneralLedgerPage() {
     </div>
   );
 }
-
