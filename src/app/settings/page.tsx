@@ -27,21 +27,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { availableCurrencies } from '@/contexts/currency-context'; 
 import { useCurrency } from '@/hooks/use-currency';
 
-
-// Mock data
-const initialUsers = [
-  { id: "USR001", name: "أحمد علي", email: "ahmed.ali@example.com", roleId: "ROLE001", status: "نشط" as const, avatarUrl: "https://picsum.photos/100/100?random=10" },
-  { id: "USR002", name: "فاطمة خالد", email: "fatima.k@example.com", roleId: "ROLE002", status: "نشط" as const, avatarUrl: "https://picsum.photos/100/100?random=11" },
-  { id: "USR003", name: "يوسف حسن", email: "youssef.h@example.com", roleId: "ROLE003", status: "غير نشط" as const, avatarUrl: "https://picsum.photos/100/100?random=12" },
-];
-
-const initialRoles: Role[] = [
-  { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles"] },
-  { id: "ROLE002", name: "محاسب", description: "صلاحيات على وحدات الحسابات والمالية.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "reports.view_financial"] },
-  { id: "ROLE003", name: "موظف مبيعات", description: "صلاحيات على وحدة المبيعات وعروض الأسعار.", permissions: ["sales.view", "sales.create", "reports.view_sales"] },
-  { id: "ROLE004", name: "مدير مخزون", description: "صلاحيات على وحدة المخزون والمستودعات.", permissions: ["inventory.view", "inventory.create", "inventory.edit", "reports.view_inventory"] },
-];
-
 const modules = ["الحسابات", "المبيعات", "المشتريات", "المخزون", "الموارد البشرية", "التقارير", "الإعدادات"];
 const permissionsMap: { [key: string]: {name: string, key: string}[] } = {
   "الحسابات": [{name:"عرض", key:"view"}, {name:"إنشاء", key:"create"}, {name:"تعديل", key:"edit"}, {name:"حذف", key:"delete"}, {name:"موافقة", key:"approve"}],
@@ -80,8 +65,8 @@ interface InvoiceSettingsState {
 }
 
 export default function SettingsPage() {
-  const [users, setUsers] = useState(initialUsers);
-  const [roles, setRolesData] = useState(initialRoles);
+  const [users, setUsers] = useState<UserFormValues[]>([]);
+  const [roles, setRolesData] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedRolePermissions, setSelectedRolePermissions] = useState<string[]>([]);
   const [showManageUserDialog, setShowManageUserDialog] = useState(false);
@@ -657,5 +642,7 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
 
     
