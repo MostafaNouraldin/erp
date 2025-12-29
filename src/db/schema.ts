@@ -123,5 +123,42 @@ export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
+export const employees = pgTable('employees', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    jobTitle: varchar('job_title', { length: 256 }).notNull(),
+    department: varchar('department', { length: 256 }).notNull(),
+    contractStartDate: timestamp('contract_start_date').notNull(),
+    contractEndDate: timestamp('contract_end_date').notNull(),
+    employmentType: varchar('employment_type', { length: 50 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull(),
+    basicSalary: numeric('basic_salary', { precision: 10, scale: 2 }).notNull(),
+    email: varchar('email', { length: 256 }),
+    phone: varchar('phone', { length: 50 }),
+    avatarUrl: text('avatar_url'),
+    dataAiHint: varchar('data_ai_hint', { length: 256 }),
+    nationality: varchar('nationality', { length: 100 }),
+    idNumber: varchar('id_number', { length: 50 }),
+    bankName: varchar('bank_name', { length: 256 }),
+    iban: varchar('iban', { length: 256 }),
+    socialInsuranceNumber: varchar('social_insurance_number', { length: 100 }),
+});
+
+export const employeeAllowances = pgTable('employee_allowances', {
+    id: serial('id').primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id),
+    description: varchar('description', { length: 256 }).notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
+});
+
+export const employeeDeductions = pgTable('employee_deductions', {
+    id: serial('id').primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id),
+    description: varchar('description', { length: 256 }).notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
+});
+
 
 // Add other schemas from the application here as needed...
