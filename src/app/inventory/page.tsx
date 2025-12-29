@@ -27,6 +27,7 @@ import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useCurrency } from '@/hooks/use-currency';
 
 // Product Schema
 const productSchema = z.object({
@@ -201,6 +202,7 @@ export default function InventoryPage() {
   const [showManageProductDialog, setShowManageProductDialog] = useState(false);
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const { formatCurrency } = useCurrency();
 
   const [showManageCategoryDialog, setShowManageCategoryDialog] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState<CategoryFormValues | null>(null);
@@ -1115,3 +1117,6 @@ export default function InventoryPage() {
 
 
 
+
+
+    
