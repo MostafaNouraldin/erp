@@ -1,3 +1,4 @@
+
 // This component now fetches data directly from the database.
 // It is marked as 'use client' because it contains interactive elements 
 // like forms and dialogs that require client-side JavaScript.
