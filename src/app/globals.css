@@ -1,3 +1,5 @@
+@import "@emran-alhaddad/saudi-riyal-font/dist/index.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -130,4 +132,3 @@
   }
   /* Add more print-specific overrides as needed */
 }
-

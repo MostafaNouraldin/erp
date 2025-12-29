@@ -28,11 +28,15 @@ export const CurrencyContext = createContext<CurrencyContextProps>({
   selectedCurrency: defaultCurrency,
   setSelectedCurrency: () => {},
   formatCurrency: (amount: number) => {
-    const { code, symbol } = defaultCurrency;
+    const { symbol } = defaultCurrency;
     const formatted = new Intl.NumberFormat('ar-SA', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+    // Apply special class for SAR
+    if (defaultCurrency.code === 'SAR') {
+        return `${formatted} <span class="srs">${symbol}</span>`;
+    }
     return `${formatted} ${symbol}`;
   },
 });
@@ -59,16 +63,27 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
   }, [selectedCurrency]);
 
   const formatCurrency = (amount: number): string => {
-    const { code, symbol } = selectedCurrency;
+    const { symbol } = selectedCurrency;
     const formatted = new Intl.NumberFormat('ar-SA', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+    
+    // Apply special class for SAR
+    if (selectedCurrency.code === 'SAR') {
+        return `${formatted} <span class="srs">${symbol}</span>`;
+    }
     return `${formatted} ${symbol}`;
   };
 
+  const formatCurrencyForDisplay = (amount: number) => {
+    const formattedString = formatCurrency(amount);
+    return <span dangerouslySetInnerHTML={{ __html: formattedString }} />;
+  };
+
+
   return (
-    <CurrencyContext.Provider value={{ selectedCurrency, setSelectedCurrency, formatCurrency }}>
+    <CurrencyContext.Provider value={{ selectedCurrency, setSelectedCurrency, formatCurrency: (amount: number) => formatCurrency(amount) }}>
       {children}
     </CurrencyContext.Provider>
   );
