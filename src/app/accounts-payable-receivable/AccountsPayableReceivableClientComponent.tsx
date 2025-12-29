@@ -20,8 +20,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
-import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from '@/app/sales/actions';
-import { addSupplierInvoice, updateSupplierInvoice, deleteSupplierInvoice, updateSupplierInvoicePayment } from '@/app/purchases/actions';
+// TODO: Re-enable actions when properly connected
+// import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from '@/app/sales/actions';
+// import { addSupplierInvoice, updateSupplierInvoice, deleteSupplierInvoice, updateSupplierInvoicePayment } from '@/app/purchases/actions';
 
 
 const customerInvoiceItemSchema = z.object({
@@ -149,63 +150,67 @@ useEffect(() => {
 
 
 const handleCustomerInvoiceSubmit = async (values: any) => {
-    try {
-        if (customerInvoiceToEdit) {
-            await updateSalesInvoice({ ...values, id: customerInvoiceToEdit.id! });
-            toast({ title: "تم التعديل", description: "تم تعديل فاتورة العميل." });
-        } else {
-            await addSalesInvoice(values);
-            toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة العميل." });
-        }
-        setShowManageCustomerInvoiceDialog(false);
-        setCustomerInvoiceToEdit(null);
-    } catch (error) {
-        toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حفظ فواتير العملاء معطل حالياً.", variant: "destructive"});
+    // try {
+    //     if (customerInvoiceToEdit) {
+    //         await updateSalesInvoice({ ...values, id: customerInvoiceToEdit.id! });
+    //         toast({ title: "تم التعديل", description: "تم تعديل فاتورة العميل." });
+    //     } else {
+    //         await addSalesInvoice(values);
+    //         toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة العميل." });
+    //     }
+    //     setShowManageCustomerInvoiceDialog(false);
+    //     setCustomerInvoiceToEdit(null);
+    // } catch (error) {
+    //     toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
+    // }
 };
 
 const handleSupplierInvoiceSubmit = async (values: any) => {
-    try {
-        if (supplierInvoiceToEdit) {
-            await updateSupplierInvoice({ ...values, id: supplierInvoiceToEdit.id! });
-            toast({ title: "تم التعديل", description: "تم تعديل فاتورة المورد." });
-        } else {
-            await addSupplierInvoice(values);
-            toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة المورد." });
-        }
-        setShowManageSupplierInvoiceDialog(false);
-        setSupplierInvoiceToEdit(null);
-    } catch (error) {
-        toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حفظ فواتير الموردين معطل حالياً.", variant: "destructive"});
+    // try {
+    //     if (supplierInvoiceToEdit) {
+    //         await updateSupplierInvoice({ ...values, id: supplierInvoiceToEdit.id! });
+    //         toast({ title: "تم التعديل", description: "تم تعديل فاتورة المورد." });
+    //     } else {
+    //         await addSupplierInvoice(values);
+    //         toast({ title: "تم الإنشاء", description: "تم إنشاء فاتورة المورد." });
+    //     }
+    //     setShowManageSupplierInvoiceDialog(false);
+    //     setSupplierInvoiceToEdit(null);
+    // } catch (error) {
+    //     toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
+    // }
 };
 
 const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: string) => {
-    try {
-        if (type === 'customer') {
-            await deleteSalesInvoice(invoiceId);
-        } else {
-            await deleteSupplierInvoice(invoiceId);
-        }
-        toast({ title: "تم الحذف", description: "تم حذف الفاتورة بنجاح.", variant: "destructive" });
-    } catch (error) {
-        toast({ title: "خطأ", description: "لم يتم حذف الفاتورة.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حذف الفواتير معطل حالياً.", variant: "destructive"});
+    // try {
+    //     if (type === 'customer') {
+    //         await deleteSalesInvoice(invoiceId);
+    //     } else {
+    //         await deleteSupplierInvoice(invoiceId);
+    //     }
+    //     toast({ title: "تم الحذف", description: "تم حذف الفاتورة بنجاح.", variant: "destructive" });
+    // } catch (error) {
+    //     toast({ title: "خطأ", description: "لم يتم حذف الفاتورة.", variant: "destructive" });
+    // }
 };
 
 
   const handleRecordPaymentSubmit = async (paymentValues: PaymentFormValues) => {
     if (!invoiceToPay) return;
-    try {
-        const newPaidAmount = (invoiceToPay.paidAmount || 0) + paymentValues.paymentAmount;
-        const newStatus = newPaidAmount >= invoiceToPay.totalAmount ? "مدفوع" as const : "مدفوع جزئياً" as const;
-        await updateSupplierInvoicePayment(invoiceToPay.id, newPaidAmount, newStatus);
-        toast({ title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة المورد بنجاح." });
-        setShowRecordPaymentDialog(false);
-        setInvoiceToPay(null);
-    } catch(error) {
-        toast({ title: "خطأ", description: "لم يتم تسجيل الدفعة.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "تسجيل الدفعات معطل حالياً.", variant: "destructive"});
+    // try {
+    //     const newPaidAmount = (invoiceToPay.paidAmount || 0) + paymentValues.paymentAmount;
+    //     const newStatus = newPaidAmount >= invoiceToPay.totalAmount ? "مدفوع" as const : "مدفوع جزئياً" as const;
+    //     await updateSupplierInvoicePayment(invoiceToPay.id, newPaidAmount, newStatus);
+    //     toast({ title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة المورد بنجاح." });
+    //     setShowRecordPaymentDialog(false);
+    //     setInvoiceToPay(null);
+    // } catch(error) {
+    //     toast({ title: "خطأ", description: "لم يتم تسجيل الدفعة.", variant: "destructive" });
+    // }
   };
 
 
@@ -414,3 +419,5 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
     </div>
   );
 }
+
+    
