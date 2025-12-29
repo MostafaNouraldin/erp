@@ -166,64 +166,24 @@ export default function SettingsPage() {
   }, [selectedRole]);
 
   const handleUserSubmit = (values: UserFormValues) => {
-    if (userToEdit) {
-      setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...values, id: userToEdit.id!, avatarUrl: u.avatarUrl } : u));
-      toast({ title: "تم التعديل", description: `تم تعديل بيانات المستخدم ${values.name}.` });
-    } else {
-      if(!values.password) {
-        userForm.setError("password", {type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد"});
-        return;
-      }
-      setUsers(prev => [...prev, { ...values, id: `USR${Date.now()}`, avatarUrl: values.avatarUrl || "https://picsum.photos/100/100?random=" + Date.now() }]);
-      toast({ title: "تمت الإضافة", description: `تم إضافة المستخدم ${values.name} بنجاح.` });
-    }
-    setShowManageUserDialog(false);
-    setUserToEdit(null);
+    toast({ title: "متوقف مؤقتاً", description: "إدارة المستخدمين معطلة حالياً.", variant: "destructive"});
   };
 
   const handleToggleUserStatus = (userId: string) => {
-    setUsers(prevUsers => prevUsers.map(user => 
-      user.id === userId ? { ...user, status: user.status === "نشط" ? "غير نشط" : "نشط" } : user
-    ));
-    const user = users.find(u => u.id === userId);
-    toast({ title: "تم تحديث الحالة", description: `تم ${user?.status === "نشط" ? "تعطيل" : "تفعيل"} حساب ${user?.name}.`});
+    toast({ title: "متوقف مؤقتاً", description: "إدارة المستخدمين معطلة حالياً.", variant: "destructive"});
   };
 
   const handleResetPassword = (userId: string) => {
-    const user = users.find(u => u.id === userId);
-    toast({ title: "طلب إعادة تعيين", description: `تم إرسال رابط إعادة تعيين كلمة المرور إلى ${user?.email}. (محاكاة)` });
+    toast({ title: "متوقف مؤقتاً", description: "إدارة المستخدمين معطلة حالياً.", variant: "destructive"});
   };
 
 
   const handleRoleSubmit = (values: RoleFormValues) => {
-    if (roleToEdit) {
-      const updatedRole = { ...roleToEdit, name: values.name, description: values.description, permissions: selectedRolePermissions };
-      setRolesData(prev => prev.map(role => role.id === roleToEdit.id ? updatedRole : role));
-      toast({ title: "تم التعديل", description: `تم تعديل الدور ${values.name}.` });
-      if (selectedRole && selectedRole.id === roleToEdit.id) {
-        setSelectedRole(updatedRole);
-      }
-    } else {
-      const newRole: Role = { ...values, id: `ROLE${Date.now()}`, permissions: selectedRolePermissions };
-      setRolesData(prev => [...prev, newRole]);
-      toast({ title: "تمت الإضافة", description: `تم إضافة الدور ${values.name} بنجاح.` });
-    }
-    setShowManageRoleDialog(false);
-    setRoleToEdit(null);
+    toast({ title: "متوقف مؤقتاً", description: "إدارة الأدوار معطلة حالياً.", variant: "destructive"});
   };
 
   const handleDeleteRole = (roleId: string) => {
-      const isRoleInUse = users.some(user => user.roleId === roleId);
-      if (isRoleInUse) {
-          toast({ title: "خطأ في الحذف", description: "لا يمكن حذف الدور لأنه مستخدم من قبل بعض المستخدمين.", variant: "destructive" });
-          return;
-      }
-      setRolesData(prev => prev.filter(role => role.id !== roleId));
-      if (selectedRole?.id === roleId) {
-          setSelectedRole(null);
-          setSelectedRolePermissions([]);
-      }
-      toast({ title: "تم الحذف", description: `تم حذف الدور ${roleId}.`, variant: "destructive" });
+      toast({ title: "متوقف مؤقتاً", description: "إدارة الأدوار معطلة حالياً.", variant: "destructive"});
   };
 
   const handleSelectRoleForPermissions = (role: Role) => {
@@ -642,7 +602,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
-
-    

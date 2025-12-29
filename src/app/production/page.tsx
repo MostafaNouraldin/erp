@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import type { WorkOrderFormValues, BomFormValues, ProductionPlanFormValues, QualityCheckFormValues } from './actions';
-import { addWorkOrder, updateWorkOrder, deleteWorkOrder, addProductionLog, addBom, updateBom, deleteBom, addProductionPlan, updateProductionPlan, deleteProductionPlan, addQualityCheck, updateQualityCheck, deleteQualityCheck } from './actions';
+// import { addWorkOrder, updateWorkOrder, deleteWorkOrder, addProductionLog, addBom, updateBom, deleteBom, addProductionPlan, updateProductionPlan, deleteProductionPlan, addQualityCheck, updateQualityCheck, deleteQualityCheck } from './actions';
 
 
 interface ProductionLogEntry {
@@ -33,15 +33,24 @@ interface ProductionLogEntry {
   notes?: string;
 }
 
+const mockInitialData = {
+    products: [{id: "PROD001", name: "منتج أ", isRawMaterial: false}, {id: "PROD002", name: "منتج ب", isRawMaterial: false}, {id: "MAT001", name: "مادة خام 1", unit: "kg", isRawMaterial: true}],
+    workOrders: [],
+    boms: [],
+    productionPlans: [],
+    qualityChecks: [],
+    users: [{id: "USR001", name: "أحمد علي"}],
+}
+
 interface ProductionClientComponentProps {
-    initialData: {
-        products: any[],
-        workOrders: (WorkOrderFormValues & { productionLog: ProductionLogEntry[] })[],
-        boms: BomFormValues[],
-        productionPlans: ProductionPlanFormValues[],
-        qualityChecks: QualityCheckFormValues[],
-        users: {id: string, name: string}[],
-    }
+    // initialData: {
+    //     products: any[],
+    //     workOrders: (WorkOrderFormValues & { productionLog: ProductionLogEntry[] })[],
+    //     boms: BomFormValues[],
+    //     productionPlans: ProductionPlanFormValues[],
+    //     qualityChecks: QualityCheckFormValues[],
+    //     users: {id: string, name: string}[],
+    // }
 }
 
 
@@ -53,13 +62,13 @@ const recordProductionOutputSchema = z.object({
 type RecordProductionOutputFormValues = z.infer<typeof recordProductionOutputSchema>;
 
 
-export default function ProductionClientComponent({ initialData }: ProductionClientComponentProps) {
-  const [workOrders, setWorkOrders] = useState(initialData.workOrders);
-  const [boms, setBoms] = useState(initialData.boms);
-  const [productionPlans, setProductionPlans] = useState(initialData.productionPlans);
-  const [qualityChecks, setQualityChecks] = useState(initialData.qualityChecks);
-  const [products, setProducts] = useState(initialData.products);
-  const [users, setUsers] = useState(initialData.users);
+export default function ProductionPage({}: ProductionClientComponentProps) {
+  const [workOrders, setWorkOrders] = useState(mockInitialData.workOrders);
+  const [boms, setBoms] = useState(mockInitialData.boms);
+  const [productionPlans, setProductionPlans] = useState(mockInitialData.productionPlans);
+  const [qualityChecks, setQualityChecks] = useState(mockInitialData.qualityChecks);
+  const [products, setProducts] = useState(mockInitialData.products);
+  const [users, setUsers] = useState(mockInitialData.users);
   
   const [showManageWorkOrderDialog, setShowManageWorkOrderDialog] = useState(false);
   const [workOrderToEdit, setWorkOrderToEdit] = useState<WorkOrderFormValues | null>(null);
@@ -161,14 +170,14 @@ export default function ProductionClientComponent({ initialData }: ProductionCli
   const bomForSelectedProductInWOForm = boms.find(b => b.productId === selectedProductForWOBOM);
 
 
-  useEffect(() => {
-    setWorkOrders(initialData.workOrders);
-    setBoms(initialData.boms);
-    setProductionPlans(initialData.productionPlans);
-    setQualityChecks(initialData.qualityChecks);
-    setProducts(initialData.products);
-    setUsers(initialData.users);
-  }, [initialData]);
+  // useEffect(() => {
+  //   setWorkOrders(initialData.workOrders);
+  //   setBoms(initialData.boms);
+  //   setProductionPlans(initialData.productionPlans);
+  //   setQualityChecks(initialData.qualityChecks);
+  //   setProducts(initialData.products);
+  //   setUsers(initialData.users);
+  // }, [initialData]);
 
   useEffect(() => {
     if (workOrderToEdit) workOrderForm.reset(workOrderToEdit);
@@ -198,57 +207,20 @@ export default function ProductionClientComponent({ initialData }: ProductionCli
 
 
   const handleWorkOrderSubmit = async (values: WorkOrderFormValues) => {
-    try {
-        if (workOrderToEdit) {
-            await updateWorkOrder(values);
-            toast({ title: "تم التعديل", description: "تم تعديل أمر العمل بنجاح." });
-        } else {
-            await addWorkOrder(values);
-            toast({ title: "تم الإنشاء", description: "تم إنشاء أمر العمل بنجاح." });
-        }
-        setShowManageWorkOrderDialog(false);
-        setWorkOrderToEdit(null);
-    } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم حفظ أمر العمل.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حفظ أوامر العمل معطل حالياً.", variant: "destructive"});
   };
 
   const handleRecordProductionOutputSubmit = async (values: RecordProductionOutputFormValues) => {
-    if (!workOrderToRecordProductionFor?.id) return;
-    try {
-        await addProductionLog(workOrderToRecordProductionFor.id, values);
-        toast({ title: "تم تسجيل الإنتاج", description: `تم تسجيل إنتاج ${values.quantityProducedThisBatch} لأمر العمل ${workOrderToRecordProductionFor.id}.` });
-        setShowRecordProductionDialog(false);
-        setWorkOrderToRecordProductionFor(null);
-    } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم تسجيل الإنتاج.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "تسجيل الانتاج معطل حالياً.", variant: "destructive"});
   };
   
   const handleWorkOrderStatusUpdate = async (workOrderId: string, newStatus: WorkOrderFormValues["status"]) => {
-     const wo = workOrders.find(w => w.id === workOrderId);
-     if (wo && newStatus === "مكتمل" && wo.producedQuantity < wo.quantity) {
-        toast({ title: "تنبيه", description: "لا يمكن إكمال الأمر قبل إنتاج كامل الكمية. يرجى تسجيل الإنتاج أولاً.", variant: "destructive"});
-        return;
-     }
-     try {
-        await updateWorkOrder({ ...wo!, status: newStatus });
-        toast({title: "تم تحديث الحالة", description: `تم تحديث حالة أمر العمل ${workOrderId} إلى ${newStatus}.`});
-     } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم تحديث الحالة.", variant: "destructive" });
-     }
+    toast({ title: "متوقف مؤقتاً", description: "تحديث الحالة معطل حالياً.", variant: "destructive"});
   };
 
 
   const handleCancelWorkOrder = async (workOrderId: string) => {
-    const wo = workOrders.find(w => w.id === workOrderId);
-    if (!wo) return;
-    try {
-        await updateWorkOrder({ ...wo, status: 'ملغي' });
-        toast({ title: "تم الإلغاء", description: `تم إلغاء أمر العمل ${workOrderId}.`, variant: "destructive" });
-    } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم إلغاء أمر العمل.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "الإلغاء معطل حالياً.", variant: "destructive"});
   };
   
   const handleViewWorkOrder = (wo: WorkOrderFormValues & { productionLog: ProductionLogEntry[] }) => {
@@ -258,28 +230,11 @@ export default function ProductionClientComponent({ initialData }: ProductionCli
 
 
   const handleBomSubmit = async (values: BomFormValues) => {
-    try {
-        if (bomToEdit) {
-            await updateBom({ ...values, id: bomToEdit.id });
-            toast({ title: "تم التعديل", description: "تم تعديل قائمة المواد بنجاح." });
-        } else {
-            await addBom(values);
-            toast({ title: "تم الإنشاء", description: "تم إنشاء قائمة المواد بنجاح." });
-        }
-        setShowManageBomDialog(false);
-        setBomToEdit(null);
-    } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم حفظ قائمة المواد.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حفظ قوائم المواد معطل حالياً.", variant: "destructive"});
   };
 
   const handleDeleteBom = async (bomId: string) => {
-    try {
-        await deleteBom(bomId);
-        toast({ title: "تم الحذف", description: `تم حذف قائمة المواد ${bomId}.`, variant: "destructive" });
-    } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم حذف قائمة المواد.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حذف قوائم المواد معطل حالياً.", variant: "destructive"});
   };
 
   const handleViewBom = (bom: BomFormValues) => {
@@ -288,19 +243,7 @@ export default function ProductionClientComponent({ initialData }: ProductionCli
   };
   
   const handleProductionPlanSubmit = async (values: ProductionPlanFormValues) => {
-    try {
-        if (productionPlanToEdit) {
-            await updateProductionPlan({ ...values, id: productionPlanToEdit.id });
-            toast({ title: "تم التعديل", description: "تم تعديل خطة الإنتاج بنجاح." });
-        } else {
-            await addProductionPlan(values);
-            toast({ title: "تم الإنشاء", description: "تم إنشاء خطة الإنتاج بنجاح." });
-        }
-        setShowManageProductionPlanDialog(false);
-        setProductionPlanToEdit(null);
-    } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم حفظ خطة الإنتاج.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حفظ خطط الانتاج معطل حالياً.", variant: "destructive"});
   };
   
   const handleViewProductionPlan = (plan: ProductionPlanFormValues) => {
@@ -309,19 +252,7 @@ export default function ProductionClientComponent({ initialData }: ProductionCli
   };
 
   const handleQualityCheckSubmit = async (values: QualityCheckFormValues) => {
-    try {
-        if (qualityCheckToEdit) {
-            await updateQualityCheck({ ...values, id: qualityCheckToEdit.id });
-            toast({ title: "تم التعديل", description: "تم تعديل فحص الجودة بنجاح." });
-        } else {
-            await addQualityCheck(values);
-            toast({ title: "تم التسجيل", description: "تم تسجيل فحص الجودة بنجاح." });
-        }
-        setShowManageQualityCheckDialog(false);
-        setQualityCheckToEdit(null);
-    } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم حفظ فحص الجودة.", variant: "destructive" });
-    }
+    toast({ title: "متوقف مؤقتاً", description: "حفظ فحص الجودة معطل حالياً.", variant: "destructive"});
   };
   
   const handleViewQualityCheck = (qc: QualityCheckFormValues) => {
@@ -330,30 +261,15 @@ export default function ProductionClientComponent({ initialData }: ProductionCli
   };
 
   const handleDeleteWorkOrderAction = async (id: string) => {
-      try {
-        await deleteWorkOrder(id);
-        toast({ title: "تم الحذف", description: "تم حذف أمر العمل."});
-      } catch (e) {
-        toast({ title: "خطأ", description: "لم يتم حذف أمر العمل.", variant: "destructive"});
-      }
+    toast({ title: "متوقف مؤقتاً", description: "الحذف معطل حالياً.", variant: "destructive"});
   }
 
   const handleDeletePlanAction = async (id: string) => {
-    try {
-      await deleteProductionPlan(id);
-      toast({ title: "تم الحذف", description: "تم حذف خطة الإنتاج."});
-    } catch (e) {
-      toast({ title: "خطأ", description: "لم يتم حذف خطة الإنتاج.", variant: "destructive"});
-    }
+    toast({ title: "متوقف مؤقتاً", description: "الحذف معطل حالياً.", variant: "destructive"});
   }
 
   const handleDeleteQualityCheckAction = async (id: string) => {
-    try {
-      await deleteQualityCheck(id);
-      toast({ title: "تم الحذف", description: "تم حذف فحص الجودة."});
-    } catch (e) {
-      toast({ title: "خطأ", description: "لم يتم حذف فحص الجودة.", variant: "destructive"});
-    }
+    toast({ title: "متوقف مؤقتاً", description: "الحذف معطل حالياً.", variant: "destructive"});
   }
 
   return (
