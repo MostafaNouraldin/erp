@@ -230,6 +230,29 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   const { toast } = useToast();
 
   useEffect(() => {
+    const handleAddInvoice = (event: Event) => {
+        const customEvent = event as CustomEvent<Invoice>;
+        const newInvoice = customEvent.detail;
+        setInvoicesData(prev => [newInvoice, ...prev]);
+        toast({
+            title: "فاتورة جديدة من نقاط البيع",
+            description: `تم استلام الفاتورة رقم ${newInvoice.id}.`,
+        });
+    };
+
+    if (typeof window !== 'undefined') {
+        window.addEventListener('addExternalSalesInvoice', handleAddInvoice);
+    }
+
+    return () => {
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('addExternalSalesInvoice', handleAddInvoice);
+        }
+    };
+}, [toast]);
+
+
+  useEffect(() => {
     setCustomers(initialData.customers);
     setInvoicesData(initialData.invoices);
   }, [initialData]);

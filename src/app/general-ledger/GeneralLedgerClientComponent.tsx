@@ -81,21 +81,29 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
     setChartOfAccounts(initialData.chartOfAccounts);
     setJournalEntries(initialData.journalEntries);
   }, [initialData]);
-
-  const [externallyGeneratedJournalEntries, setExternallyGeneratedJournalEntries] = useState<JournalEntry[]>([]);
-
+  
   useEffect(() => {
+    const handleAddJournalEntry = (event: Event) => {
+        const customEvent = event as CustomEvent<JournalEntry>;
+        const newEntry = customEvent.detail;
+        setJournalEntries(prev => [newEntry, ...prev]);
+        toast({
+            title: `قيد جديد من ${newEntry.sourceModule}`,
+            description: `تم استلام القيد رقم ${newEntry.id}.`,
+        });
+    };
+
     if (typeof window !== 'undefined') {
-        (window as any).addExternalJournalEntry = (entry: JournalEntry) => {
-            setExternallyGeneratedJournalEntries(prev => [...prev, entry]);
-        };
+        window.addEventListener('addExternalJournalEntry', handleAddJournalEntry);
     }
+
     return () => {
         if (typeof window !== 'undefined') {
-            delete (window as any).addExternalJournalEntry;
+            window.removeEventListener('addExternalJournalEntry', handleAddJournalEntry);
         }
     };
-  }, []);
+}, [toast]);
+
 
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const [accountToEdit, setAccountToEdit] = useState<AccountFormValues | null>(null);
@@ -123,8 +131,6 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
   const { fields: journalLinesFields, append: appendJournalLine, remove: removeJournalLine } = useFieldArray({
     control: journalEntryForm.control, name: "lines",
   });
-
-  const allJournalEntries = React.useMemo(() => [...journalEntries, ...externallyGeneratedJournalEntries].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [journalEntries, externallyGeneratedJournalEntries]);
 
 
   useEffect(() => {
@@ -396,7 +402,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader><TableRow><TableHead>رقم القيد</TableHead><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>المبلغ</TableHead><TableHead>المصدر</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                  <TableBody>{allJournalEntries.map((entry) => (<TableRow key={entry.id} className="hover:bg-muted/50">
+                  <TableBody>{journalEntries.map((entry) => (<TableRow key={entry.id} className="hover:bg-muted/50">
                         <TableCell>{entry.id}</TableCell><TableCell>{new Date(entry.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell>{entry.description}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.totalAmount || 0) }}></TableCell>
                         <TableCell><Badge variant="outline" className="text-xs">{entry.sourceModule === "POS" ? "نقاط البيع" : entry.sourceModule === "EmployeeSettlements" ? "تسويات موظفين" : "عام"}</Badge></TableCell>
                         <TableCell><Badge variant={entry.status === "مرحل" ? "default" : "outline"}>{entry.status}</Badge></TableCell>
@@ -408,13 +414,13 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                               <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                               <AlertDialogContent dir="rtl">
                                 <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponent>سيتم حذف القيد "{entry.id}" نهائياً.</AlertDialogDescriptionComponent></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteJournalEntry(entry.id)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                                <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteJournalEntry(entry.id!)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="ترحيل القيد" onClick={() => handlePostJournalEntry(entry.id)}><CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="ترحيل القيد" onClick={() => handlePostJournalEntry(entry.id!)}><CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" /></Button>
                           </>)}
                           {entry.status === "مرحل" && entry.sourceModule === "General" && (
-                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-100 dark:hover:bg-yellow-900" title="إلغاء الترحيل" onClick={() => handleUnpostJournalEntry(entry.id)}><Undo className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></Button>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-100 dark:hover:bg-yellow-900" title="إلغاء الترحيل" onClick={() => handleUnpostJournalEntry(entry.id!)}><Undo className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /></Button>
                           )}
                         </TableCell></TableRow>))}
                   </TableBody>
