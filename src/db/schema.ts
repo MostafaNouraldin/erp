@@ -198,3 +198,31 @@ export const employeeDeductions = pgTable('employee_deductions', {
     amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
     type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
 });
+
+
+export const chartOfAccounts = pgTable('chart_of_accounts', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // "رئيسي", "فرعي", "تحليلي"
+    parentId: varchar('parent_id', { length: 256 }),
+    balance: numeric('balance', { precision: 15, scale: 2 }).default('0'),
+});
+
+export const journalEntries = pgTable('journal_entries', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    description: text('description').notNull(),
+    totalAmount: numeric('total_amount', { precision: 15, scale: 2 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull(), // "مسودة", "مرحل"
+    sourceModule: varchar('source_module', { length: 100 }),
+    sourceDocumentId: varchar('source_document_id', { length: 256 }),
+});
+
+export const journalEntryLines = pgTable('journal_entry_lines', {
+    id: serial('id').primaryKey(),
+    journalEntryId: varchar('journal_entry_id', { length: 256 }).notNull().references(() => journalEntries.id),
+    accountId: varchar('account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    debit: numeric('debit', { precision: 15, scale: 2 }).notNull().default('0'),
+    credit: numeric('credit', { precision: 15, scale: 2 }).notNull().default('0'),
+    description: text('description'),
+});
