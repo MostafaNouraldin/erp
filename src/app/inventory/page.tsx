@@ -148,21 +148,7 @@ const stockRequisitionSchema = z.object({
 type StockRequisitionFormValues = z.infer<typeof stockRequisitionSchema>;
 
 // Mock data
-const initialProductsData: ProductFormValues[] = [
-  { id: "ITEM001", sku: "DELL-XPS15-LAP", name: "لابتوب Dell XPS 15", description: "لابتوب عالي الأداء بشاشة 15 بوصة", category: "إلكترونيات", unit: "قطعة", costPrice: 5800, sellingPrice: 6500, quantity: 50, reorderLevel: 10, location: "مستودع A - رف 3", barcode: "1234567890123", supplierId: "SUP001", image: "https://picsum.photos/200/200?random=1", dataAiHint: "laptop computer" },
-  { id: "ITEM002", sku: "HP-LASER-PRO", name: "طابعة HP LaserJet Pro", description: "طابعة ليزر أحادية اللون", category: "إلكترونيات", unit: "قطعة", costPrice: 1000, sellingPrice: 1200, quantity: 5, reorderLevel: 5, location: "مستودع A - رف 1", barcode: "2345678901234", supplierId: "SUP001", image: "https://picsum.photos/200/200?random=2", dataAiHint: "printer office" },
-  { id: "ITEM003", sku: "A4-PAPER-BOX", name: "ورق طباعة A4 (صندوق)", description: "صندوق ورق طباعة A4 عالي الجودة", category: "قرطاسية", unit: "صندوق", costPrice: 120, sellingPrice: 150, quantity: 200, reorderLevel: 50, location: "مستودع B - قسم 2", barcode: "3456789012345", supplierId: "SUP002", itemsPerParentUnit: 500, subUnit: "قطعة", subUnitSellingPrice: 0.30, image: "https://picsum.photos/200/200?random=3", dataAiHint: "paper stationery" },
-  { id: "ITEM004", sku: "WOOD-DESK", name: "مكاتب خشبية", description: "مكتب خشبي أنيق للمكاتب", category: "أثاث مكتبي", unit: "قطعة", costPrice: 650, sellingPrice: 800, quantity: 15, reorderLevel: 5, location: "مستودع C - منطقة 1", barcode: "4567890123456", supplierId: "SUP003", image: "https://picsum.photos/200/200?random=4", dataAiHint: "desk furniture" },
-  { id: "ITEM005", sku: "BLUE-PEN-BOX", name: "أقلام حبر أزرق (علبة)", description: "علبة أقلام حبر زرقاء، 12 قلم", category: "قرطاسية", unit: "علبة", costPrice: 20, sellingPrice: 25, quantity: 500, reorderLevel: 100, location: "مستودع B - قسم 1", barcode: "5678901234567", supplierId: "SUP002", image: "https://picsum.photos/200/200?random=5", dataAiHint: "pens stationery" },
-];
 const mockSuppliers = [ { id: "SUP001", name: "مورد الإلكترونيات الحديثة" }, { id: "SUP002", name: "شركة القرطاسية المتحدة" }, { id: "SUP003", name: "مصنع الأثاث العصري" },];
-const initialCategoriesData: CategoryFormValues[] = [
-    { id: "CAT001", name: "إلكترونيات", description: "جميع الأجهزة الإلكترونية والكهربائية" },
-    { id: "CAT002", name: "قرطاسية", description: "الأدوات المكتبية والورقيات" },
-    { id: "CAT003", name: "أثاث مكتبي", description: "المكاتب والكراسي وأثاث المكاتب" },
-    { id: "CAT004", name: "مواد خام", description: "المواد المستخدمة في عمليات الإنتاج" },
-    { id: "CAT005", name: "أخرى", description: "فئة عامة للأصناف الأخرى" },
-];
 const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة", "سنتيمتر"];
 const mockSubUnits = ["قطعة", "حبة", "متر", "سنتيمتر"];
 const mockWarehouses = [{ id: "WH001", name: "المستودع الرئيسي" }, { id: "WH002", name: "مستودع فرعي أ" }];
@@ -195,10 +181,12 @@ const chartConfig = { "ITEM001": { label: "لابتوب Dell XPS 15", color: "hs
 
 const mockStocktakeDetail: StocktakeDetails = { id: "STK-2024-06-30-A", date: new Date("2024-06-30").toLocaleDateString('ar-SA'), warehouse: "مستودع A", status: "مكتمل", responsible: "فريق الجرد ألف", itemsCounted: 3, discrepanciesFound: 2, notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.", items: [ { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0, differenceValue: 0 }, { productId: "ITEM002", productName: "طابعة HP LaserJet Pro", expectedQuantity: 7, countedQuantity: 6, difference: -1, differenceValue: -1000 }, { productId: "ITEM003", productName: "ورق طباعة A4 (صندوق)", expectedQuantity: 195, countedQuantity: 198, difference: 3, differenceValue: 360 },],};
 
-
+// This component now fetches data directly from the database.
+// It is marked as 'use client' because it contains interactive elements 
+// like forms and dialogs that require client-side JavaScript.
 export default function InventoryPage() {
-  const [productsData, setProductsData] = useState(initialProductsData);
-  const [categories, setCategories] = useState(initialCategoriesData);
+  const [productsData, setProductsData] = useState<ProductFormValues[]>([]);
+  const [categories, setCategories] = useState<CategoryFormValues[]>([]);
   const [showManageProductDialog, setShowManageProductDialog] = useState(false);
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -572,12 +560,12 @@ export default function InventoryPage() {
                             <TableCell>{product.reorderLevel}</TableCell>
                             <TableCell>{product.location}</TableCell>
                             <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setProductToEdit(product); setShowManageProductDialog(true); }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" disabled>
                                 <Edit className="h-4 w-4" />
                             </Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف" disabled>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                                 </AlertDialogTrigger>
@@ -614,7 +602,7 @@ export default function InventoryPage() {
                 <div className="mb-4">
                     <Dialog open={showManageCategoryDialog} onOpenChange={(isOpen) => { setShowManageCategoryDialog(isOpen); if(!isOpen) setCategoryToEdit(null); }}>
                         <DialogTrigger asChild>
-                            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setCategoryToEdit(null); categoryForm.reset(); setShowManageCategoryDialog(true); }}>
+                            <Button className="shadow-md hover:shadow-lg transition-shadow" disabled>
                                 <PlusCircle className="me-2 h-4 w-4" /> إضافة فئة جديدة
                             </Button>
                         </DialogTrigger>
@@ -641,9 +629,9 @@ export default function InventoryPage() {
                                     <TableCell className="font-medium">{cat.name}</TableCell>
                                     <TableCell>{cat.description || "-"}</TableCell>
                                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setCategoryToEdit(cat); setShowManageCategoryDialog(true); }}><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" disabled><Edit className="h-4 w-4" /></Button>
                                         <AlertDialog>
-                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف" disabled><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                             <AlertDialogContent dir="rtl">
                                                 <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponentClass>سيتم حذف الفئة "{cat.name}" نهائياً. لا يمكن حذف الفئة إذا كانت مستخدمة في أي منتج.</AlertDialogDescriptionComponentClass></AlertDialogHeader>
                                                 <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteCategory(cat.id!)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
