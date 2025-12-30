@@ -1,257 +1,125 @@
 
-"use client";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Users, Package, TrendingUp, ArrowUpRight, Activity, CreditCardIcon, Percent, FilePlus, FileCheck, FileClock } from "lucide-react";
+import { DollarSign, Users, ShoppingCart, Activity, ArrowUpRight, FilePlus, FileCheck, FileClock, Package } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, ResponsiveContainer } from "recharts";
+import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, ResponsiveContainer } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
-import { useCurrency } from "@/hooks/use-currency"; // Import useCurrency
+import { db } from "@/db";
+import { salesInvoices, customers, products, journalEntries, journalEntryLines, chartOfAccounts } from "@/db/schema";
+import { sql, and, eq, like, between } from 'drizzle-orm';
+import { CurrencyProvider, availableCurrencies } from "@/contexts/currency-context";
+import DashboardClient from "./DashboardClient";
 
-const chartData = [
-  { month: "يناير", desktop: 186, mobile: 80 },
-  { month: "فبراير", desktop: 305, mobile: 200 },
-  { month: "مارس", desktop: 237, mobile: 120 },
-  { month: "ابريل", desktop: 73, mobile: 190 },
-  { month: "مايو", desktop: 209, mobile: 130 },
-  { month: "يونيو", desktop: 214, mobile: 140 },
-];
+async function getDashboardData() {
+  // Total Revenue (from paid invoices)
+  const totalRevenueResult = await db
+    .select({
+      total: sql<number>`sum(CAST(${salesInvoices.numericTotalAmount} AS numeric))`,
+    })
+    .from(salesInvoices)
+    .where(eq(salesInvoices.status, 'مدفوع'));
+  const totalRevenue = totalRevenueResult[0].total || 0;
 
-const chartConfig = {
-  desktop: {
-    label: "مكتبي",
-    color: "hsl(var(--chart-1))",
-  },
-  mobile: {
-    label: "جوال",
-    color: "hsl(var(--chart-2))",
-  },
-} satisfies ChartConfig;
+  // Active Customers
+  const activeCustomersCount = await db.select({
+      count: sql<number>`count(*)`,
+    }).from(customers);
+  const totalCustomers = activeCustomersCount[0].count;
 
-const pieChartData = [
-  { name: "الرواتب", value: 400, fill: "hsl(var(--chart-1))" },
-  { name: "التشغيل", value: 300, fill: "hsl(var(--chart-2))" },
-  { name: "التسويق", value: 300, fill: "hsl(var(--chart-3))" },
-  { name: "الصيانة", value: 200, fill: "hsl(var(--chart-4))" },
-];
+  // Total Sales
+  const salesCountResult = await db.select({
+    count: sql<number>`count(*)`,
+  }).from(salesInvoices);
+  const totalSales = salesCountResult[0].count;
 
-const pieChartConfig = {
-  الرواتب: { label: "الرواتب" },
-  التشغيل: { label: "التشغيل" },
-  التسويق: { label: "التسويق" },
-  الصيانة: { label: "الصيانة" },
-} satisfies ChartConfig
+  // Active Rate (represented by total journal entries for now)
+  const activityCountResult = await db.select({
+      count: sql<number>`count(*)`,
+    }).from(journalEntries);
+  const totalActivity = activityCountResult[0].count;
 
 
-export default function DashboardPage() {
-  const { formatCurrency } = useCurrency(); // Use the currency context
+  // Inventory Summary
+  const inventoryStats = await db.select({
+      totalProducts: sql<number>`count(*)`,
+      inventoryValue: sql<number>`sum(CAST(${products.costPrice} AS numeric) * ${products.quantity})`,
+      lowStockItems: sql<number>`count(*) filter (where ${products.quantity} <= ${products.reorderLevel} and ${products.reorderLevel} > 0)`,
+  }).from(products);
+  
+  const inventorySummary = {
+      totalItems: inventoryStats[0].totalProducts || 0,
+      totalValue: inventoryStats[0].inventoryValue || 0,
+      lowStockCount: inventoryStats[0].lowStockItems || 0,
+  };
+
+
+  // Sales Overview Chart Data
+  const salesByMonth = await db
+    .select({
+      month: sql<string>`TO_CHAR(${salesInvoices.date}, 'YYYY-MM')`,
+      total: sql<number>`sum(CAST(${salesInvoices.numericTotalAmount} AS numeric))`,
+    })
+    .from(salesInvoices)
+    .groupBy(sql`TO_CHAR(${salesInvoices.date}, 'YYYY-MM')`)
+    .orderBy(sql`TO_CHAR(${salesInvoices.date}, 'YYYY-MM')`)
+    .limit(6);
+
+  const salesChartData = salesByMonth.map(row => ({
+    month: new Date(row.month + '-01').toLocaleString('ar-SA', { month: 'long' }),
+    total: Number(row.total),
+  }));
+  
+
+  // Expense Distribution Chart Data
+   const expenseAccountsResult = await db.select({
+      accountId: journalEntryLines.accountId,
+      accountName: chartOfAccounts.name,
+      total: sql<number>`sum(CAST(${journalEntryLines.debit} AS numeric))`
+    })
+    .from(journalEntryLines)
+    .leftJoin(chartOfAccounts, eq(journalEntryLines.accountId, chartOfAccounts.id))
+    .where(like(journalEntryLines.accountId, '5%')) // Assuming expense accounts start with '5'
+    .groupBy(journalEntryLines.accountId, chartOfAccounts.name)
+    .orderBy(sql`sum(CAST(${journalEntryLines.debit} AS numeric)) DESC`)
+    .limit(4);
+
+    const expenseChartData = expenseAccountsResult.map(row => ({
+        name: row.accountName || row.accountId,
+        value: Number(row.total),
+    }));
+
+  return {
+    totalRevenue,
+    totalCustomers,
+    totalSales,
+    totalActivity,
+    inventorySummary,
+    salesChartData,
+    expenseChartData
+  };
+}
+
+
+export default async function DashboardPage() {
+  const data = await getDashboardData();
+  
+  // To avoid passing a server-only object to the client component,
+  // we can either pass primitive values or wrap it in a provider.
+  // For simplicity, we'll pass primitive values.
 
   return (
-    <div className="flex flex-col gap-6" dir="rtl">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" dangerouslySetInnerHTML={{ __html: formatCurrency(45231.89) }}></div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% عن الشهر الماضي
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">العملاء النشطون</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+2350</div>
-            <p className="text-xs text-muted-foreground">
-              +180.1% عن الشهر الماضي
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المبيعات</CardTitle>
-            <CreditCardIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+12,234</div>
-            <p className="text-xs text-muted-foreground">
-              +19% عن الشهر الماضي
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">معدل النشاط</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+573</div>
-            <p className="text-xs text-muted-foreground">
-              +201 منذ الساعة الأخيرة
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>نظرة عامة على المبيعات</CardTitle>
-          </CardHeader>
-          <CardContent className="pe-2">
-            <ChartContainer config={chartConfig} className="h-[350px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart accessibilityLayer data={chartData}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                  />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
-                  <Bar dataKey="mobile" fill="var(--color-mobile)" radius={4} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card className="col-span-4 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>توزيع المصروفات</CardTitle>
-            <CardDescription>يناير - يونيو 2024</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 pb-0">
-             <ChartContainer
-              config={pieChartConfig}
-              className="mx-auto aspect-square max-h-[350px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                  />
-                  <Pie
-                    data={pieChartData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={60}
-                    strokeWidth={5}
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <ChartLegend content={<ChartLegendContent nameKey="name" />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-         <Card>
-          <CardHeader>
-            <CardTitle>ملخص المخزون</CardTitle>
-            <CardDescription>
-              نظرة سريعة على حالة المخزون الحالية.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">إجمالي الأصناف</span>
-              <span className="font-semibold">1,250</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">قيمة المخزون</span>
-              <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(350720.00) }}></span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">أصناف قاربت على النفاد</span>
-              <span className="font-semibold text-destructive">15</span>
-            </div>
-            <Button variant="outline" className="w-full">
-              عرض تفاصيل المخزون
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>أداء الموارد البشرية</CardTitle>
-            <CardDescription>
-              مؤشرات رئيسية للموظفين هذا الشهر.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">إجمالي الموظفين</span>
-              <span className="font-semibold">152</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">نسبة الحضور</span>
-              <span className="font-semibold">98.5%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">طلبات إجازة معلقة</span>
-              <span className="font-semibold">5</span>
-            </div>
-            <Button variant="outline" className="w-full">
-              إدارة الموظفين
-            </Button>
-          </CardContent>
-        </Card>
-         <Card>
-          <CardHeader>
-            <CardTitle>أحدث الأنشطة</CardTitle>
-             <CardDescription>تتبع آخر الإجراءات في النظام.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <FilePlus className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">تم إنشاء فاتورة جديدة #INV00125</p>
-                <p className="text-xs text-muted-foreground">بواسطة: أحمد خالد - قبل دقيقتين</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <FileCheck className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">تم تأكيد طلب شراء #PO0087</p>
-                <p className="text-xs text-muted-foreground">بواسطة: النظام - قبل 5 دقائق</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <FileClock className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">طلب إجازة معلق من: سارة عبدالله</p>
-                <p className="text-xs text-muted-foreground">قسم المبيعات - قبل 10 دقائق</p>
-              </div>
-            </div>
-             <Button variant="outline" className="w-full mt-2">
-              عرض كل الأنشطة
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+     <CurrencyProvider>
+      <DashboardClient
+        totalRevenue={data.totalRevenue}
+        totalCustomers={data.totalCustomers}
+        totalSales={data.totalSales}
+        totalActivity={data.totalActivity}
+        inventorySummary={data.inventorySummary}
+        salesChartData={data.salesChartData}
+        expenseChartData={data.expenseChartData}
+      />
+     </CurrencyProvider>
   );
 }
+
