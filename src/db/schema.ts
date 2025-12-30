@@ -1,5 +1,6 @@
 
-import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean } from 'drizzle-orm/pg-core';
+
+import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
 
 // --- Core Tables ---
 
@@ -196,6 +197,19 @@ export const employeeDeductions = pgTable('employee_deductions', {
     type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
 });
 
+export const payrolls = pgTable('payrolls', {
+  id: varchar('id', { length: 256 }).primaryKey(),
+  employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+  monthYear: varchar('month_year', { length: 50 }).notNull(),
+  basicSalary: numeric('basic_salary', { precision: 10, scale: 2 }).notNull(),
+  allowances: jsonb('allowances'), // [{ description: string, amount: number }]
+  deductions: jsonb('deductions'), // [{ description: string, amount: number }]
+  netSalary: numeric('net_salary', { precision: 10, scale: 2 }),
+  paymentDate: timestamp('payment_date'),
+  status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+  notes: text('notes'),
+});
+
 export const employeeSettlements = pgTable('employee_settlements', {
     id: varchar('id', { length: 256 }).primaryKey(),
     date: timestamp('date').notNull(),
@@ -217,6 +231,7 @@ export const attendanceRecords = pgTable('attendance_records', {
     checkOut: timestamp('check_out'),
     status: varchar('status', { length: 50 }).notNull().default('حاضر'),
     notes: text('notes'),
+    hours: varchar('hours', { length: 10 }),
 });
 
 export const leaveRequests = pgTable('leave_requests', {
@@ -227,6 +242,49 @@ export const leaveRequests = pgTable('leave_requests', {
     endDate: timestamp('end_date').notNull(),
     reason: text('reason'),
     status: varchar('status', { length: 50 }).notNull().default('مقدمة'),
+    days: integer('days'),
+});
+
+export const warningNotices = pgTable('warning_notices', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    date: timestamp('date').notNull(),
+    reason: varchar('reason', { length: 256 }).notNull(),
+    details: text('details').notNull(),
+    issuingManager: varchar('issuing_manager', { length: 256 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
+export const administrativeDecisions = pgTable('administrative_decisions', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    decisionDate: timestamp('decision_date').notNull(),
+    decisionType: varchar('decision_type', { length: 256 }).notNull(),
+    details: text('details').notNull(),
+    issuingAuthority: varchar('issuing_authority', { length: 256 }).notNull(),
+    effectiveDate: timestamp('effective_date').notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
+export const resignations = pgTable('resignations', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    submissionDate: timestamp('submission_date').notNull(),
+    lastWorkingDate: timestamp('last_working_date').notNull(),
+    reason: text('reason').notNull(),
+    managerNotifiedDate: timestamp('manager_notified_date'),
+    status: varchar('status', { length: 50 }).notNull().default('مقدمة'),
+});
+
+export const disciplinaryWarnings = pgTable('disciplinary_warnings', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    warningDate: timestamp('warning_date').notNull(),
+    warningType: varchar('warning_type', { length: 100 }).notNull(),
+    violationDetails: text('violation_details').notNull(),
+    actionTaken: text('action_taken'),
+    issuingManager: varchar('issuing_manager', { length: 256 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
 });
 
 // --- Projects Tables ---

@@ -1,7 +1,8 @@
 
+
 import React from 'react';
 import { db } from '@/db';
-import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests } from '@/db/schema';
+import { employees, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, employeeAllowances, employeeDeductions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import HRClientComponent from './HRClientComponent';
 
@@ -11,6 +12,10 @@ export default async function HRPayrollPage() {
         const payrollsResult = await db.select().from(payrolls);
         const attendanceResult = await db.select().from(attendanceRecords);
         const leaveRequestsResult = await db.select().from(leaveRequests);
+        const warningNoticesResult = await db.select().from(warningNotices);
+        const administrativeDecisionsResult = await db.select().from(administrativeDecisions);
+        const resignationsResult = await db.select().from(resignations);
+        const disciplinaryWarningsResult = await db.select().from(disciplinaryWarnings);
 
         const employeesWithDetails = await Promise.all(
             employeesResult.map(async (emp) => {
@@ -23,31 +28,32 @@ export default async function HRPayrollPage() {
                     contractEndDate: new Date(emp.contractEndDate),
                     allowances: allowances.map(a => ({...a, amount: parseFloat(a.amount)})),
                     deductions: deductions.map(d => ({...d, amount: parseFloat(d.amount)})),
-                    incentives: [], 
-                    delegations: [],
                 };
             })
         );
         
-        const payrollsWithDetails = payrollsResult.map(p => ({
-            ...p,
-            basicSalary: parseFloat(p.basicSalary),
-            netSalary: p.netSalary ? parseFloat(p.netSalary) : 0,
-            paymentDate: p.paymentDate ? new Date(p.paymentDate) : null,
-            allowances: [], // These would need to be fetched if stored separately per payroll
-            deductions: [], // Same as above
-        }));
+        const payrollsWithDetails = payrollsResult.map(p => {
+            const allowances = (p.allowances as any[] | null)?.map(a => ({ ...a, amount: parseFloat(a.amount) })) || [];
+            const deductions = (p.deductions as any[] | null)?.map(d => ({ ...d, amount: parseFloat(d.amount) })) || [];
+            return {
+                ...p,
+                basicSalary: parseFloat(p.basicSalary),
+                netSalary: p.netSalary ? parseFloat(p.netSalary) : 0,
+                paymentDate: p.paymentDate ? new Date(p.paymentDate) : null,
+                allowances,
+                deductions,
+            };
+        });
 
         const initialData = {
             employees: employeesWithDetails,
             payrolls: payrollsWithDetails,
             attendances: attendanceResult.map(a => ({...a, date: new Date(a.date)})),
             leaveRequests: leaveRequestsResult.map(l => ({...l, startDate: new Date(l.startDate), endDate: new Date(l.endDate)})),
-            // The following are not yet connected to DB, so we pass empty arrays
-            warningNotices: [],
-            administrativeDecisions: [],
-            resignations: [],
-            disciplinaryWarnings: [],
+            warningNotices: warningNoticesResult.map(w => ({...w, date: new Date(w.date)})),
+            administrativeDecisions: administrativeDecisionsResult.map(d => ({...d, decisionDate: new Date(d.decisionDate), effectiveDate: new Date(d.effectiveDate)})),
+            resignations: resignationsResult.map(r => ({...r, submissionDate: new Date(r.submissionDate), lastWorkingDate: new Date(r.lastWorkingDate)})),
+            disciplinaryWarnings: disciplinaryWarningsResult.map(d => ({...d, warningDate: new Date(d.warningDate)})),
         };
 
         return <HRClientComponent initialData={initialData} />;
