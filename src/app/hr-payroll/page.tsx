@@ -52,7 +52,7 @@ export default async function HRPayrollPage() {
             leaveRequests: leaveRequestsResult.map(l => ({...l, startDate: new Date(l.startDate), endDate: new Date(l.endDate)})),
             warningNotices: warningNoticesResult.map(w => ({...w, date: new Date(w.date)})),
             administrativeDecisions: administrativeDecisionsResult.map(d => ({...d, decisionDate: new Date(d.decisionDate), effectiveDate: new Date(d.effectiveDate)})),
-            resignations: resignationsResult.map(r => ({...r, submissionDate: new Date(r.submissionDate), lastWorkingDate: new Date(r.lastWorkingDate)})),
+            resignations: resignationsResult.map(r => ({...r, submissionDate: new Date(r.submissionDate), lastWorkingDate: new Date(r.lastWorkingDate), managerNotifiedDate: r.managerNotifiedDate ? new Date(r.managerNotifiedDate) : null })),
             disciplinaryWarnings: disciplinaryWarningsResult.map(d => ({...d, warningDate: new Date(d.warningDate)})),
         };
 
@@ -77,3 +77,4 @@ export default async function HRPayrollPage() {
 }
 
     
+

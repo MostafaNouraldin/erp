@@ -140,10 +140,10 @@ export async function addEmployee(values: EmployeeFormValues) {
     const newId = `EMP${Date.now()}`;
     await db.transaction(async (tx) => {
         await tx.insert(employees).values({ ...values, id: newId, basicSalary: String(values.basicSalary) });
-        if (values.allowances) {
+        if (values.allowances && values.allowances.length > 0) {
             await tx.insert(employeeAllowances).values(values.allowances.map(a => ({ ...a, employeeId: newId, amount: String(a.amount) })));
         }
-        if (values.deductions) {
+        if (values.deductions && values.deductions.length > 0) {
             await tx.insert(employeeDeductions).values(values.deductions.map(d => ({ ...d, employeeId: newId, amount: String(d.amount) })));
         }
     });
@@ -156,10 +156,10 @@ export async function updateEmployee(values: EmployeeFormValues) {
         await tx.update(employees).set({ ...values, basicSalary: String(values.basicSalary) }).where(eq(employees.id, values.id!));
         await tx.delete(employeeAllowances).where(eq(employeeAllowances.employeeId, values.id!));
         await tx.delete(employeeDeductions).where(eq(employeeDeductions.employeeId, values.id!));
-        if (values.allowances) {
+        if (values.allowances && values.allowances.length > 0) {
             await tx.insert(employeeAllowances).values(values.allowances.map(a => ({ ...a, employeeId: values.id!, amount: String(a.amount) })));
         }
-        if (values.deductions) {
+        if (values.deductions && values.deductions.length > 0) {
             await tx.insert(employeeDeductions).values(values.deductions.map(d => ({ ...d, employeeId: values.id!, amount: String(d.amount) })));
         }
     });
@@ -174,13 +174,13 @@ export async function deleteEmployee(id: string) {
 // --- Payroll Actions ---
 export async function addPayroll(values: PayrollFormValues) {
     const newId = `PAY${Date.now()}`;
-    await db.insert(payrolls).values({ ...values, id: newId, netSalary: String(values.netSalary) });
+    await db.insert(payrolls).values({ ...values, id: newId, basicSalary: String(values.basicSalary), netSalary: String(values.netSalary) });
     revalidatePath('/hr-payroll');
 }
 
 export async function updatePayroll(values: PayrollFormValues) {
     if (!values.id) throw new Error("ID is required for update.");
-    await db.update(payrolls).set({ ...values, netSalary: String(values.netSalary) }).where(eq(payrolls.id, values.id!));
+    await db.update(payrolls).set({ ...values, basicSalary: String(values.basicSalary), netSalary: String(values.netSalary) }).where(eq(payrolls.id, values.id!));
     revalidatePath('/hr-payroll');
 }
 
@@ -274,3 +274,4 @@ export async function deleteDisciplinaryWarning(id: string) {
 }
 
     
+

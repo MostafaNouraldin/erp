@@ -294,7 +294,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   }, [initialData]);
 
   useEffect(() => {
-    if (employeeToEdit) employeeForm.reset(employeeToEdit);
+    if (employeeToEdit) employeeForm.reset({...employeeToEdit, contractStartDate: new Date(employeeToEdit.contractStartDate), contractEndDate: new Date(employeeToEdit.contractEndDate)});
     else employeeForm.reset(employeeDefaultValues);
   }, [employeeToEdit, employeeForm, showAddEmployeeDialog]);
 
@@ -313,33 +313,33 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   }, [payrollToEdit, payrollForm, showCreatePayrollDialog, employees]);
 
   useEffect(() => {
-    if (attendanceToEdit) attendanceForm.reset(attendanceToEdit);
+    if (attendanceToEdit) attendanceForm.reset({...attendanceToEdit, date: new Date(attendanceToEdit.date)});
     else attendanceForm.reset({ employeeId: "", date: new Date(), checkIn: null, checkOut: null, notes: "", status: "حاضر" });
   }, [attendanceToEdit, attendanceForm, showEditAttendanceDialog]);
 
   useEffect(() => {
-    if (leaveRequestToEdit) leaveRequestForm.reset(leaveRequestToEdit);
+    if (leaveRequestToEdit) leaveRequestForm.reset({...leaveRequestToEdit, startDate: new Date(leaveRequestToEdit.startDate), endDate: new Date(leaveRequestToEdit.endDate)});
     else leaveRequestForm.reset({ employeeId: "", leaveType: "", startDate: new Date(), endDate: new Date(), reason: "", status: "مقدمة" });
   }, [leaveRequestToEdit, leaveRequestForm, showCreateLeaveDialog]);
 
 
   useEffect(() => {
-    if (warningNoticeToEdit) warningNoticeForm.reset(warningNoticeToEdit);
+    if (warningNoticeToEdit) warningNoticeForm.reset({...warningNoticeToEdit, date: new Date(warningNoticeToEdit.date)});
     else warningNoticeForm.reset({ employeeId: '', date: new Date(), reason: '', details: '', issuingManager: '', status: "مسودة" });
   }, [warningNoticeToEdit, warningNoticeForm, showManageWarningNoticeDialog]);
 
   useEffect(() => {
-    if (adminDecisionToEdit) adminDecisionForm.reset(adminDecisionToEdit);
+    if (adminDecisionToEdit) adminDecisionForm.reset({...adminDecisionToEdit, decisionDate: new Date(adminDecisionToEdit.decisionDate), effectiveDate: new Date(adminDecisionToEdit.effectiveDate)});
     else adminDecisionForm.reset({ employeeId: '', decisionDate: new Date(), decisionType: '', details: '', issuingAuthority: '', effectiveDate: new Date(), status: "مسودة" });
   }, [adminDecisionToEdit, adminDecisionForm, showManageAdminDecisionDialog]);
 
   useEffect(() => {
-    if (resignationToEdit) resignationForm.reset(resignationToEdit);
+    if (resignationToEdit) resignationForm.reset({...resignationToEdit, submissionDate: new Date(resignationToEdit.submissionDate), lastWorkingDate: new Date(resignationToEdit.lastWorkingDate)});
     else resignationForm.reset({ employeeId: '', submissionDate: new Date(), lastWorkingDate: new Date(), reason: '', managerNotifiedDate: null, status: "مقدمة" });
   }, [resignationToEdit, resignationForm, showManageResignationDialog]);
 
   useEffect(() => {
-    if (disciplinaryToEdit) disciplinaryWarningForm.reset(disciplinaryToEdit);
+    if (disciplinaryToEdit) disciplinaryWarningForm.reset({...disciplinaryToEdit, warningDate: new Date(disciplinaryToEdit.warningDate)});
     else disciplinaryWarningForm.reset({ employeeId: '', warningDate: new Date(), warningType: undefined, violationDetails: '', actionTaken: '', issuingManager: '', status: "مسودة" });
   }, [disciplinaryToEdit, disciplinaryWarningForm, showManageDisciplinaryDialog]);
 
@@ -828,3 +828,4 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     
 
     
+

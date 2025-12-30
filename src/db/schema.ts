@@ -532,3 +532,5 @@ export const tenantModuleSubscriptions = pgTable('tenant_module_subscriptions', 
 });
     
 
+
+
