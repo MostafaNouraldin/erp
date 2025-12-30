@@ -37,6 +37,7 @@ const cashExpenseSchema = z.object({
 });
 
 const convertAmountToWords = (amount: number) => {
+  // This is a placeholder. A real implementation would be more complex.
   return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
 };
 
@@ -72,26 +73,24 @@ export default function CashExpensesClient({ initialData }: ClientComponentProps
   });
 
   useEffect(() => {
-    if (expenseToEdit) {
-      form.reset({...expenseToEdit, date: new Date(expenseToEdit.date)});
-    } else {
-      form.reset({ date: new Date(), cashAccountId: "", expenseAccountId: "", beneficiary: "", description: "", amount: 0, voucherNumber: "", status: "مسودة" });
+    if (showManageExpenseDialog) {
+      if (expenseToEdit) {
+        form.reset({...expenseToEdit, date: new Date(expenseToEdit.date)});
+      } else {
+        form.reset({ date: new Date(), cashAccountId: "", expenseAccountId: "", beneficiary: "", description: "", amount: 0, voucherNumber: "", status: "مسودة" });
+      }
     }
   }, [expenseToEdit, form, showManageExpenseDialog]);
 
   const handleExpenseSubmit = async (values: CashExpenseFormValues) => {
     try {
-        if (expenseToEdit) {
-            await updateCashExpense({ ...values, id: expenseToEdit.id! });
-            toast({ title: "تم التعديل", description: "تم تعديل المصروف النقدي بنجاح." });
-        } else {
-            await addCashExpense(values);
-            toast({ title: "تم الإنشاء", description: "تم إنشاء مصروف نقدي جديد." });
-        }
+        const action = expenseToEdit ? updateCashExpense : addCashExpense;
+        const result = await action({ ...values, id: expenseToEdit?.id });
+        toast({ title: expenseToEdit ? "تم التعديل" : "تم الإنشاء", description: "تم حفظ المصروف النقدي بنجاح." });
         setShowManageExpenseDialog(false);
         setExpenseToEdit(null);
     } catch (error) {
-        toast({ title: "خطأ", description: "لم يتم حفظ المصروف النقدي.", variant: "destructive" });
+        toast({ title: "خطأ", description: (error as Error).message, variant: "destructive" });
     }
   };
 
@@ -145,7 +144,7 @@ export default function CashExpensesClient({ initialData }: ClientComponentProps
         <h2 className="text-xl font-semibold">سجل المصروفات النقدية</h2>
         <Dialog open={showManageExpenseDialog} onOpenChange={(isOpen) => { setShowManageExpenseDialog(isOpen); if (!isOpen) setExpenseToEdit(null); }}>
           <DialogTrigger asChild>
-            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setExpenseToEdit(null); form.reset(); setShowManageExpenseDialog(true); }}>
+            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setExpenseToEdit(null); setShowManageExpenseDialog(true); }}>
               <PlusCircle className="me-2 h-4 w-4" /> تسجيل مصروف نقدي
             </Button>
           </DialogTrigger>
