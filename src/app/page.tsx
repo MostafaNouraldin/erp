@@ -95,8 +95,13 @@ async function getDashboardData() {
       }
     };
   } catch (error) {
+    const errorMessage = (error as Error).message;
+    // This is the most likely error when the database is not set up.
+    if (errorMessage.includes("does not exist")) {
+        return { success: false, error: "Database tables not found. Please set up your database schema." };
+    }
     console.error("Database query failed for Dashboard page:", error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -106,15 +111,39 @@ export default async function DashboardPage() {
   
   if (!result.success) {
     return (
-        <div className="container mx-auto py-6 text-center" dir="rtl">
-            <h1 className="text-2xl font-bold mb-4 text-destructive">خطأ في لوحة التحكم</h1>
-            <p className="text-muted-foreground mb-4">
-                تعذر جلب البيانات من قاعدة البيانات. قد تكون الجداول الأساسية غير موجودة.
-            </p>
-            <p className="mb-2">
-                يرجى التأكد من تنفيذ محتوى ملف <code className="font-mono bg-muted p-1 rounded-md">db_schema.sql</code> في محرر SQL بقاعدة بيانات Supabase الخاصة بك.
-            </p>
-            <p className="text-sm text-muted-foreground mt-4">رسالة الخطأ: {result.error}</p>
+        <div className="container mx-auto py-10 px-4 text-center" dir="rtl">
+            <div className="max-w-2xl mx-auto bg-card border border-destructive/50 rounded-lg p-8 shadow-lg">
+                <h1 className="text-3xl font-bold mb-4 text-destructive">خطأ حرج: قاعدة البيانات غير مهيأة</h1>
+                <p className="text-muted-foreground mb-6 text-lg">
+                    يبدو أن جداول قاعدة البيانات الأساسية غير موجودة. هذا يمنع التطبيق من العمل بشكل صحيح.
+                </p>
+                <div className="bg-muted/50 p-6 rounded-md text-right space-y-4">
+                    <h2 className="text-xl font-semibold text-primary">الحل المطلوب:</h2>
+                    <ol className="list-decimal list-inside space-y-3 text-card-foreground">
+                        <li>
+                            افتح ملف <code className="font-mono bg-secondary p-1 rounded-md text-sm">db_schema.sql</code> الموجود في جذر المشروع.
+                        </li>
+                        <li>
+                            انسخ **جميع** محتويات هذا الملف.
+                        </li>
+                        <li>
+                            اذهب إلى لوحة تحكم مشروعك في <a href="https://supabase.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Supabase</a>.
+                        </li>
+                        <li>
+                            من القائمة الجانبية، اختر <span className="font-semibold">SQL Editor</span>.
+                        </li>
+                        <li>
+                            ألصق المحتوى الذي نسخته في محرر SQL ثم اضغط على زر **RUN**.
+                        </li>
+                    </ol>
+                    <p className="pt-4 text-muted-foreground">
+                        بعد تنفيذ هذه الخطوات بنجاح، قم بإعادة تحميل هذه الصفحة. إذا استمرت المشكلة، يرجى مراجعة سجلات قاعدة البيانات في Supabase.
+                    </p>
+                </div>
+                 <p className="text-sm text-muted-foreground mt-6">
+                    رسالة الخطأ الأصلية (للمطورين): <span className="font-mono text-xs">{result.error}</span>
+                </p>
+            </div>
         </div>
     );
   }
@@ -133,4 +162,3 @@ export default async function DashboardPage() {
      </CurrencyProvider>
   );
 }
-
