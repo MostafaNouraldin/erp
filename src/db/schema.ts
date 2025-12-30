@@ -1,6 +1,6 @@
 
 
-import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 
 // --- Core Tables ---
 
@@ -177,6 +177,28 @@ export const goodsReceivedNoteItems = pgTable('goods_received_note_items', {
     orderedQuantity: integer('ordered_quantity').notNull(),
     receivedQuantity: integer('received_quantity').notNull(),
     notes: text('notes'),
+});
+
+
+export const purchaseReturns = pgTable('purchase_returns', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+    date: timestamp('date').notNull(),
+    originalInvoiceId: varchar('original_invoice_id', { length: 256 }),
+    notes: text('notes'),
+    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "معتمد", "معالج", "ملغي"
+});
+
+export const purchaseReturnItems = pgTable('purchase_return_items', {
+    id: serial('id').primaryKey(),
+    returnId: varchar('return_id', { length: 256 }).notNull().references(() => purchaseReturns.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull(),
+    description: text('description'),
+    quantity: integer('quantity').notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+    reason: text('reason'),
+    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
 
@@ -485,4 +507,28 @@ export const cashExpenses = pgTable('cash_expenses', {
     status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
 });
 
+// --- System Administration & Settings Tables ---
+export const tenants = pgTable('tenants', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    email: varchar('email', { length: 256 }).notNull().unique(),
+    isActive: boolean('is_active').default(true),
+    subscriptionEndDate: timestamp('subscription_end_date'),
+    createdAt: timestamp('created_at').defaultNow(),
+    phone: varchar('phone', { length: 50 }),
+    address: text('address'),
+    vatNumber: varchar('vat_number', { length: 50 }),
+});
+
+export const tenantModuleSubscriptions = pgTable('tenant_module_subscriptions', {
+    id: serial('id').primaryKey(),
+    tenantId: varchar('tenant_id', { length: 256 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    moduleKey: varchar('module_key', { length: 100 }).notNull(), // e.g., 'Accounting', 'Inventory'
+    subscribed: boolean('subscribed').notNull().default(false),
+}, (table) => {
+  return {
+    tenantModuleUniqueIdx: uniqueIndex('tenant_module_unique_idx').on(table.tenantId, table.moduleKey),
+  };
+});
     
+

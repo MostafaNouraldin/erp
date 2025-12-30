@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -17,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Briefcase, FilePlus, FileCheck, PackageSearch, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Eye, MinusCircle, Printer, DollarSign, Truck, Users, CornerDownLeft, ShoppingBag } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select';
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +36,14 @@ import {
     addSupplierInvoice,
     updateSupplierInvoice,
     deleteSupplierInvoice,
-    updateSupplierInvoicePayment
+    updateSupplierInvoicePayment,
+    addGoodsReceivedNote,
+    updateGoodsReceivedNoteStatus,
+    deleteGoodsReceivedNote,
+    addPurchaseReturn,
+    updatePurchaseReturn,
+    deletePurchaseReturn,
+    approvePurchaseReturn
 } from './actions';
 
 
@@ -147,24 +155,16 @@ const mockItems = [
     {id: "MAT001", name: "خشب زان", price: 200, unit: "متر مكعب"},
 ];
 
-
-const initialGoodsReceivedNotesData: GoodsReceivedNoteFormValues[] = [
-  { id: "GRN001", poId: "PO001", supplierId: "SUP001", grnDate: new Date("2024-07-25"), items: [{ itemId: "ITEM001", orderedQuantity: 5, receivedQuantity: 5, description: "لابتوبات Dell" }], status: "مستلم بالكامل", receivedBy: "أحمد" },
-];
-const initialPurchaseReturnsData: PurchaseReturnFormValues[] = [
-  { id: "PR001", supplierId: "SUP001", date: new Date("2024-07-28"), originalInvoiceId: "INV-S001", items: [{itemId: "ITEM001", description: "لابتوب ديل - عطل مصنعي", quantity:1, unitPrice:6000, total:6000, reason: "عطل مصنعي"}], totalAmount: 6000, status: "معتمد" },
-];
-
 const convertAmountToWords = (amount: number) => {
   return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
 };
 
-export default function PurchasesClientComponent({ initialData }: { initialData: { suppliers: any[], purchaseOrders: any[], supplierInvoices: any[] } }) {
+export default function PurchasesClientComponent({ initialData }: { initialData: { suppliers: any[], purchaseOrders: any[], supplierInvoices: any[], goodsReceivedNotes: any[], purchaseReturns: any[] } }) {
   const [suppliersData, setSuppliersData] = useState<SupplierFormValues[]>(initialData.suppliers);
   const [purchaseOrdersData, setPurchaseOrdersData] = useState<PurchaseOrderFormValues[]>(initialData.purchaseOrders);
   const [supplierInvoices, setSupplierInvoicesData] = useState(initialData.supplierInvoices);
-  const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState(initialGoodsReceivedNotesData);
-  const [purchaseReturns, setPurchaseReturnsData] = useState(initialPurchaseReturnsData);
+  const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState(initialData.goodsReceivedNotes);
+  const [purchaseReturns, setPurchaseReturnsData] = useState(initialData.purchaseReturns);
 
   const [showCreateSupplierDialog, setShowCreateSupplierDialog] = useState(false);
   const [supplierToEdit, setSupplierToEdit] = useState<SupplierFormValues | null>(null);
@@ -277,6 +277,8 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     setSuppliersData(initialData.suppliers);
     setPurchaseOrdersData(initialData.purchaseOrders);
     setSupplierInvoicesData(initialData.supplierInvoices);
+    setGoodsReceivedNotesData(initialData.goodsReceivedNotes);
+    setPurchaseReturnsData(initialData.purchaseReturns);
   }, [initialData]);
 
 
@@ -379,47 +381,16 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     }
   };
   
-  const handleGrnSubmit = (values: GoodsReceivedNoteFormValues) => {
-    const po = purchaseOrdersData.find(p => p.id === values.poId);
-    if (po) {
-        const totalOrdered = po.items.reduce((sum, item) => sum + item.quantity, 0);
-        const totalReceivedInThisGrn = values.items.reduce((sum, item) => sum + item.receivedQuantity, 0);
-        
-        const alreadyReceivedQuantity = goodsReceivedNotes
-            .filter(grn => grn.poId === values.poId && grn.id !== (grnToEdit ? grnToEdit.id : undefined))
-            .reduce((sum, grn) => sum + grn.items.reduce((itemSum, item) => itemSum + item.receivedQuantity, 0), 0);
-
-        const newTotalReceivedForPo = alreadyReceivedQuantity + totalReceivedInThisGrn;
-        
-        const newPoStatus = newTotalReceivedForPo >= totalOrdered ? "مستلم بالكامل" as const : "مستلم جزئياً" as const;
-        
-        const allItemsFullyReceivedInThisGrn = values.items.every(item => 
-            item.receivedQuantity >= (po.items.find(poItem => poItem.itemId === item.itemId)?.quantity || 0) - 
-            goodsReceivedNotes
-                .filter(grn => grn.poId === values.poId && grn.id !== (grnToEdit ? grnToEdit.id : undefined))
-                .flatMap(grn => grn.items)
-                .filter(grnItem => grnItem.itemId === item.itemId)
-                .reduce((sum, grnItem) => sum + grnItem.receivedQuantity, 0)
-        );
-
-        const newGrnStatus = allItemsFullyReceivedInThisGrn && newTotalReceivedForPo >= totalOrdered ? "مستلم بالكامل" as const : "مستلم جزئياً" as const;
-        
-        if(po.status !== "مستلم بالكامل") {
-            setPurchaseOrdersData(prev => prev.map(p => p.id === values.poId ? {...p, status: newPoStatus} : p));
-        }
-        values.status = newGrnStatus;
+  const handleGrnSubmit = async (values: GoodsReceivedNoteFormValues) => {
+    try {
+        await addGoodsReceivedNote(values);
+        toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الاستلام بنجاح." });
+        setShowCreateGrnDialog(false);
+        setGrnToEdit(null);
+        setSelectedPoForGrn(null);
+    } catch(error: any) {
+        toast({ title: "خطأ", description: error.message, variant: "destructive" });
     }
-
-    if (grnToEdit) {
-      setGoodsReceivedNotesData(prev => prev.map(grn => grn.id === grnToEdit.id ? { ...values, id: grnToEdit.id! } : grn));
-      toast({ title: "تم التعديل", description: "تم تعديل إذن الاستلام." });
-    } else {
-      setGoodsReceivedNotesData(prev => [...prev, { ...values, id: `GRN${Date.now()}` }]);
-      toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الاستلام." });
-    }
-    setShowCreateGrnDialog(false);
-    setGrnToEdit(null);
-    setSelectedPoForGrn(null);
   };
 
   const handleViewGrn = (grn: GoodsReceivedNoteFormValues) => {
@@ -434,18 +405,22 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     setShowPrintGrnDialog(true);
   }
 
-  const handlePurchaseReturnSubmit = (values: PurchaseReturnFormValues) => {
+  const handlePurchaseReturnSubmit = async (values: PurchaseReturnFormValues) => {
     const totalAmount = calculateTotalAmountForForm(values.items);
     const finalValues = {...values, totalAmount};
-    if (purchaseReturnToEdit) {
-      setPurchaseReturnsData(prev => prev.map(pr => pr.id === purchaseReturnToEdit.id ? { ...finalValues, id: purchaseReturnToEdit.id! } : pr));
-      toast({ title: "تم التعديل", description: "تم تعديل مرتجع المشتريات." });
-    } else {
-      setPurchaseReturnsData(prev => [...prev, { ...finalValues, id: `PR${Date.now()}` }]);
-      toast({ title: "تم الإنشاء", description: "تم إنشاء مرتجع المشتريات." });
+    try {
+        if (purchaseReturnToEdit) {
+            await updatePurchaseReturn({ ...finalValues, id: purchaseReturnToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل مرتجع المشتريات." });
+        } else {
+            await addPurchaseReturn(finalValues);
+            toast({ title: "تم الإنشاء", description: "تم إنشاء مرتجع المشتريات." });
+        }
+        setShowCreatePurchaseReturnDialog(false);
+        setPurchaseReturnToEdit(null);
+    } catch (e) {
+        toast({ title: "خطأ", description: "لم يتم حفظ مرتجع المشتريات.", variant: "destructive" });
     }
-    setShowCreatePurchaseReturnDialog(false);
-    setPurchaseReturnToEdit(null);
   };
 
   const handleViewPurchaseReturn = (pr: PurchaseReturnFormValues) => {
@@ -479,13 +454,21 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
         toast({title: "خطأ", description: "لم يتم حذف فاتورة المورد.", variant:"destructive"});
       }
   };
-  const handleDeleteGrn = (grnId: string) => {
-      setGoodsReceivedNotesData(prev => prev.filter(grn => grn.id !== grnId));
-      toast({title: "تم الحذف", description: `تم حذف إذن الاستلام ${grnId}`, variant:"destructive"});
+  const handleDeleteGrn = async (grnId: string) => {
+      try {
+        await deleteGoodsReceivedNote(grnId);
+        toast({title: "تم الحذف", description: `تم حذف إذن الاستلام ${grnId}`, variant:"destructive"});
+      } catch (e) {
+        toast({ title: "خطأ", description: "لم يتم حذف إذن الاستلام.", variant: "destructive" });
+      }
   };
-  const handleDeletePurchaseReturn = (returnId: string) => {
-      setPurchaseReturnsData(prev => prev.filter(pr => pr.id !== returnId));
-      toast({title: "تم الحذف", description: `تم حذف مرتجع المشتريات ${returnId}`, variant:"destructive"});
+  const handleDeletePurchaseReturn = async (returnId: string) => {
+      try {
+        await deletePurchaseReturn(returnId);
+        toast({title: "تم الحذف", description: `تم حذف مرتجع المشتريات ${returnId}`, variant:"destructive"});
+      } catch (e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive" });
+      }
   };
 
 
@@ -509,6 +492,15 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     setSelectedReturnForPrint({...pr, supplierName: supplier?.name});
     setShowPrintReturnDialog(true);
   }
+
+  const handleApprovePurchaseReturn = async (returnId: string) => {
+    try {
+        await approvePurchaseReturn(returnId);
+        toast({title: "تم الاعتماد", description: "تم اعتماد المرتجع وتحديث المخزون."});
+    } catch (e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    }
+  };
 
   const formatDateForDisplay = (date: Date | string | undefined) => {
     if (!date) return '-';
@@ -608,4 +600,3 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     );
 }
 
-    

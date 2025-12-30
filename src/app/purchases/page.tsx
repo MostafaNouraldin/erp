@@ -2,7 +2,7 @@
 
 // This is now a true Server Component that fetches data and passes it to the client.
 import { db } from '@/db';
-import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems } from '@/db/schema';
+import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, purchaseReturns, purchaseReturnItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import React from 'react';
 import PurchasesClientComponent from './PurchasesClientComponent';
@@ -15,6 +15,7 @@ export default async function PurchasesPage() {
         const purchaseOrdersResult = await db.select().from(purchaseOrders);
         const supplierInvoicesResult = await db.select().from(supplierInvoices);
         const goodsReceivedNotesResult = await db.select().from(goodsReceivedNotes);
+        const purchaseReturnsResult = await db.select().from(purchaseReturns);
 
         const purchaseOrdersWithItems = await Promise.all(
             purchaseOrdersResult.map(async (po) => {
@@ -64,12 +65,29 @@ export default async function PurchasesPage() {
                 };
             })
         );
+
+        const purchaseReturnsWithItems = await Promise.all(
+            purchaseReturnsResult.map(async (pr) => {
+                const items = await db.select().from(purchaseReturnItems).where(eq(purchaseReturnItems.returnId, pr.id));
+                return {
+                    ...pr,
+                    date: new Date(pr.date),
+                    totalAmount: parseFloat(pr.totalAmount),
+                    items: items.map(item => ({
+                        ...item,
+                        unitPrice: parseFloat(item.unitPrice),
+                        total: parseFloat(item.total),
+                    }))
+                };
+            })
+        );
         
         const initialData = {
             suppliers: suppliersResult,
             purchaseOrders: purchaseOrdersWithItems,
             supplierInvoices: supplierInvoicesWithItems,
             goodsReceivedNotes: goodsReceivedNotesWithItems,
+            purchaseReturns: purchaseReturnsWithItems,
         };
 
         return <PurchasesClientComponent initialData={initialData} />;
@@ -91,3 +109,4 @@ export default async function PurchasesPage() {
         );
     }
 }
+

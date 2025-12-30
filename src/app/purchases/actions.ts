@@ -3,7 +3,7 @@
 'use server';
 
 import { db } from '@/db';
-import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, products } from '@/db/schema';
+import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, products, purchaseReturns, purchaseReturnItems } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -83,6 +83,27 @@ const goodsReceivedNoteSchema = z.object({
 });
 
 type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
+
+const purchaseReturnItemSchema = z.object({
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().optional(),
+  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+  unitPrice: z.coerce.number().min(0, "سعر الوحدة إيجابي"),
+  reason: z.string().optional(),
+  total: z.coerce.number(),
+});
+
+const purchaseReturnSchema = z.object({
+  id: z.string().optional(),
+  supplierId: z.string().min(1, "المورد مطلوب"),
+  date: z.date({ required_error: "تاريخ المرتجع مطلوب" }),
+  originalInvoiceId: z.string().optional(), 
+  items: z.array(purchaseReturnItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  totalAmount: z.coerce.number().default(0),
+  status: z.enum(["مسودة", "معتمد", "معالج", "ملغي"]).default("مسودة"),
+});
+type PurchaseReturnFormValues = z.infer<typeof purchaseReturnSchema>;
 
 
 // --- Supplier Actions ---
@@ -348,3 +369,86 @@ export async function deleteGoodsReceivedNote(grnId: string) {
     });
     revalidatePath('/purchases');
 }
+
+
+// --- Purchase Return Actions ---
+export async function addPurchaseReturn(returnData: PurchaseReturnFormValues) {
+  const newReturnId = `PR${Date.now()}`;
+  await db.transaction(async (tx) => {
+    await tx.insert(purchaseReturns).values({
+      ...returnData,
+      id: newReturnId,
+      totalAmount: String(returnData.totalAmount),
+    });
+    if (returnData.items.length > 0) {
+      await tx.insert(purchaseReturnItems).values(
+        returnData.items.map(item => ({
+          returnId: newReturnId,
+          itemId: item.itemId,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: String(item.unitPrice),
+          reason: item.reason,
+          total: String(item.total),
+        }))
+      );
+    }
+  });
+  revalidatePath('/purchases');
+}
+
+export async function updatePurchaseReturn(returnData: PurchaseReturnFormValues) {
+  if (!returnData.id) throw new Error("Return ID is required for updating.");
+  await db.transaction(async (tx) => {
+    await tx.update(purchaseReturns).set({
+      ...returnData,
+      totalAmount: String(returnData.totalAmount),
+    }).where(eq(purchaseReturns.id, returnData.id!));
+    
+    await tx.delete(purchaseReturnItems).where(eq(purchaseReturnItems.returnId, returnData.id!));
+
+    if (returnData.items.length > 0) {
+      await tx.insert(purchaseReturnItems).values(
+        returnData.items.map(item => ({
+          returnId: returnData.id!,
+          itemId: item.itemId,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: String(item.unitPrice),
+          reason: item.reason,
+          total: String(item.total),
+        }))
+      );
+    }
+  });
+  revalidatePath('/purchases');
+}
+
+export async function deletePurchaseReturn(returnId: string) {
+    const pr = await db.query.purchaseReturns.findFirst({ where: eq(purchaseReturns.id, returnId) });
+    if (pr?.status !== 'مسودة') throw new Error("لا يمكن حذف مرتجع معتمد أو معالج.");
+    await db.transaction(async (tx) => {
+        await tx.delete(purchaseReturnItems).where(eq(purchaseReturnItems.returnId, returnId));
+        await tx.delete(purchaseReturns).where(eq(purchaseReturns.id, returnId));
+    });
+    revalidatePath('/purchases');
+}
+
+export async function approvePurchaseReturn(returnId: string) {
+    const pr = await db.query.purchaseReturns.findFirst({ where: eq(purchaseReturns.id, returnId), with: { items: true } });
+    if (!pr) throw new Error("لم يتم العثور على مرتجع الشراء.");
+    if (pr.status !== 'مسودة') throw new Error("يمكن فقط اعتماد المرتجعات التي في حالة 'مسودة'.");
+
+    await db.transaction(async (tx) => {
+        await tx.update(purchaseReturns).set({ status: 'معتمد' }).where(eq(purchaseReturns.id, returnId));
+        // Decrease inventory
+        for (const item of pr.items) {
+            await tx.update(products)
+                .set({ quantity: sql`${products.quantity} - ${item.quantity}` })
+                .where(eq(products.id, item.itemId));
+        }
+    });
+    revalidatePath('/purchases');
+    revalidatePath('/inventory');
+}
+
