@@ -1,4 +1,5 @@
 
+
 -- Full Database Schema for Al-Mustaqbal ERP
 
 -- Core Tables
@@ -91,6 +92,47 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
 );
 
 -- Transactional Tables
+CREATE TABLE IF NOT EXISTS quotations (
+    id VARCHAR(256) PRIMARY KEY,
+    customer_id VARCHAR(256) NOT NULL REFERENCES customers(id),
+    date TIMESTAMP NOT NULL,
+    expiry_date TIMESTAMP NOT NULL,
+    numeric_total_amount NUMERIC(10, 2) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS quotation_items (
+    id SERIAL PRIMARY KEY,
+    quote_id VARCHAR(256) NOT NULL REFERENCES quotations(id) ON DELETE CASCADE,
+    item_id VARCHAR(256) NOT NULL,
+    description TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
+    total NUMERIC(10, 2) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sales_orders (
+    id VARCHAR(256) PRIMARY KEY,
+    quote_id VARCHAR(256),
+    customer_id VARCHAR(256) NOT NULL REFERENCES customers(id),
+    date TIMESTAMP NOT NULL,
+    delivery_date TIMESTAMP NOT NULL,
+    numeric_total_amount NUMERIC(10, 2) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS sales_order_items (
+    id SERIAL PRIMARY KEY,
+    so_id VARCHAR(256) NOT NULL REFERENCES sales_orders(id) ON DELETE CASCADE,
+    item_id VARCHAR(256) NOT NULL,
+    description TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
+    total NUMERIC(10, 2) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sales_invoices (
     id VARCHAR(256) PRIMARY KEY,
     order_id VARCHAR(256),
@@ -192,6 +234,19 @@ CREATE TABLE IF NOT EXISTS employee_deductions (
     type VARCHAR(50) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS payrolls (
+    id VARCHAR(256) PRIMARY KEY,
+    employee_id VARCHAR(256) NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    month_year VARCHAR(50) NOT NULL,
+    basic_salary NUMERIC(10, 2) NOT NULL,
+    allowances JSONB,
+    deductions JSONB,
+    net_salary NUMERIC(10, 2),
+    payment_date TIMESTAMP,
+    status VARCHAR(50) NOT NULL DEFAULT 'مسودة',
+    notes TEXT
+);
+
 CREATE TABLE IF NOT EXISTS employee_settlements (
     id VARCHAR(256) PRIMARY KEY,
     date TIMESTAMP NOT NULL,
@@ -212,7 +267,8 @@ CREATE TABLE IF NOT EXISTS attendance_records (
     check_in TIMESTAMP,
     check_out TIMESTAMP,
     status VARCHAR(50) NOT NULL DEFAULT 'حاضر',
-    notes TEXT
+    notes TEXT,
+    hours VARCHAR(10)
 );
 
 CREATE TABLE IF NOT EXISTS leave_requests (
@@ -222,7 +278,8 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
     reason TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'مقدمة'
+    status VARCHAR(50) NOT NULL DEFAULT 'مقدمة',
+    days INTEGER
 );
 
 -- Projects Tables
@@ -323,6 +380,48 @@ CREATE TABLE IF NOT EXISTS quality_checks (
 );
 
 -- Inventory Control Tables
+CREATE TABLE IF NOT EXISTS goods_received_notes (
+    id VARCHAR(256) PRIMARY KEY,
+    po_id VARCHAR(256) NOT NULL REFERENCES purchase_orders(id),
+    supplier_id VARCHAR(256) NOT NULL REFERENCES suppliers(id),
+    grn_date TIMESTAMP NOT NULL,
+    notes TEXT,
+    status VARCHAR(50) NOT NULL,
+    received_by VARCHAR(256)
+);
+
+CREATE TABLE IF NOT EXISTS goods_received_note_items (
+    id SERIAL PRIMARY KEY,
+    grn_id VARCHAR(256) NOT NULL REFERENCES goods_received_notes(id) ON DELETE CASCADE,
+    item_id VARCHAR(256) NOT NULL,
+    description TEXT,
+    ordered_quantity INTEGER NOT NULL,
+    received_quantity INTEGER NOT NULL,
+    notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS purchase_returns (
+    id VARCHAR(256) PRIMARY KEY,
+    supplier_id VARCHAR(256) NOT NULL REFERENCES suppliers(id),
+    date TIMESTAMP NOT NULL,
+    original_invoice_id VARCHAR(256),
+    notes TEXT,
+    total_amount NUMERIC(10, 2) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'مسودة'
+);
+
+CREATE TABLE IF NOT EXISTS purchase_return_items (
+    id SERIAL PRIMARY KEY,
+    return_id VARCHAR(256) NOT NULL REFERENCES purchase_returns(id) ON DELETE CASCADE,
+    item_id VARCHAR(256) NOT NULL,
+    description TEXT,
+    quantity INTEGER NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
+    reason TEXT,
+    total NUMERIC(10, 2) NOT NULL
+);
+
+
 CREATE TABLE IF NOT EXISTS inventory_adjustments (
     id VARCHAR(256) PRIMARY KEY,
     date TIMESTAMP NOT NULL,
@@ -437,5 +536,47 @@ CREATE TABLE IF NOT EXISTS tenant_module_subscriptions (
 
 -- Add unique constraint for tenant_id and module_key
 CREATE UNIQUE INDEX IF NOT EXISTS tenant_module_unique_idx ON tenant_module_subscriptions (tenant_id, module_key);
+
+CREATE TABLE IF NOT EXISTS warning_notices (
+    id VARCHAR(256) PRIMARY KEY,
+    employee_id VARCHAR(256) NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    date TIMESTAMP NOT NULL,
+    reason VARCHAR(256) NOT NULL,
+    details TEXT NOT NULL,
+    issuing_manager VARCHAR(256) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'مسودة'
+);
+
+CREATE TABLE IF NOT EXISTS administrative_decisions (
+    id VARCHAR(256) PRIMARY KEY,
+    employee_id VARCHAR(256) NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    decision_date TIMESTAMP NOT NULL,
+    decision_type VARCHAR(256) NOT NULL,
+    details TEXT NOT NULL,
+    issuing_authority VARCHAR(256) NOT NULL,
+    effective_date TIMESTAMP NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'مسودة'
+);
+
+CREATE TABLE IF NOT EXISTS resignations (
+    id VARCHAR(256) PRIMARY KEY,
+    employee_id VARCHAR(256) NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    submission_date TIMESTAMP NOT NULL,
+    last_working_date TIMESTAMP NOT NULL,
+    reason TEXT NOT NULL,
+    manager_notified_date TIMESTAMP,
+    status VARCHAR(50) NOT NULL DEFAULT 'مقدمة'
+);
+
+CREATE TABLE IF NOT EXISTS disciplinary_warnings (
+    id VARCHAR(256) PRIMARY KEY,
+    employee_id VARCHAR(256) NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    warning_date TIMESTAMP NOT NULL,
+    warning_type VARCHAR(100) NOT NULL,
+    violation_details TEXT NOT NULL,
+    action_taken TEXT,
+    issuing_manager VARCHAR(256) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'مسودة'
+);
 
     

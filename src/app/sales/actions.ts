@@ -1,9 +1,10 @@
 
+
 // src/app/sales/actions.ts
 'use server';
 
 import { db } from '@/db';
-import { customers, salesInvoices, salesInvoiceItems } from '@/db/schema';
+import { customers, salesInvoices, salesInvoiceItems, quotations, quotationItems, salesOrders, salesOrderItems } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -42,6 +43,47 @@ const invoiceSchema = z.object({
   source: z.enum(["POS", "Manual"]).optional().default("Manual"),
 });
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
+
+const quotationItemSchema = z.object({
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().optional(),
+  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+  unitPrice: z.coerce.number().min(0, "سعر الوحدة إيجابي"),
+  total: z.coerce.number(),
+});
+
+const quotationSchema = z.object({
+  id: z.string().optional(),
+  customerId: z.string().min(1, "العميل مطلوب"),
+  date: z.date({ required_error: "تاريخ العرض مطلوب" }),
+  expiryDate: z.date({ required_error: "تاريخ انتهاء العرض مطلوب" }),
+  items: z.array(quotationItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  numericTotalAmount: z.coerce.number().default(0),
+  status: z.enum(["مسودة", "مرسل", "مقبول", "مرفوض", "منتهي الصلاحية"]).default("مسودة"),
+});
+type QuotationFormValues = z.infer<typeof quotationSchema>;
+
+const salesOrderItemSchema = z.object({
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().optional(),
+  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+  unitPrice: z.coerce.number().min(0, "سعر الوحدة إيجابي"),
+  total: z.coerce.number(),
+});
+
+const salesOrderSchema = z.object({
+  id: z.string().optional(),
+  customerId: z.string().min(1, "العميل مطلوب"),
+  date: z.date({ required_error: "تاريخ الأمر مطلوب" }),
+  deliveryDate: z.date({ required_error: "تاريخ التسليم المتوقع مطلوب" }),
+  items: z.array(salesOrderItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  numericTotalAmount: z.coerce.number().default(0),
+  status: z.enum(["مؤكد", "قيد التنفيذ", "ملغي", "مكتمل"]).default("مؤكد"),
+  quoteId: z.string().optional(),
+});
+type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
 
 export async function addCustomer(customerData: CustomerFormValues) {
   const newCustomer = {
@@ -141,4 +183,61 @@ export async function deleteSalesInvoice(invoiceId: string) {
         await tx.delete(salesInvoices).where(eq(salesInvoices.id, invoiceId));
     });
     revalidatePath('/sales');
+}
+
+// Quotation Actions
+export async function addQuotation(values: QuotationFormValues) {
+  const newId = `QT${Date.now()}`;
+  await db.transaction(async (tx) => {
+    await tx.insert(quotations).values({ ...values, id: newId, numericTotalAmount: String(values.numericTotalAmount) });
+    await tx.insert(quotationItems).values(values.items.map(item => ({ quoteId: newId, ...item, unitPrice: String(item.unitPrice), total: String(item.total) })));
+  });
+  revalidatePath('/sales');
+}
+
+export async function updateQuotation(values: QuotationFormValues) {
+  if (!values.id) throw new Error("ID required");
+  await db.transaction(async (tx) => {
+    await tx.update(quotations).set({ ...values, numericTotalAmount: String(values.numericTotalAmount) }).where(eq(quotations.id, values.id!));
+    await tx.delete(quotationItems).where(eq(quotationItems.quoteId, values.id!));
+    await tx.insert(quotationItems).values(values.items.map(item => ({ quoteId: values.id!, ...item, unitPrice: String(item.unitPrice), total: String(item.total) })));
+  });
+  revalidatePath('/sales');
+}
+
+export async function deleteQuotation(id: string) {
+  await db.transaction(async (tx) => {
+    await tx.delete(quotationItems).where(eq(quotationItems.quoteId, id));
+    await tx.delete(quotations).where(eq(quotations.id, id));
+  });
+  revalidatePath('/sales');
+}
+
+
+// Sales Order Actions
+export async function addSalesOrder(values: SalesOrderFormValues) {
+  const newId = `SO${Date.now()}`;
+  await db.transaction(async (tx) => {
+    await tx.insert(salesOrders).values({ ...values, id: newId, numericTotalAmount: String(values.numericTotalAmount) });
+    await tx.insert(salesOrderItems).values(values.items.map(item => ({ soId: newId, ...item, unitPrice: String(item.unitPrice), total: String(item.total) })));
+  });
+  revalidatePath('/sales');
+}
+
+export async function updateSalesOrder(values: SalesOrderFormValues) {
+  if (!values.id) throw new Error("ID required");
+  await db.transaction(async (tx) => {
+    await tx.update(salesOrders).set({ ...values, numericTotalAmount: String(values.numericTotalAmount) }).where(eq(salesOrders.id, values.id!));
+    await tx.delete(salesOrderItems).where(eq(salesOrderItems.soId, values.id!));
+    await tx.insert(salesOrderItems).values(values.items.map(item => ({ soId: values.id!, ...item, unitPrice: String(item.unitPrice), total: String(item.total) })));
+  });
+  revalidatePath('/sales');
+}
+
+export async function deleteSalesOrder(id: string) {
+  await db.transaction(async (tx) => {
+    await tx.delete(salesOrderItems).where(eq(salesOrderItems.soId, id));
+    await tx.delete(salesOrders).where(eq(salesOrders.id, id));
+  });
+  revalidatePath('/sales');
 }

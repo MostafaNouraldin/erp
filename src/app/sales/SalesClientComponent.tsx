@@ -24,15 +24,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { addCustomer, updateCustomer, deleteCustomer, addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from './actions';
+import { addCustomer, updateCustomer, deleteCustomer, addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, addQuotation, updateQuotation, deleteQuotation, addSalesOrder, updateSalesOrder, deleteSalesOrder } from './actions';
 import type { Product } from '@/db/schema';
 
-// Mock data
-const initialQuotationsData: QuotationFormValues[] = [
-  { id: "QT001", customerId: "CUST001", date: new Date("2024-07-01"), expiryDate: new Date("2024-07-15"), numericTotalAmount: 15500, status: "مرسل", items: [{itemId: "ITEM001", description: "لابتوب", quantity:1, unitPrice:15500, total:15500}] },
-  { id: "QT002", customerId: "CUST002", date: new Date("2024-07-05"), expiryDate: new Date("2024-07-20"), numericTotalAmount: 8200, status: "مقبول", items: [{itemId: "SERV001", description: "خدمة استشارية", quantity: 1, unitPrice: 8200, total: 8200}] },
-  { id: "QT003", customerId: "CUST003", date: new Date("2024-07-10"), expiryDate: new Date("2024-07-25"), numericTotalAmount: 22000, status: "مسودة", items: [] },
-];
 
 export interface SalesOrderItem {
   itemId: string;
@@ -52,11 +46,6 @@ export interface SalesOrder {
   items: SalesOrderItem[];
   notes?: string;
 }
-
-const initialSalesOrdersData: SalesOrder[] = [
-  { id: "SO001", quoteId: "QT002", customerId: "CUST002", date: new Date("2024-07-06"), deliveryDate: new Date("2024-07-20"), numericTotalAmount: 8200, status: "قيد التنفيذ" as const, items: [{itemId: "SERV001", description: "خدمة استشارية", quantity: 1, unitPrice: 8200, total: 8200}] },
-  { id: "SO002", customerId: "CUST004", date: new Date("2024-07-12"), deliveryDate: new Date("2024-07-28"), numericTotalAmount: 12000, status: "مؤكد" as const, items: [{itemId: "ITEM001", description: "لابتوب", quantity: 1, unitPrice: 12000, total: 12000}], notes: "تسليم عاجل" },
-];
 
 export interface InvoiceItem {
   itemId: string;
@@ -195,14 +184,16 @@ interface SalesClientComponentProps {
   initialData: {
     customers: Customer[];
     invoices: Invoice[];
+    quotations: QuotationFormValues[];
+    salesOrders: SalesOrderFormValues[];
     products: (Product & { sellingPrice: number })[];
   };
 }
 
 export default function SalesClientComponent({ initialData }: SalesClientComponentProps) {
-  const [quotations, setQuotationsData] = useState<QuotationFormValues[]>(initialQuotationsData);
+  const [quotations, setQuotationsData] = useState<QuotationFormValues[]>(initialData.quotations);
   const [invoices, setInvoicesData] = useState<Invoice[]>(initialData.invoices);
-  const [salesOrders, setSalesOrdersData] = useState<SalesOrder[]>(initialSalesOrdersData);
+  const [salesOrders, setSalesOrdersData] = useState<SalesOrder[]>(initialData.salesOrders);
   const [customers, setCustomers] = useState<Customer[]>(initialData.customers);
   const [products, setProducts] = useState(initialData.products);
   
@@ -262,6 +253,8 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     setCustomers(initialData.customers);
     setInvoicesData(initialData.invoices);
     setProducts(initialData.products);
+    setQuotationsData(initialData.quotations);
+    setSalesOrdersData(initialData.salesOrders);
   }, [initialData]);
 
   const quotationForm = useForm<QuotationFormValues>({
@@ -399,34 +392,41 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   };
 
 
-  const handleQuotationSubmit = (values: QuotationFormValues) => {
+  const handleQuotationSubmit = async (values: QuotationFormValues) => {
     const totalAmount = calculateItemTotals(values.items);
     const finalValues = {...values, numericTotalAmount: totalAmount};
 
-    if (quotationToEdit) {
-      setQuotationsData(prev => prev.map(q => q.id === quotationToEdit.id ? { ...finalValues, id: quotationToEdit.id! } : q));
-      toast({ title: "تم التعديل", description: "تم تعديل عرض السعر بنجاح." });
-    } else {
-      setQuotationsData(prev => [...prev, { ...finalValues, id: `QT${Date.now()}` }]);
-      toast({ title: "تم الإنشاء", description: "تم إنشاء عرض السعر بنجاح." });
+    try {
+        if (quotationToEdit) {
+          await updateQuotation({ ...finalValues, id: quotationToEdit.id! });
+          toast({ title: "تم التعديل", description: "تم تعديل عرض السعر بنجاح." });
+        } else {
+          await addQuotation(finalValues);
+          toast({ title: "تم الإنشاء", description: "تم إنشاء عرض السعر بنجاح." });
+        }
+        setShowCreateQuotationDialog(false);
+        setQuotationToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ عرض السعر.", variant: "destructive" });
     }
-    setShowCreateQuotationDialog(false);
-    setQuotationToEdit(null);
   };
 
-  const handleSalesOrderSubmit = (values: SalesOrderFormValues) => {
+  const handleSalesOrderSubmit = async (values: SalesOrderFormValues) => {
     const totalAmount = calculateItemTotals(values.items);
     const finalValues = {...values, numericTotalAmount: totalAmount};
-
-    if (salesOrderToEdit) {
-      setSalesOrdersData(prev => prev.map(so => so.id === salesOrderToEdit.id ? { ...finalValues, id: salesOrderToEdit.id! } : so));
-      toast({ title: "تم التعديل", description: "تم تعديل أمر البيع بنجاح." });
-    } else {
-      setSalesOrdersData(prev => [...prev, { ...finalValues, id: `SO${Date.now()}` }]);
-      toast({ title: "تم الإنشاء", description: "تم إنشاء أمر البيع بنجاح." });
+    try {
+        if (salesOrderToEdit) {
+          await updateSalesOrder({ ...finalValues, id: salesOrderToEdit.id! });
+          toast({ title: "تم التعديل", description: "تم تعديل أمر البيع بنجاح." });
+        } else {
+          await addSalesOrder(finalValues);
+          toast({ title: "تم الإنشاء", description: "تم إنشاء أمر البيع بنجاح." });
+        }
+        setShowCreateSalesOrderDialog(false);
+        setSalesOrderToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ أمر البيع.", variant: "destructive" });
     }
-    setShowCreateSalesOrderDialog(false);
-    setSalesOrderToEdit(null);
   };
 
   const handleInvoiceSubmit = async (values: InvoiceFormValues) => {
@@ -537,9 +537,14 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     }
   }
 
-  const handleAcceptQuotation = (quotationId: string) => {
-    setQuotationsData(prev => prev.map(q => q.id === quotationId ? { ...q, status: "مقبول" } : q));
-    toast({ title: "تم قبول العرض", description: `تم تغيير حالة عرض السعر ${quotationId} إلى "مقبول".` });
+  const handleAcceptQuotation = async (quotation: QuotationFormValues) => {
+    if (!quotation.id) return;
+    try {
+        await updateQuotation({...quotation, status: "مقبول"});
+        toast({ title: "تم قبول العرض", description: `تم تغيير حالة عرض السعر ${quotation.id} إلى "مقبول".` });
+    } catch (e) {
+        toast({ title: "خطأ", description: "لم يتم قبول عرض السعر.", variant: "destructive" });
+    }
   };
   
   const handleCreateSalesOrderFromQuote = (quotation: QuotationFormValues) => {
@@ -570,6 +575,24 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
       numericTotalAmount: salesOrder.numericTotalAmount,
     });
     setShowCreateInvoiceDialog(true);
+  };
+
+   const handleDeleteQuotation = async (id: string) => {
+    try {
+        await deleteQuotation(id);
+        toast({ title: "تم الحذف", description: `تم حذف عرض السعر ${id}.`, variant: "destructive" });
+    } catch(e) {
+        toast({ title: "خطأ", description: "لم يتم حذف عرض السعر.", variant: "destructive" });
+    }
+  };
+
+   const handleDeleteSalesOrder = async (id: string) => {
+    try {
+        await deleteSalesOrder(id);
+        toast({ title: "تم الحذف", description: `تم حذف أمر البيع ${id}.`, variant: "destructive" });
+    } catch(e) {
+        toast({ title: "خطأ", description: "لم يتم حذف أمر البيع.", variant: "destructive" });
+    }
   };
 
 
@@ -799,7 +822,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                             </>
                           )}
                            {(qt.status === "مرسل") && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="قبول العرض" onClick={() => handleAcceptQuotation(qt.id!)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="قبول العرض" onClick={() => handleAcceptQuotation(qt)}>
                               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                             </Button>
                           )}
@@ -808,6 +831,23 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                                 <FilePlus className="h-4 w-4 text-primary" />
                             </Button>
                           )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف عرض السعر">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                                <AlertDialogDescription>سيتم حذف عرض السعر "{qt.id}" نهائياً.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteQuotation(qt.id!)}>تأكيد الحذف</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -861,12 +901,29 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض تفاصيل الأمر">
                                 <FileText className="h-4 w-4" />
                             </Button>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إنشاء فاتورة" onClick={() => handleCreateInvoiceFromSalesOrder(so)}>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إنشاء فاتورة" onClick={() => handleCreateInvoiceFromSalesOrder(so as SalesOrderFormValues)}>
                                 <FilePlus className="h-4 w-4 text-primary" />
                             </Button>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل أمر البيع" onClick={() => {setSalesOrderToEdit(so); setShowCreateSalesOrderDialog(true); }}>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل أمر البيع" onClick={() => {setSalesOrderToEdit(so as SalesOrderFormValues); setShowCreateSalesOrderDialog(true); }}>
                                 <Edit className="h-4 w-4" />
                             </Button>
+                             <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف أمر البيع">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent dir="rtl">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                                  <AlertDialogDescription>سيتم حذف أمر البيع "{so.id}" نهائياً.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteSalesOrder(so.id!)}>تأكيد الحذف</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))}

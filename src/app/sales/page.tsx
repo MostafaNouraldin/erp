@@ -1,8 +1,9 @@
 
+
 // This is now a true Server Component that fetches data and passes it to the client.
 import React from 'react';
 import { db } from '@/db';
-import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema, products } from '@/db/schema';
+import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema, products, quotations, quotationItems, salesOrders, salesOrderItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import SalesClientComponent from './SalesClientComponent'; // We will create this component
 
@@ -11,6 +12,8 @@ export default async function SalesPage() {
     try {
         const customersResult = await db.select().from(customersSchema);
         const invoicesResult = await db.select().from(salesInvoicesSchema);
+        const quotationsResult = await db.select().from(quotations);
+        const salesOrdersResult = await db.select().from(salesOrders);
         const productsResult = await db.select({
             id: products.id,
             name: products.name,
@@ -49,12 +52,46 @@ export default async function SalesPage() {
             };
         }));
         
+        const quotationsWithItems = await Promise.all(quotationsResult.map(async (quote) => {
+            const items = await db.select().from(quotationItems).where(eq(quotationItems.quoteId, quote.id));
+            return {
+                ...quote,
+                date: new Date(quote.date),
+                expiryDate: new Date(quote.expiryDate),
+                numericTotalAmount: parseFloat(quote.numericTotalAmount),
+                status: quote.status as "مسودة" | "مرسل" | "مقبول" | "مرفوض" | "منتهي الصلاحية",
+                items: items.map(item => ({
+                    ...item,
+                    unitPrice: parseFloat(item.unitPrice),
+                    total: parseFloat(item.total),
+                })),
+            };
+        }));
+
+        const salesOrdersWithItems = await Promise.all(salesOrdersResult.map(async (so) => {
+            const items = await db.select().from(salesOrderItems).where(eq(salesOrderItems.soId, so.id));
+            return {
+                ...so,
+                date: new Date(so.date),
+                deliveryDate: new Date(so.deliveryDate),
+                numericTotalAmount: parseFloat(so.numericTotalAmount),
+                status: so.status as "مؤكد" | "قيد التنفيذ" | "ملغي" | "مكتمل",
+                items: items.map(item => ({
+                    ...item,
+                    unitPrice: parseFloat(item.unitPrice),
+                    total: parseFloat(item.total),
+                })),
+            };
+        }));
+
         const initialData = {
             customers: customersResult.map(c => ({
                 ...c,
                 balance: parseFloat(c.balance ?? '0'),
             })),
             invoices: invoicesWithItems,
+            quotations: quotationsWithItems,
+            salesOrders: salesOrdersWithItems,
             products: productsResult.map(p => ({...p, sellingPrice: parseFloat(p.sellingPrice)})),
         };
 

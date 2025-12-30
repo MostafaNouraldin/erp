@@ -94,6 +94,47 @@ export const bankAccounts = pgTable('bank_accounts', {
 
 // --- Transactional Tables ---
 
+export const quotations = pgTable('quotations', {
+  id: varchar('id', { length: 256 }).primaryKey(),
+  customerId: varchar('customer_id', { length: 256 }).notNull().references(() => customers.id),
+  date: timestamp('date').notNull(),
+  expiryDate: timestamp('expiry_date').notNull(),
+  numericTotalAmount: numeric('numeric_total_amount', { precision: 10, scale: 2 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  notes: text('notes'),
+});
+
+export const quotationItems = pgTable('quotation_items', {
+    id: serial('id').primaryKey(),
+    quoteId: varchar('quote_id', { length: 256 }).notNull().references(() => quotations.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull(),
+    description: text('description').notNull(),
+    quantity: integer('quantity').notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+});
+
+export const salesOrders = pgTable('sales_orders', {
+  id: varchar('id', { length: 256 }).primaryKey(),
+  quoteId: varchar('quote_id', { length: 256 }),
+  customerId: varchar('customer_id', { length: 256 }).notNull().references(() => customers.id),
+  date: timestamp('date').notNull(),
+  deliveryDate: timestamp('delivery_date').notNull(),
+  numericTotalAmount: numeric('numeric_total_amount', { precision: 10, scale: 2 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  notes: text('notes'),
+});
+
+export const salesOrderItems = pgTable('sales_order_items', {
+    id: serial('id').primaryKey(),
+    soId: varchar('so_id', { length: 256 }).notNull().references(() => salesOrders.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull(),
+    description: text('description').notNull(),
+    quantity: integer('quantity').notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+});
+
 export const salesInvoices = pgTable('sales_invoices', {
   id: varchar('id', { length: 256 }).primaryKey(),
   orderId: varchar('order_id', { length: 256 }),
