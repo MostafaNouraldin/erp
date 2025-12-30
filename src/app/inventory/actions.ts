@@ -5,26 +5,27 @@ import { db } from '@/db';
 import { products, categories } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { z } from "zod";
 
-// We need to define the type for the product values coming from the form
-// as we don't have access to the Zod schema from the client component.
-type ProductValues = {
-  id?: string;
-  sku: string;
-  name: string;
-  description?: string;
-  category: string;
-  unit: string;
-  costPrice: number;
-  sellingPrice: number;
-  quantity: number;
-  reorderLevel: number;
-  location?: string;
-  barcode?: string;
-  supplierId?: string;
-  image?: string;
-  dataAiHint?: string;
-};
+const productSchema = z.object({
+  id: z.string().optional(),
+  sku: z.string().min(1, "SKU مطلوب"),
+  name: z.string().min(1, "اسم المنتج مطلوب"),
+  description: z.string().optional(),
+  category: z.string().min(1, "الفئة مطلوبة"),
+  unit: z.string().min(1, "الوحدة مطلوبة"),
+  costPrice: z.coerce.number().min(0, "سعر التكلفة يجب أن يكون إيجابياً"),
+  sellingPrice: z.coerce.number().min(0, "سعر البيع يجب أن يكون إيجابياً"),
+  quantity: z.coerce.number().min(0, "الكمية لا يمكن أن تكون سالبة").default(0),
+  reorderLevel: z.coerce.number().min(0, "حد إعادة الطلب لا يمكن أن يكون سالباً").default(0),
+  location: z.string().optional(),
+  barcode: z.string().optional(),
+  supplierId: z.string().optional(),
+  image: z.string().optional(),
+  dataAiHint: z.string().max(30, "الكلمات المفتاحية يجب ألا تتجاوز 30 حرفًا").optional(),
+});
+type ProductFormValues = z.infer<typeof productSchema>;
+
 
 type CategoryValues = {
     id?: string;
@@ -32,7 +33,7 @@ type CategoryValues = {
     description?: string;
 };
 
-export async function addProduct(productData: ProductValues) {
+export async function addProduct(productData: ProductFormValues) {
   const newProduct = {
     ...productData,
     id: `ITEM${Date.now()}`,
@@ -43,7 +44,7 @@ export async function addProduct(productData: ProductValues) {
   revalidatePath('/inventory');
 }
 
-export async function updateProduct(productData: ProductValues) {
+export async function updateProduct(productData: ProductFormValues) {
     if (!productData.id) {
         throw new Error("Product ID is required for updating.");
     }
@@ -82,3 +83,5 @@ export async function deleteCategory(categoryId: string) {
     await db.delete(categories).where(eq(categories.id, categoryId));
     revalidatePath('/inventory');
 }
+
+    

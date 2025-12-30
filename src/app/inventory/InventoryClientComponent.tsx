@@ -28,8 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
-// TODO: Re-enable when actions are properly connected
-// import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory } from './actions';
+import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory } from './actions';
 
 
 // Product Schema
@@ -47,9 +46,6 @@ const productSchema = z.object({
   location: z.string().optional(),
   barcode: z.string().optional(),
   supplierId: z.string().optional(),
-  itemsPerParentUnit: z.coerce.number().positive("العدد يجب أن يكون أكبر من صفر").optional(),
-  subUnit: z.enum(["قطعة", "حبة", "متر", "سنتيمتر"]).optional(),
-  subUnitSellingPrice: z.coerce.number().min(0, "سعر الوحدة الفرعية يجب أن يكون إيجابياً").optional(),
   image: z.string().optional(),
   dataAiHint: z.string().max(30, "الكلمات المفتاحية يجب ألا تتجاوز 30 حرفًا").optional(),
 });
@@ -151,8 +147,7 @@ const stockRequisitionSchema = z.object({
 type StockRequisitionFormValues = z.infer<typeof stockRequisitionSchema>;
 
 // Mock data (some are kept for selection inputs)
-const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة", "سنتيمتر"];
-const mockSubUnits = ["قطعة", "حبة", "متر", "سنتيمتر"];
+const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة"];
 const mockWarehouses = [{ id: "WH001", name: "المستودع الرئيسي" }, { id: "WH002", name: "مستودع فرعي أ" }];
 const mockUsers = [{ id: "USR001", name: "فريق الجرد أ" }, { id: "USR002", name: "أحمد المسؤول" }, { id: "USR003", name: "مدير المخازن" }];
 const mockDepartments = [{id: "DEP001", name: "قسم المبيعات"}, {id: "DEP002", name: "قسم الصيانة"}];
@@ -217,7 +212,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const [showManageStockRequisitionDialog, setShowManageStockRequisitionDialog] = useState(false);
   const [stockRequisitionToEdit, setStockRequisitionToEdit] = useState<StockRequisitionFormValues | null>(null);
 
-  const productForm = useForm<ProductFormValues>({ resolver: zodResolver(productSchema), defaultValues: { sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined, image: "", dataAiHint: "" }});
+  const productForm = useForm<ProductFormValues>({ resolver: zodResolver(productSchema), defaultValues: { sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", image: "", dataAiHint: "" }});
   const categoryForm = useForm<CategoryFormValues>({ resolver: zodResolver(categorySchema), defaultValues: { name: "", description: "" }});
   const stocktakeInitiationForm = useForm<StocktakeInitiationFormValues>({ resolver: zodResolver(stocktakeInitiationSchema), defaultValues: { stocktakeDate: new Date(), warehouseId: "", responsiblePerson: "", notes: "" }});
 
@@ -230,70 +225,66 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const stockRequisitionForm = useForm<StockRequisitionFormValues>({ resolver: zodResolver(stockRequisitionSchema), defaultValues: { requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""}});
   const { fields: stockRequisitionItemsFields, append: appendStockRequisitionItem, remove: removeStockRequisitionItem } = useFieldArray({ control: stockRequisitionForm.control, name: "items" });
 
-  useEffect(() => { if (productToEdit) { productForm.reset(productToEdit); setImagePreview(productToEdit.image || null); } else { productForm.reset({ sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", itemsPerParentUnit: undefined, subUnit: undefined, subUnitSellingPrice: undefined, image: "", dataAiHint: "" }); setImagePreview(null); }}, [productToEdit, productForm, showManageProductDialog]);
+  useEffect(() => { if (productToEdit) { productForm.reset(productToEdit); setImagePreview(productToEdit.image || null); } else { productForm.reset({ sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", image: "", dataAiHint: "" }); setImagePreview(null); }}, [productToEdit, productForm, showManageProductDialog]);
   useEffect(() => { if (categoryToEdit) { categoryForm.reset(categoryToEdit); } else { categoryForm.reset({ name: "", description: "" }); }}, [categoryToEdit, categoryForm, showManageCategoryDialog]);
   useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
   useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0 }], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
   const handleProductSubmit = async (values: ProductFormValues) => {
-    toast({ title: "متوقف مؤقتاً", description: "حفظ المنتجات معطل حالياً.", variant: "destructive"});
-    // try {
-    //   if (productToEdit) {
-    //     await updateProduct({ ...values, id: productToEdit.id! });
-    //     toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." });
-    //   } else {
-    //     await addProduct(values);
-    //     toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." });
-    //   }
-    //   setShowManageProductDialog(false);
-    //   setProductToEdit(null);
-    //   setImagePreview(null);
-    // } catch (error) {
-    //   toast({ title: "خطأ", description: "لم يتم حفظ المنتج.", variant: "destructive" });
-    // }
+    try {
+      if (productToEdit) {
+        await updateProduct({ ...values, id: productToEdit.id! });
+        toast({ title: "تم التعديل", description: "تم تعديل بيانات المنتج بنجاح." });
+      } else {
+        await addProduct(values);
+        toast({ title: "تمت الإضافة", description: "تم إضافة المنتج بنجاح." });
+      }
+      setShowManageProductDialog(false);
+      setProductToEdit(null);
+      setImagePreview(null);
+    } catch (error) {
+      toast({ title: "خطأ", description: "لم يتم حفظ المنتج.", variant: "destructive" });
+    }
   };
   
   const handleCategorySubmit = async (values: CategoryFormValues) => {
-    toast({ title: "متوقف مؤقتاً", description: "حفظ الفئات معطل حالياً.", variant: "destructive"});
-    //  try {
-    //     if (categoryToEdit) {
-    //         await updateCategory({ ...values, id: categoryToEdit.id! });
-    //         toast({ title: "تم التعديل", description: "تم تعديل الفئة بنجاح." });
-    //     } else {
-    //         await addCategory(values);
-    //         toast({ title: "تمت الإضافة", description: "تم إضافة الفئة بنجاح." });
-    //     }
-    //     setShowManageCategoryDialog(false);
-    //     setCategoryToEdit(null);
-    // } catch (error) {
-    //     toast({ title: "خطأ", description: "لم يتم حفظ الفئة.", variant: "destructive" });
-    // }
+     try {
+        if (categoryToEdit) {
+            await updateCategory({ ...values, id: categoryToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل الفئة بنجاح." });
+        } else {
+            await addCategory(values);
+            toast({ title: "تمت الإضافة", description: "تم إضافة الفئة بنجاح." });
+        }
+        setShowManageCategoryDialog(false);
+        setCategoryToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ الفئة.", variant: "destructive" });
+    }
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    toast({ title: "متوقف مؤقتاً", description: "حذف المنتجات معطل حالياً.", variant: "destructive"});
-    // try {
-    //     await deleteProduct(productId);
-    //     toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
-    // } catch (error) {
-    //     toast({ title: "خطأ", description: "لم يتم حذف المنتج.", variant: "destructive" });
-    // }
+    try {
+        await deleteProduct(productId);
+        toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح.", variant: "destructive" });
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حذف المنتج.", variant: "destructive" });
+    }
   };
   
   const handleDeleteCategory = async (categoryId: string) => {
-    toast({ title: "متوقف مؤقتاً", description: "حذف الفئات معطل حالياً.", variant: "destructive"});
-    // const isCategoryInUse = productsData.some(p => p.category === categoriesData.find(c => c.id === categoryId)?.name);
-    // if(isCategoryInUse) {
-    //     toast({ title: "خطأ", description: "لا يمكن حذف الفئة لأنها مستخدمة في بعض المنتجات.", variant: "destructive" });
-    //     return;
-    // }
-    // try {
-    //     await deleteCategory(categoryId);
-    //     toast({ title: "تم الحذف", description: "تم حذف الفئة بنجاح.", variant: "destructive" });
-    // } catch (error) {
-    //     toast({ title: "خطأ", description: "لم يتم حذف الفئة.", variant: "destructive" });
-    // }
+    const isCategoryInUse = productsData.some(p => p.category === categoriesData.find(c => c.id === categoryId)?.name);
+    if(isCategoryInUse) {
+        toast({ title: "خطأ", description: "لا يمكن حذف الفئة لأنها مستخدمة في بعض المنتجات.", variant: "destructive" });
+        return;
+    }
+    try {
+        await deleteCategory(categoryId);
+        toast({ title: "تم الحذف", description: "تم حذف الفئة بنجاح.", variant: "destructive" });
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حذف الفئة.", variant: "destructive" });
+    }
   };
 
 
@@ -364,7 +355,6 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     setStockRequisitionToEdit(null);
   };
   
-  const selectedUnit = productForm.watch("unit");
 
     const generateReportData = (reportKey: string, filters: typeof reportFilters) => {
         // This is mock data generation. In a real app, you'd fetch and filter data.
@@ -451,13 +441,6 @@ export default function InventoryClientComponent({ initialData }: { initialData:
                 <FormField control={productForm.control} name="category" render={({ field }) => (<FormItem><FormLabel>الفئة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفئة" /></SelectTrigger></FormControl><SelectContent>{categoriesData.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                 <FormField control={productForm.control} name="unit" render={({ field }) => (<FormItem><FormLabel>الوحدة الأساسية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الوحدة" /></SelectTrigger></FormControl><SelectContent>{mockUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
               </div>
-                {(selectedUnit === "صندوق" || selectedUnit === "كرتون" || selectedUnit === "علبة") && (
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 border rounded-md bg-muted/30">
-                      <FormField control={productForm.control} name="itemsPerParentUnit" render={({ field }) => (<FormItem><FormLabel>عدد الوحدات الفرعية بالوحدة الأساسية</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={productForm.control} name="subUnit" render={({ field }) => (<FormItem><FormLabel>نوع الوحدة الفرعية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الوحدة الفرعية" /></SelectTrigger></FormControl><SelectContent>{mockSubUnits.map(sub => <SelectItem key={sub} value={sub}>{sub}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField control={productForm.control} name="subUnitSellingPrice" render={({ field }) => (<FormItem className="md:col-span-2"><FormLabel>سعر بيع الوحدة الفرعية (اختياري)</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={productForm.control} name="costPrice" render={({ field }) => (<FormItem><FormLabel>سعر التكلفة</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={productForm.control} name="sellingPrice" render={({ field }) => (<FormItem><FormLabel>سعر البيع</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
@@ -516,5 +499,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     </div>
   );
 }
+
+    
 
     
