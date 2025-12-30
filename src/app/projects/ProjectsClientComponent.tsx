@@ -122,12 +122,12 @@ export default function ProjectsClientComponent({ initialData }: { initialData: 
 
 
   useEffect(() => {
-    if (projectToEdit) projectForm.reset(projectToEdit);
+    if (projectToEdit) projectForm.reset({...projectToEdit, startDate: new Date(projectToEdit.startDate), endDate: new Date(projectToEdit.endDate)});
     else projectForm.reset({ clientId: '', managerId: '', name: '', startDate: new Date(), endDate: new Date(), budget: 0, progress: 0, status: "مخطط له", notes: '' });
   }, [projectToEdit, projectForm, showManageProjectDialog]);
 
   useEffect(() => {
-    if (taskToEdit) taskForm.reset(taskToEdit);
+    if (taskToEdit) taskForm.reset({...taskToEdit, dueDate: new Date(taskToEdit.dueDate)});
     else taskForm.reset({ projectId: '', name: '', assigneeId: '', dueDate: new Date(), status: "مخطط لها", priority: "متوسطة", notes: '' });
   }, [taskToEdit, taskForm, showManageTaskDialog]);
 

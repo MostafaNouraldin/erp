@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { projects, projectTasks, projectResources, projectBudgetItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -59,8 +59,16 @@ export type BudgetItemFormValues = z.infer<typeof budgetItemSchema>;
 export type Client = { id: string; name: string };
 export type Employee = { id: string; name: string };
 
+async function getDb() {
+  // In a real multi-tenant app, the tenantId would come from the user's session
+  const { db } = await connectToTenantDb('T001');
+  return db;
+}
+
+
 // --- Project Actions ---
 export async function addProject(values: ProjectFormValues) {
+  const db = await getDb();
   const newProjectId = `PROJ${Date.now()}`;
   await db.insert(projects).values({
     ...values,
@@ -71,6 +79,7 @@ export async function addProject(values: ProjectFormValues) {
 }
 
 export async function updateProject(values: ProjectFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required for update.");
   await db.update(projects).set({
     ...values,
@@ -80,6 +89,7 @@ export async function updateProject(values: ProjectFormValues) {
 }
 
 export async function deleteProject(id: string) {
+    const db = await getDb();
     // In a real app with cascading deletes or proper foreign keys, this would be simpler.
     // For now, we delete from each related table manually.
     await db.transaction(async (tx) => {
@@ -94,42 +104,49 @@ export async function deleteProject(id: string) {
 
 // --- Task Actions ---
 export async function addTask(values: TaskFormValues) {
+    const db = await getDb();
     const newTaskId = `TASK${Date.now()}`;
     await db.insert(projectTasks).values({ ...values, id: newTaskId });
     revalidatePath('/projects');
 }
 
 export async function updateTask(values: TaskFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(projectTasks).set(values).where(eq(projectTasks.id, values.id));
     revalidatePath('/projects');
 }
 
 export async function deleteTask(id: string) {
+    const db = await getDb();
     await db.delete(projectTasks).where(eq(projectTasks.id, id));
     revalidatePath('/projects');
 }
 
 // --- Resource Actions ---
 export async function addResource(values: ResourceFormValues) {
+    const db = await getDb();
     const newResourceId = `RES${Date.now()}`;
     await db.insert(projectResources).values({ ...values, id: newResourceId });
     revalidatePath('/projects');
 }
 
 export async function updateResource(values: ResourceFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(projectResources).set(values).where(eq(projectResources.id, values.id));
     revalidatePath('/projects');
 }
 
 export async function deleteResource(id: string) {
+    const db = await getDb();
     await db.delete(projectResources).where(eq(projectResources.id, id));
     revalidatePath('/projects');
 }
 
 // --- Budget Item Actions ---
 export async function addBudgetItem(values: BudgetItemFormValues) {
+    const db = await getDb();
     const newBudgetItemId = `BUD${Date.now()}`;
     await db.insert(projectBudgetItems).values({ 
         ...values, 
@@ -141,6 +158,7 @@ export async function addBudgetItem(values: BudgetItemFormValues) {
 }
 
 export async function updateBudgetItem(values: BudgetItemFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(projectBudgetItems).set({
         ...values,
@@ -151,11 +169,13 @@ export async function updateBudgetItem(values: BudgetItemFormValues) {
 }
 
 export async function deleteBudgetItem(id: string) {
+    const db = await getDb();
     await db.delete(projectBudgetItems).where(eq(projectBudgetItems.id, id));
     revalidatePath('/projects');
 }
 
 export async function updateBudgetItemSpent(id: string, newSpentAmount: number) {
+    const db = await getDb();
     await db.update(projectBudgetItems).set({
         spent: String(newSpentAmount),
     }).where(eq(projectBudgetItems.id, id));
