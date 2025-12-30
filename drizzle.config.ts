@@ -1,3 +1,4 @@
+
 -- Full Database Schema for Al-Mustaqbal ERP
 
 -- Core Tables
@@ -436,3 +437,5 @@ CREATE TABLE IF NOT EXISTS tenant_module_subscriptions (
 
 -- Add unique constraint for tenant_id and module_key
 CREATE UNIQUE INDEX IF NOT EXISTS tenant_module_unique_idx ON tenant_module_subscriptions (tenant_id, module_key);
+
+    

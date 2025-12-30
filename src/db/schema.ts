@@ -530,7 +530,28 @@ export const tenantModuleSubscriptions = pgTable('tenant_module_subscriptions', 
     tenantModuleUniqueIdx: uniqueIndex('tenant_module_unique_idx').on(table.tenantId, table.moduleKey),
   };
 });
+
+export const roles = pgTable('roles', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull().unique(),
+    description: text('description'),
+    permissions: jsonb('permissions').default('[]'),
+});
+
+export const users = pgTable('users', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    email: varchar('email', { length: 256 }).notNull().unique(),
+    roleId: varchar('role_id', { length: 256 }).notNull().references(() => roles.id),
+    status: varchar('status', { length: 50 }).notNull().default('نشط'),
+    passwordHash: text('password_hash').notNull(),
+    avatarUrl: text('avatar_url'),
+    createdAt: timestamp('created_at').defaultNow(),
+});
     
 
 
 
+
+
+    

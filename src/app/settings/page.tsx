@@ -26,6 +26,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from '@/components/ui/textarea';
 import { availableCurrencies } from '@/contexts/currency-context'; 
 import { useCurrency } from '@/hooks/use-currency';
+import { addUser, updateUser, addRole, updateRole, deleteRole } from './actions';
+import type { UserFormValues } from './actions';
 
 const modules = ["الحسابات", "المبيعات", "المشتريات", "المخزون", "الموارد البشرية", "التقارير", "الإعدادات"];
 const permissionsMap: { [key: string]: {name: string, key: string}[] } = {
@@ -47,7 +49,6 @@ const userSchema = z.object({
     password: z.string().optional().refine(val => !val || val.length >= 6, {message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل إذا تم إدخالها"}),
     avatarUrl: z.string().url().optional().or(z.literal('')),
 });
-type UserFormValues = z.infer<typeof userSchema>;
 
 const roleFormSchema = z.object({
     id: z.string().optional(),
@@ -64,15 +65,16 @@ interface InvoiceSettingsState {
   showPaymentTermsInFooter: boolean;
 }
 
-// Mock Data, to be replaced by data from `page.tsx`
-const mockInitialData = {
-    users: [],
-    roles: [],
-};
+interface SettingsPageProps {
+  initialData: {
+    users: UserFormValues[];
+    roles: Role[];
+  }
+}
 
-export default function SettingsPage() {
-  const [users, setUsers] = useState<UserFormValues[]>(mockInitialData.users);
-  const [roles, setRolesData] = useState<Role[]>(mockInitialData.roles);
+export default function SettingsPage({ initialData }: SettingsPageProps) {
+  const [users, setUsers] = useState<UserFormValues[]>(initialData.users);
+  const [roles, setRolesData] = useState<Role[]>(initialData.roles);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedRolePermissions, setSelectedRolePermissions] = useState<string[]>([]);
   const [showManageUserDialog, setShowManageUserDialog] = useState(false);
@@ -147,6 +149,11 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
+    setUsers(initialData.users);
+    setRolesData(initialData.roles);
+  }, [initialData]);
+
+  useEffect(() => {
     if (showManageUserDialog) {
       if (userToEdit) userForm.reset(userToEdit);
       else userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password: "", avatarUrl:"" });
@@ -171,25 +178,65 @@ export default function SettingsPage() {
     }
   }, [selectedRole]);
 
-  const handleUserSubmit = (values: UserFormValues) => {
-    toast({ title: "متوقف مؤقتاً", description: "إدارة المستخدمين معطلة حالياً.", variant: "destructive"});
+  const handleUserSubmit = async (values: UserFormValues) => {
+    try {
+      if (userToEdit) {
+        await updateUser({ ...values, id: userToEdit.id! });
+        toast({ title: "تم التعديل", description: "تم تعديل المستخدم بنجاح." });
+      } else {
+        if (!values.password) {
+          userForm.setError("password", { type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد." });
+          return;
+        }
+        await addUser(values);
+        toast({ title: "تم الإنشاء", description: "تم إنشاء المستخدم بنجاح." });
+      }
+      setShowManageUserDialog(false);
+      setUserToEdit(null);
+    } catch(e) {
+      toast({ title: "خطأ", description: "لم يتم حفظ المستخدم.", variant: "destructive" });
+    }
   };
 
-  const handleToggleUserStatus = (userId: string) => {
-    toast({ title: "متوقف مؤقتاً", description: "إدارة المستخدمين معطلة حالياً.", variant: "destructive"});
+  const handleToggleUserStatus = async (user: UserFormValues) => {
+    try {
+      const newStatus = user.status === "نشط" ? "غير نشط" : "نشط";
+      await updateUser({ ...user, status: newStatus });
+      toast({ title: "تم تحديث الحالة", description: `تم تحديث حالة المستخدم ${user.name} إلى ${newStatus}.` });
+    } catch (e) {
+       toast({ title: "خطأ", description: "لم يتم تحديث حالة المستخدم.", variant: "destructive" });
+    }
   };
 
   const handleResetPassword = (userId: string) => {
-    toast({ title: "متوقف مؤقتاً", description: "إدارة المستخدمين معطلة حالياً.", variant: "destructive"});
+    toast({ title: "ميزة قيد التطوير", description: "إعادة تعيين كلمة المرور ستتوفر قريباً.", variant: "default"});
   };
 
 
-  const handleRoleSubmit = (values: RoleFormValues) => {
-    toast({ title: "متوقف مؤقتاً", description: "إدارة الأدوار معطلة حالياً.", variant: "destructive"});
+  const handleRoleSubmit = async (values: RoleFormValues) => {
+    try {
+      if (roleToEdit) {
+        await updateRole({ ...values, id: roleToEdit.id!, permissions: roleToEdit.permissions }); // Keep existing permissions on update
+        toast({ title: "تم التعديل", description: "تم تعديل الدور بنجاح." });
+      } else {
+        await addRole({ ...values, permissions: [] }); // New role with no permissions
+        toast({ title: "تم الإنشاء", description: "تم إنشاء الدور بنجاح." });
+      }
+      setShowManageRoleDialog(false);
+      setRoleToEdit(null);
+    } catch(e) {
+      toast({ title: "خطأ", description: "لم يتم حفظ الدور.", variant: "destructive" });
+    }
   };
 
-  const handleDeleteRole = (roleId: string) => {
-      toast({ title: "متوقف مؤقتاً", description: "إدارة الأدوار معطلة حالياً.", variant: "destructive"});
+  const handleDeleteRole = async (roleId: string) => {
+    try {
+      await deleteRole(roleId);
+      toast({ title: "تم الحذف", description: "تم حذف الدور.", variant: "destructive" });
+      if(selectedRole?.id === roleId) setSelectedRole(null);
+    } catch (e: any) {
+      toast({ title: "خطأ", description: e.message, variant: "destructive"});
+    }
   };
 
   const handleSelectRoleForPermissions = (role: Role) => {
@@ -208,16 +255,14 @@ export default function SettingsPage() {
   };
   
 
-  const handleSaveRolePermissions = () => {
+  const handleSaveRolePermissions = async () => {
     if (selectedRole) {
-      const updatedRole = { ...selectedRole, permissions: selectedRolePermissions };
-      setRolesData(prevRoles =>
-        prevRoles.map(r =>
-          r.id === selectedRole.id ? updatedRole : r
-        )
-      );
-      setSelectedRole(updatedRole); 
-      toast({ title: "تم الحفظ", description: `تم حفظ صلاحيات الدور ${selectedRole.name}.` });
+      try {
+        await updateRole({ ...selectedRole, permissions: selectedRolePermissions });
+        toast({ title: "تم الحفظ", description: `تم حفظ صلاحيات الدور ${selectedRole.name}.` });
+      } catch(e) {
+         toast({ title: "خطأ", description: "لم يتم حفظ الصلاحيات.", variant: "destructive" });
+      }
     }
   };
   
@@ -451,13 +496,13 @@ export default function SettingsPage() {
                           <Badge variant={user.status === "نشط" ? "default" : "outline"}>{user.status}</Badge>
                         </TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المستخدم" onClick={() => {setUserToEdit(user as any); setShowManageUserDialog(true);}}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المستخدم" onClick={() => {setUserToEdit(user); setShowManageUserDialog(true);}}>
                             <Edit className="h-4 w-4" />
                           </Button>
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إعادة تعيين كلمة المرور" onClick={() => handleResetPassword(user.id!)}>
                             <KeyRound className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title={user.status === "نشط" ? "تعطيل الحساب" : "تفعيل الحساب"} onClick={() => handleToggleUserStatus(user.id!)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title={user.status === "نشط" ? "تعطيل الحساب" : "تفعيل الحساب"} onClick={() => handleToggleUserStatus(user)}>
                             {user.status === "نشط" ? <ToggleLeft className="h-5 w-5 text-destructive" /> : <ToggleRight className="h-5 w-5 text-green-600" />}
                           </Button>
                         </TableCell>
@@ -608,3 +653,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
