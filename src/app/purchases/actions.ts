@@ -2,7 +2,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { db, connectToTenantDb } from '@/db';
 import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, products, purchaseReturns, purchaseReturnItems } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -105,9 +105,17 @@ const purchaseReturnSchema = z.object({
 });
 type PurchaseReturnFormValues = z.infer<typeof purchaseReturnSchema>;
 
+async function getDb() {
+  // This would come from session in a real app
+  const tenantId = 'T001';
+  const { db } = await connectToTenantDb(tenantId);
+  return db;
+}
+
 
 // --- Supplier Actions ---
 export async function addSupplier(supplierData: SupplierFormValues) {
+  const db = await getDb();
   const newSupplier = {
     ...supplierData,
     id: `SUP${Date.now()}`,
@@ -117,6 +125,7 @@ export async function addSupplier(supplierData: SupplierFormValues) {
 }
 
 export async function updateSupplier(supplierData: SupplierFormValues) {
+  const db = await getDb();
   if (!supplierData.id) {
     throw new Error("Supplier ID is required for updating.");
   }
@@ -125,6 +134,7 @@ export async function updateSupplier(supplierData: SupplierFormValues) {
 }
 
 export async function deleteSupplier(supplierId: string) {
+  const db = await getDb();
   // You might want to add a check here to ensure the supplier isn't linked to any purchase orders.
   await db.delete(suppliers).where(eq(suppliers.id, supplierId));
   revalidatePath('/purchases');
@@ -133,6 +143,7 @@ export async function deleteSupplier(supplierId: string) {
 
 // --- Purchase Order Actions ---
 export async function addPurchaseOrder(poData: PurchaseOrderFormValues) {
+  const db = await getDb();
   const newPoId = `PO${Date.now()}`;
   await db.transaction(async (tx) => {
     await tx.insert(purchaseOrders).values({
@@ -161,6 +172,7 @@ export async function addPurchaseOrder(poData: PurchaseOrderFormValues) {
 }
 
 export async function updatePurchaseOrder(poData: PurchaseOrderFormValues) {
+    const db = await getDb();
     if (!poData.id) {
         throw new Error("PO ID is required for updating.");
     }
@@ -193,6 +205,7 @@ export async function updatePurchaseOrder(poData: PurchaseOrderFormValues) {
 }
 
 export async function deletePurchaseOrder(poId: string) {
+    const db = await getDb();
     await db.transaction(async (tx) => {
         await tx.delete(purchaseOrderItems).where(eq(purchaseOrderItems.poId, poId));
         await tx.delete(purchaseOrders).where(eq(purchaseOrders.id, poId));
@@ -201,6 +214,7 @@ export async function deletePurchaseOrder(poId: string) {
 }
 
 export async function updatePurchaseOrderStatus(poId: string, status: PurchaseOrderFormValues['status']) {
+    const db = await getDb();
     await db.update(purchaseOrders).set({ status }).where(eq(purchaseOrders.id, poId));
     revalidatePath('/purchases');
 }
@@ -208,6 +222,7 @@ export async function updatePurchaseOrderStatus(poId: string, status: PurchaseOr
 
 // --- Supplier Invoice Actions ---
 export async function addSupplierInvoice(invoiceData: SupplierInvoiceFormValues) {
+  const db = await getDb();
   const newInvoiceId = `INV-S${Date.now()}`;
   await db.transaction(async (tx) => {
     await tx.insert(supplierInvoices).values({
@@ -240,6 +255,7 @@ export async function addSupplierInvoice(invoiceData: SupplierInvoiceFormValues)
 }
 
 export async function updateSupplierInvoice(invoiceData: SupplierInvoiceFormValues) {
+  const db = await getDb();
   if (!invoiceData.id) {
     throw new Error("Supplier Invoice ID is required for updating.");
   }
@@ -275,6 +291,7 @@ export async function updateSupplierInvoice(invoiceData: SupplierInvoiceFormValu
 }
 
 export async function deleteSupplierInvoice(invoiceId: string) {
+  const db = await getDb();
   await db.transaction(async (tx) => {
     await tx.delete(supplierInvoiceItems).where(eq(supplierInvoiceItems.invoiceId, invoiceId));
     await tx.delete(supplierInvoices).where(eq(supplierInvoices.id, invoiceId));
@@ -288,6 +305,7 @@ export async function updateSupplierInvoicePayment(
   newPaidAmount: number,
   newStatus: 'مدفوع' | 'مدفوع جزئياً'
 ) {
+  const db = await getDb();
   await db.update(supplierInvoices)
     .set({
       paidAmount: String(newPaidAmount),
@@ -300,6 +318,7 @@ export async function updateSupplierInvoicePayment(
 
 // --- Goods Received Note (GRN) Actions ---
 export async function addGoodsReceivedNote(grnData: GoodsReceivedNoteFormValues) {
+    const db = await getDb();
     const newGrnId = `GRN${Date.now()}`;
     await db.transaction(async (tx) => {
         await tx.insert(goodsReceivedNotes).values({
@@ -356,11 +375,13 @@ export async function addGoodsReceivedNote(grnData: GoodsReceivedNoteFormValues)
 
 
 export async function updateGoodsReceivedNoteStatus(grnId: string, status: 'مستلم جزئياً' | 'مستلم بالكامل') {
+    const db = await getDb();
     await db.update(goodsReceivedNotes).set({ status }).where(eq(goodsReceivedNotes.id, grnId));
     revalidatePath('/purchases');
 }
 
 export async function deleteGoodsReceivedNote(grnId: string) {
+    const db = await getDb();
     // Note: In a real app, deleting a GRN should reverse the inventory update.
     // This is a simplified version.
     await db.transaction(async (tx) => {
@@ -373,6 +394,7 @@ export async function deleteGoodsReceivedNote(grnId: string) {
 
 // --- Purchase Return Actions ---
 export async function addPurchaseReturn(returnData: PurchaseReturnFormValues) {
+  const db = await getDb();
   const newReturnId = `PR${Date.now()}`;
   await db.transaction(async (tx) => {
     await tx.insert(purchaseReturns).values({
@@ -398,6 +420,7 @@ export async function addPurchaseReturn(returnData: PurchaseReturnFormValues) {
 }
 
 export async function updatePurchaseReturn(returnData: PurchaseReturnFormValues) {
+  const db = await getDb();
   if (!returnData.id) throw new Error("Return ID is required for updating.");
   await db.transaction(async (tx) => {
     await tx.update(purchaseReturns).set({
@@ -425,6 +448,7 @@ export async function updatePurchaseReturn(returnData: PurchaseReturnFormValues)
 }
 
 export async function deletePurchaseReturn(returnId: string) {
+    const db = await getDb();
     const pr = await db.query.purchaseReturns.findFirst({ where: eq(purchaseReturns.id, returnId) });
     if (pr?.status !== 'مسودة') throw new Error("لا يمكن حذف مرتجع معتمد أو معالج.");
     await db.transaction(async (tx) => {
@@ -435,6 +459,7 @@ export async function deletePurchaseReturn(returnId: string) {
 }
 
 export async function approvePurchaseReturn(returnId: string) {
+    const db = await getDb();
     const pr = await db.query.purchaseReturns.findFirst({ where: eq(purchaseReturns.id, returnId), with: { items: true } });
     if (!pr) throw new Error("لم يتم العثور على مرتجع الشراء.");
     if (pr.status !== 'مسودة') throw new Error("يمكن فقط اعتماد المرتجعات التي في حالة 'مسودة'.");
@@ -443,6 +468,10 @@ export async function approvePurchaseReturn(returnId: string) {
         await tx.update(purchaseReturns).set({ status: 'معتمد' }).where(eq(purchaseReturns.id, returnId));
         // Decrease inventory
         for (const item of pr.items) {
+             const product = await tx.query.products.findFirst({ where: eq(products.id, item.itemId), columns: { quantity: true, name: true }});
+            if (!product || product.quantity < item.quantity) {
+                throw new Error(`الكمية المراد إرجاعها للمنتج: ${product?.name || item.itemId} غير متوفرة في المخزون. الكمية الحالية: ${product?.quantity || 0}`);
+            }
             await tx.update(products)
                 .set({ quantity: sql`${products.quantity} - ${item.quantity}` })
                 .where(eq(products.id, item.itemId));
@@ -451,4 +480,3 @@ export async function approvePurchaseReturn(returnId: string) {
     revalidatePath('/purchases');
     revalidatePath('/inventory');
 }
-
