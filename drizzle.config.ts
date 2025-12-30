@@ -578,5 +578,3 @@ CREATE TABLE IF NOT EXISTS disciplinary_warnings (
     issuing_manager VARCHAR(256) NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'مسودة'
 );
-
-    

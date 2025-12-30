@@ -1,0 +1,297 @@
+
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PlusCircle, Edit, Trash2, Search, Building2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import type { Tenant, TenantSubscribedModule, Module } from '@/types/saas';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { addTenant, updateTenant, deleteTenant } from './actions';
+
+const tenantSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "اسم الشركة مطلوب"),
+  email: z.string().email("بريد إلكتروني غير صالح"),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  vatNumber: z.string().optional(),
+  isActive: z.boolean().default(true),
+  subscriptionEndDate: z.date().optional(),
+  subscribedModules: z.array(z.object({
+    moduleId: z.string(), // This will store the module.key
+    subscribed: z.boolean(),
+  })).default([]),
+  billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
+});
+type TenantFormValues = z.infer<typeof tenantSchema>;
+
+interface ClientProps {
+  initialData: {
+    tenants: Tenant[];
+    tenantModuleSubscriptions: Record<string, TenantSubscribedModule[]>;
+    allAvailableModules: Module[];
+  }
+}
+
+export default function TenantsPageClient({ initialData }: ClientProps) {
+  const [tenants, setTenants] = useState<Tenant[]>(initialData.tenants);
+  const [tenantModuleSubscriptions, setTenantModuleSubscriptions] = useState<Record<string, TenantSubscribedModule[]>>(initialData.tenantModuleSubscriptions);
+  const [allAvailableModules] = useState<Module[]>(initialData.allAvailableModules);
+
+  const [showManageTenantDialog, setShowManageTenantDialog] = useState(false);
+  const [tenantToEdit, setTenantToEdit] = useState<TenantFormValues | null>(null);
+  const { toast } = useToast();
+
+  const form = useForm<TenantFormValues>({
+    resolver: zodResolver(tenantSchema),
+  });
+
+  const { fields: subscribedModulesFields } = useFieldArray({
+    control: form.control,
+    name: "subscribedModules",
+  });
+
+  useEffect(() => {
+    setTenants(initialData.tenants);
+    setTenantModuleSubscriptions(initialData.tenantModuleSubscriptions);
+  }, [initialData]);
+
+
+  useEffect(() => {
+    if (showManageTenantDialog) {
+      if (tenantToEdit && tenantToEdit.id) {
+        const currentTenantSubs = tenantModuleSubscriptions[tenantToEdit.id] || [];
+        const initialFormModules = allAvailableModules.map(mod => {
+          const sub = currentTenantSubs.find(s => s.moduleId === mod.key);
+          return { moduleId: mod.key, subscribed: sub ? sub.subscribed : false };
+        });
+        form.reset({
+          ...tenantToEdit,
+          subscribedModules: initialFormModules,
+        });
+      } else {
+        const initialFormModules = allAvailableModules.map(mod => ({
+          moduleId: mod.key,
+          subscribed: false,
+        }));
+        form.reset({
+          name: "", email: "", isActive: true, phone: "", address: "", vatNumber: "",
+          subscribedModules: initialFormModules,
+          billingCycle: "yearly",
+          subscriptionEndDate: undefined,
+        });
+      }
+    }
+  }, [tenantToEdit, showManageTenantDialog, tenantModuleSubscriptions, form, allAvailableModules]);
+
+
+  const handleTenantSubmit = async (values: TenantFormValues) => {
+    try {
+      if (tenantToEdit && tenantToEdit.id) {
+        await updateTenant({ ...values, id: tenantToEdit.id });
+        toast({ title: "تم التعديل", description: `تم تعديل بيانات الشركة: ${values.name}` });
+      } else {
+        await addTenant(values);
+        toast({ title: "تم الإنشاء", description: `تم إنشاء شركة جديدة: ${values.name}` });
+      }
+      setShowManageTenantDialog(false);
+      setTenantToEdit(null);
+    } catch (e) {
+      toast({ title: "خطأ", description: "لم يتم حفظ بيانات الشركة.", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteTenantAction = async (tenantId: string) => {
+    try {
+      await deleteTenant(tenantId);
+      toast({ title: "تم الحذف", description: `تم حذف الشركة ${tenantId}.`, variant: "destructive" });
+    } catch (e) {
+       toast({ title: "خطأ", description: "لم يتم حذف الشركة.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="container mx-auto py-6" dir="rtl">
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center text-2xl md:text-3xl">
+            <Building2 className="me-2 h-8 w-8 text-primary" />
+            إدارة الشركات (العملاء المستأجرين)
+          </CardTitle>
+          <CardDescription>
+            إدارة حسابات الشركات المشتركة في النظام، اشتراكاتهم، والصلاحيات الممنوحة لهم.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
+      <div className="my-6 flex justify-between items-center">
+        <h2 className="text-xl font-semibold">قائمة الشركات</h2>
+        <Dialog open={showManageTenantDialog} onOpenChange={(isOpen) => { setShowManageTenantDialog(isOpen); if (!isOpen) setTenantToEdit(null); }}>
+          <DialogTrigger asChild>
+            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setTenantToEdit(null); setShowManageTenantDialog(true); }}>
+              <PlusCircle className="me-2 h-4 w-4" /> إضافة شركة جديدة
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-2xl" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>{tenantToEdit ? 'تعديل بيانات شركة' : 'إضافة شركة جديدة'}</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleTenantSubmit)} className="space-y-4 py-4">
+                <ScrollArea className="max-h-[70vh] p-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-2">
+                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input placeholder="اسم الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                    <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني (للإدارة)</FormLabel><FormControl><Input type="email" placeholder="admin@company.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                    <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                    <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                     <FormField control={form.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                  </div>
+                  <Card className="mb-4">
+                    <CardHeader><CardTitle className="text-base">إعدادات الاشتراك</CardTitle></CardHeader>
+                    <CardContent className="space-y-3 p-4">
+                        <FormField control={form.control} name="billingCycle" render={({ field }) => (
+                            <FormItem><FormLabel>دورة الفوترة</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                    <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر دورة الفوترة"/></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="monthly">شهري</SelectItem>
+                                        <SelectItem value="yearly">سنوي</SelectItem>
+                                    </SelectContent>
+                                </Select><FormMessage/>
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="subscriptionEndDate" render={({ field }) => (
+                            <FormItem className="flex flex-col"><FormLabel>تاريخ انتهاء الاشتراك (اختياري)</FormLabel>
+                            <DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange} />
+                            <DialogDescriptionComponent className="text-xs text-muted-foreground">
+                                إذا ترك فارغاً، سيتم حسابه بناءً على دورة الفوترة من تاريخ الإنشاء/التجديد.
+                            </DialogDescriptionComponent>
+                            <FormMessage/>
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="isActive" render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>الحساب نشط؟</FormLabel>
+                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}/>
+                    </CardContent>
+                  </Card>
+                   <Card>
+                        <CardHeader><CardTitle className="text-base">الوحدات المشترك بها</CardTitle></CardHeader>
+                        <CardContent className="space-y-2 p-4">
+                            {subscribedModulesFields.map((formFieldItem, index) => {
+                                const moduleDetails = allAvailableModules.find(m => m.key === form.getValues(`subscribedModules.${index}.moduleId`));
+                                if (!moduleDetails || !moduleDetails.isRentable) {
+                                    return null;
+                                }
+                                return (
+                                    <FormField
+                                        key={formFieldItem.id}
+                                        control={form.control}
+                                        name={`subscribedModules.${index}.subscribed`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                                <div className="space-y-0.5">
+                                                    <FormLabel htmlFor={`subscribedModules.${index}.subscribed`}>{moduleDetails.name}</FormLabel>
+                                                    <DialogDescriptionComponent className="text-xs">
+                                                        شهري: {moduleDetails.priceMonthly} SAR / سنوي: {moduleDetails.priceYearly} SAR
+                                                    </DialogDescriptionComponent>
+                                                </div>
+                                                <FormControl>
+                                                    <Checkbox
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                        id={`subscribedModules.${index}.subscribed`}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                );
+                            })}
+                        </CardContent>
+                    </Card>
+                </ScrollArea>
+                <DialogFooter>
+                  <Button type="submit">{tenantToEdit ? 'حفظ التعديلات' : 'إضافة الشركة'}</Button>
+                  <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card className="shadow-md">
+        <CardContent className="pt-6">
+          <div className="mb-4">
+            <Input placeholder="بحث باسم الشركة أو البريد الإلكتروني..." className="max-w-sm bg-background" />
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>اسم الشركة</TableHead>
+                  <TableHead>البريد الإلكتروني</TableHead>
+                  <TableHead>الهاتف</TableHead>
+                  <TableHead>تاريخ انتهاء الاشتراك</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>الوحدات المشتركة</TableHead>
+                  <TableHead className="text-center">إجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tenants.map((tenant) => (
+                  <TableRow key={tenant.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium">{tenant.name}</TableCell>
+                    <TableCell>{tenant.email}</TableCell>
+                    <TableCell>{tenant.phone || '-'}</TableCell>
+                    <TableCell>{tenant.subscriptionEndDate ? new Date(tenant.subscriptionEndDate).toLocaleDateString('ar-SA') : 'غير محدد'}</TableCell>
+                    <TableCell>
+                      <Badge variant={tenant.isActive ? "default" : "outline"}>
+                        {tenant.isActive ? "نشط" : "غير نشط"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {tenantModuleSubscriptions[tenant.id!]?.filter(s => s.subscribed).map(s => allAvailableModules.find(m=>m.key === s.moduleId)?.name).join(', ') || 'لا يوجد'}
+                    </TableCell>
+                    <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setTenantToEdit(tenant as TenantFormValues); setShowManageTenantDialog(true); }}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent dir="rtl">
+                          <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف الشركة "{tenant.name}" وجميع بياناتها المرتبطة.</AlertDialogDescription></AlertDialogHeader>
+                          <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTenantAction(tenant.id!)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
