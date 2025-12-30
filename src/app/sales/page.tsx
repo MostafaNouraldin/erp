@@ -11,7 +11,24 @@ export default async function SalesPage() {
     try {
         const customersResult = await db.select().from(customersSchema);
         const invoicesResult = await db.select().from(salesInvoicesSchema);
-        const productsResult = await db.select().from(products);
+        const productsResult = await db.select({
+            id: products.id,
+            name: products.name,
+            sellingPrice: products.sellingPrice,
+            quantity: products.quantity,
+            category: products.category,
+            image: products.image,
+            dataAiHint: products.dataAiHint,
+            sku: products.sku,
+            description: products.description,
+            unit: products.unit,
+            costPrice: products.costPrice,
+            reorderLevel: products.reorderLevel,
+            location: products.location,
+            barcode: products.barcode,
+            supplierId: products.supplierId,
+            isRawMaterial: products.isRawMaterial,
+        }).from(products);
 
         // In a real app, you would fetch items for each invoice more efficiently
         // This is simplified for demonstration
