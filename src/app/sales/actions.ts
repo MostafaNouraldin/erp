@@ -3,7 +3,7 @@
 // src/app/sales/actions.ts
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { customers, salesInvoices, salesInvoiceItems, quotations, quotationItems, salesOrders, salesOrderItems } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -85,36 +85,16 @@ const salesOrderSchema = z.object({
 });
 type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
 
-export async function addCustomer(customerData: CustomerFormValues) {
-  const newCustomer = {
-    ...customerData,
-    id: `CUST${Date.now()}`,
-    balance: String(customerData.balance),
-  };
-  await db.insert(customers).values(newCustomer);
-  revalidatePath('/sales');
-}
-
-export async function updateCustomer(customerData: CustomerFormValues) {
-    if (!customerData.id) {
-        throw new Error("Customer ID is required for updating.");
-    }
-    const updatedCustomer = {
-        ...customerData,
-        balance: String(customerData.balance),
-    };
-  await db.update(customers).set(updatedCustomer).where(eq(customers.id, customerData.id));
-  revalidatePath('/sales');
-}
-
-export async function deleteCustomer(customerId: string) {
-  // In a real app, you might want to check if the customer has invoices before deleting.
-  await db.delete(customers).where(eq(customers.id, customerId));
-  revalidatePath('/sales');
+async function getDb() {
+  // This would come from session in a real app
+  const tenantId = 'T001';
+  const { db } = await connectToTenantDb(tenantId);
+  return db;
 }
 
 
 export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
+  const db = await getDb();
   const newInvoiceId = `INV-C${Date.now()}`;
   const totalAmount = invoiceData.items.reduce((sum, item) => sum + item.total, 0);
 
@@ -140,9 +120,11 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
   });
 
   revalidatePath('/sales');
+  revalidatePath('/accounts-payable-receivable');
 }
 
 export async function updateSalesInvoice(invoiceData: InvoiceFormValues) {
+  const db = await getDb();
   if (!invoiceData.id) {
     throw new Error("Invoice ID is required for updating.");
   }
@@ -173,9 +155,11 @@ export async function updateSalesInvoice(invoiceData: InvoiceFormValues) {
   });
 
   revalidatePath('/sales');
+  revalidatePath('/accounts-payable-receivable');
 }
 
 export async function deleteSalesInvoice(invoiceId: string) {
+    const db = await getDb();
     await db.transaction(async (tx) => {
         // First delete items associated with the invoice due to foreign key constraints
         await tx.delete(salesInvoiceItems).where(eq(salesInvoiceItems.invoiceId, invoiceId));
@@ -183,10 +167,12 @@ export async function deleteSalesInvoice(invoiceId: string) {
         await tx.delete(salesInvoices).where(eq(salesInvoices.id, invoiceId));
     });
     revalidatePath('/sales');
+    revalidatePath('/accounts-payable-receivable');
 }
 
 // Quotation Actions
 export async function addQuotation(values: QuotationFormValues) {
+  const db = await getDb();
   const newId = `QT${Date.now()}`;
   await db.transaction(async (tx) => {
     await tx.insert(quotations).values({ ...values, id: newId, numericTotalAmount: String(values.numericTotalAmount) });
@@ -196,6 +182,7 @@ export async function addQuotation(values: QuotationFormValues) {
 }
 
 export async function updateQuotation(values: QuotationFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID required");
   await db.transaction(async (tx) => {
     await tx.update(quotations).set({ ...values, numericTotalAmount: String(values.numericTotalAmount) }).where(eq(quotations.id, values.id!));
@@ -206,6 +193,7 @@ export async function updateQuotation(values: QuotationFormValues) {
 }
 
 export async function deleteQuotation(id: string) {
+  const db = await getDb();
   await db.transaction(async (tx) => {
     await tx.delete(quotationItems).where(eq(quotationItems.quoteId, id));
     await tx.delete(quotations).where(eq(quotations.id, id));
@@ -216,6 +204,7 @@ export async function deleteQuotation(id: string) {
 
 // Sales Order Actions
 export async function addSalesOrder(values: SalesOrderFormValues) {
+  const db = await getDb();
   const newId = `SO${Date.now()}`;
   await db.transaction(async (tx) => {
     await tx.insert(salesOrders).values({ ...values, id: newId, numericTotalAmount: String(values.numericTotalAmount) });
@@ -225,6 +214,7 @@ export async function addSalesOrder(values: SalesOrderFormValues) {
 }
 
 export async function updateSalesOrder(values: SalesOrderFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID required");
   await db.transaction(async (tx) => {
     await tx.update(salesOrders).set({ ...values, numericTotalAmount: String(values.numericTotalAmount) }).where(eq(salesOrders.id, values.id!));
@@ -235,6 +225,7 @@ export async function updateSalesOrder(values: SalesOrderFormValues) {
 }
 
 export async function deleteSalesOrder(id: string) {
+  const db = await getDb();
   await db.transaction(async (tx) => {
     await tx.delete(salesOrderItems).where(eq(salesOrderItems.soId, id));
     await tx.delete(salesOrders).where(eq(salesOrders.id, id));

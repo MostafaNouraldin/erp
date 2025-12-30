@@ -15,8 +15,9 @@ import { ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlu
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; 
-import type { Invoice as SalesInvoice } from '@/app/sales/SalesClientComponent';
 import { useCurrency } from '@/hooks/use-currency';
+import { addSalesInvoice } from '@/app/sales/actions';
+import { addJournalEntry } from '@/app/general-ledger/actions';
 
 const CASH_CUSTOMER_ID = "__cash_customer__";
 
@@ -135,97 +136,69 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const handleProcessPayment = () => {
+  const handleProcessPayment = async () => {
     const transactionId = `TRX${Date.now().toString().slice(-5)}`;
     const customer = customers.find(c => c.id === selectedCustomerId);
     const customerNameForInvoice = selectedCustomerId === CASH_CUSTOMER_ID ? 'عميل نقدي' : (customer?.name || 'عميل غير محدد');
 
-    if (paymentMethod === 'deferred') {
-        if (!selectedCustomerId || selectedCustomerId === CASH_CUSTOMER_ID) {
-            toast({
-                title: "خطأ",
-                description: "الرجاء اختيار عميل معرف لعملية البيع الآجل.",
-                variant: "destructive",
-            });
-            return;
-        }
-        
-        const deferredInvoice: SalesInvoice = {
-            id: `INV-POS-${transactionId}`,
-            customerId: selectedCustomerId,
-            date: new Date(),
-            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days later
-            items: cart.map(item => ({ 
-                itemId: item.id, 
-                description: item.name, 
-                quantity: item.quantity, 
-                unitPrice: item.price, 
-                total: item.price * item.quantity 
-            })), 
-            numericTotalAmount: totalAmount,
-            status: "غير مدفوع",
-            isDeferredPayment: true,
-            notes: `فاتورة آجلة من نقطة البيع للعميل: ${customerNameForInvoice}`,
-            source: "POS",
-        };
-        
-        if (typeof window !== 'undefined') {
-            const event = new CustomEvent('addExternalSalesInvoice', { detail: deferredInvoice });
-            window.dispatchEvent(event);
-        }
-
+    const isDeferred = paymentMethod === 'deferred';
+    if (isDeferred && (!selectedCustomerId || selectedCustomerId === CASH_CUSTOMER_ID)) {
         toast({
-            title: "تم تسجيل البيع الآجل بنجاح!",
-            description: `تم إنشاء فاتورة آجلة رقم ${deferredInvoice.id} للعميل ${customerNameForInvoice}.`,
-            variant: "default",
+            title: "خطأ",
+            description: "الرجاء اختيار عميل معرف لعملية البيع الآجل.",
+            variant: "destructive",
         });
-
-    } else {
-        // Standard payment processing
-        const settledInvoice: SalesInvoice = {
-            id: `INV-POS-${transactionId}`,
-            customerId: selectedCustomerId || CASH_CUSTOMER_ID,
-            date: new Date(),
-            dueDate: new Date(), // Due immediately for cash/card
-            items: cart.map(item => ({ 
-                itemId: item.id, 
-                description: item.name, 
-                quantity: item.quantity, 
-                unitPrice: item.price, 
-                total: item.price * item.quantity 
-            })),
-            numericTotalAmount: totalAmount,
-            status: "مدفوع",
-            isDeferredPayment: false,
-            notes: `فاتورة من نقطة البيع للعميل: ${customerNameForInvoice} - طريقة الدفع: ${paymentMethod}`,
-            source: "POS",
-        };
-        
-        if (typeof window !== 'undefined') {
-            const event = new CustomEvent('addExternalSalesInvoice', { detail: settledInvoice });
-            window.dispatchEvent(event);
-        }
-
-        toast({
-            title: "تمت عملية الدفع بنجاح!",
-            description: `تم إنشاء الفاتورة رقم ${settledInvoice.id} والمبلغ ${totalAmount.toFixed(2)} SAR.`,
-            variant: "default",
-        });
+        return;
     }
     
-    const newTransaction: RecentTransaction = {
-        id: transactionId,
-        time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
-        items: cart.reduce((sum, item) => sum + item.quantity, 0),
-        total: totalAmount,
-        paymentMethod: paymentMethod === 'deferred' ? 'آجل' : (paymentMethod || "غير محدد"),
-        customerName: selectedCustomerId === CASH_CUSTOMER_ID ? undefined : customer?.name,
+    const invoiceData = {
+        customerId: selectedCustomerId || CASH_CUSTOMER_ID,
+        date: new Date(),
+        dueDate: isDeferred ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : new Date(),
+        items: cart.map(item => ({ 
+            itemId: item.id, 
+            description: item.name, 
+            quantity: item.quantity, 
+            unitPrice: item.price, 
+            total: item.price * item.quantity 
+        })),
+        numericTotalAmount: totalAmount,
+        status: isDeferred ? "غير مدفوع" as const : "مدفوع" as const,
+        isDeferredPayment: isDeferred,
+        notes: `فاتورة من نقطة البيع للعميل: ${customerNameForInvoice} - طريقة الدفع: ${paymentMethod}`,
+        source: "POS" as const,
     };
-    setRecentTransactions(prev => [newTransaction, ...prev.slice(0, 4)]);
-    clearCart();
+
+    try {
+        await addSalesInvoice(invoiceData);
+
+        toast({
+            title: isDeferred ? "تم تسجيل البيع الآجل بنجاح!" : "تمت عملية الدفع بنجاح!",
+            description: `تم إنشاء فاتورة للعميل ${customerNameForInvoice}.`,
+            variant: "default",
+        });
+
+        const newTransaction: RecentTransaction = {
+            id: transactionId,
+            time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+            items: cart.reduce((sum, item) => sum + item.quantity, 0),
+            total: totalAmount,
+            paymentMethod: paymentMethod === 'deferred' ? 'آجل' : (paymentMethod || "غير محدد"),
+            customerName: selectedCustomerId === CASH_CUSTOMER_ID ? undefined : customer?.name,
+        };
+        setRecentTransactions(prev => [newTransaction, ...prev.slice(0, 4)]);
+        clearCart();
+
+    } catch (error) {
+        toast({
+            title: "خطأ في إنشاء الفاتورة",
+            description: "لم يتمكن النظام من إنشاء الفاتورة. يرجى المحاولة مرة أخرى.",
+            variant: "destructive",
+        });
+    }
   };
 
-  const handlePostToGL = () => {
+  const handlePostToGL = async () => {
     const settledSalesTotal = recentTransactions
         .filter(trx => trx.paymentMethod === "نقدي" || trx.paymentMethod === "بطاقة" || trx.paymentMethod === "تحويل")
         .reduce((sum, trx) => sum + trx.total, 0);
@@ -240,7 +213,6 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
     }
     
     const journalEntryData = {
-        id: `POS_JV_${Date.now().toString().slice(-5)}`,
         date: new Date(),
         description: `ترحيل إجمالي مبيعات نقاط البيع (نقدية/بطاقة/تحويل) - ${new Date().toLocaleDateString('ar-SA')}`,
         lines: [
@@ -248,21 +220,25 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
             { accountId: "4010", debit: 0, credit: settledSalesTotal, description: "إيراد مبيعات نقاط البيع" }, 
         ],
         totalAmount: settledSalesTotal,
-        status: "مرحل",
-        sourceModule: "POS",
+        status: "مرحل" as const,
+        sourceModule: "POS" as const,
         sourceDocumentId: `POS_SETTLED_${Date.now().toString().slice(-5)}`
     };
     
-    if (typeof window !== 'undefined') {
-       const event = new CustomEvent('addExternalJournalEntry', { detail: journalEntryData });
-       window.dispatchEvent(event);
+    try {
+        await addJournalEntry(journalEntryData);
+        toast({
+            title: "تم ترحيل المبيعات المسددة",
+            description: `تم ترحيل قيد إجمالي المبيعات بمبلغ ${formatCurrency(settledSalesTotal)}.`,
+            variant: "default",
+        });
+    } catch (error) {
+        toast({
+            title: "خطأ في الترحيل",
+            description: "لم يتمكن النظام من ترحيل القيد إلى الحسابات العامة.",
+            variant: "destructive",
+        });
     }
-
-    toast({
-        title: "تم طلب ترحيل المبيعات المسددة",
-        description: `سيتم ترحيل قيد إجمالي المبيعات النقدية/بالبطاقة/تحويل بمبلغ ${settledSalesTotal.toFixed(2)} SAR.`,
-        variant: "default",
-    });
   };
 
 

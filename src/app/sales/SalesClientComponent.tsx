@@ -18,13 +18,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle, Tag, Eye } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { addCustomer, updateCustomer, deleteCustomer, addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, addQuotation, updateQuotation, deleteQuotation, addSalesOrder, updateSalesOrder, deleteSalesOrder } from './actions';
+import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, addQuotation, updateQuotation, deleteQuotation, addSalesOrder, updateSalesOrder, deleteSalesOrder } from './actions';
+import { addCustomer, updateCustomer, deleteCustomer } from '../customers/actions';
 import type { Product } from '@/db/schema';
 
 
@@ -219,35 +220,6 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   const [customerToEdit, setCustomerToEdit] = useState<CustomerFormValues | null>(null);
 
   const { toast } = useToast();
-
-  useEffect(() => {
-    const handleAddInvoice = (event: Event) => {
-        const customEvent = event as CustomEvent<Invoice>;
-        const newInvoice = customEvent.detail;
-        // Ensure date objects are valid before adding to state
-        const processedInvoice = {
-            ...newInvoice,
-            date: new Date(newInvoice.date),
-            dueDate: new Date(newInvoice.dueDate),
-        };
-        setInvoicesData(prev => [processedInvoice, ...prev]);
-        toast({
-            title: "فاتورة جديدة من نقاط البيع",
-            description: `تم استلام الفاتورة رقم ${newInvoice.id}.`,
-        });
-    };
-
-    if (typeof window !== 'undefined') {
-        window.addEventListener('addExternalSalesInvoice', handleAddInvoice);
-    }
-
-    return () => {
-        if (typeof window !== 'undefined') {
-            window.removeEventListener('addExternalSalesInvoice', handleAddInvoice);
-        }
-    };
-}, [toast]);
-
 
   useEffect(() => {
     setCustomers(initialData.customers);
