@@ -463,3 +463,5 @@ export const cashExpenses = pgTable('cash_expenses', {
     voucherNumber: varchar('voucher_number', { length: 256 }),
     status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
 });
+
+    

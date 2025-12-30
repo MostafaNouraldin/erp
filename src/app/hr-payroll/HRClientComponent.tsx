@@ -264,6 +264,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   const [selectedDisciplinaryForPrint, setSelectedDisciplinaryForPrint] = useState<DisciplinaryWarningFormValues | null>(null);
 
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
 
   const employeeForm = useForm<EmployeeFormValues>({ resolver: zodResolver(employeeSchema), defaultValues: employeeDefaultValues });
   const { fields: allowanceFormFields, append: appendAllowanceField, remove: removeAllowanceField } = useFieldArray({ control: employeeForm.control, name: "allowances" });
@@ -823,5 +824,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     </div>
   );
 }
+
+    
 
     
