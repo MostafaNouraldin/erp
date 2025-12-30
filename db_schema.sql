@@ -1,7 +1,10 @@
 -- This script is designed to be idempotent, meaning it can be run multiple times without causing errors.
--- It uses "CREATE TABLE IF NOT EXISTS" for all table creations.
+-- It uses `CREATE TABLE IF NOT EXISTS` to avoid errors if tables already exist.
 
--- --- System Administration & Settings Tables (Typically in 'main' schema) ---
+-- ==============================================================
+--  MAIN DATABASE SCHEMA (For managing tenants and system admins)
+-- ==============================================================
+
 CREATE TABLE IF NOT EXISTS tenants (
     id VARCHAR(256) PRIMARY KEY,
     name VARCHAR(256) NOT NULL,
@@ -14,14 +17,41 @@ CREATE TABLE IF NOT EXISTS tenants (
     vat_number VARCHAR(50)
 );
 
+CREATE TABLE IF NOT EXISTS roles (
+    id VARCHAR(256) PRIMARY KEY,
+    name VARCHAR(256) NOT NULL UNIQUE,
+    description TEXT,
+    permissions JSONB DEFAULT '[]'
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(256) PRIMARY KEY,
+    name VARCHAR(256) NOT NULL,
+    email VARCHAR(256) NOT NULL UNIQUE,
+    role_id VARCHAR(256) NOT NULL REFERENCES roles(id),
+    status VARCHAR(50) NOT NULL DEFAULT 'نشط',
+    password_hash TEXT NOT NULL,
+    avatar_url TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS tenant_module_subscriptions (
     id SERIAL PRIMARY KEY,
     tenant_id VARCHAR(256) NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     module_key VARCHAR(100) NOT NULL,
     subscribed BOOLEAN NOT NULL DEFAULT false
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS tenant_module_unique_idx ON tenant_module_subscriptions (tenant_id, module_key);
+-- Add unique constraint separately to avoid errors on re-run if it exists
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'tenant_module_subscriptions_tenant_id_module_key_key'
+    ) THEN
+        ALTER TABLE tenant_module_subscriptions ADD UNIQUE (tenant_id, module_key);
+    END IF;
+END;
+$$;
 
 
 CREATE TABLE IF NOT EXISTS subscription_requests (
@@ -40,8 +70,20 @@ CREATE TABLE IF NOT EXISTS subscription_requests (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Insert Super Admin Role and User into the MAIN database if they don't exist
+INSERT INTO roles (id, name, description, permissions)
+VALUES ('ROLE_SUPER_ADMIN', 'Super Admin', 'Full system access, manages tenants and subscriptions.', '["admin.manage_tenants", "admin.manage_modules", "admin.manage_billing", "admin.manage_requests"]')
+ON CONFLICT (id) DO NOTHING;
 
--- --- Core Tenant-Specific Tables ---
+INSERT INTO users (id, name, email, role_id, password_hash)
+VALUES ('USER_SUPER_ADMIN', 'Super Admin', 'superadmin@example.com', 'ROLE_SUPER_ADMIN', 'hashed_superpassword')
+ON CONFLICT (email) DO NOTHING;
+
+
+-- ==============================================================
+--  TENANT DATABASE SCHEMA (For individual company data)
+-- ==============================================================
+-- The following tables should be created inside EACH tenant's database.
 
 CREATE TABLE IF NOT EXISTS roles (
     id VARCHAR(256) PRIMARY KEY,
@@ -149,8 +191,6 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
     is_active BOOLEAN NOT NULL DEFAULT true
 );
 
--- --- Sales & Purchases ---
-
 CREATE TABLE IF NOT EXISTS quotations (
   id VARCHAR(256) PRIMARY KEY,
   customer_id VARCHAR(256) NOT NULL REFERENCES customers(id),
@@ -256,8 +296,6 @@ CREATE TABLE IF NOT EXISTS supplier_invoice_items (
     unit_price NUMERIC(10, 2) NOT NULL,
     total NUMERIC(10, 2) NOT NULL
 );
-
--- --- HR & Payroll ---
 
 CREATE TABLE IF NOT EXISTS employee_allowances (
     id SERIAL PRIMARY KEY,
@@ -365,8 +403,6 @@ CREATE TABLE IF NOT EXISTS disciplinary_warnings (
     status VARCHAR(50) NOT NULL DEFAULT 'مسودة'
 );
 
--- --- Accounting ---
-
 CREATE TABLE IF NOT EXISTS journal_entries (
     id VARCHAR(256) PRIMARY KEY,
     date TIMESTAMP NOT NULL,
@@ -437,8 +473,6 @@ CREATE TABLE IF NOT EXISTS cash_expenses (
     status VARCHAR(50) NOT NULL DEFAULT 'مسودة'
 );
 
--- --- Projects ---
-
 CREATE TABLE IF NOT EXISTS projects (
     id VARCHAR(256) PRIMARY KEY,
     name VARCHAR(256) NOT NULL,
@@ -480,8 +514,6 @@ CREATE TABLE IF NOT EXISTS project_budget_items (
     spent NUMERIC(15, 2) NOT NULL DEFAULT 0,
     notes TEXT
 );
-
--- --- Production ---
 
 CREATE TABLE IF NOT EXISTS work_orders (
     id VARCHAR(256) PRIMARY KEY,
@@ -535,8 +567,6 @@ CREATE TABLE IF NOT EXISTS quality_checks (
     inspector_id VARCHAR(256) NOT NULL,
     notes TEXT
 );
-
--- --- Inventory Control ---
 
 CREATE TABLE IF NOT EXISTS inventory_adjustments (
     id VARCHAR(256) PRIMARY KEY,
@@ -600,3 +630,12 @@ CREATE TABLE IF NOT EXISTS purchase_return_items (
     reason TEXT,
     total NUMERIC(10, 2) NOT NULL
 );
+
+-- Insert default tenant admin role and user
+INSERT INTO roles (id, name, description, permissions)
+VALUES ('ROLE001', 'مدير النظام', 'صلاحيات كاملة على النظام.', '["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles", "projects.view", "projects.create", "projects.edit", "projects.delete", "production.view", "production.create", "production.edit", "production.delete", "pos.use"]')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO users (id, name, email, role_id, password_hash)
+VALUES ('USER001', 'مدير الشركة', 'manager@example.com', 'ROLE001', 'hashed_password')
+ON CONFLICT (email) DO NOTHING;

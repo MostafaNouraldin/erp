@@ -1,8 +1,14 @@
 
 
-import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex, pgSchema } from 'drizzle-orm/pg-core';
 
-// --- System Administration & Settings Tables (Typically in 'main' schema) ---
+// You can use the `pgSchema` function to declare a schema.
+// Here, we are declaring a schema named "main"
+export const mainSchema = pgSchema("main");
+export const tenantSchema = pgSchema("tenant");
+
+
+// --- System Administration & Settings Tables (MAIN SCHEMA) ---
 export const tenants = pgTable('tenants', {
     id: varchar('id', { length: 256 }).primaryKey(),
     name: varchar('name', { length: 256 }).notNull(),
@@ -14,6 +20,25 @@ export const tenants = pgTable('tenants', {
     address: text('address'),
     vatNumber: varchar('vat_number', { length: 50 }),
 });
+
+export const mainRoles = pgTable('roles', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull().unique(),
+    description: text('description'),
+    permissions: jsonb('permissions').default('[]'),
+});
+
+export const mainUsers = pgTable('users', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    email: varchar('email', { length: 256 }).notNull().unique(),
+    roleId: varchar('role_id', { length: 256 }).notNull().references(() => mainRoles.id),
+    status: varchar('status', { length: 50 }).notNull().default('نشط'),
+    passwordHash: text('password_hash').notNull(),
+    avatarUrl: text('avatar_url'),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
 
 export const tenantModuleSubscriptions = pgTable('tenant_module_subscriptions', {
     id: serial('id').primaryKey(),
