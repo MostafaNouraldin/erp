@@ -16,7 +16,6 @@ import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; 
 import type { Invoice as SalesInvoice } from '@/app/sales/SalesClientComponent';
-import type { JournalEntry as GLJournalEntry } from '@/app/general-ledger/GeneralLedgerClientComponent'; 
 import { useCurrency } from '@/hooks/use-currency';
 
 const CASH_CUSTOMER_ID = "__cash_customer__";
@@ -240,7 +239,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
         return;
     }
     
-    const journalEntryData: GLJournalEntry = {
+    const journalEntryData = {
         id: `POS_JV_${Date.now().toString().slice(-5)}`,
         date: new Date(),
         description: `ترحيل إجمالي مبيعات نقاط البيع (نقدية/بطاقة/تحويل) - ${new Date().toLocaleDateString('ar-SA')}`,
