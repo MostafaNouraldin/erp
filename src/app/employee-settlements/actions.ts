@@ -77,39 +77,48 @@ export async function postSettlementToGL(settlement: Settlement) {
         throw new Error("لا يمكن ترحيل تسوية ليست في حالة 'معتمدة'.");
     }
 
+    // Check if a journal entry already exists for this settlement
+    const existingEntry = await db.query.journalEntries.findFirst({
+        where: eq(journalEntries.sourceDocumentId, settlement.id!),
+    });
+    if (existingEntry) {
+        throw new Error("تم ترحيل هذه التسوية مسبقاً.");
+    }
+
     const employee = await db.query.employees.findFirst({ where: eq(employees.id, settlement.employeeId) });
     const employeeName = employee?.name || "غير محدد";
     const amount = settlement.amount;
 
-    let journalLines: Array<{accountId: string, debit: number, credit: number, description: string}> = [];
+    let journalLines: Array<{accountId: string, debit: string, credit: string, description: string}> = [];
     const defaultCashAccount = '1011'; // خزينة
     const defaultBankAccount = '1012'; // بنك
     const defaultSalaryPayableAccount = '2100'; // رواتب مستحقة
+    const stringAmount = String(amount);
 
     if (settlement.settlementType === "سلفة" || settlement.settlementType === "قرض") {
-        journalLines.push({ accountId: settlement.accountId, debit: amount, credit: 0, description: `إثبات ${settlement.settlementType} للموظف ${employeeName}` });
-        if (settlement.paymentMethod === "راتب") journalLines.push({ accountId: defaultSalaryPayableAccount, debit: 0, credit: amount, description: `إضافة قيمة ${settlement.settlementType} لراتب ${employeeName} (سيتم خصمها لاحقاً)` });
-        else if (settlement.paymentMethod === "نقدي") journalLines.push({ accountId: defaultCashAccount, debit: 0, credit: amount, description: `دفع ${settlement.settlementType} نقداً لـ ${employeeName}` });
-        else journalLines.push({ accountId: defaultBankAccount, debit: 0, credit: amount, description: `دفع ${settlement.settlementType} بنكياً لـ ${employeeName}` });
+        journalLines.push({ accountId: settlement.accountId, debit: stringAmount, credit: '0', description: `إثبات ${settlement.settlementType} للموظف ${employeeName}` });
+        if (settlement.paymentMethod === "راتب") journalLines.push({ accountId: defaultSalaryPayableAccount, debit: '0', credit: stringAmount, description: `إضافة قيمة ${settlement.settlementType} لراتب ${employeeName} (سيتم خصمها لاحقاً)` });
+        else if (settlement.paymentMethod === "نقدي") journalLines.push({ accountId: defaultCashAccount, debit: '0', credit: stringAmount, description: `دفع ${settlement.settlementType} نقداً لـ ${employeeName}` });
+        else journalLines.push({ accountId: defaultBankAccount, debit: '0', credit: stringAmount, description: `دفع ${settlement.settlementType} بنكياً لـ ${employeeName}` });
     } else if (settlement.settlementType === "مكافأة") {
-        journalLines.push({ accountId: settlement.accountId, debit: amount, credit: 0, description: `إثبات مصروف مكافأة للموظف ${employeeName}` });
-        if (settlement.paymentMethod === "راتب") journalLines.push({ accountId: defaultSalaryPayableAccount, debit: 0, credit: amount, description: `إضافة مكافأة لراتب ${employeeName}` });
-        else if (settlement.paymentMethod === "نقدي") journalLines.push({ accountId: defaultCashAccount, debit: 0, credit: amount, description: `دفع مكافأة نقداً لـ ${employeeName}` });
-        else journalLines.push({ accountId: defaultBankAccount, debit: 0, credit: amount, description: `دفع مكافأة بنكية لـ ${employeeName}` });
+        journalLines.push({ accountId: settlement.accountId, debit: stringAmount, credit: '0', description: `إثبات مصروف مكافأة للموظف ${employeeName}` });
+        if (settlement.paymentMethod === "راتب") journalLines.push({ accountId: defaultSalaryPayableAccount, debit: '0', credit: stringAmount, description: `إضافة مكافأة لراتب ${employeeName}` });
+        else if (settlement.paymentMethod === "نقدي") journalLines.push({ accountId: defaultCashAccount, debit: '0', credit: stringAmount, description: `دفع مكافأة نقداً لـ ${employeeName}` });
+        else journalLines.push({ accountId: defaultBankAccount, debit: '0', credit: stringAmount, description: `دفع مكافأة بنكية لـ ${employeeName}` });
     } else if (settlement.settlementType === "خصم" || settlement.settlementType === "تسوية عهدة") {
-        if (settlement.paymentMethod === "راتب") journalLines.push({ accountId: defaultSalaryPayableAccount, debit: amount, credit: 0, description: `تحصيل/خصم من راتب ${employeeName}` });
-        else if (settlement.paymentMethod === "نقدي") journalLines.push({ accountId: defaultCashAccount, debit: amount, credit: 0, description: `تحصيل/استلام نقداً من ${employeeName}` });
-        else journalLines.push({ accountId: defaultBankAccount, debit: amount, credit: 0, description: `تحصيل/استلام بنكي من ${employeeName}` });
+        if (settlement.paymentMethod === "راتب") journalLines.push({ accountId: defaultSalaryPayableAccount, debit: stringAmount, credit: '0', description: `تحصيل/خصم من راتب ${employeeName}` });
+        else if (settlement.paymentMethod === "نقدي") journalLines.push({ accountId: defaultCashAccount, debit: stringAmount, credit: '0', description: `تحصيل/استلام نقداً من ${employeeName}` });
+        else journalLines.push({ accountId: defaultBankAccount, debit: stringAmount, credit: '0', description: `تحصيل/استلام بنكي من ${employeeName}` });
         
-        journalLines.push({ accountId: settlement.accountId, debit: 0, credit: amount, description: `تسوية ${settlement.settlementType} للموظف ${employeeName}` });
+        journalLines.push({ accountId: settlement.accountId, debit: '0', credit: stringAmount, description: `تسوية ${settlement.settlementType} للموظف ${employeeName}` });
     }
 
     if (journalLines.length < 2) {
         throw new Error("لم يتمكن النظام من إنشاء قيد محاسبي لهذه التسوية.");
     }
     
-    const totalDebit = journalLines.reduce((sum, line) => sum + line.debit, 0);
-    const totalCredit = journalLines.reduce((sum, line) => sum + line.credit, 0);
+    const totalDebit = journalLines.reduce((sum, line) => sum + parseFloat(line.debit), 0);
+    const totalCredit = journalLines.reduce((sum, line) => sum + parseFloat(line.credit), 0);
 
     if (Math.abs(totalDebit - totalCredit) > 0.01) {
          throw new Error("القيد المحاسبي غير متوازن.");
@@ -122,7 +131,7 @@ export async function postSettlementToGL(settlement: Settlement) {
             id: newEntryId,
             date: settlement.date,
             description: `ترحيل ${settlement.settlementType}: ${settlement.description} (الموظف: ${employeeName})`,
-            totalAmount: String(settlement.amount),
+            totalAmount: stringAmount,
             status: "مرحل", // Auto-posted
             sourceModule: "EmployeeSettlements",
             sourceDocumentId: settlement.id
@@ -131,11 +140,12 @@ export async function postSettlementToGL(settlement: Settlement) {
         await tx.insert(journalEntryLines).values(journalLines.map(line => ({
             journalEntryId: newEntryId,
             accountId: line.accountId,
-            debit: String(line.debit),
-            credit: String(line.credit),
+            debit: line.debit,
+            credit: line.credit,
             description: line.description,
         })));
     });
 
     revalidatePath('/general-ledger');
+    revalidatePath('/employee-settlements');
 }

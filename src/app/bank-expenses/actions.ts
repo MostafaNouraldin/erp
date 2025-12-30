@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { bankExpenses } from '@/db/schema';
+import { bankExpenses, journalEntries, journalEntryLines } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -63,7 +63,41 @@ export async function deleteBankExpense(id: string) {
 
 export async function updateBankExpenseStatus(id: string, status: 'مسودة' | 'مرحل') {
     const db = await getDb();
-    await db.update(bankExpenses).set({ status }).where(eq(bankExpenses.id, id));
-    // Here you would also create a Journal Entry if status is 'مرحل'
+    
+    if (status === 'مرحل') {
+        const expense = await db.query.bankExpenses.findFirst({ where: eq(bankExpenses.id, id) });
+        if (!expense) {
+            throw new Error("لم يتم العثور على المصروف.");
+        }
+        if (expense.status === 'مرحل') {
+            throw new Error("هذا المصروف مرحّل بالفعل.");
+        }
+
+        const newEntryId = `JV-BEXP-${id}`;
+        await db.transaction(async (tx) => {
+            await tx.insert(journalEntries).values({
+                id: newEntryId,
+                date: expense.date,
+                description: `ترحيل مصروف بنكي: ${expense.description} (المستفيد: ${expense.beneficiary})`,
+                totalAmount: String(expense.amount),
+                status: "مرحل",
+                sourceModule: "PaymentVoucher",
+                sourceDocumentId: expense.id,
+            });
+
+            await tx.insert(journalEntryLines).values([
+                { journalEntryId: newEntryId, accountId: expense.expenseAccountId, debit: String(expense.amount), credit: '0', description: `مصروف لـ ${expense.beneficiary}` },
+                { journalEntryId: newEntryId, accountId: expense.bankAccountId, debit: '0', credit: String(expense.amount), description: `دفع من حساب بنكي لـ ${expense.beneficiary}` },
+            ]);
+            
+            await tx.update(bankExpenses).set({ status }).where(eq(bankExpenses.id, id));
+        });
+
+    } else {
+        // Logic for un-posting if needed (would require creating reversing journal entries)
+        await db.update(bankExpenses).set({ status }).where(eq(bankExpenses.id, id));
+    }
+
     revalidatePath('/bank-expenses');
+    revalidatePath('/general-ledger');
 }

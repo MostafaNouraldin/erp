@@ -57,7 +57,7 @@ const journalEntrySchema = z.object({
   lines: z.array(journalEntryLineSchema).min(2, "يجب أن يحتوي القيد على حركتين على الأقل."),
   status: z.enum(["مسودة", "مرحل"]).default("مسودة"),
   totalAmount: z.number().optional(), 
-  sourceModule: z.enum(["General", "POS", "EmployeeSettlements", "ReceiptVoucher", "PaymentVoucher"]).optional().default("General"),
+  sourceModule: z.string().optional().default("General"),
   sourceDocumentId: z.string().optional(),
 }).refine(data => {
     const totalDebit = data.lines.reduce((sum, line) => sum + (line.debit || 0), 0);
@@ -244,6 +244,18 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
   const totalDebit = watchedLines.reduce((sum, line) => sum + (line.debit || 0), 0);
   const totalCredit = watchedLines.reduce((sum, line) => sum + (line.credit || 0), 0);
 
+  const translateSourceModule = (source: string | undefined) => {
+    switch (source) {
+        case "General": return "عام";
+        case "POS": return "نقاط البيع";
+        case "EmployeeSettlements": return "تسوية موظف";
+        case "ReceiptVoucher": return "سند قبض";
+        case "PaymentVoucher": return "سند صرف";
+        default: return source || "غير محدد";
+    }
+  };
+
+
   return (
     <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
@@ -410,7 +422,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                   <TableHeader><TableRow><TableHead>رقم القيد</TableHead><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>المبلغ</TableHead><TableHead>المصدر</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
                   <TableBody>{journalEntries.map((entry) => (<TableRow key={entry.id} className="hover:bg-muted/50">
                         <TableCell>{entry.id}</TableCell><TableCell>{new Date(entry.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell>{entry.description}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.totalAmount || 0) }}></TableCell>
-                        <TableCell><Badge variant="outline" className="text-xs">{entry.sourceModule || "عام"}</Badge></TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{translateSourceModule(entry.sourceModule)}</Badge></TableCell>
                         <TableCell><Badge variant={entry.status === "مرحل" ? "default" : "outline"}>{entry.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => handleViewJournalEntry(entry)}><FileText className="h-4 w-4" /></Button>
@@ -459,7 +471,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
               <div><strong>الوصف العام:</strong> {selectedJournalEntry.description}</div>
               <div><strong>المبلغ الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedJournalEntry.totalAmount || 0) }}></span></div>
               <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedJournalEntry.status === "مرحل" ? "default" : "outline"}>{selectedJournalEntry.status}</Badge></div>
-              <div><strong>المصدر:</strong> <Badge variant="outline" className="text-xs">{selectedJournalEntry.sourceModule || "عام"} {selectedJournalEntry.sourceDocumentId ? `(${selectedJournalEntry.sourceDocumentId})` : ''}</Badge></div>
+              <div><strong>المصدر:</strong> <Badge variant="outline" className="text-xs">{translateSourceModule(selectedJournalEntry.sourceModule)} {selectedJournalEntry.sourceDocumentId ? `(${selectedJournalEntry.sourceDocumentId})` : ''}</Badge></div>
 
               <h4 className="font-semibold mt-3">تفاصيل الحركات:</h4>
               {selectedJournalEntry.lines && selectedJournalEntry.lines.length > 0 ? (<Table>

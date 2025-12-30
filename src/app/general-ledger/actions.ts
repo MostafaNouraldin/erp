@@ -30,7 +30,7 @@ const journalEntrySchema = z.object({
   lines: z.array(journalEntryLineSchema).min(2),
   status: z.enum(["مسودة", "مرحل"]),
   totalAmount: z.number().optional(),
-  sourceModule: z.enum(["General", "POS", "EmployeeSettlements", "ReceiptVoucher", "PaymentVoucher"]).optional(),
+  sourceModule: z.string().optional(),
   sourceDocumentId: z.string().optional(),
 });
 export type JournalEntry = z.infer<typeof journalEntrySchema>;
@@ -157,13 +157,54 @@ export async function deleteJournalEntry(entryId: string) {
 
 export async function updateJournalEntryStatus(entryId: string, status: 'مسودة' | 'مرحل') {
     const db = await getDb();
-    // In a real app, posting ('مرحل') would also update account balances.
-    // This is a simplified version.
-    const entry = await db.query.journalEntries.findFirst({ where: eq(journalEntries.id, entryId) });
-     if (status === 'مسودة' && entry?.sourceModule !== 'General') {
-        throw new Error(`لا يمكن إلغاء ترحيل هذا القيد لأنه ناتج عن وحدة ${entry?.sourceModule}.`);
+    const entry = await db.query.journalEntries.findFirst({ where: eq(journalEntries.id, entryId), with: { lines: true } });
+    if (!entry) {
+        throw new Error("القيد غير موجود.");
     }
 
-    await db.update(journalEntries).set({ status }).where(eq(journalEntries.id, entryId));
+    if (status === 'مرحل' && entry.status === 'مرحل') {
+        throw new Error("القيد مرحّل بالفعل.");
+    }
+
+    if (status === 'مسودة' && entry.status === 'مسودة') {
+        throw new Error("القيد في حالة مسودة بالفعل.");
+    }
+
+    if (status === 'مسودة' && entry.sourceModule !== 'General') {
+        throw new Error(`لا يمكن إلغاء ترحيل هذا القيد لأنه ناتج عن وحدة ${entry.sourceModule}.`);
+    }
+
+    await db.transaction(async (tx) => {
+        for (const line of entry.lines) {
+            const debit = parseFloat(line.debit);
+            const credit = parseFloat(line.credit);
+            
+            if (status === 'مرحل') {
+                if (debit > 0) {
+                    await tx.update(chartOfAccounts)
+                      .set({ balance: sql`${chartOfAccounts.balance} + ${debit}` })
+                      .where(eq(chartOfAccounts.id, line.accountId));
+                }
+                if (credit > 0) {
+                    await tx.update(chartOfAccounts)
+                      .set({ balance: sql`${chartOfAccounts.balance} - ${credit}` }) // Simplified logic
+                      .where(eq(chartOfAccounts.id, line.accountId));
+                }
+            } else { // Un-posting, reverse the logic
+                 if (debit > 0) {
+                    await tx.update(chartOfAccounts)
+                      .set({ balance: sql`${chartOfAccounts.balance} - ${debit}` })
+                      .where(eq(chartOfAccounts.id, line.accountId));
+                }
+                if (credit > 0) {
+                    await tx.update(chartOfAccounts)
+                      .set({ balance: sql`${chartOfAccounts.balance} + ${credit}` }) // Simplified logic
+                      .where(eq(chartOfAccounts.id, line.accountId));
+                }
+            }
+        }
+        await tx.update(journalEntries).set({ status }).where(eq(journalEntries.id, entryId));
+    });
+
     revalidatePath('/general-ledger');
 }
