@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle, Tag, Eye } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select';
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -83,7 +83,7 @@ interface Customer {
   email: string | null;
   phone: string | null;
   type: string | null;
-  balance: string;
+  balance: number; // Changed from string to number
   address?: string | null;
   vatNumber?: string | null;
 }
@@ -428,11 +428,6 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
       if (invoice.status === "متأخر") return "متأخر (آجل)";
     }
     return invoice.status;
-  };
-
-  const parseBalance = (balanceString: string): number => {
-    const numericString = balanceString.replace(/[^0-9.]/g, '');
-    return parseFloat(numericString) || 0;
   };
   
   const generateCustomerStatement = (customer: Customer, allInvoices: Invoice[]): StatementEntry[] => {
@@ -843,7 +838,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                               <FormField control={invoiceForm.control} name="isDeferredPayment" render={({ field }) => (
                                 <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm md:col-span-2 rtl:space-x-reverse">
                                   <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} id="isDeferredPayment"/>
+                                    <Checkbox checked={field.value || false} onCheckedChange={field.onChange} id="isDeferredPayment"/>
                                   </FormControl>
                                   <FormLabel htmlFor="isDeferredPayment" className="font-normal">فاتورة بيع آجل</FormLabel>
                                 </FormItem>
@@ -1037,7 +1032,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                         <TableCell>
                             <Badge variant="secondary" className="whitespace-nowrap">{cust.type}</Badge>
                         </TableCell>
-                        <TableCell className="font-semibold">{cust.balance}</TableCell>
+                        <TableCell className="font-semibold">{cust.balance.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض ملف العميل" onClick={() => handleViewCustomerDetails(cust)}>
                                 <Eye className="h-4 w-4" />
@@ -1202,7 +1197,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
               {/* Print Header */}
               <div className="print-only flex justify-between items-start pb-4 mb-6 border-b">
                 <div className="flex items-center gap-2"> <AppLogo />
-                  <div> <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2> <p className="text-xs">Al-Mustaqbal IT Co.</p> <p className="text-xs">الرياض - المملكة العربية السعودية</p> <p className="text-xs">الرقم الضريبي: 300012345600003</p> </div>
+                  <div> <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2> <p className="text-xs">Al-Mustaqbal IT Co.</p> <p className="text-xs">الرياض، المملكة العربية السعودية</p> <p className="text-xs">الرقم الضريبي: 300012345600003</p> </div>
                 </div>
                 <div className="text-left"> <h3 className="text-xl font-semibold text-primary">كشف حساب عميل</h3> <p className="text-xs">Customer Statement</p> <p className="text-sm mt-1"><strong>العميل:</strong> {selectedCustomerForDetails.name}</p> <p className="text-sm"><strong>التاريخ:</strong> {new Date().toLocaleDateString('ar-SA', { calendar: 'gregory' })}</p> </div>
               </div>
@@ -1221,7 +1216,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                       <p><strong>البريد الإلكتروني:</strong> {selectedCustomerForDetails.email}</p>
                       <p><strong>الهاتف:</strong> {selectedCustomerForDetails.phone}</p>
                       <p><strong>النوع:</strong> {selectedCustomerForDetails.type}</p>
-                      <p><strong>الرصيد الحالي:</strong> {selectedCustomerForDetails.balance}</p>
+                      <p><strong>الرصيد الحالي:</strong> {selectedCustomerForDetails.balance.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
                       <p><strong>العنوان:</strong> {selectedCustomerForDetails.address || "غير متوفر"}</p>
                       <p><strong>الرقم الضريبي:</strong> {selectedCustomerForDetails.vatNumber || "غير متوفر"}</p>
                     </CardContent>

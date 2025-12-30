@@ -18,6 +18,8 @@ export default async function SalesPage() {
             const items = await db.select().from(salesInvoiceItemsSchema).where(eq(salesInvoiceItemsSchema.invoiceId, invoice.id));
             return {
                 ...invoice,
+                date: new Date(invoice.date),
+                dueDate: new Date(invoice.dueDate),
                 numericTotalAmount: parseFloat(invoice.numericTotalAmount),
                 status: invoice.status as "مدفوع" | "غير مدفوع" | "متأخر",
                 source: invoice.source as "POS" | "Manual" | null,
@@ -32,7 +34,7 @@ export default async function SalesPage() {
         const initialData = {
             customers: customersResult.map(c => ({
                 ...c,
-                balance: (c.balance ?? '0').toString(),
+                balance: parseFloat(c.balance ?? '0'),
             })),
             invoices: invoicesWithItems,
         };
