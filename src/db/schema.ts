@@ -590,12 +590,18 @@ export const users = pgTable('users', {
     createdAt: timestamp('created_at').defaultNow(),
 });
     
-
-
-
-
-
-    
-
-
-
+export const subscriptionRequests = pgTable('subscription_requests', {
+    id: serial('id').primaryKey(),
+    companyName: varchar('company_name', { length: 256 }).notNull(),
+    email: varchar('email', { length: 256 }).notNull(),
+    phone: varchar('phone', { length: 50 }),
+    address: text('address'),
+    vatNumber: varchar('vat_number', { length: 50 }),
+    selectedModules: jsonb('selected_modules').notNull(), // Store as JSON array of module keys
+    billingCycle: varchar('billing_cycle', { length: 50 }).notNull(),
+    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
+    paymentMethod: varchar('payment_method', { length: 100 }).notNull(),
+    paymentProof: text('payment_proof').notNull(), // Store image as base64 data URI
+    status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, approved, rejected
+    createdAt: timestamp('created_at').defaultNow(),
+});

@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { login } from './actions';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const loginSchema = z.object({
   tenantId: z.string().min(1, "معرف الشركة مطلوب"),
@@ -121,6 +122,12 @@ export default function LoginPage() {
               </Button>
             </form>
           </Form>
+           <div className="mt-4 text-center text-sm">
+            ليس لديك حساب بعد؟{" "}
+            <Link href="/subscribe" className="underline text-primary">
+              اطلب اشتراكاً جديداً
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

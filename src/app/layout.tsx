@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Metadata } from "next";
@@ -9,7 +10,7 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow } from "lucide-react";
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail } from "lucide-react"; // Added FolderOpen and Mail
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/currency-context";
@@ -22,6 +23,7 @@ import { Search, Bell } from "lucide-react";
 import { AuthProvider, AuthContext } from "@/hooks/auth-context";
 import { useContext } from 'react';
 import LoginPage from './login/page';
+import { usePathname } from "next/navigation";
 
 
 const cairo = Cairo({
@@ -111,6 +113,7 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
       { href: "/system-administration/tenants", label: "إدارة الشركات (العملاء)", icon: Building2 },
       { href: "/system-administration/modules", label: "إعدادات الوحدات والاشتراكات", icon: SlidersHorizontal },
       { href: "/system-administration/subscription-invoices", label: "فواتير الاشتراكات", icon: FileText },
+      { href: "/system-administration/subscription-requests", label: "طلبات الاشتراك", icon: Mail },
     ],
   },
   { href: "/help", label: "المساعدة", icon: CircleHelpIcon, module: "Help" },
@@ -119,6 +122,7 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
 
 function AppLayout({ children }: { children: React.ReactNode }) {
     const auth = useContext(AuthContext);
+    const pathname = usePathname();
 
     const [mounted, setMounted] = useState(false);
 
@@ -131,7 +135,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     }, []);
 
     if (!auth) {
-        return null; // or a loading indicator, as AuthContext is loading
+        return null; 
     }
     
     const { isAuthenticated, user, logout } = auth;
@@ -146,9 +150,23 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         );
     }
     
-    if (!isAuthenticated) {
+    // Allow access to login and subscribe pages without authentication
+    if (!isAuthenticated && pathname !== '/login' && pathname !== '/subscribe') {
         return <LoginPage />;
     }
+    if (isAuthenticated && (pathname === '/login' || pathname === '/subscribe')) {
+        // If logged in, redirect away from login/subscribe pages
+        if (typeof window !== 'undefined') {
+            window.location.href = '/';
+        }
+        return null;
+    }
+    
+    // Render children directly for public pages
+    if (pathname === '/login' || pathname === '/subscribe') {
+        return <>{children}</>;
+    }
+
 
     const navItems = allNavItems.filter(item => {
         const moduleAccess = currentTenantSubscription.modules[item.module];
