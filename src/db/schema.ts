@@ -2,7 +2,66 @@
 
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 
-// --- Core Tables ---
+// --- System Administration & Settings Tables (Typically in 'main' schema) ---
+export const tenants = pgTable('tenants', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    email: varchar('email', { length: 256 }).notNull().unique(),
+    isActive: boolean('is_active').default(true),
+    subscriptionEndDate: timestamp('subscription_end_date'),
+    createdAt: timestamp('created_at').defaultNow(),
+    phone: varchar('phone', { length: 50 }),
+    address: text('address'),
+    vatNumber: varchar('vat_number', { length: 50 }),
+});
+
+export const tenantModuleSubscriptions = pgTable('tenant_module_subscriptions', {
+    id: serial('id').primaryKey(),
+    tenantId: varchar('tenant_id', { length: 256 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    moduleKey: varchar('module_key', { length: 100 }).notNull(), // e.g., 'Accounting', 'Inventory'
+    subscribed: boolean('subscribed').notNull().default(false),
+}, (table) => {
+  return {
+    tenantModuleUniqueIdx: uniqueIndex('tenant_module_unique_idx').on(table.tenantId, table.moduleKey),
+  };
+});
+
+export const subscriptionRequests = pgTable('subscription_requests', {
+    id: serial('id').primaryKey(),
+    companyName: varchar('company_name', { length: 256 }).notNull(),
+    email: varchar('email', { length: 256 }).notNull(),
+    phone: varchar('phone', { length: 50 }),
+    address: text('address'),
+    vatNumber: varchar('vat_number', { length: 50 }),
+    selectedModules: jsonb('selected_modules').notNull(), // Store as JSON array of module keys
+    billingCycle: varchar('billing_cycle', { length: 50 }).notNull(),
+    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
+    paymentMethod: varchar('payment_method', { length: 100 }).notNull(),
+    paymentProof: text('payment_proof').notNull(), // Store image as base64 data URI
+    status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, approved, rejected
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+
+// --- Core Tenant-Specific Tables ---
+
+export const roles = pgTable('roles', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull().unique(),
+    description: text('description'),
+    permissions: jsonb('permissions').default('[]'),
+});
+
+export const users = pgTable('users', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    email: varchar('email', { length: 256 }).notNull().unique(),
+    roleId: varchar('role_id', { length: 256 }).notNull().references(() => roles.id),
+    status: varchar('status', { length: 50 }).notNull().default('نشط'),
+    passwordHash: text('password_hash').notNull(),
+    avatarUrl: text('avatar_url'),
+    createdAt: timestamp('created_at').defaultNow(),
+});
 
 export const customers = pgTable('customers', {
   id: varchar('id', { length: 256 }).primaryKey(),
@@ -92,7 +151,7 @@ export const bankAccounts = pgTable('bank_accounts', {
     isActive: boolean('is_active').default(true).notNull(),
 });
 
-// --- Transactional Tables ---
+// --- Sales & Purchases ---
 
 export const quotations = pgTable('quotations', {
   id: varchar('id', { length: 256 }).primaryKey(),
@@ -107,7 +166,7 @@ export const quotations = pgTable('quotations', {
 export const quotationItems = pgTable('quotation_items', {
     id: serial('id').primaryKey(),
     quoteId: varchar('quote_id', { length: 256 }).notNull().references(() => quotations.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull(),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
     description: text('description').notNull(),
     quantity: integer('quantity').notNull(),
     unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
@@ -128,7 +187,7 @@ export const salesOrders = pgTable('sales_orders', {
 export const salesOrderItems = pgTable('sales_order_items', {
     id: serial('id').primaryKey(),
     soId: varchar('so_id', { length: 256 }).notNull().references(() => salesOrders.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull(),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
     description: text('description').notNull(),
     quantity: integer('quantity').notNull(),
     unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
@@ -151,7 +210,7 @@ export const salesInvoices = pgTable('sales_invoices', {
 export const salesInvoiceItems = pgTable('sales_invoice_items', {
     id: serial('id').primaryKey(),
     invoiceId: varchar('invoice_id', { length: 256 }).notNull().references(() => salesInvoices.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull(),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
     description: text('description').notNull(),
     quantity: integer('quantity').notNull(),
     unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
@@ -171,7 +230,7 @@ export const purchaseOrders = pgTable('purchase_orders', {
 export const purchaseOrderItems = pgTable('purchase_order_items', {
   id: serial('id').primaryKey(),
   poId: varchar('po_id', { length: 256 }).notNull().references(() => purchaseOrders.id, { onDelete: 'cascade' }),
-  itemId: varchar('item_id', { length: 256 }).notNull(),
+  itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
   description: text('description'),
   quantity: integer('quantity').notNull(),
   unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
@@ -186,84 +245,21 @@ export const supplierInvoices = pgTable('supplier_invoices', {
     dueDate: timestamp('due_date').notNull(),
     totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
     paidAmount: numeric('paid_amount', { precision: 10, scale: 2 }).notNull().default('0'),
-    status: varchar('status', { length: 50 }).notNull(), // "غير مدفوع", "مدفوع جزئياً", "مدفوع", "متأخر"
+    status: varchar('status', { length: 50 }).notNull(),
     notes: text('notes'),
 });
 
 export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
     id: serial('id').primaryKey(),
     invoiceId: varchar('invoice_id', { length: 256 }).notNull().references(() => supplierInvoices.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull(),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
     description: text('description'),
     quantity: integer('quantity').notNull(),
     unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
-export const goodsReceivedNotes = pgTable('goods_received_notes', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    poId: varchar('po_id', { length: 256 }).notNull().references(() => purchaseOrders.id),
-    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
-    grnDate: timestamp('grn_date').notNull(),
-    notes: text('notes'),
-    status: varchar('status', { length: 50 }).notNull(), // "مستلم جزئياً", "مستلم بالكامل"
-    receivedBy: varchar('received_by', { length: 256 }),
-});
-
-export const goodsReceivedNoteItems = pgTable('goods_received_note_items', {
-    id: serial('id').primaryKey(),
-    grnId: varchar('grn_id', { length: 256 }).notNull().references(() => goodsReceivedNotes.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull(),
-    description: text('description'),
-    orderedQuantity: integer('ordered_quantity').notNull(),
-    receivedQuantity: integer('received_quantity').notNull(),
-    notes: text('notes'),
-});
-
-
-export const purchaseReturns = pgTable('purchase_returns', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
-    date: timestamp('date').notNull(),
-    originalInvoiceId: varchar('original_invoice_id', { length: 256 }),
-    notes: text('notes'),
-    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "معتمد", "معالج", "ملغي"
-});
-
-export const purchaseReturnItems = pgTable('purchase_return_items', {
-    id: serial('id').primaryKey(),
-    returnId: varchar('return_id', { length: 256 }).notNull().references(() => purchaseReturns.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull(),
-    description: text('description'),
-    quantity: integer('quantity').notNull(),
-    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
-    reason: text('reason'),
-    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
-});
-
-
-export const journalEntries = pgTable('journal_entries', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    date: timestamp('date').notNull(),
-    description: text('description').notNull(),
-    totalAmount: numeric('total_amount', { precision: 15, scale: 2 }).notNull(),
-    status: varchar('status', { length: 50 }).notNull(), // "مسودة", "مرحل"
-    sourceModule: varchar('source_module', { length: 100 }),
-    sourceDocumentId: varchar('source_document_id', { length: 256 }),
-});
-
-export const journalEntryLines = pgTable('journal_entry_lines', {
-    id: serial('id').primaryKey(),
-    journalEntryId: varchar('journal_entry_id', { length: 256 }).notNull().references(() => journalEntries.id, { onDelete: 'cascade' }),
-    accountId: varchar('account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
-    debit: numeric('debit', { precision: 15, scale: 2 }).notNull().default('0'),
-    credit: numeric('credit', { precision: 15, scale: 2 }).notNull().default('0'),
-    description: text('description'),
-});
-
-
-// --- HR & Payroll Tables ---
+// --- HR & Payroll ---
 
 export const employeeAllowances = pgTable('employee_allowances', {
     id: serial('id').primaryKey(),
@@ -286,8 +282,8 @@ export const payrolls = pgTable('payrolls', {
   employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
   monthYear: varchar('month_year', { length: 50 }).notNull(),
   basicSalary: numeric('basic_salary', { precision: 10, scale: 2 }).notNull(),
-  allowances: jsonb('allowances'), // [{ description: string, amount: number }]
-  deductions: jsonb('deductions'), // [{ description: string, amount: number }]
+  allowances: jsonb('allowances'),
+  deductions: jsonb('deductions'),
   netSalary: numeric('net_salary', { precision: 10, scale: 2 }),
   paymentDate: timestamp('payment_date'),
   status: varchar('status', { length: 50 }).notNull().default('مسودة'),
@@ -298,12 +294,12 @@ export const employeeSettlements = pgTable('employee_settlements', {
     id: varchar('id', { length: 256 }).primaryKey(),
     date: timestamp('date').notNull(),
     employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id),
-    settlementType: varchar('settlement_type', { length: 100 }).notNull(), // "سلفة", "قرض", "تسوية عهدة", "خصم", "مكافأة"
+    settlementType: varchar('settlement_type', { length: 100 }).notNull(),
     accountId: varchar('account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
     amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
     description: text('description').notNull(),
-    paymentMethod: varchar('payment_method', { length: 100 }).notNull(), // "نقدي", "راتب", "تحويل بنكي"
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "معتمدة", "مسددة بالكامل", "ملغاة"
+    paymentMethod: varchar('payment_method', { length: 100 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
     reference: varchar('reference', { length: 256 }),
 });
 
@@ -371,7 +367,79 @@ export const disciplinaryWarnings = pgTable('disciplinary_warnings', {
     status: varchar('status', { length: 50 }).notNull().default('مسودة'),
 });
 
-// --- Projects Tables ---
+// --- Accounting ---
+
+export const journalEntries = pgTable('journal_entries', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    description: text('description').notNull(),
+    totalAmount: numeric('total_amount', { precision: 15, scale: 2 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull(), // "مسودة", "مرحل"
+    sourceModule: varchar('source_module', { length: 100 }),
+    sourceDocumentId: varchar('source_document_id', { length: 256 }),
+});
+
+export const journalEntryLines = pgTable('journal_entry_lines', {
+    id: serial('id').primaryKey(),
+    journalEntryId: varchar('journal_entry_id', { length: 256 }).notNull().references(() => journalEntries.id, { onDelete: 'cascade' }),
+    accountId: varchar('account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    debit: numeric('debit', { precision: 15, scale: 2 }).notNull().default('0'),
+    credit: numeric('credit', { precision: 15, scale: 2 }).notNull().default('0'),
+    description: text('description'),
+});
+
+export const checks = pgTable('checks', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    checkNumber: varchar('check_number', { length: 100 }).notNull(),
+    issueDate: timestamp('issue_date').notNull(),
+    dueDate: timestamp('due_date').notNull(),
+    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
+    beneficiaryName: varchar('beneficiary_name', { length: 256 }).notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    currency: varchar('currency', { length: 10 }).notNull().default('SAR'),
+    purpose: text('purpose').notNull(),
+    notes: text('notes'),
+    status: varchar('status', { length: 50 }).notNull().default('صادر'),
+});
+
+export const bankExpenses = pgTable('bank_expenses', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
+    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    referenceNumber: varchar('reference_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
+export const bankReceipts = pgTable('bank_receipts', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
+    revenueAccountId: varchar('revenue_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    payerName: varchar('payer_name', { length: 256 }).notNull(),
+    customerId: varchar('customer_id', { length: 256 }).references(() => customers.id),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    referenceNumber: varchar('reference_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
+export const cashExpenses = pgTable('cash_expenses', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    cashAccountId: varchar('cash_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    voucherNumber: varchar('voucher_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
+// --- Projects ---
 
 export const projects = pgTable('projects', {
     id: varchar('id', { length: 256 }).primaryKey(),
@@ -415,7 +483,7 @@ export const projectBudgetItems = pgTable('project_budget_items', {
     notes: text('notes'),
 });
 
-// --- Production Tables ---
+// --- Production ---
 
 export const workOrders = pgTable('work_orders', {
     id: varchar('id', { length: 256 }).primaryKey(),
@@ -470,7 +538,7 @@ export const qualityChecks = pgTable('quality_checks', {
     notes: text('notes'),
 });
 
-// --- Inventory Control Tables ---
+// --- Inventory Control ---
 
 export const inventoryAdjustments = pgTable('inventory_adjustments', {
     id: varchar('id', { length: 256 }).primaryKey(),
@@ -480,7 +548,7 @@ export const inventoryAdjustments = pgTable('inventory_adjustments', {
     quantity: integer('quantity').notNull(),
     reason: varchar('reason', { length: 256 }).notNull(),
     notes: text('notes'),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "معتمدة"
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
 });
 
 export const inventoryTransfers = pgTable('inventory_transfers', {
@@ -490,118 +558,48 @@ export const inventoryTransfers = pgTable('inventory_transfers', {
     toWarehouseId: varchar('to_warehouse_id', { length: 256 }).notNull(),
     productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
     quantity: integer('quantity').notNull(),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "قيد النقل", "مكتملة", "ملغى"
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
     notes: text('notes'),
 });
 
-
-// --- Other Financial Transaction Tables ---
-
-export const checks = pgTable('checks', {
+export const goodsReceivedNotes = pgTable('goods_received_notes', {
     id: varchar('id', { length: 256 }).primaryKey(),
-    checkNumber: varchar('check_number', { length: 100 }).notNull(),
-    issueDate: timestamp('issue_date').notNull(),
-    dueDate: timestamp('due_date').notNull(),
-    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
-    beneficiaryName: varchar('beneficiary_name', { length: 256 }).notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    currency: varchar('currency', { length: 10 }).notNull().default('SAR'),
-    purpose: text('purpose').notNull(),
+    poId: varchar('po_id', { length: 256 }).notNull().references(() => purchaseOrders.id),
+    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+    grnDate: timestamp('grn_date').notNull(),
     notes: text('notes'),
-    status: varchar('status', { length: 50 }).notNull().default('صادر'), // "صادر", "مسدد", "ملغي", "مرتجع"
+    status: varchar('status', { length: 50 }).notNull(),
+    receivedBy: varchar('received_by', { length: 256 }),
 });
 
-export const bankExpenses = pgTable('bank_expenses', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    date: timestamp('date').notNull(),
-    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
-    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
-    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
-    description: text('description').notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    referenceNumber: varchar('reference_number', { length: 256 }),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
-});
-
-export const bankReceipts = pgTable('bank_receipts', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    date: timestamp('date').notNull(),
-    bankAccountId: varchar('bank_account_id', { length: 256 }).notNull().references(() => bankAccounts.id),
-    revenueAccountId: varchar('revenue_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
-    payerName: varchar('payer_name', { length: 256 }).notNull(),
-    customerId: varchar('customer_id', { length: 256 }).references(() => customers.id),
-    description: text('description').notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    referenceNumber: varchar('reference_number', { length: 256 }),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
-});
-
-export const cashExpenses = pgTable('cash_expenses', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    date: timestamp('date').notNull(),
-    cashAccountId: varchar('cash_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
-    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
-    beneficiary: varchar('beneficiary', { length: 256 }).notNull(),
-    description: text('description').notNull(),
-    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
-    voucherNumber: varchar('voucher_number', { length: 256 }),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "مرحل"
-});
-
-// --- System Administration & Settings Tables ---
-export const tenants = pgTable('tenants', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    name: varchar('name', { length: 256 }).notNull(),
-    email: varchar('email', { length: 256 }).notNull().unique(),
-    isActive: boolean('is_active').default(true),
-    subscriptionEndDate: timestamp('subscription_end_date'),
-    createdAt: timestamp('created_at').defaultNow(),
-    phone: varchar('phone', { length: 50 }),
-    address: text('address'),
-    vatNumber: varchar('vat_number', { length: 50 }),
-});
-
-export const tenantModuleSubscriptions = pgTable('tenant_module_subscriptions', {
+export const goodsReceivedNoteItems = pgTable('goods_received_note_items', {
     id: serial('id').primaryKey(),
-    tenantId: varchar('tenant_id', { length: 256 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
-    moduleKey: varchar('module_key', { length: 100 }).notNull(), // e.g., 'Accounting', 'Inventory'
-    subscribed: boolean('subscribed').notNull().default(false),
-}, (table) => {
-  return {
-    tenantModuleUniqueIdx: uniqueIndex('tenant_module_unique_idx').on(table.tenantId, table.moduleKey),
-  };
-});
-
-export const roles = pgTable('roles', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    name: varchar('name', { length: 256 }).notNull().unique(),
+    grnId: varchar('grn_id', { length: 256 }).notNull().references(() => goodsReceivedNotes.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
     description: text('description'),
-    permissions: jsonb('permissions').default('[]'),
+    orderedQuantity: integer('ordered_quantity').notNull(),
+    receivedQuantity: integer('received_quantity').notNull(),
+    notes: text('notes'),
 });
 
-export const users = pgTable('users', {
+
+export const purchaseReturns = pgTable('purchase_returns', {
     id: varchar('id', { length: 256 }).primaryKey(),
-    name: varchar('name', { length: 256 }).notNull(),
-    email: varchar('email', { length: 256 }).notNull().unique(),
-    roleId: varchar('role_id', { length: 256 }).notNull().references(() => roles.id),
-    status: varchar('status', { length: 50 }).notNull().default('نشط'),
-    passwordHash: text('password_hash').notNull(),
-    avatarUrl: text('avatar_url'),
-    createdAt: timestamp('created_at').defaultNow(),
-});
-    
-export const subscriptionRequests = pgTable('subscription_requests', {
-    id: serial('id').primaryKey(),
-    companyName: varchar('company_name', { length: 256 }).notNull(),
-    email: varchar('email', { length: 256 }).notNull(),
-    phone: varchar('phone', { length: 50 }),
-    address: text('address'),
-    vatNumber: varchar('vat_number', { length: 50 }),
-    selectedModules: jsonb('selected_modules').notNull(), // Store as JSON array of module keys
-    billingCycle: varchar('billing_cycle', { length: 50 }).notNull(),
+    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+    date: timestamp('date').notNull(),
+    originalInvoiceId: varchar('original_invoice_id', { length: 256 }),
+    notes: text('notes'),
     totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
-    paymentMethod: varchar('payment_method', { length: 100 }).notNull(),
-    paymentProof: text('payment_proof').notNull(), // Store image as base64 data URI
-    status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, approved, rejected
-    createdAt: timestamp('created_at').defaultNow(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
+export const purchaseReturnItems = pgTable('purchase_return_items', {
+    id: serial('id').primaryKey(),
+    returnId: varchar('return_id', { length: 256 }).notNull().references(() => purchaseReturns.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
+    description: text('description'),
+    quantity: integer('quantity').notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+    reason: text('reason'),
+    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
