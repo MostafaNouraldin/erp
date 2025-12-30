@@ -1,7 +1,8 @@
 
+
 // This is now a true Server Component that fetches data and passes it to the client.
 import { db } from '@/db';
-import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems } from '@/db/schema';
+import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import React from 'react';
 import PurchasesClientComponent from './PurchasesClientComponent';
@@ -13,6 +14,7 @@ export default async function PurchasesPage() {
         const suppliersResult = await db.select().from(suppliers);
         const purchaseOrdersResult = await db.select().from(purchaseOrders);
         const supplierInvoicesResult = await db.select().from(supplierInvoices);
+        const goodsReceivedNotesResult = await db.select().from(goodsReceivedNotes);
 
         const purchaseOrdersWithItems = await Promise.all(
             purchaseOrdersResult.map(async (po) => {
@@ -49,11 +51,25 @@ export default async function PurchasesPage() {
                 };
             })
         );
+
+        const goodsReceivedNotesWithItems = await Promise.all(
+            goodsReceivedNotesResult.map(async (grn) => {
+                const items = await db.select().from(goodsReceivedNoteItems).where(eq(goodsReceivedNoteItems.grnId, grn.id));
+                return {
+                    ...grn,
+                    grnDate: new Date(grn.grnDate),
+                    items: items.map(item => ({
+                        ...item,
+                    }))
+                };
+            })
+        );
         
         const initialData = {
             suppliers: suppliersResult,
             purchaseOrders: purchaseOrdersWithItems,
             supplierInvoices: supplierInvoicesWithItems,
+            goodsReceivedNotes: goodsReceivedNotesWithItems,
         };
 
         return <PurchasesClientComponent initialData={initialData} />;

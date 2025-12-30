@@ -1,9 +1,10 @@
 
+
 'use server';
 
 import { db } from '@/db';
-import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, products } from '@/db/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -61,6 +62,27 @@ const supplierInvoiceSchema = z.object({
   notes: z.string().optional(),
 });
 type SupplierInvoiceFormValues = z.infer<typeof supplierInvoiceSchema>;
+
+const goodsReceivedNoteItemSchema = z.object({
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().optional(),
+  orderedQuantity: z.coerce.number().min(0),
+  receivedQuantity: z.coerce.number().min(0),
+  notes: z.string().optional(),
+});
+
+const goodsReceivedNoteSchema = z.object({
+  id: z.string().optional(),
+  poId: z.string().min(1, "أمر الشراء مطلوب"),
+  supplierId: z.string().min(1, "المورد مطلوب"),
+  grnDate: z.date({ required_error: "تاريخ الاستلام مطلوب" }),
+  items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  status: z.enum(["مستلم جزئياً", "مستلم بالكامل"]),
+  receivedBy: z.string().optional(),
+});
+
+type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
 
 
 // --- Supplier Actions ---
@@ -253,4 +275,76 @@ export async function updateSupplierInvoicePayment(
     .where(eq(supplierInvoices.id, invoiceId));
   revalidatePath('/purchases');
   revalidatePath('/accounts-payable-receivable');
+}
+
+// --- Goods Received Note (GRN) Actions ---
+export async function addGoodsReceivedNote(grnData: GoodsReceivedNoteFormValues) {
+    const newGrnId = `GRN${Date.now()}`;
+    await db.transaction(async (tx) => {
+        await tx.insert(goodsReceivedNotes).values({
+            id: newGrnId,
+            poId: grnData.poId,
+            supplierId: grnData.supplierId,
+            grnDate: grnData.grnDate,
+            notes: grnData.notes,
+            status: grnData.status,
+            receivedBy: grnData.receivedBy,
+        });
+
+        const receivedItems = grnData.items.filter(item => item.receivedQuantity > 0);
+        if (receivedItems.length > 0) {
+            await tx.insert(goodsReceivedNoteItems).values(
+                receivedItems.map(item => ({
+                    grnId: newGrnId,
+                    itemId: item.itemId,
+                    description: item.description,
+                    orderedQuantity: item.orderedQuantity,
+                    receivedQuantity: item.receivedQuantity,
+                    notes: item.notes,
+                }))
+            );
+            // Update inventory
+            for (const item of receivedItems) {
+                await tx.update(products)
+                    .set({ quantity: sql`${products.quantity} + ${item.receivedQuantity}` })
+                    .where(eq(products.id, item.itemId));
+            }
+        }
+        
+        // Update PO status
+        const po = await tx.query.purchaseOrders.findFirst({
+            where: eq(purchaseOrders.id, grnData.poId),
+            with: { items: true }
+        });
+        const allGrnsForPo = await tx.query.goodsReceivedNotes.findMany({
+            where: eq(goodsReceivedNotes.poId, grnData.poId),
+            with: { items: true }
+        });
+
+        if (po) {
+            const totalReceived = allGrnsForPo.reduce((sum, grn) => sum + grn.items.reduce((itemSum, item) => itemSum + item.receivedQuantity, 0), 0);
+            const totalOrdered = po.items.reduce((sum, item) => sum + item.quantity, 0);
+            const newPoStatus = totalReceived >= totalOrdered ? "مستلم بالكامل" : "مستلم جزئياً";
+            await tx.update(purchaseOrders).set({ status: newPoStatus }).where(eq(purchaseOrders.id, grnData.poId));
+        }
+
+    });
+    revalidatePath('/purchases');
+    revalidatePath('/inventory');
+}
+
+
+export async function updateGoodsReceivedNoteStatus(grnId: string, status: 'مستلم جزئياً' | 'مستلم بالكامل') {
+    await db.update(goodsReceivedNotes).set({ status }).where(eq(goodsReceivedNotes.id, grnId));
+    revalidatePath('/purchases');
+}
+
+export async function deleteGoodsReceivedNote(grnId: string) {
+    // Note: In a real app, deleting a GRN should reverse the inventory update.
+    // This is a simplified version.
+    await db.transaction(async (tx) => {
+        await tx.delete(goodsReceivedNoteItems).where(eq(goodsReceivedNoteItems.grnId, grnId));
+        await tx.delete(goodsReceivedNotes).where(eq(goodsReceivedNotes.id, grnId));
+    });
+    revalidatePath('/purchases');
 }

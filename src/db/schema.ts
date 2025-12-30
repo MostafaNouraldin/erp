@@ -159,6 +159,27 @@ export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
+export const goodsReceivedNotes = pgTable('goods_received_notes', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    poId: varchar('po_id', { length: 256 }).notNull().references(() => purchaseOrders.id),
+    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+    grnDate: timestamp('grn_date').notNull(),
+    notes: text('notes'),
+    status: varchar('status', { length: 50 }).notNull(), // "مستلم جزئياً", "مستلم بالكامل"
+    receivedBy: varchar('received_by', { length: 256 }),
+});
+
+export const goodsReceivedNoteItems = pgTable('goods_received_note_items', {
+    id: serial('id').primaryKey(),
+    grnId: varchar('grn_id', { length: 256 }).notNull().references(() => goodsReceivedNotes.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull(),
+    description: text('description'),
+    orderedQuantity: integer('ordered_quantity').notNull(),
+    receivedQuantity: integer('received_quantity').notNull(),
+    notes: text('notes'),
+});
+
+
 export const journalEntries = pgTable('journal_entries', {
     id: varchar('id', { length: 256 }).primaryKey(),
     date: timestamp('date').notNull(),
