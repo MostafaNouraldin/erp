@@ -1,6 +1,10 @@
 
 "use client";
 
+import React, { useState, useEffect } from 'react';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,39 +13,84 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Label } from "@/components/ui/label";
-import { SlidersHorizontal, PlusCircle, Search, Edit, Trash2, FileText, Filter } from "lucide-react"; // Changed Repeat to SlidersHorizontal
+import { SlidersHorizontal, PlusCircle, Search, Edit, Trash2, FileText, Filter, CheckCircle, Undo } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
-// Mock data
-const inventoryItems = [
+// Mock data (to be replaced with data from page props)
+const mockInventoryItems = [
   { id: "ITEM001", name: "لابتوب Dell XPS 15" },
   { id: "ITEM002", name: "طابعة HP LaserJet Pro" },
   { id: "ITEM003", name: "ورق طباعة A4 (صندوق)" },
 ];
 
-const adjustmentReasons = [
+const mockAdjustmentReasons = [
   { id: "REASON001", name: "تلف" },
   { id: "REASON002", name: "فقدان" },
   { id: "REASON003", name: "فرق جرد" },
   { id: "REASON004", name: "إهلاك" },
 ];
 
-const existingAdjustments = [
-  { id: "ADJ001", date: "2024-07-20", item: "ITEM001", type: "نقص", quantity: 2, reason: "فرق جرد", notes: "تم اكتشاف نقص وحدتين أثناء الجرد السنوي.", status: "معتمدة" },
-  { id: "ADJ002", date: "2024-07-22", item: "ITEM003", type: "زيادة", quantity: 5, reason: "فرق جرد", notes: "تم العثور على 5 صناديق إضافية.", status: "معتمدة" },
-  { id: "ADJ003", date: "2024-07-25", item: "ITEM002", type: "نقص", quantity: 1, reason: "تلف", notes: "الطابعة تالفة ولا يمكن إصلاحها.", status: "مسودة" },
+const mockInitialAdjustments = [
+  { id: "ADJ001", date: new Date("2024-07-20"), productId: "ITEM001", type: "نقص" as const, quantity: 2, reason: "فرق جرد", notes: "تم اكتشاف نقص وحدتين أثناء الجرد السنوي.", status: "معتمدة" as const },
+  { id: "ADJ002", date: new Date("2024-07-22"), productId: "ITEM003", type: "زيادة" as const, quantity: 5, reason: "فرق جرد", notes: "تم العثور على 5 صناديق إضافية.", status: "معتمدة" as const },
+  { id: "ADJ003", date: new Date("2024-07-25"), productId: "ITEM002", type: "نقص" as const, quantity: 1, reason: "تلف", notes: "الطابعة تالفة ولا يمكن إصلاحها.", status: "مسودة" as const },
 ];
 
 
+const adjustmentSchema = z.object({
+  id: z.string().optional(),
+  date: z.date({ required_error: "تاريخ التسوية مطلوب" }),
+  productId: z.string().min(1, "الصنف مطلوب"),
+  type: z.enum(["زيادة", "نقص"], { required_error: "نوع التسوية مطلوب" }),
+  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
+  reason: z.string().min(1, "سبب التسوية مطلوب"),
+  notes: z.string().optional(),
+  status: z.enum(["مسودة", "معتمدة"]).default("مسودة"),
+});
+
+type AdjustmentFormValues = z.infer<typeof adjustmentSchema>;
+
+
 export default function InventoryAdjustmentsPage() {
+  // We'll assume data is passed via props in a real scenario
+  const [adjustments, setAdjustments] = useState(mockInitialAdjustments);
+  const [showCreateAdjustmentCard, setShowCreateAdjustmentCard] = useState(false);
+  const { toast } = useToast();
+
+  const form = useForm<AdjustmentFormValues>({
+    resolver: zodResolver(adjustmentSchema),
+    defaultValues: { date: new Date(), type: "نقص", quantity: 1, status: "مسودة" },
+  });
+
+  const handleAdjustmentSubmit = (values: AdjustmentFormValues) => {
+    // In a real app, this would be a server action call.
+    setAdjustments(prev => [...prev, { ...values, id: `ADJ${Date.now()}` }]);
+    toast({ title: "تم الإنشاء", description: "تم إنشاء تسوية جردية جديدة." });
+    form.reset({ date: new Date(), type: "نقص", quantity: 1, status: "مسودة" });
+    setShowCreateAdjustmentCard(false);
+  };
+
+  const handleApproveAdjustment = (id: string) => {
+    setAdjustments(prev => prev.map(adj => adj.id === id ? {...adj, status: 'معتمدة'} : adj));
+    toast({ title: "تم الاعتماد", description: `تم اعتماد التسوية ${id}.` });
+  };
+  
+  const handleDeleteAdjustment = (id: string) => {
+    setAdjustments(prev => prev.filter(adj => adj.id !== id));
+    toast({ title: "تم الحذف", description: `تم حذف التسوية ${id}.`, variant: "destructive" });
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-8" dir="rtl">
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-2xl md:text-3xl">
-            <SlidersHorizontal className="me-2 h-8 w-8 text-primary" /> {/* Changed Icon */}
+            <SlidersHorizontal className="me-2 h-8 w-8 text-primary" />
             تسويات جردية
           </CardTitle>
           <CardDescription>تسجيل ومتابعة التسويات الجردية لضمان دقة بيانات المخزون (زيادة أو نقص).</CardDescription>
@@ -50,79 +99,35 @@ export default function InventoryAdjustmentsPage() {
 
       <Card className="shadow-md">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <PlusCircle className="me-2 h-5 w-5 text-primary" />
-            إنشاء تسوية جردية جديدة
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center">
+              إنشاء تسوية جردية جديدة
+            </CardTitle>
+            <Button variant="ghost" size="icon" onClick={() => setShowCreateAdjustmentCard(!showCreateAdjustmentCard)}>
+              <PlusCircle className={`h-6 w-6 text-primary transition-transform ${showCreateAdjustmentCard ? 'rotate-45' : ''}`} />
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <form className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="adjustmentDate">تاريخ التسوية</Label>
-                <DatePickerWithPresets mode="single" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="item">الصنف</Label>
-                <Select dir="rtl">
-                  <SelectTrigger id="item" className="bg-background">
-                    <SelectValue placeholder="اختر الصنف" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {inventoryItems.map(item => (
-                      <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="adjustmentType">نوع التسوية</Label>
-                <Select dir="rtl">
-                  <SelectTrigger id="adjustmentType" className="bg-background">
-                    <SelectValue placeholder="اختر نوع التسوية" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="increase">زيادة (+)</SelectItem>
-                    <SelectItem value="decrease">نقص (-)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="quantity">الكمية</Label>
-                <Input id="quantity" type="number" placeholder="أدخل الكمية" className="bg-background" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reason">سبب التسوية</Label>
-                 <Select dir="rtl">
-                  <SelectTrigger id="reason" className="bg-background">
-                    <SelectValue placeholder="اختر سبب التسوية" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {adjustmentReasons.map(reason => (
-                        <SelectItem key={reason.id} value={reason.id}>{reason.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-               <div className="space-y-2 md:col-span-2 lg:col-span-1">
-                <Label htmlFor="reference">المرجع (اختياري)</Label>
-                <Input id="reference" placeholder="مثال: رقم محضر الجرد" className="bg-background" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes">ملاحظات</Label>
-              <Textarea id="notes" placeholder="أضف ملاحظات إضافية..." rows={3} className="bg-background" />
-            </div>
-            <div className="flex gap-2">
-                <Button type="submit" className="shadow-md hover:shadow-lg transition-shadow">
-                    <PlusCircle className="me-2 h-4 w-4" /> حفظ التسوية
-                </Button>
-                <Button type="button" variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                    إلغاء
-                </Button>
-            </div>
-          </form>
-        </CardContent>
+        {showCreateAdjustmentCard && (
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleAdjustmentSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>تاريخ التسوية</FormLabel><DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange} /><FormMessage /></FormItem> )} />
+                   <FormField control={form.control} name="productId" render={({ field }) => (<FormItem><FormLabel>الصنف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl><SelectContent>{mockInventoryItems.map(item => (<SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem> )} />
+                   <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>نوع التسوية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl><SelectContent><SelectItem value="زيادة">زيادة (+)</SelectItem><SelectItem value="نقص">نقص (-)</SelectItem></SelectContent></Select><FormMessage /></FormItem> )} />
+                   <FormField control={form.control} name="quantity" render={({ field }) => (<FormItem><FormLabel>الكمية</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                   <FormField control={form.control} name="reason" render={({ field }) => (<FormItem><FormLabel>سبب التسوية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر السبب" /></SelectTrigger></FormControl><SelectContent>{mockAdjustmentReasons.map(reason => (<SelectItem key={reason.id} value={reason.name}>{reason.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem> )} />
+                </div>
+                <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>ملاحظات</FormLabel><FormControl><Textarea {...field} className="bg-background" /></FormControl><FormMessage /></FormItem> )} />
+                <div className="flex gap-2">
+                  <Button type="submit" className="shadow-md hover:shadow-lg transition-shadow"> <PlusCircle className="me-2 h-4 w-4" /> حفظ التسوية </Button>
+                  <Button type="button" variant="outline" className="shadow-sm hover:shadow-md transition-shadow" onClick={() => {form.reset(); setShowCreateAdjustmentCard(false);}}> إلغاء </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        )}
       </Card>
 
       <Card className="shadow-md">
@@ -151,7 +156,6 @@ export default function InventoryAdjustmentsPage() {
                   <DropdownMenuSeparator />
                   <DropdownMenuCheckboxItem>معتمدة</DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem>مسودة</DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>ملغاة</DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <DatePickerWithPresets mode="range" />
@@ -172,11 +176,11 @@ export default function InventoryAdjustmentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {existingAdjustments.map((adj) => (
+                {adjustments.map((adj) => (
                   <TableRow key={adj.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{adj.id}</TableCell>
-                    <TableCell>{adj.date}</TableCell>
-                    <TableCell>{inventoryItems.find(i => i.id === adj.item)?.name || adj.item}</TableCell>
+                    <TableCell>{adj.date.toLocaleDateString('ar-SA')}</TableCell>
+                    <TableCell>{mockInventoryItems.find(i => i.id === adj.productId)?.name || adj.productId}</TableCell>
                     <TableCell>
                         <Badge variant={adj.type === "زيادة" ? "default" : "destructive"} className="bg-opacity-80">
                             {adj.type}
@@ -188,18 +192,27 @@ export default function InventoryAdjustmentsPage() {
                       <Badge variant={adj.status === "معتمدة" ? "default" : "outline"}>{adj.status}</Badge>
                     </TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض التفاصيل">
-                        <FileText className="h-4 w-4" />
-                      </Button>
                       {adj.status === "مسودة" && (
                         <>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل">
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف">
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => alert("تعديل " + adj.id)}><Edit className="h-4 w-4" /></Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent dir="rtl">
+                            <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف التسوية رقم "{adj.id}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteAdjustment(adj.id!)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="اعتماد" onClick={() => handleApproveAdjustment(adj.id!)}>
+                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          </Button>
                         </>
+                      )}
+                      {adj.status === "معتمدة" && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-100 dark:hover:bg-yellow-900" title="إلغاء الاعتماد" onClick={() => alert("إلغاء اعتماد " + adj.id)}>
+                            <Undo className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
@@ -212,4 +225,3 @@ export default function InventoryAdjustmentsPage() {
     </div>
   );
 }
-

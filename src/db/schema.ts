@@ -209,6 +209,26 @@ export const employeeSettlements = pgTable('employee_settlements', {
     reference: varchar('reference', { length: 256 }),
 });
 
+export const attendanceRecords = pgTable('attendance_records', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    date: timestamp('date').notNull(),
+    checkIn: timestamp('check_in'),
+    checkOut: timestamp('check_out'),
+    status: varchar('status', { length: 50 }).notNull().default('حاضر'),
+    notes: text('notes'),
+});
+
+export const leaveRequests = pgTable('leave_requests', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    leaveType: varchar('leave_type', { length: 100 }).notNull(),
+    startDate: timestamp('start_date').notNull(),
+    endDate: timestamp('end_date').notNull(),
+    reason: text('reason'),
+    status: varchar('status', { length: 50 }).notNull().default('مقدمة'),
+});
+
 // --- Projects Tables ---
 
 export const projects = pgTable('projects', {
@@ -307,6 +327,31 @@ export const qualityChecks = pgTable('quality_checks', {
     inspectorId: varchar('inspector_id', { length: 256 }).notNull(),
     notes: text('notes'),
 });
+
+// --- Inventory Control Tables ---
+
+export const inventoryAdjustments = pgTable('inventory_adjustments', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
+    type: varchar('type', { length: 50 }).notNull(), // 'زيادة' or 'نقص'
+    quantity: integer('quantity').notNull(),
+    reason: varchar('reason', { length: 256 }).notNull(),
+    notes: text('notes'),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "معتمدة"
+});
+
+export const inventoryTransfers = pgTable('inventory_transfers', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    fromWarehouseId: varchar('from_warehouse_id', { length: 256 }).notNull(),
+    toWarehouseId: varchar('to_warehouse_id', { length: 256 }).notNull(),
+    productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
+    quantity: integer('quantity').notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "قيد النقل", "مكتملة"
+    notes: text('notes'),
+});
+
 
 // --- Other Financial Transaction Tables ---
 
