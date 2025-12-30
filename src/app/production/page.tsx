@@ -13,12 +13,24 @@ interface ProductionLogEntry {
 }
 
 export default async function ProductionPage() {
-    const productsData = await db.select().from(products);
-    const workOrdersData = await db.select().from(workOrders);
-    const bomsData = await db.select().from(billsOfMaterial);
-    const productionPlansData = await db.select().from(productionPlans);
-    const qualityChecksData = await db.select().from(qualityChecks);
-    const usersData = await db.select({id: employees.id, name: employees.name}).from(employees);
+    let productsData = [];
+    let workOrdersData = [];
+    let bomsData = [];
+    let productionPlansData = [];
+    let qualityChecksData = [];
+    let usersData = [];
+
+    try {
+        productsData = await db.select().from(products);
+        workOrdersData = await db.select().from(workOrders);
+        bomsData = await db.select().from(billsOfMaterial);
+        productionPlansData = await db.select().from(productionPlans);
+        qualityChecksData = await db.select().from(qualityChecks);
+        usersData = await db.select({id: employees.id, name: employees.name}).from(employees);
+    } catch (error) {
+        console.error("Database query failed for Production page:", error);
+    }
+
 
     const workOrdersWithLogs = await Promise.all(workOrdersData.map(async (wo) => {
         const logs = await db.select().from(workOrderProductionLogs).where(eq(workOrderProductionLogs.workOrderId, wo.id));
@@ -36,7 +48,7 @@ export default async function ProductionPage() {
             items: items.map(i => ({ ...i, quantity: parseFloat(i.quantity) })),
         };
     }));
-
+    
     const initialData = {
         products: productsData,
         workOrders: workOrdersWithLogs.map(wo => ({...wo, startDate: new Date(wo.startDate), endDate: new Date(wo.endDate), progress: wo.progress || 0})),
@@ -45,6 +57,20 @@ export default async function ProductionPage() {
         qualityChecks: qualityChecksData.map(qc => ({...qc, date: new Date(qc.date)})),
         users: usersData,
     };
+    
+    if (workOrdersData.length === 0) {
+        return (
+            <div className="container mx-auto py-6 text-center" dir="rtl">
+                <h1 className="text-2xl font-bold mb-4">وحدة الإنتاج</h1>
+                <p className="text-muted-foreground">
+                    لا يمكن عرض البيانات. قد تكون جداول قاعدة البيانات (مثل `work_orders`) غير موجودة.
+                </p>
+                <p className="mt-2">
+                    يرجى التأكد من تنفيذ ملف `db_schema.sql` في قاعدة بياناتك.
+                </p>
+            </div>
+        );
+    }
 
     return <ProductionClientComponent initialData={initialData} />;
 }
