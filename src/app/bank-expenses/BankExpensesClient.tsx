@@ -73,10 +73,12 @@ export default function BankExpensesClient({ initialData }: ClientComponentProps
   });
 
   useEffect(() => {
-    if (expenseToEdit) {
-      form.reset({...expenseToEdit, date: new Date(expenseToEdit.date)});
-    } else {
-      form.reset({ date: new Date(), bankAccountId: "", expenseAccountId: "", beneficiary: "", description: "", amount: 0, referenceNumber: "", status: "مسودة" });
+    if (showManageExpenseDialog) {
+        if (expenseToEdit) {
+            form.reset({...expenseToEdit, date: new Date(expenseToEdit.date)});
+        } else {
+            form.reset({ date: new Date(), bankAccountId: "", expenseAccountId: "", beneficiary: "", description: "", amount: 0, referenceNumber: "", status: "مسودة" });
+        }
     }
   }, [expenseToEdit, form, showManageExpenseDialog]);
 
@@ -147,7 +149,7 @@ export default function BankExpensesClient({ initialData }: ClientComponentProps
         <h2 className="text-xl font-semibold">سجل المصروفات البنكية</h2>
         <Dialog open={showManageExpenseDialog} onOpenChange={(isOpen) => { setShowManageExpenseDialog(isOpen); if (!isOpen) setExpenseToEdit(null); }}>
           <DialogTrigger asChild>
-            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setExpenseToEdit(null); form.reset(); setShowManageExpenseDialog(true); }}>
+            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setExpenseToEdit(null); setShowManageExpenseDialog(true); }}>
               <PlusCircle className="me-2 h-4 w-4" /> تسجيل مصروف بنكي
             </Button>
           </DialogTrigger>

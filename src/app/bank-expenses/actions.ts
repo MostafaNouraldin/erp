@@ -14,7 +14,7 @@ const bankExpenseSchema = z.object({
   expenseAccountId: z.string().min(1),
   beneficiary: z.string().min(1),
   description: z.string().min(1),
-  amount: z.number().min(0.01),
+  amount: z.coerce.number().min(0.01),
   referenceNumber: z.string().optional(),
   status: z.enum(["مسودة", "مرحل"]),
 });

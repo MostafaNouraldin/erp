@@ -16,6 +16,7 @@ export default async function BankExpensesPage() {
         ...e,
         date: new Date(e.date),
         amount: parseFloat(e.amount),
+        status: e.status as "مسودة" | "مرحل",
       })),
       bankAccounts: bankAccountsData,
       expenseAccounts: expenseAccountsData,
