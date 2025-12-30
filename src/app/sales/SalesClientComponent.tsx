@@ -27,10 +27,10 @@ import { addCustomer, updateCustomer, deleteCustomer, addSalesInvoice, updateSal
 import type { Product } from '@/db/schema';
 
 // Mock data
-const initialQuotationsData = [
-  { id: "QT001", customerId: "CUST001", date: new Date("2024-07-01"), expiryDate: new Date("2024-07-15"), numericTotalAmount: 15500, status: "مرسل" as const, items: [{itemId: "ITEM001", description: "لابتوب", quantity:1, unitPrice:15500, total:15500}] },
-  { id: "QT002", customerId: "CUST002", date: new Date("2024-07-05"), expiryDate: new Date("2024-07-20"), numericTotalAmount: 8200, status: "مقبول" as const, items: [] },
-  { id: "QT003", customerId: "CUST003", date: new Date("2024-07-10"), expiryDate: new Date("2024-07-25"), numericTotalAmount: 22000, status: "مسودة" as const, items: [] },
+const initialQuotationsData: QuotationFormValues[] = [
+  { id: "QT001", customerId: "CUST001", date: new Date("2024-07-01"), expiryDate: new Date("2024-07-15"), numericTotalAmount: 15500, status: "مرسل", items: [{itemId: "ITEM001", description: "لابتوب", quantity:1, unitPrice:15500, total:15500}] },
+  { id: "QT002", customerId: "CUST002", date: new Date("2024-07-05"), expiryDate: new Date("2024-07-20"), numericTotalAmount: 8200, status: "مقبول", items: [{itemId: "SERV001", description: "خدمة استشارية", quantity: 1, unitPrice: 8200, total: 8200}] },
+  { id: "QT003", customerId: "CUST003", date: new Date("2024-07-10"), expiryDate: new Date("2024-07-25"), numericTotalAmount: 22000, status: "مسودة", items: [] },
 ];
 
 export interface SalesOrderItem {
@@ -267,7 +267,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     resolver: zodResolver(quotationSchema),
     defaultValues: { customerId: '', date: new Date(), expiryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مسودة", numericTotalAmount: 0 },
   });
-  const { fields: quotationItemsFields, append: appendQuotationItem, remove: removeQuotationItem } = useFieldArray({
+  const { fields: quotationItemsFields, append: appendQuotationItem, remove: removeQuotationItem, replace: replaceQuotationItems } = useFieldArray({
     control: quotationForm.control, name: "items",
   });
 
@@ -275,7 +275,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     resolver: zodResolver(salesOrderSchema),
     defaultValues: { customerId: '', date: new Date(), deliveryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مؤكد", numericTotalAmount: 0 },
   });
-  const { fields: salesOrderItemsFields, append: appendSalesOrderItem, remove: removeSalesOrderItem } = useFieldArray({
+  const { fields: salesOrderItemsFields, append: appendSalesOrderItem, remove: removeSalesOrderItem, replace: replaceSalesOrderItems } = useFieldArray({
     control: salesOrderForm.control, name: "items",
   });
 
@@ -283,7 +283,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     resolver: zodResolver(invoiceSchema),
     defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual" },
   });
-  const { fields: invoiceItemsFields, append: appendInvoiceItem, remove: removeInvoiceItem } = useFieldArray({
+  const { fields: invoiceItemsFields, append: appendInvoiceItem, remove: removeInvoiceItem, replace: replaceInvoiceItems } = useFieldArray({
     control: invoiceForm.control, name: "items",
   });
 
@@ -298,25 +298,45 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   }, []);
 
   useEffect(() => {
-    if (quotationToEdit) quotationForm.reset(quotationToEdit);
-    else quotationForm.reset({ customerId: '', date: new Date(), expiryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مسودة", numericTotalAmount: 0 });
+    if (showCreateQuotationDialog) {
+        if (quotationToEdit) {
+            quotationForm.reset({
+                ...quotationToEdit,
+                date: new Date(quotationToEdit.date),
+                expiryDate: new Date(quotationToEdit.expiryDate),
+            });
+        } else {
+            quotationForm.reset({ customerId: '', date: new Date(), expiryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مسودة", numericTotalAmount: 0 });
+        }
+    }
   }, [quotationToEdit, quotationForm, showCreateQuotationDialog]);
-
+  
   useEffect(() => {
-    if (salesOrderToEdit) salesOrderForm.reset(salesOrderToEdit);
-    else salesOrderForm.reset({ customerId: '', date: new Date(), deliveryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مؤكد", numericTotalAmount: 0 });
+      if (showCreateSalesOrderDialog) {
+          if (salesOrderToEdit) {
+              salesOrderForm.reset({
+                  ...salesOrderToEdit,
+                  date: new Date(salesOrderToEdit.date),
+                  deliveryDate: new Date(salesOrderToEdit.deliveryDate),
+              });
+          } else {
+              salesOrderForm.reset({ customerId: '', date: new Date(), deliveryDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "مؤكد", numericTotalAmount: 0 });
+          }
+      }
   }, [salesOrderToEdit, salesOrderForm, showCreateSalesOrderDialog]);
 
   useEffect(() => {
-    if (invoiceToEdit) {
-        invoiceForm.reset({
-            ...invoiceToEdit,
-            date: new Date(invoiceToEdit.date),
-            dueDate: new Date(invoiceToEdit.dueDate),
-            items: invoiceToEdit.items.length > 0 ? invoiceToEdit.items : [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}],
-        });
-    } else {
-        invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual" });
+    if (showCreateInvoiceDialog) {
+        if (invoiceToEdit) {
+            invoiceForm.reset({
+                ...invoiceToEdit,
+                date: new Date(invoiceToEdit.date),
+                dueDate: new Date(invoiceToEdit.dueDate),
+                items: invoiceToEdit.items.length > 0 ? invoiceToEdit.items : [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}],
+            });
+        } else {
+            invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual" });
+        }
     }
 }, [invoiceToEdit, invoiceForm, showCreateInvoiceDialog]);
 
@@ -515,6 +535,41 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
         toast({ title: "خطأ", description: "لم يتم حذف العميل.", variant: "destructive" });
     }
   }
+
+  const handleAcceptQuotation = (quotationId: string) => {
+    setQuotationsData(prev => prev.map(q => q.id === quotationId ? { ...q, status: "مقبول" } : q));
+    toast({ title: "تم قبول العرض", description: `تم تغيير حالة عرض السعر ${quotationId} إلى "مقبول".` });
+  };
+  
+  const handleCreateSalesOrderFromQuote = (quotation: QuotationFormValues) => {
+    setSalesOrderToEdit(null); // Ensure we are in "create" mode
+    salesOrderForm.reset({
+      customerId: quotation.customerId,
+      date: new Date(),
+      deliveryDate: new Date(),
+      items: quotation.items,
+      notes: `تم إنشاؤه من عرض السعر ${quotation.id}`,
+      status: "مؤكد",
+      quoteId: quotation.id,
+      numericTotalAmount: quotation.numericTotalAmount,
+    });
+    setShowCreateSalesOrderDialog(true);
+  };
+
+  const handleCreateInvoiceFromSalesOrder = (salesOrder: SalesOrderFormValues) => {
+    setInvoiceToEdit(null);
+    invoiceForm.reset({
+      customerId: salesOrder.customerId,
+      date: new Date(),
+      dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
+      items: salesOrder.items,
+      notes: `تم إنشاؤها من أمر البيع ${salesOrder.id}`,
+      status: "غير مدفوع",
+      orderId: salesOrder.id,
+      numericTotalAmount: salesOrder.numericTotalAmount,
+    });
+    setShowCreateInvoiceDialog(true);
+  };
 
 
   return (
@@ -742,9 +797,14 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                                </Button>
                             </>
                           )}
-                           {qt.status === "مرسل" && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تحويل إلى أمر بيع">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
+                           {(qt.status === "مرسل") && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900" title="قبول العرض" onClick={() => handleAcceptQuotation(qt.id!)}>
+                              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            </Button>
+                          )}
+                           {qt.status === "مقبول" && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تحويل إلى أمر بيع" onClick={() => handleCreateSalesOrderFromQuote(qt)}>
+                                <FilePlus className="h-4 w-4 text-primary" />
                             </Button>
                           )}
                         </TableCell>
@@ -800,7 +860,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض تفاصيل الأمر">
                                 <FileText className="h-4 w-4" />
                             </Button>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إنشاء فاتورة">
+                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إنشاء فاتورة" onClick={() => handleCreateInvoiceFromSalesOrder(so)}>
                                 <FilePlus className="h-4 w-4 text-primary" />
                             </Button>
                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل أمر البيع" onClick={() => {setSalesOrderToEdit(so); setShowCreateSalesOrderDialog(true); }}>
