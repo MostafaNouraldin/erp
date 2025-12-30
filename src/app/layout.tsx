@@ -9,7 +9,7 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette } from "lucide-react";
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow } from "lucide-react";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/currency-context";
@@ -100,7 +100,15 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
   { href: "/projects", label: "المشاريع", icon: Building, module: "Projects" },
   { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" },
   { href: "/reports", label: "التقارير والتحليل", icon: BarChart2, module: "BI" },
-  { href: "/settings", label: "الإعدادات العامة", icon: Settings, module: "Settings" },
+  {
+    label: "الإعدادات",
+    icon: Settings,
+    module: "Settings",
+    subItems: [
+      { href: "/settings", label: "الإعدادات العامة", icon: SettingsIcon },
+      { href: "/subscription", label: "الاشتراك والفوترة", icon: Shield },
+    ]
+  },
   {
     label: "إدارة النظام",
     icon: Settings2,
@@ -272,5 +280,4 @@ export default function RootLayout({
         </AuthProvider>
       </body>
     </html>
-  );
-}
+  
