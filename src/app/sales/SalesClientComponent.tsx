@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { addCustomer, updateCustomer, deleteCustomer, addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from './actions';
+import type { Product } from '@/db/schema';
 
 // Mock data
 const initialQuotationsData = [
@@ -88,10 +89,6 @@ interface Customer {
   vatNumber?: string | null;
 }
 
-const mockItems = [
-    {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 6500}, {id: "SERV001", name: "خدمة استشارية A", price: 15000},
-    {id: "ITEM002", name: "طابعة HP LaserJet", price: 1200},
-];
 
 interface PrintableInvoice extends Invoice {
     customerName: string;
@@ -197,6 +194,7 @@ interface SalesClientComponentProps {
   initialData: {
     customers: Customer[];
     invoices: Invoice[];
+    products: (Product & { sellingPrice: number })[];
   };
 }
 
@@ -205,6 +203,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   const [invoices, setInvoicesData] = useState<Invoice[]>(initialData.invoices);
   const [salesOrders, setSalesOrdersData] = useState<SalesOrder[]>(initialSalesOrdersData);
   const [customers, setCustomers] = useState<Customer[]>(initialData.customers);
+  const [products, setProducts] = useState(initialData.products);
   
   const [showPrintInvoiceDialog, setShowPrintInvoiceDialog] = useState(false);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<PrintableInvoice | null>(null);
@@ -233,7 +232,13 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     const handleAddInvoice = (event: Event) => {
         const customEvent = event as CustomEvent<Invoice>;
         const newInvoice = customEvent.detail;
-        setInvoicesData(prev => [newInvoice, ...prev]);
+        // Ensure date objects are valid before adding to state
+        const processedInvoice = {
+            ...newInvoice,
+            date: new Date(newInvoice.date),
+            dueDate: new Date(newInvoice.dueDate),
+        };
+        setInvoicesData(prev => [processedInvoice, ...prev]);
         toast({
             title: "فاتورة جديدة من نقاط البيع",
             description: `تم استلام الفاتورة رقم ${newInvoice.id}.`,
@@ -255,6 +260,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   useEffect(() => {
     setCustomers(initialData.customers);
     setInvoicesData(initialData.invoices);
+    setProducts(initialData.products);
   }, [initialData]);
 
   const quotationForm = useForm<QuotationFormValues>({
@@ -539,9 +545,9 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                           <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                               <FormField control={quotationForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                   <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { quotationForm.setValue(`items.${index}.unitPrice`, selectedItem.price); quotationForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(quotationForm, index); }} value={field.value} dir="rtl">
+                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = products.find(i => i.id === value); if (selectedItem) { quotationForm.setValue(`items.${index}.unitPrice`, selectedItem.sellingPrice); quotationForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(quotationForm, index); }} value={field.value} dir="rtl">
                                       <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
-                                      <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                      <SelectContent>{products.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                   </Select><FormMessage className="text-xs"/></FormItem> )} />
                               <FormField control={quotationForm.control} name={`items.${index}.quantity`} render={({ field }) => (
                                   <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
@@ -602,9 +608,9 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                           <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                               <FormField control={salesOrderForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                   <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { salesOrderForm.setValue(`items.${index}.unitPrice`, selectedItem.price); salesOrderForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(salesOrderForm, index); }} value={field.value} dir="rtl">
+                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = products.find(i => i.id === value); if (selectedItem) { salesOrderForm.setValue(`items.${index}.unitPrice`, selectedItem.sellingPrice); salesOrderForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(salesOrderForm, index); }} value={field.value} dir="rtl">
                                       <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
-                                      <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                      <SelectContent>{products.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                   </Select><FormMessage className="text-xs"/></FormItem> )} />
                               <FormField control={salesOrderForm.control} name={`items.${index}.quantity`} render={({ field }) => (
                                   <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
@@ -849,9 +855,9 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                                   <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                                       <FormField control={invoiceForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                           <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                          <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { invoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); invoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(invoiceForm, index); }} value={field.value} dir="rtl">
+                                          <Select onValueChange={(value) => { field.onChange(value); const selectedItem = products.find(i => i.id === value); if (selectedItem) { invoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.sellingPrice); invoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(invoiceForm, index); }} value={field.value} dir="rtl">
                                               <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
-                                              <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                              <SelectContent>{products.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                           </Select><FormMessage className="text-xs"/></FormItem> )} />
                                       <FormField control={invoiceForm.control} name={`items.${index}.quantity`} render={({ field }) => (
                                           <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>

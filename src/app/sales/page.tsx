@@ -2,7 +2,7 @@
 // This is now a true Server Component that fetches data and passes it to the client.
 import React from 'react';
 import { db } from '@/db';
-import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema } from '@/db/schema';
+import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema, products } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import SalesClientComponent from './SalesClientComponent'; // We will create this component
 
@@ -11,6 +11,7 @@ export default async function SalesPage() {
     try {
         const customersResult = await db.select().from(customersSchema);
         const invoicesResult = await db.select().from(salesInvoicesSchema);
+        const productsResult = await db.select().from(products);
 
         // In a real app, you would fetch items for each invoice more efficiently
         // This is simplified for demonstration
@@ -37,6 +38,7 @@ export default async function SalesPage() {
                 balance: parseFloat(c.balance ?? '0'),
             })),
             invoices: invoicesWithItems,
+            products: productsResult.map(p => ({...p, sellingPrice: parseFloat(p.sellingPrice)})),
         };
 
         return <SalesClientComponent initialData={initialData} />;
