@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/db';
-import { checks } from '@/db/schema';
+import { checks, bankAccounts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -22,6 +22,7 @@ const checkSchema = z.object({
 });
 
 export type CheckFormValues = z.infer<typeof checkSchema>;
+export type BankAccount = typeof bankAccounts.$inferSelect;
 
 export async function addCheck(values: CheckFormValues) {
     const newCheckId = `CHK${Date.now()}`;
@@ -60,4 +61,3 @@ export async function updateCheckStatus(id: string, status: CheckFormValues['sta
     await db.update(checks).set({ status }).where(eq(checks.id, id));
     revalidatePath('/checkbook-register');
 }
-

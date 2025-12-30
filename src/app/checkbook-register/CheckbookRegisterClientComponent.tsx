@@ -22,12 +22,12 @@ import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
 import { useToast } from "@/hooks/use-toast";
 import { addCheck, updateCheck, deleteCheck, updateCheckStatus } from './actions';
-import type { CheckFormValues } from './actions';
+import type { CheckFormValues, BankAccount } from './actions';
 
 interface ClientComponentProps {
     initialData: {
         checks: CheckFormValues[];
-        bankAccounts: { id: string; name: string }[];
+        bankAccounts: BankAccount[];
     }
 }
 
@@ -124,8 +124,8 @@ export default function CheckbookRegisterClientComponent({ initialData }: Client
     try {
         await deleteCheck(checkId);
         toast({ title: "تم الحذف", description: "تم حذف الشيك.", variant: "destructive" });
-    } catch(e) {
-        toast({ title: "خطأ", description: (e as Error).message, variant: "destructive" });
+    } catch(e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive" });
     }
   };
   
@@ -133,8 +133,8 @@ export default function CheckbookRegisterClientComponent({ initialData }: Client
     try {
         await updateCheckStatus(checkId, newStatus);
         toast({ title: "تم تحديث الحالة", description: `تم تحديث حالة الشيك إلى ${newStatus}`});
-    } catch(e) {
-        toast({ title: "خطأ", description: "لم يتم تحديث الحالة.", variant: "destructive"});
+    } catch(e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive"});
     }
   };
 

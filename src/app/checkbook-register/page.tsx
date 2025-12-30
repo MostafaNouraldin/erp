@@ -7,19 +7,24 @@ import CheckbookRegisterClientComponent from './CheckbookRegisterClientComponent
 
 
 export default async function CheckbookRegisterPage() {
-    const checksData = await db.select().from(checks);
-    const bankAccountsData = await db.select().from(bankAccounts);
+    try {
+        const checksData = await db.select().from(checks);
+        const bankAccountsData = await db.select({ id: bankAccounts.id, name: bankAccounts.bankName }).from(bankAccounts);
 
-    const initialData = {
-        checks: checksData.map(c => ({ 
-            ...c, 
-            amount: parseFloat(c.amount),
-            issueDate: new Date(c.issueDate),
-            dueDate: new Date(c.dueDate),
-            status: c.status as "صادر" | "مسدد" | "ملغي" | "مرتجع",
-        })),
-        bankAccounts: bankAccountsData.map(b => ({ id: b.id, name: b.bankName })),
-    };
+        const initialData = {
+            checks: checksData.map(c => ({ 
+                ...c, 
+                amount: parseFloat(c.amount),
+                issueDate: new Date(c.issueDate),
+                dueDate: new Date(c.dueDate),
+                status: c.status as "صادر" | "مسدد" | "ملغي" | "مرتجع",
+            })),
+            bankAccounts: bankAccountsData,
+        };
 
-    return <CheckbookRegisterClientComponent initialData={initialData} />;
+        return <CheckbookRegisterClientComponent initialData={initialData} />;
+    } catch (error) {
+        const errorMessage = (error as Error).message;
+        return <div>Error loading data: {errorMessage}</div>;
+    }
 }
