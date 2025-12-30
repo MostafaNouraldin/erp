@@ -4,11 +4,12 @@ import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import type { Role } from '@/types/saas'; // Import Role type
 
 // Define a more specific user type if possible
-interface User {
+export interface User {
     id: string;
     name: string;
-    roleId: string; // Changed from role to roleId
-    // Add other user properties as needed
+    roleId: string;
+    email: string;
+    avatarUrl: string | null;
 }
 
 interface AuthContextProps {
@@ -16,7 +17,7 @@ interface AuthContextProps {
     isAuthenticated: boolean;
     permissions: string[];
     hasPermission: (permissionKey: string) => boolean;
-    login: (userData: User) => void; // Removed userPermissions from login signature
+    login: (userData: User) => void;
     logout: () => void;
 }
 
@@ -26,8 +27,7 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
-// Mock roles data (should ideally come from settings or API)
-// This should be consistent with the roles defined in settings/page.tsx
+// This should come from a central API in a real app
 const mockRoles: Role[] = [
   { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles"] },
   { id: "ROLE002", name: "محاسب", description: "صلاحيات على وحدات الحسابات والمالية.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "reports.view_financial"] },
@@ -40,12 +40,13 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [permissions, setPermissions] = useState<string[]>([]);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isLoading, setIsLoading] = useState(true); // Added loading state
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem("erpUser");
-            if (storedUser) {
-                try {
+            try {
+                const storedUser = localStorage.getItem("erpUser");
+                if (storedUser) {
                     const parsedUser: User = JSON.parse(storedUser);
                     const userRole = mockRoles.find(r => r.id === parsedUser.roleId);
                     const userPermissions = userRole ? userRole.permissions : [];
@@ -53,10 +54,12 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     setUser(parsedUser);
                     setPermissions(userPermissions);
                     setIsAuthenticated(true);
-                } catch (error) {
-                    console.error("Error parsing stored auth data:", error);
-                    localStorage.removeItem("erpUser");
                 }
+            } catch (error) {
+                console.error("Error parsing stored auth data:", error);
+                localStorage.removeItem("erpUser");
+            } finally {
+                setIsLoading(false); // Finished loading auth state
             }
         }
     }, []);
@@ -85,6 +88,11 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const hasPermission = (permissionKey: string): boolean => {
         return permissions.includes(permissionKey);
     };
+
+    // Don't render children until auth state is determined
+    if (isLoading) {
+        return null; // Or a loading spinner component
+    }
 
     const value: AuthContextProps = {
         user,

@@ -19,23 +19,17 @@ import AppLogo from "@/components/app-logo";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Bell } from "lucide-react";
-import { AuthProvider } from "@/hooks/auth-context";
+import { AuthProvider, AuthContext } from "@/hooks/auth-context";
+import { useContext } from 'react';
+import LoginPage from './login/page';
+
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
   variable: "--font-cairo",
 });
 
-// Mock authentication status and user data
-const isAuthenticated = true;
-const user = {
-  name: "Ahmed Ali",
-  email: "ahmed.ali@example.com",
-  avatarUrl: "https://picsum.photos/100/100?grayscale",
-  role: "Administrator",
-};
-
-// Mock current tenant and subscription data
+// Mock current tenant and subscription data - this would come from the user's session
 const currentTenant = {
   id: 'T001',
   name: 'شركة المستقبل التجريبية',
@@ -123,43 +117,159 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
 ];
 
 
+function AppLayout({ children }: { children: React.ReactNode }) {
+    const auth = useContext(AuthContext);
+
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        if (typeof document !== 'undefined') {
+            document.documentElement.lang = 'ar';
+            document.documentElement.dir = 'rtl';
+        }
+    }, []);
+
+    if (!auth) {
+        return null; // or a loading indicator, as AuthContext is loading
+    }
+    
+    const { isAuthenticated, user, logout } = auth;
+
+
+    if (!mounted) {
+        return (
+            <html lang="ar" dir="rtl" suppressHydrationWarning>
+                <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
+                </body>
+            </html>
+        );
+    }
+    
+    if (!isAuthenticated) {
+        return <LoginPage />;
+    }
+
+    const navItems = allNavItems.filter(item => {
+        const moduleAccess = currentTenantSubscription.modules[item.module];
+        if (typeof moduleAccess === 'boolean') {
+            return moduleAccess;
+        }
+        return false;
+    });
+
+    return (
+        <>
+            <SidebarProvider>
+                <div className="flex min-h-screen w-full">
+                    <Sidebar collapsible="icon" side="right" className="shadow-sm">
+                        <SidebarHeader className="p-4 flex items-center justify-between">
+                            <AppLogo />
+                            <div className="hidden group-data-[collapsible=icon]:hidden">
+                            </div>
+                        </SidebarHeader>
+                        <SidebarContent>
+                            <SidebarMenu>
+                                {navItems.map((item) => (
+                                    <SidebarMenuItem key={item.label} item={item} />
+                                ))}
+                            </SidebarMenu>
+                        </SidebarContent>
+                        <SidebarFooter className="p-2">
+                            <Card className="bg-muted/50 border-dashed">
+                                <CardContent className="p-2 text-xs">
+                                    <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
+                                        <p className="font-semibold text-primary">{currentTenant.name}</p>
+                                        <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
+                                    </div>
+                                    <Button variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden">
+                                        إدارة الاشتراك
+                                    </Button>
+                                    <div className="flex justify-center items-center group-data-[collapsible=icon]:block hidden">
+                                        <CreditCardIcon className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </SidebarFooter>
+                    </Sidebar>
+
+                    <div className="flex flex-col flex-1">
+                        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 shadow-sm">
+                            <div className="flex-1">
+                            </div>
+                            <SidebarTrigger className="md:hidden order-first md:order-last" />
+                            <div className="flex items-center gap-4">
+                                <Button variant="ghost" size="icon" aria-label="Search">
+                                    <Search className="h-5 w-5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" aria-label="Notifications">
+                                    <Bell className="h-5 w-5" />
+                                </Button>
+                                <LanguageToggle />
+                                <ModeToggle />
+                                {isAuthenticated && user && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                                                <Avatar className="h-9 w-9">
+                                                    <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="person" />
+                                                    <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-64" align="end" forceMount dir="rtl">
+                                            <DropdownMenuLabel className="font-normal">
+                                                <div className="flex flex-col space-y-1 text-right">
+                                                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                                                    <p className="text-xs leading-none text-muted-foreground">
+                                                        {user.email}
+                                                    </p>
+                                                </div>
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem disabled>
+                                                <div className="flex flex-col space-y-0.5 text-right text-xs w-full">
+                                                    <p className="text-muted-foreground">الشركة الحالية:</p>
+                                                    <p className="font-medium">{currentTenant.name}</p>
+                                                    <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
+                                                </div>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem>
+                                                <UserCircle className="me-2 h-4 w-4" />
+                                                <span>الملف الشخصي</span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem>
+                                                <Settings className="me-2 h-4 w-4" />
+                                                <span>الإعدادات</span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={logout}>
+                                                <LogOut className="me-2 h-4 w-4" />
+                                                <span>تسجيل الخروج</span>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+                            </div>
+                        </header>
+                        <SidebarInset className="p-4 md:p-6">
+                            {children}
+                        </SidebarInset>
+                    </div>
+                </div>
+                <Toaster />
+            </SidebarProvider>
+        </>
+    );
+}
+
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    if (typeof document !== 'undefined') {
-        document.documentElement.lang = 'ar';
-        document.documentElement.dir = 'rtl';
-    }
-  }, []);
-
-  if (!mounted) {
-    return (
-        <html lang="ar" dir="rtl" suppressHydrationWarning>
-            <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
-            </body>
-        </html>
-    );
-  }
-
-  // Example of getting tenantId from session and passing it down
-  // In a real app, this would be retrieved from a server-side session or context
-  const tenantId = currentTenant.id; 
-
-  const navItems = allNavItems.filter(item => {
-    const moduleAccess = currentTenantSubscription.modules[item.module];
-    if (typeof moduleAccess === 'boolean') {
-      return moduleAccess;
-    }
-    return false; // Default to false if module key not found or value isn't boolean
-  });
-
-
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
@@ -175,109 +285,11 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <SidebarProvider>
-                <div className="flex min-h-screen w-full">
-                  <Sidebar collapsible="icon" side="right" className="shadow-sm">
-                    <SidebarHeader className="p-4 flex items-center justify-between">
-                      <AppLogo />
-                      <div className="hidden group-data-[collapsible=icon]:hidden">
-                      </div>
-                    </SidebarHeader>
-                    <SidebarContent>
-                      <SidebarMenu>
-                        {navItems.map((item) => (
-                          <SidebarMenuItem key={item.label} item={item} />
-                        ))}
-                      </SidebarMenu>
-                    </SidebarContent>
-                    <SidebarFooter className="p-2">
-                        <Card className="bg-muted/50 border-dashed">
-                          <CardContent className="p-2 text-xs">
-                            <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
-                                <p className="font-semibold text-primary">{currentTenant.name}</p>
-                                <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
-                            </div>
-                            <Button variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden">
-                                إدارة الاشتراك
-                            </Button>
-                            <div className="flex justify-center items-center group-data-[collapsible=icon]:block hidden">
-                                <CreditCardIcon className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </SidebarFooter>
-                  </Sidebar>
-
-                  <div className="flex flex-col flex-1">
-                    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 shadow-sm">
-                      <div className="flex-1">
-                      </div>
-                      <SidebarTrigger className="md:hidden order-first md:order-last" />
-                      <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" aria-label="Search">
-                          <Search className="h-5 w-5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" aria-label="Notifications">
-                          <Bell className="h-5 w-5" />
-                        </Button>
-                        <LanguageToggle />
-                        <ModeToggle />
-                        {isAuthenticated && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                                <Avatar className="h-9 w-9">
-                                  <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="person" />
-                                  <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64" align="end" forceMount dir="rtl">
-                              <DropdownMenuLabel className="font-normal">
-                                <div className="flex flex-col space-y-1 text-right">
-                                  <p className="text-sm font-medium leading-none">{user.name}</p>
-                                  <p className="text-xs leading-none text-muted-foreground">
-                                    {user.email}
-                                  </p>
-                                </div>
-                              </DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                                <DropdownMenuItem disabled>
-                                    <div className="flex flex-col space-y-0.5 text-right text-xs w-full">
-                                      <p className="text-muted-foreground">الشركة الحالية:</p>
-                                      <p className="font-medium">{currentTenant.name}</p>
-                                      <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
-                                    </div>
-                                </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>
-                                <UserCircle className="me-2 h-4 w-4" />
-                                <span>الملف الشخصي</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Settings className="me-2 h-4 w-4" />
-                                <span>الإعدادات</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>
-                                <LogOut className="me-2 h-4 w-4" />
-                                <span>تسجيل الخروج</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </div>
-                    </header>
-                    <SidebarInset className="p-4 md:p-6">
-                      {children}
-                    </SidebarInset>
-                  </div>
-                </div>
-                <Toaster />
-              </SidebarProvider>
+                <AppLayout>{children}</AppLayout>
             </ThemeProvider>
           </CurrencyProvider>
         </AuthProvider>
       </body>
     </html>
-  
+  );
+}
