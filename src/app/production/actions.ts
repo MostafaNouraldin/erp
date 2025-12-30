@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { workOrders, billsOfMaterial, billOfMaterialItems, productionPlans, qualityChecks, workOrderProductionLogs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -60,25 +60,36 @@ const productionLogSchema = z.object({
   notes: z.string().optional(),
 });
 
+async function getDb() {
+    const tenantId = 'T001'; // This would come from session in a real app
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
+
 // --- Work Order Actions ---
 export async function addWorkOrder(values: WorkOrderFormValues) {
+  const db = await getDb();
   const newId = `WO${Date.now()}`;
   await db.insert(workOrders).values({ ...values, id: newId });
   revalidatePath('/production');
 }
 
 export async function updateWorkOrder(values: WorkOrderFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required for update.");
   await db.update(workOrders).set(values).where(eq(workOrders.id, values.id));
   revalidatePath('/production');
 }
 
 export async function deleteWorkOrder(id: string) {
+  const db = await getDb();
   await db.delete(workOrders).where(eq(workOrders.id, id));
   revalidatePath('/production');
 }
 
 export async function addProductionLog(workOrderId: string, log: z.infer<typeof productionLogSchema>) {
+    const db = await getDb();
     await db.insert(workOrderProductionLogs).values({ workOrderId, ...log, quantityProduced: log.quantityProduced });
     const wo = await db.query.workOrders.findFirst({ where: eq(workOrders.id, workOrderId) });
     if(wo){
@@ -94,6 +105,7 @@ export async function addProductionLog(workOrderId: string, log: z.infer<typeof 
 
 // --- BOM Actions ---
 export async function addBom(values: BomFormValues) {
+  const db = await getDb();
   const newId = `BOM${Date.now()}`;
   await db.transaction(async (tx) => {
     await tx.insert(billsOfMaterial).values({ id: newId, productId: values.productId, version: values.version, lastUpdated: new Date() });
@@ -103,6 +115,7 @@ export async function addBom(values: BomFormValues) {
 }
 
 export async function updateBom(values: BomFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required for update.");
   await db.transaction(async (tx) => {
     await tx.update(billsOfMaterial).set({ productId: values.productId, version: values.version, lastUpdated: new Date() }).where(eq(billsOfMaterial.id, values.id!));
@@ -113,6 +126,7 @@ export async function updateBom(values: BomFormValues) {
 }
 
 export async function deleteBom(id: string) {
+  const db = await getDb();
   await db.transaction(async (tx) => {
     await tx.delete(billOfMaterialItems).where(eq(billOfMaterialItems.bomId, id));
     await tx.delete(billsOfMaterial).where(eq(billsOfMaterial.id, id));
@@ -122,37 +136,42 @@ export async function deleteBom(id: string) {
 
 // --- Production Plan Actions ---
 export async function addProductionPlan(values: ProductionPlanFormValues) {
+  const db = await getDb();
   const newId = `PLAN${Date.now()}`;
   await db.insert(productionPlans).values({ ...values, id: newId });
   revalidatePath('/production');
 }
 
 export async function updateProductionPlan(values: ProductionPlanFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required for update.");
   await db.update(productionPlans).set(values).where(eq(productionPlans.id, values.id));
   revalidatePath('/production');
 }
 
 export async function deleteProductionPlan(id: string) {
+  const db = await getDb();
   await db.delete(productionPlans).where(eq(productionPlans.id, id));
   revalidatePath('/production');
 }
 
 // --- Quality Check Actions ---
 export async function addQualityCheck(values: QualityCheckFormValues) {
+  const db = await getDb();
   const newId = `QC${Date.now()}`;
   await db.insert(qualityChecks).values({ ...values, id: newId });
   revalidatePath('/production');
 }
 
 export async function updateQualityCheck(values: QualityCheckFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required for update.");
   await db.update(qualityChecks).set(values).where(eq(qualityChecks.id, values.id));
   revalidatePath('/production');
 }
 
 export async function deleteQualityCheck(id: string) {
+  const db = await getDb();
   await db.delete(qualityChecks).where(eq(qualityChecks.id, id));
   revalidatePath('/production');
 }
-

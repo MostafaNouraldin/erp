@@ -183,22 +183,22 @@ export default function ProductionClientComponent({initialData}: ProductionClien
   }, [initialData]);
 
   useEffect(() => {
-    if (workOrderToEdit) workOrderForm.reset(workOrderToEdit);
+    if (workOrderToEdit) workOrderForm.reset({...workOrderToEdit, startDate: new Date(workOrderToEdit.startDate), endDate: new Date(workOrderToEdit.endDate)});
     else workOrderForm.reset({ productId: '', quantity: 1, startDate: new Date(), endDate: new Date(), status: "مجدول", progress: 0, producedQuantity:0, notes: '' });
   }, [workOrderToEdit, workOrderForm, showManageWorkOrderDialog]);
 
   useEffect(() => {
-    if (bomToEdit) bomForm.reset(bomToEdit);
+    if (bomToEdit) bomForm.reset({...bomToEdit, lastUpdated: bomToEdit.lastUpdated ? new Date(bomToEdit.lastUpdated) : undefined});
     else bomForm.reset({ productId: '', version: '1.0', items: [{materialId: '', quantity: 1}] });
   }, [bomToEdit, bomForm, showManageBomDialog]);
   
   useEffect(() => {
-    if (productionPlanToEdit) productionPlanForm.reset(productionPlanToEdit);
+    if (productionPlanToEdit) productionPlanForm.reset({...productionPlanToEdit, startDate: new Date(productionPlanToEdit.startDate), endDate: new Date(productionPlanToEdit.endDate)});
     else productionPlanForm.reset({ name: '', startDate: new Date(), endDate: new Date(), status: "مسودة", notes: '' });
   }, [productionPlanToEdit, productionPlanForm, showManageProductionPlanDialog]);
 
   useEffect(() => {
-    if (qualityCheckToEdit) qualityCheckForm.reset(qualityCheckToEdit);
+    if (qualityCheckToEdit) qualityCheckForm.reset({...qualityCheckToEdit, date: new Date(qualityCheckToEdit.date)});
     else qualityCheckForm.reset({ workOrderId: '', checkPoint: '', result: undefined, date: new Date(), inspectorId: '', notes: '' });
   }, [qualityCheckToEdit, qualityCheckForm, showManageQualityCheckDialog]);
 
@@ -729,10 +729,7 @@ export default function ProductionClientComponent({initialData}: ProductionClien
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف خطة الإنتاج "{plan.name}"؟</AlertDialogDescription></AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>تراجع</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeletePlanAction(plan.id!)}>تأكيد</AlertDialogAction>
-                                  </AlertDialogFooter>
+                                  <AlertDialogFooter><AlertDialogCancel>تراجع</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePlanAction(plan.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                            </AlertDialog>
                         </TableCell>
@@ -856,10 +853,7 @@ export default function ProductionClientComponent({initialData}: ProductionClien
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف فحص الجودة "{qc.id}"؟</AlertDialogDescription></AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>تراجع</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteQualityCheckAction(qc.id!)}>تأكيد</AlertDialogAction>
-                                  </AlertDialogFooter>
+                                  <AlertDialogFooter><AlertDialogCancel>تراجع</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteQualityCheckAction(qc.id!)}>تأكيد</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                            </AlertDialog>
                         </TableCell>
