@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { bankReceipts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -27,7 +27,14 @@ export type BankAccount = { id: string; bankName: string };
 export type RevenueAccount = { id: string; name: string };
 export type Customer = { id: string; name: string };
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
+
 export async function addBankReceipt(values: BankReceiptFormValues) {
+    const db = await getDb();
     const newId = `BREC${Date.now()}`;
     await db.insert(bankReceipts).values({
         ...values,
@@ -38,6 +45,7 @@ export async function addBankReceipt(values: BankReceiptFormValues) {
 }
 
 export async function updateBankReceipt(values: BankReceiptFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(bankReceipts).set({
         ...values,
@@ -47,6 +55,7 @@ export async function updateBankReceipt(values: BankReceiptFormValues) {
 }
 
 export async function deleteBankReceipt(id: string) {
+    const db = await getDb();
     const receipt = await db.query.bankReceipts.findFirst({ where: eq(bankReceipts.id, id) });
     if (receipt?.status === 'مرحل') {
         throw new Error("لا يمكن حذف مقبوضات مرحّلة. يجب إلغاء ترحيلها أولاً.");
@@ -56,9 +65,8 @@ export async function deleteBankReceipt(id: string) {
 }
 
 export async function updateBankReceiptStatus(id: string, status: 'مسودة' | 'مرحل') {
+    const db = await getDb();
     await db.update(bankReceipts).set({ status }).where(eq(bankReceipts.id, id));
     // Here you would also create a Journal Entry if status is 'مرحل'
     revalidatePath('/bank-receipts');
 }
-
-    

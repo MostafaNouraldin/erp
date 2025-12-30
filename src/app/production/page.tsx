@@ -1,11 +1,13 @@
 
 import React from 'react';
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { products, workOrders, billsOfMaterial, billOfMaterialItems, productionPlans, qualityChecks, workOrderProductionLogs, employees } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import ProductionClientComponent from './ProductionClientComponent';
 
 export default async function ProductionPage() {
+    const tenantId = 'T001'; // In a real app, this comes from the user session
+    const { db } = await connectToTenantDb(tenantId);
     try {
         const productsData = await db.select().from(products);
         const workOrdersData = await db.select().from(workOrders);

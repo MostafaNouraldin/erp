@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { tenants, tenantModuleSubscriptions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -25,7 +25,15 @@ const tenantSchema = z.object({
 
 type TenantFormValues = z.infer<typeof tenantSchema>;
 
+async function getMainDb() {
+    // This action operates on the main database, not a tenant-specific one.
+    const { db } = await connectToTenantDb('main');
+    return db;
+}
+
+
 export async function addTenant(values: TenantFormValues) {
+    const db = await getMainDb();
     const newTenantId = `TEN${Date.now()}`;
     
     let effectiveSubscriptionEndDate = values.subscriptionEndDate;
@@ -67,6 +75,7 @@ export async function addTenant(values: TenantFormValues) {
 }
 
 export async function updateTenant(values: TenantFormValues) {
+    const db = await getMainDb();
     if (!values.id) {
         throw new Error("Tenant ID is required for update.");
     }
@@ -104,6 +113,7 @@ export async function updateTenant(values: TenantFormValues) {
 
 
 export async function deleteTenant(tenantId: string) {
+    const db = await getMainDb();
     await db.transaction(async (tx) => {
         await tx.delete(tenantModuleSubscriptions).where(eq(tenantModuleSubscriptions.tenantId, tenantId));
         await tx.delete(tenants).where(eq(tenants.id, tenantId));

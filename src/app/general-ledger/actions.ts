@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { chartOfAccounts, journalEntries, journalEntryLines } from '@/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -35,8 +35,15 @@ const journalEntrySchema = z.object({
 });
 export type JournalEntry = z.infer<typeof journalEntrySchema>;
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
+
 // Account Actions
 export async function addAccount(values: AccountFormValues) {
+    const db = await getDb();
     await db.insert(chartOfAccounts).values({
         ...values,
         balance: String(values.balance || 0),
@@ -45,6 +52,7 @@ export async function addAccount(values: AccountFormValues) {
 }
 
 export async function updateAccount(values: AccountFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("Account ID is required for update.");
     await db.update(chartOfAccounts).set({
         name: values.name,
@@ -55,6 +63,7 @@ export async function updateAccount(values: AccountFormValues) {
 }
 
 export async function deleteAccount(accountId: string) {
+    const db = await getDb();
     const hasChildren = await db.query.chartOfAccounts.findFirst({
         where: eq(chartOfAccounts.parentId, accountId),
     });
@@ -68,6 +77,7 @@ export async function deleteAccount(accountId: string) {
 
 // Journal Entry Actions
 export async function addJournalEntry(values: JournalEntry) {
+    const db = await getDb();
     const newEntryId = `JV${Date.now()}`;
     await db.transaction(async (tx) => {
         await tx.insert(journalEntries).values({
@@ -107,6 +117,7 @@ export async function addJournalEntry(values: JournalEntry) {
 }
 
 export async function updateJournalEntry(values: JournalEntry) {
+    const db = await getDb();
     if (!values.id) throw new Error("Journal Entry ID is required for update.");
     const entryId = values.id;
 
@@ -132,6 +143,7 @@ export async function updateJournalEntry(values: JournalEntry) {
 }
 
 export async function deleteJournalEntry(entryId: string) {
+    const db = await getDb();
     const entry = await db.query.journalEntries.findFirst({ where: eq(journalEntries.id, entryId) });
     if (entry?.status === 'مرحل') {
         throw new Error("لا يمكن حذف قيد مرحّل. يجب إلغاء ترحيله أولاً.");
@@ -144,6 +156,7 @@ export async function deleteJournalEntry(entryId: string) {
 }
 
 export async function updateJournalEntryStatus(entryId: string, status: 'مسودة' | 'مرحل') {
+    const db = await getDb();
     // In a real app, posting ('مرحل') would also update account balances.
     // This is a simplified version.
     const entry = await db.query.journalEntries.findFirst({ where: eq(journalEntries.id, entryId) });

@@ -1,10 +1,12 @@
 
 import React from 'react';
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { bankAccounts } from '@/db/schema';
 import BanksPageClient from './BanksPageClient';
 
 export default async function BanksPage() {
+    const tenantId = 'T001'; // In a real app, this comes from the user session
+    const { db } = await connectToTenantDb(tenantId);
     try {
         const bankAccountsData = await db.select().from(bankAccounts);
         const initialData = bankAccountsData.map(acc => ({

@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { db } from "@/db";
+import { connectToTenantDb } from "@/db";
 import { salesInvoices, customers, products, journalEntries, journalEntryLines, chartOfAccounts } from "@/db/schema";
 import { sql, and, eq, like, between } from 'drizzle-orm';
 import { CurrencyProvider } from "@/contexts/currency-context";
 import DashboardClient from "./DashboardClient";
 
 async function getDashboardData() {
+  const tenantId = 'T001'; // In a real app, this comes from the user session
+  const { db } = await connectToTenantDb(tenantId);
   try {
     // Total Revenue (from paid invoices)
     const totalRevenueResult = await db
@@ -97,7 +99,7 @@ async function getDashboardData() {
   } catch (error) {
     const errorMessage = (error as Error).message;
     // This is the most likely error when the database is not set up.
-    if (errorMessage.includes("does not exist")) {
+    if (errorMessage.includes("does not exist") || errorMessage.includes("relation") && errorMessage.includes("does not exist")) {
         return { success: false, error: "Database tables not found. Please set up your database schema." };
     }
     console.error("Database query failed for Dashboard page:", error);

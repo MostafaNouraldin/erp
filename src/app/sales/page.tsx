@@ -1,14 +1,15 @@
 
-
 // This is now a true Server Component that fetches data and passes it to the client.
 import React from 'react';
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema, products, quotations, quotationItems, salesOrders, salesOrderItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import SalesClientComponent from './SalesClientComponent'; // We will create this component
 
 // This is now a true Server Component that fetches data and passes it to the client component.
 export default async function SalesPage() {
+    const tenantId = 'T001'; // In a real app, this comes from the user session
+    const { db } = await connectToTenantDb(tenantId);
     try {
         const customersResult = await db.select().from(customersSchema);
         const invoicesResult = await db.select().from(salesInvoicesSchema);

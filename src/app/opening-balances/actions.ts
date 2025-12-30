@@ -1,9 +1,9 @@
 
 'use server';
 
-import { db } from '@/db';
-import { journalEntries, journalEntryLines } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { connectToTenantDb } from '@/db';
+import { journalEntries, journalEntryLines, chartOfAccounts } from '@/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -17,12 +17,18 @@ const openingBalanceSchema = z.object({
 });
 
 export type OpeningBalanceFormValues = z.infer<typeof openingBalanceSchema>;
-export type Account = { id: string; name: string, type: string };
+export type Account = { id: string; name: string; type: string };
 
 const SOURCE_MODULE = "OpeningBalance";
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
 // We model opening balances as a special type of Journal Entry
 export async function addOpeningBalance(values: OpeningBalanceFormValues) {
+    const db = await getDb();
   const newEntryId = `OB-${values.accountId}-${Date.now()}`;
   const totalAmount = Math.max(values.debit, values.credit);
   
@@ -48,6 +54,7 @@ export async function addOpeningBalance(values: OpeningBalanceFormValues) {
 }
 
 export async function updateOpeningBalance(values: OpeningBalanceFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     const totalAmount = Math.max(values.debit, values.credit);
 
@@ -69,6 +76,7 @@ export async function updateOpeningBalance(values: OpeningBalanceFormValues) {
 }
 
 export async function deleteOpeningBalance(id: string) {
+    const db = await getDb();
     await db.transaction(async (tx) => {
         await tx.delete(journalEntryLines).where(eq(journalEntryLines.journalEntryId, id));
         await tx.delete(journalEntries).where(eq(journalEntries.id, id));

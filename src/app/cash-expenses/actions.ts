@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { cashExpenses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -24,7 +24,14 @@ export type CashExpenseFormValues = z.infer<typeof cashExpenseSchema>;
 export type CashAccount = { id: string; name: string };
 export type ExpenseAccount = { id: string; name: string };
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
+
 export async function addCashExpense(values: CashExpenseFormValues) {
+    const db = await getDb();
     const newId = `CEXP${Date.now()}`;
     await db.insert(cashExpenses).values({
         ...values,
@@ -36,6 +43,7 @@ export async function addCashExpense(values: CashExpenseFormValues) {
 }
 
 export async function updateCashExpense(values: CashExpenseFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(cashExpenses).set({
         ...values,
@@ -45,6 +53,7 @@ export async function updateCashExpense(values: CashExpenseFormValues) {
 }
 
 export async function deleteCashExpense(id: string) {
+    const db = await getDb();
     const expense = await db.query.cashExpenses.findFirst({ where: eq(cashExpenses.id, id) });
     if (expense?.status === 'مرحل') {
         throw new Error("لا يمكن حذف مصروف مرحّل. يجب إلغاء ترحيله أولاً.");
@@ -54,6 +63,7 @@ export async function deleteCashExpense(id: string) {
 }
 
 export async function updateCashExpenseStatus(id: string, status: 'مسودة' | 'مرحل') {
+    const db = await getDb();
     await db.update(cashExpenses).set({ status }).where(eq(cashExpenses.id, id));
     // Here you would also create a Journal Entry if status is 'مرحل'
     revalidatePath('/cash-expenses');

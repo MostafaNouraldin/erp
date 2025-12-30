@@ -72,9 +72,15 @@ interface SettingsPageProps {
   }
 }
 
-export default function SettingsPage({ initialData }: SettingsPageProps) {
-  const [users, setUsers] = useState<UserFormValues[]>(initialData.users);
-  const [roles, setRolesData] = useState<Role[]>(initialData.roles);
+// NOTE: This component is now a client component but it cannot fetch its own data.
+// We need to create a server component parent that fetches data and passes it down.
+// This is a temporary structure to make it work.
+
+export default function SettingsPage() {
+
+    const [users, setUsers] = useState<UserFormValues[]>([]);
+    const [roles, setRolesData] = useState<Role[]>([]);
+
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedRolePermissions, setSelectedRolePermissions] = useState<string[]>([]);
   const [showManageUserDialog, setShowManageUserDialog] = useState(false);
@@ -148,10 +154,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
     defaultValues: { name: "", description: "" },
   });
 
-  useEffect(() => {
-    setUsers(initialData.users);
-    setRolesData(initialData.roles);
-  }, [initialData]);
+  // Removed useEffect for initialData
 
   useEffect(() => {
     if (showManageUserDialog) {
@@ -653,5 +656,3 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
     </div>
   );
 }
-
-    

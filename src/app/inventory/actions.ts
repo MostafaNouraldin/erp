@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { products, categories } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -33,7 +33,14 @@ type CategoryValues = {
     description?: string;
 };
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
+
 export async function addProduct(productData: ProductFormValues) {
+  const db = await getDb();
   const newProduct = {
     ...productData,
     id: `ITEM${Date.now()}`,
@@ -45,6 +52,7 @@ export async function addProduct(productData: ProductFormValues) {
 }
 
 export async function updateProduct(productData: ProductFormValues) {
+    const db = await getDb();
     if (!productData.id) {
         throw new Error("Product ID is required for updating.");
     }
@@ -58,11 +66,13 @@ export async function updateProduct(productData: ProductFormValues) {
 }
 
 export async function deleteProduct(productId: string) {
+  const db = await getDb();
   await db.delete(products).where(eq(products.id, productId));
   revalidatePath('/inventory');
 }
 
 export async function addCategory(categoryData: CategoryValues) {
+    const db = await getDb();
     const newCategory = {
         ...categoryData,
         id: `CAT${Date.now()}`,
@@ -72,6 +82,7 @@ export async function addCategory(categoryData: CategoryValues) {
 }
 
 export async function updateCategory(categoryData: CategoryValues) {
+    const db = await getDb();
     if (!categoryData.id) {
         throw new Error("Category ID is required for updating.");
     }
@@ -80,8 +91,7 @@ export async function updateCategory(categoryData: CategoryValues) {
 }
 
 export async function deleteCategory(categoryId: string) {
+    const db = await getDb();
     await db.delete(categories).where(eq(categories.id, categoryId));
     revalidatePath('/inventory');
 }
-
-    

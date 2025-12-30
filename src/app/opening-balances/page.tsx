@@ -1,11 +1,13 @@
 
 import React from 'react';
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { journalEntries, journalEntryLines, chartOfAccounts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import OpeningBalancesClient from './OpeningBalancesClient';
 
 export default async function OpeningBalancesPage() {
+    const tenantId = 'T001'; // In a real app, this comes from the user session
+    const { db } = await connectToTenantDb(tenantId);
     try {
         const openingBalanceEntries = await db.select().from(journalEntries).where(eq(journalEntries.sourceModule, "OpeningBalance"));
         

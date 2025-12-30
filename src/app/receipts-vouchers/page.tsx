@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { journalEntries, journalEntryLines, chartOfAccounts, customers, suppliers } from '@/db/schema';
 import { eq, or } from 'drizzle-orm';
 import ReceiptsVouchersClient from './ReceiptsVouchersClient';
 import type { Party, Account } from './actions';
 
 export default async function ReceiptsVouchersPage() {
+    const tenantId = 'T001'; // In a real app, this comes from the user session
+    const { db } = await connectToTenantDb(tenantId);
     try {
         const voucherEntries = await db.select().from(journalEntries).where(
             or(

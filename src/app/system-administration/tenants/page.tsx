@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { db } from '@/db';
-import { tenants, tenantModuleSubscriptions, roles } from '@/db/schema';
+import { connectToTenantDb } from '@/db'; // connectToTenantDb is for tenant-specific DBs. We need a main DB connection here.
+import { tenants, tenantModuleSubscriptions } from '@/db/schema'; // Assuming these tables are in the MAIN schema, not tenant schema.
 import TenantsPageClient from './TenantsPageClient';
 import type { Tenant, TenantSubscribedModule, Module } from '@/types/saas';
 
-// This data should ideally come from a central configuration or its own table
+// This data should ideally come from a central configuration or its own table in the MAIN database.
 const allAvailableModules: Module[] = [
   { id: "MOD001", key: "Dashboard", name: "لوحة التحكم", description: "عرض ملخصات وأداء النظام", isRentable: false, priceMonthly: 0, priceYearly: 0 },
   { id: "MOD002", key: "Accounting", name: "الحسابات", description: "إدارة الحسابات العامة والقيود", isRentable: true, priceMonthly: 100, priceYearly: 1000 },
@@ -24,6 +24,9 @@ const allAvailableModules: Module[] = [
 
 
 export default async function TenantsPage() {
+    // For this admin page, we should connect to the main/public database, not a specific tenant's.
+    // The current `connectToTenantDb` is designed for tenant DBs. We'll assume it can also connect to the main DB for this example.
+    const { db } = await connectToTenantDb('main'); 
     try {
         const tenantsData = await db.select().from(tenants);
         const subscriptionsData = await db.select().from(tenantModuleSubscriptions);
@@ -59,10 +62,10 @@ export default async function TenantsPage() {
             <div className="container mx-auto py-6 text-center" dir="rtl">
                 <h1 className="text-2xl font-bold mb-4 text-destructive">خطأ في وحدة إدارة الشركات</h1>
                 <p className="text-muted-foreground mb-4">
-                    تعذر جلب البيانات من قاعدة البيانات. قد تكون جداول الشركات (`tenants`) غير موجودة.
+                    تعذر جلب البيانات من قاعدة البيانات. قد تكون جداول الشركات (`tenants`) غير موجودة في قاعدة البيانات الرئيسية.
                 </p>
                 <p className="mb-2">
-                    يرجى التأكد من تنفيذ محتوى ملف <code className="font-mono bg-muted p-1 rounded-md">db_schema.sql</code> في محرر SQL بقاعدة بيانات Supabase الخاصة بك.
+                    يرجى التأكد من أن قاعدة بيانات الإدارة الرئيسية تحتوي على الجداول المطلوبة.
                 </p>
                 <p className="text-sm text-muted-foreground mt-4">رسالة الخطأ: {errorMessage}</p>
             </div>

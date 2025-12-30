@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { inventoryTransfers, products } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -22,7 +22,13 @@ export type TransferFormValues = z.infer<typeof transferSchema>;
 export type Product = typeof products.$inferSelect;
 export type Warehouse = { id: string; name: string };
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
 export async function addTransfer(values: TransferFormValues) {
+  const db = await getDb();
   const product = await db.query.products.findFirst({ where: eq(products.id, values.productId) });
   if (!product || product.quantity < values.quantity) {
     throw new Error("الكمية المطلوبة للتحويل غير متوفرة في المخزون.");
@@ -34,6 +40,7 @@ export async function addTransfer(values: TransferFormValues) {
 }
 
 export async function updateTransferStatus(id: string, status: TransferFormValues['status']) {
+  const db = await getDb();
   const transfer = await db.query.inventoryTransfers.findFirst({ where: eq(inventoryTransfers.id, id) });
   if (!transfer) throw new Error("لم يتم العثور على طلب التحويل.");
 
@@ -50,6 +57,7 @@ export async function updateTransferStatus(id: string, status: TransferFormValue
 }
 
 export async function deleteTransfer(id: string) {
+  const db = await getDb();
   const transfer = await db.query.inventoryTransfers.findFirst({ where: eq(inventoryTransfers.id, id) });
   if (transfer && transfer.status !== 'مسودة') {
       throw new Error("لا يمكن حذف طلب تحويل ليس في حالة 'مسودة'.");

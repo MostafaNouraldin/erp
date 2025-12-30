@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { employeeSettlements, employees, chartOfAccounts, journalEntries, journalEntryLines } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -24,8 +24,14 @@ export type Settlement = z.infer<typeof settlementSchema>;
 export type Employee = typeof employees.$inferSelect;
 export type SettlementAccount = typeof chartOfAccounts.$inferSelect;
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
 
 export async function addSettlement(values: Settlement) {
+    const db = await getDb();
     const newSettlementId = `ESET${Date.now()}`;
     await db.insert(employeeSettlements).values({
         ...values,
@@ -36,6 +42,7 @@ export async function addSettlement(values: Settlement) {
 }
 
 export async function updateSettlement(values: Settlement) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(employeeSettlements).set({
         ...values,
@@ -45,6 +52,7 @@ export async function updateSettlement(values: Settlement) {
 }
 
 export async function deleteSettlement(id: string) {
+    const db = await getDb();
     const settlement = await db.query.employeeSettlements.findFirst({ where: eq(employeeSettlements.id, id) });
     if (settlement && settlement.status !== "مسودة") {
         throw new Error("لا يمكن حذف تسوية ليست في حالة مسودة.");
@@ -54,6 +62,7 @@ export async function deleteSettlement(id: string) {
 }
 
 export async function updateSettlementStatus(id: string, status: Settlement['status']) {
+    const db = await getDb();
     const settlement = await db.query.employeeSettlements.findFirst({ where: eq(employeeSettlements.id, id) });
      if (status === 'ملغاة' && settlement && (settlement.status !== "مسودة" && settlement.status !== "معتمدة")) {
         throw new Error("لا يمكن إلغاء هذه التسوية لأنها ليست في حالة مسودة أو معتمدة.");
@@ -63,6 +72,7 @@ export async function updateSettlementStatus(id: string, status: Settlement['sta
 }
 
 export async function postSettlementToGL(settlement: Settlement) {
+    const db = await getDb();
     if (settlement.status !== "معتمدة") {
         throw new Error("لا يمكن ترحيل تسوية ليست في حالة 'معتمدة'.");
     }

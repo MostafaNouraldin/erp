@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { checks, bankAccounts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import CheckbookRegisterClientComponent from './CheckbookRegisterClientComponent';
 
 
 export default async function CheckbookRegisterPage() {
+    const tenantId = 'T001'; // In a real app, this comes from the user session
+    const { db } = await connectToTenantDb(tenantId);
     try {
         const checksData = await db.select().from(checks);
         const bankAccountsData = await db.select({ id: bankAccounts.id, name: bankAccounts.bankName }).from(bankAccounts);

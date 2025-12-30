@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { checks, bankAccounts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -24,7 +24,14 @@ const checkSchema = z.object({
 export type CheckFormValues = z.infer<typeof checkSchema>;
 export type BankAccount = typeof bankAccounts.$inferSelect;
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
+
 export async function addCheck(values: CheckFormValues) {
+    const db = await getDb();
     const newCheckId = `CHK${Date.now()}`;
     await db.insert(checks).values({
         ...values,
@@ -35,6 +42,7 @@ export async function addCheck(values: CheckFormValues) {
 }
 
 export async function updateCheck(values: CheckFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(checks).set({
         ...values,
@@ -44,6 +52,7 @@ export async function updateCheck(values: CheckFormValues) {
 }
 
 export async function deleteCheck(id: string) {
+    const db = await getDb();
     const check = await db.query.checks.findFirst({ where: eq(checks.id, id) });
     if (check && check.status !== 'صادر' && check.status !== 'ملغي') {
         throw new Error("لا يمكن حذف شيك تم تسديده أو إرجاعه.");
@@ -53,6 +62,7 @@ export async function deleteCheck(id: string) {
 }
 
 export async function updateCheckStatus(id: string, status: CheckFormValues['status']) {
+    const db = await getDb();
     const check = await db.query.checks.findFirst({ where: eq(checks.id, id) });
     if (!check) {
         throw new Error("لم يتم العثور على الشيك.");

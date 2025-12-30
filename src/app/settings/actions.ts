@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { users, roles } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -32,9 +32,15 @@ const roleSchema = z.object({
 
 export type RoleFormValues = z.infer<typeof roleSchema>;
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
 
 // --- User Actions ---
 export async function addUser(values: UserFormValues) {
+    const db = await getDb();
     if (!values.password) {
         throw new Error("Password is required for a new user.");
     }
@@ -55,6 +61,7 @@ export async function addUser(values: UserFormValues) {
 }
 
 export async function updateUser(values: UserFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     
     // Do not update password if it's not provided
@@ -78,6 +85,7 @@ export async function updateUser(values: UserFormValues) {
 
 // --- Role Actions ---
 export async function addRole(values: RoleFormValues) {
+    const db = await getDb();
     const newId = `ROLE${Date.now()}`;
     await db.insert(roles).values({
         id: newId,
@@ -89,6 +97,7 @@ export async function addRole(values: RoleFormValues) {
 }
 
 export async function updateRole(values: RoleFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(roles).set({
         name: values.name,
@@ -99,6 +108,7 @@ export async function updateRole(values: RoleFormValues) {
 }
 
 export async function deleteRole(id: string) {
+    const db = await getDb();
     // Check if any user is assigned this role
     const userWithRole = await db.query.users.findFirst({
         where: eq(users.roleId, id),
@@ -109,5 +119,3 @@ export async function deleteRole(id: string) {
     await db.delete(roles).where(eq(roles.id, id));
     revalidatePath('/settings');
 }
-
-    

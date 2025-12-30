@@ -1,11 +1,14 @@
 
 import React from 'react';
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { bankReceipts, bankAccounts, chartOfAccounts, customers } from '@/db/schema';
 import { like } from 'drizzle-orm';
 import BankReceiptsClient from './BankReceiptsClient';
 
 export default async function BankReceiptsPage() {
+  const tenantId = 'T001'; // In a real app, this comes from the user session
+  const { db } = await connectToTenantDb(tenantId);
+
   try {
     const receiptsData = await db.select().from(bankReceipts);
     const bankAccountsData = await db.select().from(bankAccounts);
@@ -31,5 +34,3 @@ export default async function BankReceiptsPage() {
     return <div>Error loading data: {errorMessage}</div>;
   }
 }
-
-    

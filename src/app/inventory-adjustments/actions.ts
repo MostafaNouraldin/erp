@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { inventoryAdjustments, products } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -21,13 +21,21 @@ const adjustmentSchema = z.object({
 export type AdjustmentFormValues = z.infer<typeof adjustmentSchema>;
 export type Product = typeof products.$inferSelect;
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
+
 export async function addAdjustment(values: AdjustmentFormValues) {
+  const db = await getDb();
   const newId = `ADJ${Date.now()}`;
   await db.insert(inventoryAdjustments).values({ ...values, id: newId });
   revalidatePath('/inventory-adjustments');
 }
 
 export async function updateAdjustment(values: AdjustmentFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required for update.");
   const existing = await db.query.inventoryAdjustments.findFirst({ where: eq(inventoryAdjustments.id, values.id) });
   if (existing?.status === 'معتمدة') {
@@ -38,6 +46,7 @@ export async function updateAdjustment(values: AdjustmentFormValues) {
 }
 
 export async function deleteAdjustment(id: string) {
+  const db = await getDb();
   const existing = await db.query.inventoryAdjustments.findFirst({ where: eq(inventoryAdjustments.id, id) });
   if (existing?.status === 'معتمدة') {
     throw new Error("لا يمكن حذف تسوية معتمدة.");
@@ -47,6 +56,7 @@ export async function deleteAdjustment(id: string) {
 }
 
 export async function approveAdjustment(id: string) {
+  const db = await getDb();
   await db.transaction(async (tx) => {
     const adjustment = await tx.query.inventoryAdjustments.findFirst({ where: eq(inventoryAdjustments.id, id) });
     if (!adjustment) throw new Error("لم يتم العثور على التسوية.");

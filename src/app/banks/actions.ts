@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { bankAccounts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -21,7 +21,13 @@ const bankAccountSchema = z.object({
 
 export type BankAccountFormValues = z.infer<typeof bankAccountSchema>;
 
+async function getDb(tenantId: string = 'T001') {
+    const { db } = await connectToTenantDb(tenantId);
+    return db;
+}
+
 export async function addBankAccount(values: BankAccountFormValues) {
+    const db = await getDb();
     const newId = `BANK${Date.now()}`;
     await db.insert(bankAccounts).values({
         ...values,
@@ -32,6 +38,7 @@ export async function addBankAccount(values: BankAccountFormValues) {
 }
 
 export async function updateBankAccount(values: BankAccountFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(bankAccounts).set({
         bankName: values.bankName,
@@ -46,6 +53,7 @@ export async function updateBankAccount(values: BankAccountFormValues) {
 }
 
 export async function deleteBankAccount(id: string) {
+    const db = await getDb();
     // Note: In a real-world app, you should check for dependencies (e.g., transactions) before deleting.
     await db.delete(bankAccounts).where(eq(bankAccounts.id, id));
     revalidatePath('/banks');

@@ -139,6 +139,10 @@ export default function RootLayout({
     );
   }
 
+  // Example of getting tenantId from session and passing it down
+  // In a real app, this would be retrieved from a server-side session or context
+  const tenantId = currentTenant.id; 
+
   const navItems = allNavItems.filter(item => {
     const moduleAccess = currentTenantSubscription.modules[item.module];
     if (typeof moduleAccess === 'boolean') {
@@ -270,4 +274,3 @@ export default function RootLayout({
     </html>
   );
 }
-

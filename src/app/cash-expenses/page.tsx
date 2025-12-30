@@ -1,11 +1,13 @@
 
 import React from 'react';
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { cashExpenses, chartOfAccounts } from '@/db/schema';
 import { like, or } from 'drizzle-orm';
 import CashExpensesClient from './CashExpensesClient';
 
 export default async function CashExpensesPage() {
+  const tenantId = 'T001'; // In a real app, this comes from the user session
+  const { db } = await connectToTenantDb(tenantId);
   try {
     const expensesData = await db.select().from(cashExpenses);
     // Assuming cash accounts are like '101%' and expense accounts are '5%'
