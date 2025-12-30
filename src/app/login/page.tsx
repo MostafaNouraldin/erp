@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -32,7 +33,7 @@ export default function LoginPage() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { tenantId: "T001", email: "", password: "" },
+    defaultValues: { tenantId: "T001", email: "manager@example.com", password: "password" },
   });
 
   const handleLoginSubmit = async (values: LoginFormValues) => {

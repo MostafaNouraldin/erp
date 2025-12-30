@@ -10,7 +10,7 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail } from "lucide-react"; // Added FolderOpen and Mail
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail, GanttChartSquare } from "lucide-react"; // Added FolderOpen and Mail
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/currency-context";
@@ -20,7 +20,7 @@ import AppLogo from "@/components/app-logo";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Bell } from "lucide-react";
-import { AuthProvider, AuthContext } from "@/hooks/auth-context";
+import { AuthProvider, AuthContext, useAuth } from "@/hooks/auth-context";
 import { useContext } from 'react';
 import LoginPage from './login/page';
 import { usePathname } from "next/navigation";
@@ -67,16 +67,16 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
     icon: BookUser,
     module: "Accounting",
     subItems: [
-      { href: "/general-ledger", label: "الحسابات العامة", icon: BookOpen },
-      { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer },
-      { href: "/accounts-payable-receivable", label: "الحسابات المدينة والدائنة", icon: Users },
-      { href: "/banks", label: "البنوك", icon: Landmark },
-      { href: "/opening-balances", label: "الأرصدة الافتتاحية", icon: FileArchive },
-      { href: "/bank-expenses", label: "المصروفات البنكية", icon: ArrowDownCircle },
-      { href: "/cash-expenses", label: "المصروفات النقدية", icon: ArrowDownSquare },
-      { href: "/bank-receipts", label: "المقبوضات البنكية", icon: ArrowUpCircle },
-      { href: "/employee-settlements", label: "تسوية حسابات الموظفين", icon: UserCheck },
-      { href: "/checkbook-register", label: "دفتر الشيكات", icon: BookCopy },
+      { href: "/general-ledger", label: "الحسابات العامة", icon: BookOpen, permissionKey: "accounting.view" },
+      { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer, permissionKey: "accounting.view" },
+      { href: "/accounts-payable-receivable", label: "الحسابات المدينة والدائنة", icon: Users, permissionKey: "accounting.view" },
+      { href: "/banks", label: "البنوك", icon: Landmark, permissionKey: "accounting.view" },
+      { href: "/opening-balances", label: "الأرصدة الافتتاحية", icon: FileArchive, permissionKey: "accounting.create" },
+      { href: "/bank-expenses", label: "المصروفات البنكية", icon: ArrowDownCircle, permissionKey: "accounting.create" },
+      { href: "/cash-expenses", label: "المصروفات النقدية", icon: ArrowDownSquare, permissionKey: "accounting.create" },
+      { href: "/bank-receipts", label: "المقبوضات البنكية", icon: ArrowUpCircle, permissionKey: "accounting.create" },
+      { href: "/employee-settlements", label: "تسوية حسابات الموظفين", icon: UserCheck, permissionKey: "hr.view" },
+      { href: "/checkbook-register", label: "دفتر الشيكات", icon: BookCopy, permissionKey: "accounting.view" },
     ],
   },
   {
@@ -84,16 +84,16 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
     icon: Package,
     module: "Inventory",
     subItems: [
-      { href: "/inventory", label: "إدارة المخزون", icon: Package },
-      { href: "/inventory-transfers", label: "تحويلات المخزون", icon: Truck },
-      { href: "/inventory-adjustments", label: "تسويات جردية", icon: SlidersHorizontal },
+      { href: "/inventory", label: "إدارة المخزون", icon: Package, permissionKey: "inventory.view" },
+      { href: "/inventory-transfers", label: "تحويلات المخزون", icon: Truck, permissionKey: "inventory.create" },
+      { href: "/inventory-adjustments", label: "تسويات جردية", icon: SlidersHorizontal, permissionKey: "inventory.adjust_stock" },
     ],
   },
   { href: "/sales", label: "المبيعات", icon: ShoppingCart, module: "Sales" },
   { href: "/purchases", label: "المشتريات", icon: Briefcase, module: "Purchases" },
   { href: "/hr-payroll", label: "الموارد البشرية والرواتب", icon: Users, module: "HR" },
   { href: "/production", label: "الإنتاج", icon: Cog, module: "Production" },
-  { href: "/projects", label: "المشاريع", icon: Building, module: "Projects" },
+  { href: "/projects", label: "المشاريع", icon: GanttChartSquare, module: "Projects" },
   { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" },
   { href: "/reports", label: "التقارير والتحليل", icon: BarChart2, module: "BI" },
   {
@@ -101,8 +101,8 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
     icon: Settings,
     module: "Settings",
     subItems: [
-      { href: "/settings", label: "الإعدادات العامة", icon: SettingsIcon },
-      { href: "/subscription", label: "الاشتراك والفوترة", icon: Shield },
+      { href: "/settings", label: "الإعدادات العامة", icon: SettingsIcon, permissionKey: "settings.view" },
+      { href: "/subscription", label: "الاشتراك والفوترة", icon: Shield, permissionKey: "settings.view" },
     ]
   },
   {
@@ -110,10 +110,10 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
     icon: Settings2,
     module: "SystemAdministration",
     subItems: [
-      { href: "/system-administration/tenants", label: "إدارة الشركات (العملاء)", icon: Building2 },
-      { href: "/system-administration/modules", label: "إعدادات الوحدات والاشتراكات", icon: SlidersHorizontal },
-      { href: "/system-administration/subscription-invoices", label: "فواتير الاشتراكات", icon: FileText },
-      { href: "/system-administration/subscription-requests", label: "طلبات الاشتراك", icon: Mail },
+      { href: "/system-administration/tenants", label: "إدارة الشركات (العملاء)", icon: Building2, permissionKey: "admin.manage_tenants" },
+      { href: "/system-administration/modules", label: "إعدادات الوحدات والاشتراكات", icon: SlidersHorizontal, permissionKey: "admin.manage_modules" },
+      { href: "/system-administration/subscription-invoices", label: "فواتير الاشتراكات", icon: FileText, permissionKey: "admin.manage_billing" },
+      { href: "/system-administration/subscription-requests", label: "طلبات الاشتراك", icon: Mail, permissionKey: "admin.manage_requests" },
     ],
   },
   { href: "/help", label: "المساعدة", icon: CircleHelpIcon, module: "Help" },
@@ -121,7 +121,7 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
 
 
 function AppLayout({ children }: { children: React.ReactNode }) {
-    const auth = useContext(AuthContext);
+    const auth = useAuth();
     const pathname = usePathname();
 
     const [mounted, setMounted] = useState(false);
@@ -134,16 +134,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
-    if (!auth) {
-        return null; 
-    }
-    
-    const { isAuthenticated, user, logout } = auth;
-
-
-    if (!mounted) {
+    // If loading auth state from localStorage, don't render anything yet
+    if (!mounted || auth.isLoading) {
         return (
-            <html lang="ar" dir="rtl" suppressHydrationWarning>
+             <html lang="ar" dir="rtl" suppressHydrationWarning>
                 <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
                 </body>
             </html>
@@ -151,30 +145,43 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     }
     
     // Allow access to login and subscribe pages without authentication
-    if (!isAuthenticated && pathname !== '/login' && pathname !== '/subscribe') {
+    const isPublicPage = pathname === '/login' || pathname === '/subscribe';
+
+    if (!auth.isAuthenticated && !isPublicPage) {
         return <LoginPage />;
     }
-    if (isAuthenticated && (pathname === '/login' || pathname === '/subscribe')) {
-        // If logged in, redirect away from login/subscribe pages
+    
+    // If authenticated, redirect away from public pages
+    if (auth.isAuthenticated && isPublicPage) {
         if (typeof window !== 'undefined') {
             window.location.href = '/';
         }
         return null;
     }
     
-    // Render children directly for public pages
-    if (pathname === '/login' || pathname === '/subscribe') {
+    // Render children directly for public pages if not authenticated
+    if (!auth.isAuthenticated && isPublicPage) {
         return <>{children}</>;
     }
 
 
-    const navItems = allNavItems.filter(item => {
-        const moduleAccess = currentTenantSubscription.modules[item.module];
-        if (typeof moduleAccess === 'boolean') {
-            return moduleAccess;
+    const navItems = allNavItems
+      .filter(item => {
+        const moduleKey = item.module.toLowerCase();
+        const mainPermission = `${moduleKey}.view`;
+        return currentTenantSubscription.modules[item.module] && (auth.hasPermission(mainPermission) || item.subItems?.some(sub => auth.hasPermission(sub.permissionKey)));
+      })
+      .map(item => {
+        if (item.subItems) {
+            return {
+                ...item,
+                subItems: item.subItems.filter(sub => auth.hasPermission(sub.permissionKey))
+            };
         }
-        return false;
-    });
+        return item;
+      })
+      .filter(item => item.href || (item.subItems && item.subItems.length > 0));
+
 
     return (
         <>
@@ -225,22 +232,22 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                 </Button>
                                 <LanguageToggle />
                                 <ModeToggle />
-                                {isAuthenticated && user && (
+                                {auth.isAuthenticated && auth.user && (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                                                 <Avatar className="h-9 w-9">
-                                                    <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="person" />
-                                                    <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                    <AvatarImage src={auth.user.avatarUrl} alt={auth.user.name} data-ai-hint="person" />
+                                                    <AvatarFallback>{auth.user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                                                 </Avatar>
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="w-64" align="end" forceMount dir="rtl">
                                             <DropdownMenuLabel className="font-normal">
                                                 <div className="flex flex-col space-y-1 text-right">
-                                                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                                                    <p className="text-sm font-medium leading-none">{auth.user.name}</p>
                                                     <p className="text-xs leading-none text-muted-foreground">
-                                                        {user.email}
+                                                        {auth.user.email}
                                                     </p>
                                                 </div>
                                             </DropdownMenuLabel>
@@ -262,7 +269,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                                 <span>الإعدادات</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={logout}>
+                                            <DropdownMenuItem onClick={auth.logout}>
                                                 <LogOut className="me-2 h-4 w-4" />
                                                 <span>تسجيل الخروج</span>
                                             </DropdownMenuItem>
