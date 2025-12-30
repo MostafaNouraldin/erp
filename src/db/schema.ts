@@ -490,7 +490,7 @@ export const inventoryTransfers = pgTable('inventory_transfers', {
     toWarehouseId: varchar('to_warehouse_id', { length: 256 }).notNull(),
     productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
     quantity: integer('quantity').notNull(),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "قيد النقل", "مكتملة"
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'), // "مسودة", "قيد النقل", "مكتملة", "ملغى"
     notes: text('notes'),
 });
 
@@ -596,5 +596,6 @@ export const users = pgTable('users', {
 
 
     
+
 
 

@@ -3,7 +3,7 @@
 
 import { connectToTenantDb } from '@/db';
 import { inventoryTransfers, products } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -44,16 +44,37 @@ export async function updateTransferStatus(id: string, status: TransferFormValue
   const transfer = await db.query.inventoryTransfers.findFirst({ where: eq(inventoryTransfers.id, id) });
   if (!transfer) throw new Error("لم يتم العثور على طلب التحويل.");
 
-  if (status === 'مكتملة' && transfer.status === 'قيد النقل') {
-    // This is where you would update inventory quantities in a real scenario
-    // For now, we just update the status.
-    // Example logic:
-    // await db.update(products).set({ quantity: sql`${products.quantity} - ${transfer.quantity}` }).where(eq(products.id, transfer.productId));
-    // A separate logic would be needed to add quantity to the receiving warehouse/location.
-  }
-  
-  await db.update(inventoryTransfers).set({ status }).where(eq(inventoryTransfers.id, id));
+  await db.transaction(async (tx) => {
+    if (status === 'مكتملة' && transfer.status === 'قيد النقل') {
+        // In a real multi-warehouse scenario, you would decrease from fromWarehouseId location
+        // and increase in toWarehouseId location.
+        // For now, this logic is simplified as we don't store stock per warehouse.
+        // This is a placeholder for that logic.
+        // For example: await tx.update(warehouseStock).set...
+    }
+     if (status === 'قيد النقل' && transfer.status === 'مسودة') {
+        const product = await tx.query.products.findFirst({ where: eq(products.id, transfer.productId) });
+        if (!product || product.quantity < transfer.quantity) {
+            throw new Error(`الكمية المطلوبة (${transfer.quantity}) غير متوفرة في المخزون للمنتج ${product?.name}. الكمية الحالية: ${product?.quantity || 0}.`);
+        }
+        // Here you would deduct from the 'from' warehouse.
+        // As a simplification, we deduct from total stock now.
+        await tx.update(products)
+            .set({ quantity: sql`${products.quantity} - ${transfer.quantity}`})
+            .where(eq(products.id, transfer.productId));
+    }
+     if (status === 'مسودة' && transfer.status === 'قيد النقل') {
+        // Reverse the deduction if moved back to draft
+        await tx.update(products)
+            .set({ quantity: sql`${products.quantity} + ${transfer.quantity}`})
+            .where(eq(products.id, transfer.productId));
+    }
+    
+    await tx.update(inventoryTransfers).set({ status }).where(eq(inventoryTransfers.id, id));
+  });
+
   revalidatePath('/inventory-transfers');
+  revalidatePath('/inventory');
 }
 
 export async function deleteTransfer(id: string) {
