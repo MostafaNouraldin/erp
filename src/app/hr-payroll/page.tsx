@@ -3,7 +3,7 @@
 import React from 'react';
 import { db } from '@/db';
 import { employees, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, employeeAllowances, employeeDeductions } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import HRClientComponent from './HRClientComponent';
 
 export default async function HRPayrollPage() {
@@ -44,11 +44,23 @@ export default async function HRPayrollPage() {
                 deductions,
             };
         });
+        
+        const attendanceWithCorrectDates = attendanceResult.map(a => {
+            const checkInTime = a.checkIn ? new Date(a.checkIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit'}) : null;
+            const checkOutTime = a.checkOut ? new Date(a.checkOut).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit'}) : null;
+            
+            return {
+              ...a,
+              date: new Date(a.date),
+              checkIn: checkInTime,
+              checkOut: checkOutTime,
+            };
+        });
 
         const initialData = {
             employees: employeesWithDetails,
             payrolls: payrollsWithDetails,
-            attendances: attendanceResult.map(a => ({...a, date: new Date(a.date)})),
+            attendances: attendanceWithCorrectDates,
             leaveRequests: leaveRequestsResult.map(l => ({...l, startDate: new Date(l.startDate), endDate: new Date(l.endDate)})),
             warningNotices: warningNoticesResult.map(w => ({...w, date: new Date(w.date)})),
             administrativeDecisions: administrativeDecisionsResult.map(d => ({...d, decisionDate: new Date(d.decisionDate), effectiveDate: new Date(d.effectiveDate)})),
@@ -78,3 +90,6 @@ export default async function HRPayrollPage() {
 
     
 
+
+
+    

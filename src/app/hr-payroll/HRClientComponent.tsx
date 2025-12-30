@@ -27,7 +27,7 @@ import { Separator } from '@/components/ui/separator';
 import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
 import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, LeaveRequestFormValues, WarningNoticeFormValues, AdministrativeDecisionFormValues, ResignationFormValues, DisciplinaryWarningFormValues } from './actions';
-import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning } from './actions';
+import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, updatePayrollStatus, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning } from './actions';
 
 
 // Mock data for some sections
@@ -387,7 +387,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     const netSalary = (values.basicSalary || 0) + totalAllowances - totalDeductions;
     const employee = employees.find(e => e.id === values.employeeId);
 
-    const finalValues = { ...values, netSalary, employeeName: employee?.name };
+    const finalValues = { ...values, netSalary };
 
     try {
       if (payrollToEdit) {
@@ -410,12 +410,13 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
       setShowViewPayrollDialog(true);
   }
   
-  const handlePayPayroll = (payrollId: string) => {
-    // Optimistic update
-    setPayrollDataState(prev => prev.map(p => p.id === payrollId ? {...p, status: "مدفوع", paymentDate: new Date() } : p));
-    toast({title: "تم الدفع", description: "تم تسجيل دفعة المسير بنجاح."});
-    // In a real app, this would be a server action:
-    // await updatePayrollStatus(payrollId, "مدفوع");
+  const handlePayPayroll = async (payrollId: string) => {
+    try {
+        await updatePayrollStatus(payrollId, "مدفوع");
+        toast({title: "تم الدفع", description: "تم تسجيل دفعة المسير بنجاح."});
+    } catch (e) {
+        toast({ title: "خطأ", description: "لم يتم تسجيل الدفعة.", variant: "destructive" });
+    }
   }
 
   const handleAttendanceSubmit = async (values: AttendanceFormValues) => {
@@ -458,8 +459,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
 
     try {
       if (leaveRequestToEdit) {
-        // Update logic not defined in actions, assuming it's similar to add
-        await addLeaveRequest(finalValues); // Placeholder
+        await updateLeaveRequestStatus(leaveRequestToEdit.id!, values.status, finalValues);
         toast({ title: "تم التعديل", description: "تم تعديل طلب الإجازة." });
       } else {
         await addLeaveRequest(finalValues);
@@ -773,7 +773,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                   <TableBody>
                     {employees.map((emp) => (
                       <TableRow key={emp.id} className="hover:bg-muted/50">
-                        <TableCell><Avatar className="h-9 w-9"><AvatarImage src={emp.avatarUrl} alt={emp.name} data-ai-hint={emp.dataAiHint || emp.name.split(' ').slice(0,2).join(' ') } /><AvatarFallback>{emp.name.substring(0,1)}</AvatarFallback></Avatar></TableCell>
+                        <TableCell><Avatar className="h-9 w-9"><AvatarImage src={emp.avatarUrl || undefined} alt={emp.name} data-ai-hint={emp.dataAiHint || emp.name.split(' ').slice(0,2).join(' ') } /><AvatarFallback>{emp.name.substring(0,1)}</AvatarFallback></Avatar></TableCell>
                         <TableCell className="font-medium">{emp.id}</TableCell>
                         <TableCell>{emp.name}</TableCell>
                         <TableCell>{emp.jobTitle}</TableCell>
@@ -829,3 +829,6 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
 
     
 
+
+
+    

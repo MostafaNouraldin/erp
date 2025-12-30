@@ -184,16 +184,43 @@ export async function updatePayroll(values: PayrollFormValues) {
     revalidatePath('/hr-payroll');
 }
 
+export async function updatePayrollStatus(id: string, status: PayrollFormValues['status']) {
+    await db.update(payrolls).set({ status, paymentDate: status === "مدفوع" ? new Date() : null }).where(eq(payrolls.id, id));
+    revalidatePath('/hr-payroll');
+}
+
+
 // --- Attendance Actions ---
 export async function addAttendance(values: AttendanceFormValues) {
     const newId = `ATT${Date.now()}`;
-    await db.insert(attendanceRecords).values({ ...values, id: newId });
+    const checkInDate = values.checkIn ? new Date() : null;
+    if (checkInDate && values.checkIn) {
+        const [hours, minutes] = values.checkIn.split(':').map(Number);
+        checkInDate.setHours(hours, minutes, 0, 0);
+    }
+    const checkOutDate = values.checkOut ? new Date() : null;
+    if (checkOutDate && values.checkOut) {
+        const [hours, minutes] = values.checkOut.split(':').map(Number);
+        checkOutDate.setHours(hours, minutes, 0, 0);
+    }
+
+    await db.insert(attendanceRecords).values({ ...values, id: newId, checkIn: checkInDate, checkOut: checkOutDate });
     revalidatePath('/hr-payroll');
 }
 
 export async function updateAttendance(values: AttendanceFormValues) {
     if (!values.id) throw new Error("ID is required for update.");
-    await db.update(attendanceRecords).set(values).where(eq(attendanceRecords.id, values.id!));
+    const checkInDate = values.checkIn ? new Date() : null;
+    if (checkInDate && values.checkIn) {
+        const [hours, minutes] = values.checkIn.split(':').map(Number);
+        checkInDate.setHours(hours, minutes, 0, 0);
+    }
+    const checkOutDate = values.checkOut ? new Date() : null;
+    if (checkOutDate && values.checkOut) {
+        const [hours, minutes] = values.checkOut.split(':').map(Number);
+        checkOutDate.setHours(hours, minutes, 0, 0);
+    }
+    await db.update(attendanceRecords).set({...values, checkIn: checkInDate, checkOut: checkOutDate}).where(eq(attendanceRecords.id, values.id!));
     revalidatePath('/hr-payroll');
 }
 
@@ -204,8 +231,12 @@ export async function addLeaveRequest(values: LeaveRequestFormValues) {
     revalidatePath('/hr-payroll');
 }
 
-export async function updateLeaveRequestStatus(id: string, status: LeaveRequestFormValues['status']) {
-    await db.update(leaveRequests).set({ status }).where(eq(leaveRequests.id, id));
+export async function updateLeaveRequestStatus(id: string, status: LeaveRequestFormValues['status'], values?: LeaveRequestFormValues) {
+    if (values) { // This is an update call
+         await db.update(leaveRequests).set({...values, status}).where(eq(leaveRequests.id, id));
+    } else { // This is just a status change
+        await db.update(leaveRequests).set({ status }).where(eq(leaveRequests.id, id));
+    }
     revalidatePath('/hr-payroll');
 }
 
@@ -275,3 +306,6 @@ export async function deleteDisciplinaryWarning(id: string) {
 
     
 
+
+
+    
