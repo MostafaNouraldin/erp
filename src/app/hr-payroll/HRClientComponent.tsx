@@ -6,7 +6,7 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -212,8 +212,8 @@ interface HRClientComponentProps {
 // Main Component
 export default function HRClientComponent({ initialData }: HRClientComponentProps) {
   const [employees, setEmployeesData] = useState<EmployeeFormValues[]>(initialData.employees);
-  const [payrollData, setPayrollDataState] = useState(initialData.payrolls);
-  const [attendanceData, setAttendanceDataState] = useState(initialData.attendances);
+  const [payrollData, setPayrollData] = useState(initialData.payrolls);
+  const [attendanceData, setAttendanceData] = useState(initialData.attendances);
   const [leaveRequests, setLeaveRequestsData] = useState(initialData.leaveRequests);
   const [warningNoticesData, setWarningNoticesData] = useState(initialData.warningNotices);
   const [administrativeDecisionsData, setAdministrativeDecisionsData] = useState(initialData.administrativeDecisions);
@@ -284,8 +284,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   
   useEffect(() => {
     setEmployeesData(initialData.employees);
-    setPayrollDataState(initialData.payrolls);
-    setAttendanceDataState(initialData.attendances);
+    setPayrollData(initialData.payrolls);
+    setAttendanceData(initialData.attendances);
     setLeaveRequestsData(initialData.leaveRequests);
     setWarningNoticesData(initialData.warningNotices);
     setAdministrativeDecisionsData(initialData.administrativeDecisions);
@@ -830,5 +830,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     
 
 
+
+    
 
     
