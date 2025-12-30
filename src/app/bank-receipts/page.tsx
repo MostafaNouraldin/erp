@@ -17,6 +17,7 @@ export default async function BankReceiptsPage() {
         ...r,
         date: new Date(r.date),
         amount: parseFloat(r.amount),
+        status: r.status as "مسودة" | "مرحل",
       })),
       bankAccounts: bankAccountsData,
       revenueAccounts: revenueAccountsData,
@@ -30,3 +31,5 @@ export default async function BankReceiptsPage() {
     return <div>Error loading data: {errorMessage}</div>;
   }
 }
+
+    

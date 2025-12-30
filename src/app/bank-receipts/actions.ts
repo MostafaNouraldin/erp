@@ -15,7 +15,7 @@ const bankReceiptSchema = z.object({
   payerName: z.string().min(1),
   customerId: z.string().optional(),
   description: z.string().min(1),
-  amount: z.number().min(0.01),
+  amount: z.coerce.number().min(0.01),
   referenceNumber: z.string().optional(),
   status: z.enum(["مسودة", "مرحل"]),
 });
@@ -60,3 +60,5 @@ export async function updateBankReceiptStatus(id: string, status: 'مسودة' |
     // Here you would also create a Journal Entry if status is 'مرحل'
     revalidatePath('/bank-receipts');
 }
+
+    

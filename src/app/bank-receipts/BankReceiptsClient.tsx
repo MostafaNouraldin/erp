@@ -76,10 +76,12 @@ export default function BankReceiptsClient({ initialData }: ClientComponentProps
   });
 
   useEffect(() => {
-    if (receiptToEdit) {
-      form.reset({...receiptToEdit, date: new Date(receiptToEdit.date)});
-    } else {
-      form.reset({ date: new Date(), bankAccountId: "", revenueAccountId: "", payerName: "", description: "", amount: 0, referenceNumber: "", status: "مسودة", customerId: "" });
+    if (showManageReceiptDialog) {
+        if (receiptToEdit) {
+            form.reset({...receiptToEdit, date: new Date(receiptToEdit.date)});
+        } else {
+            form.reset({ date: new Date(), bankAccountId: "", revenueAccountId: "", payerName: "", description: "", amount: 0, referenceNumber: "", status: "مسودة", customerId: "" });
+        }
     }
   }, [receiptToEdit, form, showManageReceiptDialog]);
 
@@ -364,3 +366,5 @@ export default function BankReceiptsClient({ initialData }: ClientComponentProps
     </div>
   );
 }
+
+    
