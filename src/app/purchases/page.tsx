@@ -1,7 +1,7 @@
 
 
 // This is now a true Server Component that fetches data and passes it to the client.
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, purchaseReturns, purchaseReturnItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import React from 'react';
@@ -10,6 +10,8 @@ import PurchasesClientComponent from './PurchasesClientComponent';
 
 // This is now a true Server Component that fetches data and passes it to the client component.
 export default async function PurchasesPage() {
+    const tenantId = 'T001';
+    const { db } = await connectToTenantDb(tenantId);
     try {
         const suppliersResult = await db.select().from(suppliers);
         const purchaseOrdersResult = await db.select().from(purchaseOrders);
@@ -109,4 +111,5 @@ export default async function PurchasesPage() {
         );
     }
 }
+
 

@@ -2,7 +2,7 @@
 
 'use server';
 
-import { db, connectToTenantDb } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, products, purchaseReturns, purchaseReturnItems } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';

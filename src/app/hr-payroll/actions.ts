@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -135,8 +135,16 @@ const disciplinaryWarningSchema = z.object({
 });
 export type DisciplinaryWarningFormValues = z.infer<typeof disciplinaryWarningSchema>;
 
+
+async function getDb() {
+  const { db } = await connectToTenantDb('T001');
+  return db;
+}
+
+
 // --- Employee Actions ---
 export async function addEmployee(values: EmployeeFormValues) {
+    const db = await getDb();
     const newId = `EMP${Date.now()}`;
     await db.transaction(async (tx) => {
         await tx.insert(employees).values({ ...values, id: newId, basicSalary: String(values.basicSalary) });
@@ -151,6 +159,7 @@ export async function addEmployee(values: EmployeeFormValues) {
 }
 
 export async function updateEmployee(values: EmployeeFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.transaction(async (tx) => {
         await tx.update(employees).set({ ...values, basicSalary: String(values.basicSalary) }).where(eq(employees.id, values.id!));
@@ -167,24 +176,28 @@ export async function updateEmployee(values: EmployeeFormValues) {
 }
 
 export async function deleteEmployee(id: string) {
+    const db = await getDb();
     await db.delete(employees).where(eq(employees.id, id));
     revalidatePath('/hr-payroll');
 }
 
 // --- Payroll Actions ---
 export async function addPayroll(values: PayrollFormValues) {
+    const db = await getDb();
     const newId = `PAY${Date.now()}`;
     await db.insert(payrolls).values({ ...values, id: newId, basicSalary: String(values.basicSalary), netSalary: String(values.netSalary) });
     revalidatePath('/hr-payroll');
 }
 
 export async function updatePayroll(values: PayrollFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     await db.update(payrolls).set({ ...values, basicSalary: String(values.basicSalary), netSalary: String(values.netSalary) }).where(eq(payrolls.id, values.id!));
     revalidatePath('/hr-payroll');
 }
 
 export async function updatePayrollStatus(id: string, status: PayrollFormValues['status']) {
+    const db = await getDb();
     await db.update(payrolls).set({ status, paymentDate: status === "مدفوع" ? new Date() : null }).where(eq(payrolls.id, id));
     revalidatePath('/hr-payroll');
 }
@@ -192,6 +205,7 @@ export async function updatePayrollStatus(id: string, status: PayrollFormValues[
 
 // --- Attendance Actions ---
 export async function addAttendance(values: AttendanceFormValues) {
+    const db = await getDb();
     const newId = `ATT${Date.now()}`;
     const checkInDate = values.checkIn ? new Date() : null;
     if (checkInDate && values.checkIn) {
@@ -209,6 +223,7 @@ export async function addAttendance(values: AttendanceFormValues) {
 }
 
 export async function updateAttendance(values: AttendanceFormValues) {
+    const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     const checkInDate = values.checkIn ? new Date() : null;
     if (checkInDate && values.checkIn) {
@@ -226,12 +241,14 @@ export async function updateAttendance(values: AttendanceFormValues) {
 
 // --- Leave Request Actions ---
 export async function addLeaveRequest(values: LeaveRequestFormValues) {
+    const db = await getDb();
     const newId = `LR${Date.now()}`;
     await db.insert(leaveRequests).values({ ...values, id: newId });
     revalidatePath('/hr-payroll');
 }
 
 export async function updateLeaveRequestStatus(id: string, status: LeaveRequestFormValues['status'], values?: LeaveRequestFormValues) {
+    const db = await getDb();
     if (values) { // This is an update call
          await db.update(leaveRequests).set({...values, status}).where(eq(leaveRequests.id, id));
     } else { // This is just a status change
@@ -242,64 +259,76 @@ export async function updateLeaveRequestStatus(id: string, status: LeaveRequestF
 
 // --- Warning Notice Actions ---
 export async function addWarningNotice(values: WarningNoticeFormValues) {
+  const db = await getDb();
   const newId = `WARN${Date.now()}`;
   await db.insert(warningNotices).values({ ...values, id: newId });
   revalidatePath('/hr-payroll');
 }
 export async function updateWarningNotice(values: WarningNoticeFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required");
   await db.update(warningNotices).set(values).where(eq(warningNotices.id, values.id));
   revalidatePath('/hr-payroll');
 }
 export async function deleteWarningNotice(id: string) {
+  const db = await getDb();
   await db.delete(warningNotices).where(eq(warningNotices.id, id));
   revalidatePath('/hr-payroll');
 }
 
 // --- Administrative Decision Actions ---
 export async function addAdministrativeDecision(values: AdministrativeDecisionFormValues) {
+  const db = await getDb();
   const newId = `ADEC${Date.now()}`;
   await db.insert(administrativeDecisions).values({ ...values, id: newId });
   revalidatePath('/hr-payroll');
 }
 export async function updateAdministrativeDecision(values: AdministrativeDecisionFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required");
   await db.update(administrativeDecisions).set(values).where(eq(administrativeDecisions.id, values.id));
   revalidatePath('/hr-payroll');
 }
 export async function deleteAdministrativeDecision(id: string) {
+  const db = await getDb();
   await db.delete(administrativeDecisions).where(eq(administrativeDecisions.id, id));
   revalidatePath('/hr-payroll');
 }
 
 // --- Resignation Actions ---
 export async function addResignation(values: ResignationFormValues) {
+  const db = await getDb();
   const newId = `RESG${Date.now()}`;
   await db.insert(resignations).values({ ...values, id: newId });
   revalidatePath('/hr-payroll');
 }
 export async function updateResignation(values: ResignationFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required");
   await db.update(resignations).set(values).where(eq(resignations.id, values.id));
   revalidatePath('/hr-payroll');
 }
 export async function deleteResignation(id: string) {
+  const db = await getDb();
   await db.delete(resignations).where(eq(resignations.id, id));
   revalidatePath('/hr-payroll');
 }
 
 // --- Disciplinary Warning Actions ---
 export async function addDisciplinaryWarning(values: DisciplinaryWarningFormValues) {
+  const db = await getDb();
   const newId = `DISC${Date.now()}`;
   await db.insert(disciplinaryWarnings).values({ ...values, id: newId });
   revalidatePath('/hr-payroll');
 }
 export async function updateDisciplinaryWarning(values: DisciplinaryWarningFormValues) {
+  const db = await getDb();
   if (!values.id) throw new Error("ID is required");
   await db.update(disciplinaryWarnings).set(values).where(eq(disciplinaryWarnings.id, values.id));
   revalidatePath('/hr-payroll');
 }
 export async function deleteDisciplinaryWarning(id: string) {
+  const db = await getDb();
   await db.delete(disciplinaryWarnings).where(eq(disciplinaryWarnings.id, id));
   revalidatePath('/hr-payroll');
 }

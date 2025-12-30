@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { journalEntries, journalEntryLines, chartOfAccounts } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -26,7 +26,14 @@ export type Party = { id: string; name: string; type: 'customer' | 'supplier' | 
 export type Account = { id: string; name: string; type: string };
 
 
+async function getDb() {
+  const { db } = await connectToTenantDb('T001');
+  return db;
+}
+
+
 async function getContraAccountId(partyId: string, partyType: 'customer' | 'supplier' | 'expense'): Promise<string> {
+    const db = await getDb();
     if (partyType === 'customer') {
         return '1200'; // Accounts Receivable
     }
@@ -41,6 +48,7 @@ async function getContraAccountId(partyId: string, partyType: 'customer' | 'supp
 }
 
 export async function addVoucher(values: VoucherFormValues) {
+    const db = await getDb();
     const newEntryId = `JV-${values.type === 'سند قبض' ? 'RC' : 'PV'}-${Date.now()}`;
     const party = { id: values.partyId, name: values.partyName, type: 'customer' }; // Simplified, needs logic to determine party type
 
@@ -87,6 +95,7 @@ export async function updateVoucher(values: VoucherFormValues) {
 }
 
 export async function deleteVoucher(id: string) {
+    const db = await getDb();
     const entry = await db.query.journalEntries.findFirst({ where: eq(journalEntries.id, id) });
     if (entry?.status === 'مرحل') {
         throw new Error("لا يمكن حذف سند مرحّل.");
@@ -99,6 +108,7 @@ export async function deleteVoucher(id: string) {
 }
 
 export async function postVoucher(id: string) {
+    const db = await getDb();
     await db.transaction(async (tx) => {
         const entry = await tx.query.journalEntries.findFirst({ where: eq(journalEntries.id, id), with: { lines: true }});
         if (!entry) throw new Error("لم يتم العثور على السند.");
