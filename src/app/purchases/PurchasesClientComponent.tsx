@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Briefcase, FilePlus, FileCheck, PackageSearch, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Eye, MinusCircle, Printer, DollarSign, Truck, Users, CornerDownLeft, ShoppingBag } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -122,7 +122,7 @@ const goodsReceivedNoteSchema = z.object({
   grnDate: z.date({ required_error: "تاريخ الاستلام مطلوب" }),
   items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل مستلم"),
   notes: z.string().optional(),
-  status: z.enum(["مستلم جزئياً", "مستلم بالكامل"]).default("مستلم جزئياً"),
+  status: z.enum(["مستلم جزئياً", "مستلم بالكامل"]),
   receivedBy: z.string().optional(), 
 });
 type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
@@ -599,4 +599,5 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
+
 
