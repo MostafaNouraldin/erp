@@ -3,14 +3,14 @@
 
 import { db } from '@/db';
 import { chartOfAccounts, journalEntries, journalEntryLines } from '@/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const accountSchema = z.object({
   id: z.string().min(1, "رقم الحساب مطلوب").regex(/^\d+$/, "رقم الحساب يجب أن يحتوي على أرقام فقط"),
   name: z.string().min(1, "اسم الحساب مطلوب"),
-  type: z.enum(["رئيسي", "فرعي", "تحليلي"]),
+  type: z.enum(["رئيسي", "فرعي", "تحليلي", "صندوق", "بنك"]),
   parentId: z.string().nullable().optional(),
   balance: z.number().default(0),
 });
@@ -30,7 +30,7 @@ const journalEntrySchema = z.object({
   lines: z.array(journalEntryLineSchema).min(2),
   status: z.enum(["مسودة", "مرحل"]),
   totalAmount: z.number().optional(),
-  sourceModule: z.enum(["General", "POS", "EmployeeSettlements"]).optional(),
+  sourceModule: z.enum(["General", "POS", "EmployeeSettlements", "ReceiptVoucher", "PaymentVoucher"]).optional(),
   sourceDocumentId: z.string().optional(),
 });
 export type JournalEntry = z.infer<typeof journalEntrySchema>;
@@ -86,6 +86,22 @@ export async function addJournalEntry(values: JournalEntry) {
             credit: String(line.credit),
             description: line.description,
         })));
+        
+        // If the entry is already posted, update balances
+        if (values.status === 'مرحل') {
+             for (const line of values.lines) {
+                if (line.debit > 0) {
+                    await tx.update(chartOfAccounts)
+                      .set({ balance: sql`${chartOfAccounts.balance} + ${line.debit}` })
+                      .where(eq(chartOfAccounts.id, line.accountId));
+                }
+                if (line.credit > 0) {
+                    await tx.update(chartOfAccounts)
+                      .set({ balance: sql`${chartOfAccounts.balance} - ${line.credit}` }) // Simplified logic
+                      .where(eq(chartOfAccounts.id, line.accountId));
+                }
+            }
+        }
     });
     revalidatePath('/general-ledger');
 }

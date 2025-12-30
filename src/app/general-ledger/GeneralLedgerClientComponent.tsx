@@ -33,7 +33,7 @@ const NO_PARENT_ID_VALUE = "__no_parent__";
 const accountSchema = z.object({
   id: z.string().min(1, "رقم الحساب مطلوب").regex(/^\d+$/, "رقم الحساب يجب أن يحتوي على أرقام فقط"),
   name: z.string().min(1, "اسم الحساب مطلوب"),
-  type: z.enum(["رئيسي", "فرعي", "تحليلي"], { required_error: "نوع الحساب مطلوب" }),
+  type: z.enum(["رئيسي", "فرعي", "تحليلي", "صندوق", "بنك"], { required_error: "نوع الحساب مطلوب" }),
   parentId: z.string().nullable().optional(),
   balance: z.number().optional(), 
 });
@@ -57,7 +57,7 @@ const journalEntrySchema = z.object({
   lines: z.array(journalEntryLineSchema).min(2, "يجب أن يحتوي القيد على حركتين على الأقل."),
   status: z.enum(["مسودة", "مرحل"]).default("مسودة"),
   totalAmount: z.number().optional(), 
-  sourceModule: z.enum(["General", "POS", "EmployeeSettlements"]).optional().default("General"),
+  sourceModule: z.enum(["General", "POS", "EmployeeSettlements", "ReceiptVoucher", "PaymentVoucher"]).optional().default("General"),
   sourceDocumentId: z.string().optional(),
 }).refine(data => {
     const totalDebit = data.lines.reduce((sum, line) => sum + (line.debit || 0), 0);
@@ -277,7 +277,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                             <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الحساب</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                                 <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الحساب" /></SelectTrigger></FormControl>
-                                <SelectContent>{chartOfAccounts.filter(acc => acc.type === "تحليلي").map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name} ({acc.id})</SelectItem>))}</SelectContent>
+                                <SelectContent>{chartOfAccounts.filter(acc => acc.type === "تحليلي" || acc.type === "صندوق" || acc.type === "بنك").map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name} ({acc.id})</SelectItem>))}</SelectContent>
                             </Select><FormMessage className="text-xs"/></FormItem> )} />
                         <FormField control={journalEntryForm.control} name={`lines.${index}.debit`} render={({ field }) => (
                             <FormItem className="col-span-6 sm:col-span-2"><FormLabel className="text-xs">مدين</FormLabel>
@@ -343,7 +343,13 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                             <FormField control={accountForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>النوع</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                                     <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر النوع" /></SelectTrigger></FormControl>
-                                    <SelectContent><SelectItem value="رئيسي">رئيسي</SelectItem><SelectItem value="فرعي">فرعي</SelectItem><SelectItem value="تحليلي">تحليلي</SelectItem></SelectContent>
+                                    <SelectContent>
+                                        <SelectItem value="رئيسي">رئيسي</SelectItem>
+                                        <SelectItem value="فرعي">فرعي</SelectItem>
+                                        <SelectItem value="تحليلي">تحليلي</SelectItem>
+                                        <SelectItem value="صندوق">صندوق</SelectItem>
+                                        <SelectItem value="بنك">بنك</SelectItem>
+                                    </SelectContent>
                                 </Select><FormMessage /></FormItem>)} />
                             <FormField control={accountForm.control} name="parentId" render={({ field }) => (
                                 <FormItem><FormLabel>الحساب الرئيسي</FormLabel>
@@ -404,7 +410,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                   <TableHeader><TableRow><TableHead>رقم القيد</TableHead><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>المبلغ</TableHead><TableHead>المصدر</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
                   <TableBody>{journalEntries.map((entry) => (<TableRow key={entry.id} className="hover:bg-muted/50">
                         <TableCell>{entry.id}</TableCell><TableCell>{new Date(entry.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell>{entry.description}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.totalAmount || 0) }}></TableCell>
-                        <TableCell><Badge variant="outline" className="text-xs">{entry.sourceModule === "POS" ? "نقاط البيع" : entry.sourceModule === "EmployeeSettlements" ? "تسويات موظفين" : "عام"}</Badge></TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{entry.sourceModule || "عام"}</Badge></TableCell>
                         <TableCell><Badge variant={entry.status === "مرحل" ? "default" : "outline"}>{entry.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض" onClick={() => handleViewJournalEntry(entry)}><FileText className="h-4 w-4" /></Button>
@@ -453,7 +459,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
               <div><strong>الوصف العام:</strong> {selectedJournalEntry.description}</div>
               <div><strong>المبلغ الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedJournalEntry.totalAmount || 0) }}></span></div>
               <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedJournalEntry.status === "مرحل" ? "default" : "outline"}>{selectedJournalEntry.status}</Badge></div>
-              <div><strong>المصدر:</strong> <Badge variant="outline" className="text-xs">{selectedJournalEntry.sourceModule === "POS" ? "نقاط البيع" : selectedJournalEntry.sourceModule === "EmployeeSettlements" ? "تسويات موظفين" : "عام"} {selectedJournalEntry.sourceDocumentId ? `(${selectedJournalEntry.sourceDocumentId})` : ''}</Badge></div>
+              <div><strong>المصدر:</strong> <Badge variant="outline" className="text-xs">{selectedJournalEntry.sourceModule || "عام"} {selectedJournalEntry.sourceDocumentId ? `(${selectedJournalEntry.sourceDocumentId})` : ''}</Badge></div>
 
               <h4 className="font-semibold mt-3">تفاصيل الحركات:</h4>
               {selectedJournalEntry.lines && selectedJournalEntry.lines.length > 0 ? (<Table>
