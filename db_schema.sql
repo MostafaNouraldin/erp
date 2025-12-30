@@ -1,4 +1,3 @@
-
 -- Comprehensive SQL schema for the entire ERP system.
 -- Execute this script in your Supabase SQL Editor to create all necessary tables.
 
