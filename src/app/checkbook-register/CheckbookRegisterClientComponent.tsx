@@ -82,25 +82,27 @@ export default function CheckbookRegisterClientComponent({ initialData }: Client
   });
 
   useEffect(() => {
-    if (checkToEdit) {
-      form.reset({
-          ...checkToEdit,
-          issueDate: new Date(checkToEdit.issueDate),
-          dueDate: new Date(checkToEdit.dueDate),
-      });
-    } else {
-      form.reset({ 
-        checkNumber: "",
-        issueDate: new Date(), 
-        dueDate: new Date(), 
-        bankAccountId: "", 
-        beneficiaryName: "",
-        amount: 0, 
-        currency: "SAR",
-        purpose: "",
-        notes: "",
-        status: "صادر" 
-      });
+    if (showManageCheckDialog) {
+        if (checkToEdit) {
+        form.reset({
+            ...checkToEdit,
+            issueDate: new Date(checkToEdit.issueDate),
+            dueDate: new Date(checkToEdit.dueDate),
+        });
+        } else {
+        form.reset({ 
+            checkNumber: "",
+            issueDate: new Date(), 
+            dueDate: new Date(), 
+            bankAccountId: "", 
+            beneficiaryName: "",
+            amount: 0, 
+            currency: "SAR",
+            purpose: "",
+            notes: "",
+            status: "صادر" 
+        });
+        }
     }
   }, [checkToEdit, form, showManageCheckDialog]);
 
@@ -194,7 +196,7 @@ export default function CheckbookRegisterClientComponent({ initialData }: Client
                 </div>
                 <FormField control={form.control} name="bankAccountId" render={({ field }) => (
                     <FormItem><FormLabel>الحساب البنكي المسحوب عليه</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                        <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                         <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحساب البنكي" /></SelectTrigger></FormControl>
                         <SelectContent>{bankAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}</SelectContent>
                         </Select><FormMessage /></FormItem>
@@ -208,7 +210,7 @@ export default function CheckbookRegisterClientComponent({ initialData }: Client
                     )} />
                     <FormField control={form.control} name="currency" render={({ field }) => (
                         <FormItem><FormLabel>العملة</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                            <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                             <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العملة" /></SelectTrigger></FormControl>
                             <SelectContent><SelectItem value="SAR">SAR</SelectItem><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem></SelectContent>
                             </Select><FormMessage /></FormItem>

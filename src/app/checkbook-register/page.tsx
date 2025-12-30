@@ -25,6 +25,12 @@ export default async function CheckbookRegisterPage() {
         return <CheckbookRegisterClientComponent initialData={initialData} />;
     } catch (error) {
         const errorMessage = (error as Error).message;
-        return <div>Error loading data: {errorMessage}</div>;
+         return (
+            <div className="container mx-auto py-6 text-center" dir="rtl">
+                <h1 className="text-2xl font-bold mb-4 text-destructive">خطأ في وحدة دفتر الشيكات</h1>
+                <p className="text-muted-foreground mb-4">تعذر جلب البيانات. يرجى التأكد من أن جدول `checks` موجود.</p>
+                <p className="text-sm text-muted-foreground mt-4">رسالة الخطأ: {errorMessage}</p>
+            </div>
+        );
     }
 }
