@@ -131,7 +131,7 @@ export default function ModulesConfigPage() {
                                   <Switch
                                     checked={switchField.value}
                                     onCheckedChange={switchField.onChange}
-                                    disabled={!initialModulesData.find(m => m.id === form.getValues(`modules.${index}.id`))?.isRentable && form.getValues(`modules.${index}.key`) !== 'Purchases' && form.getValues(`modules.${index}.key`) !== 'Production' && form.getValues(`modules.${index}.key`) !== 'Projects' } // Example: Disable for non-rentable by default from initial data
+                                    disabled={!initialModulesData.find(m => m.id === form.getValues(`modules.${index}.id`))?.isRentable}
                                   />
                                 </FormControl>
                               </FormItem>
@@ -183,4 +183,3 @@ export default function ModulesConfigPage() {
     </div>
   );
 }
-
