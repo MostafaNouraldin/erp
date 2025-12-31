@@ -38,6 +38,7 @@ export async function addCustomer(customerData: CustomerFormValues) {
   await db.insert(customers).values(newCustomer);
   revalidatePath('/sales');
   revalidatePath('/pos');
+  revalidatePath('/customers');
 }
 
 export async function updateCustomer(customerData: CustomerFormValues) {
@@ -52,6 +53,7 @@ export async function updateCustomer(customerData: CustomerFormValues) {
   await db.update(customers).set(updatedCustomer).where(eq(customers.id, customerData.id));
   revalidatePath('/sales');
   revalidatePath('/pos');
+  revalidatePath('/customers');
 }
 
 export async function deleteCustomer(customerId: string) {
@@ -60,4 +62,6 @@ export async function deleteCustomer(customerId: string) {
   await db.delete(customers).where(eq(customers.id, customerId));
   revalidatePath('/sales');
   revalidatePath('/pos');
+  revalidatePath('/customers');
 }
+
