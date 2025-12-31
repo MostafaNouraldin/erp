@@ -1,6 +1,7 @@
 
 
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex, pgSchema } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
 // You can use the `pgSchema` function to declare a schema.
 // Here, we are declaring a schema named "main"
@@ -38,6 +39,13 @@ export const mainUsers = pgTable('users', {
     avatarUrl: text('avatar_url'),
     createdAt: timestamp('created_at').defaultNow(),
 });
+
+export const mainUsersRelations = relations(mainUsers, ({ one }) => ({
+  role: one(mainRoles, {
+    fields: [mainUsers.roleId],
+    references: [mainRoles.id],
+  }),
+}));
 
 
 export const tenantModuleSubscriptions = pgTable('tenant_module_subscriptions', {

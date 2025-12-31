@@ -101,7 +101,7 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
     icon: Settings,
     module: "Settings",
     subItems: [
-      { href: "/settings", label: "الإعدادات العامة", icon: SettingsIcon, permissionKey: "settings.view" },
+      { href: "/settings", label: "الإعدادات العامة", icon: Settings, permissionKey: "settings.view" },
       { href: "/subscription", label: "الاشتراك والفوترة", icon: Shield, permissionKey: "settings.view" },
     ]
   },
