@@ -332,9 +332,3 @@ export async function deleteDisciplinaryWarning(id: string) {
   await db.delete(disciplinaryWarnings).where(eq(disciplinaryWarnings.id, id));
   revalidatePath('/hr-payroll');
 }
-
-    
-
-
-
-    
