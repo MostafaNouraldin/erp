@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
-import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory } from './actions';
+import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, addWarehouse, updateWarehouse, deleteWarehouse, addStocktake, addStockIssueVoucher, addStockReceiptVoucher, addStockRequisition } from './actions';
 
 
 // Product Schema
@@ -57,6 +57,13 @@ const categorySchema = z.object({
   description: z.string().optional(),
 });
 type CategoryFormValues = z.infer<typeof categorySchema>;
+
+const warehouseSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم المستودع مطلوب"),
+    location: z.string().optional(),
+});
+type WarehouseFormValues = z.infer<typeof warehouseSchema>;
 
 
 // Stocktake Initiation Schema
@@ -148,20 +155,8 @@ type StockRequisitionFormValues = z.infer<typeof stockRequisitionSchema>;
 
 // Mock data (some are kept for selection inputs)
 const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة"];
-const mockWarehouses = [{ id: "WH001", name: "المستودع الرئيسي" }, { id: "WH002", name: "مستودع فرعي أ" }];
 const mockUsers = [{ id: "USR001", name: "فريق الجرد أ" }, { id: "USR002", name: "أحمد المسؤول" }, { id: "USR003", name: "مدير المخازن" }];
 const mockDepartments = [{id: "DEP001", name: "قسم المبيعات"}, {id: "DEP002", name: "قسم الصيانة"}];
-const mockRecipients = [...mockDepartments, {id: "CUST001", name: "عميل X"}, {id: "WH002", name: "مستودع فرعي أ (تحويل)"}];
-
-const initialStockIssueVouchers: StockIssueVoucherFormValues[] = [
-    {id: "SIV001", date: new Date("2024-07-28"), warehouseId: "WH001", recipient: "DEP001", reason: "استخدام داخلي لقسم المبيعات", items: [{productId: "ITEM003", quantityIssued: 2, notes: ""}], status: "معتمد", issuedBy: "USR003"},
-];
-const initialStockReceiptVouchers: StockReceiptVoucherFormValues[] = [
-    {id: "SRV001", date: new Date("2024-07-29"), warehouseId: "WH001", source: "SUP001", reference: "PO-123", items: [{productId: "ITEM001", quantityReceived: 10, costPricePerUnit: 5750, notes: ""}], status: "مرحل للمخزون", receivedBy: "USR003"},
-];
-const initialStockRequisitions: StockRequisitionFormValues[] = [
-    {id: "SRQ001", requestDate: new Date("2024-07-25"), requestingDepartmentOrPerson: "DEP002", requiredByDate: new Date("2024-07-30"), items: [{productId: "ITEM002", quantityRequested: 1, justification: "طابعة بديلة"}], status: "موافق عليه"},
-];
 
 const stockMovements = [ { id: "MV001", date: new Date("2024-07-20"), type: "دخول (شراء)", item: "ITEM001", quantity: 20, fromTo: "مورد X", reference: "PO-123" }, { id: "MV002", date: new Date("2024-07-21"), type: "خروج (بيع)", item: "ITEM003", quantity: 10, fromTo: "عميل Y", reference: "SO-456" }, { id: "MV003", date: new Date("2024-07-22"), type: "تحويل داخلي", item: "ITEM002", quantity: 2, fromTo: "مستودع A -> مستودع B", reference: "TRN-001" }, { id: "MV004", date: new Date("2024-07-23"), type: "تعديل جرد (زيادة)", item: "ITEM005", quantity: 5, fromTo: "جرد سنوي", reference: "ADJ-001" },];
 const inventoryReportTypes = [ 
@@ -178,10 +173,12 @@ const chartConfig = { "ITEM001": { label: "لابتوب Dell XPS 15", color: "hs
 const mockStocktakeDetail: StocktakeDetails = { id: "STK-2024-06-30-A", date: new Date("2024-06-30").toLocaleDateString('ar-SA'), warehouse: "مستودع A", status: "مكتمل", responsible: "فريق الجرد ألف", itemsCounted: 3, discrepanciesFound: 2, notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.", items: [ { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0, differenceValue: 0 }, { productId: "ITEM002", productName: "طابعة HP LaserJet Pro", expectedQuantity: 7, countedQuantity: 6, difference: -1, differenceValue: -1000 }, { productId: "ITEM003", productName: "ورق طباعة A4 (صندوق)", expectedQuantity: 195, countedQuantity: 198, difference: 3, differenceValue: 360 },],};
 
 
-export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[] } }) {
+export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[], warehouses: any[] } }) {
   const [productsData, setProductsData] = useState<ProductFormValues[]>(initialData.products);
   const [categoriesData, setCategoriesData] = useState<CategoryFormValues[]>(initialData.categories);
   const [suppliersData, setSuppliersData] = useState<any[]>(initialData.suppliers);
+  const [warehousesData, setWarehousesData] = useState<WarehouseFormValues[]>(initialData.warehouses);
+  
   const [showManageProductDialog, setShowManageProductDialog] = useState(false);
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -189,6 +186,9 @@ export default function InventoryClientComponent({ initialData }: { initialData:
 
   const [showManageCategoryDialog, setShowManageCategoryDialog] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState<CategoryFormValues | null>(null);
+  
+  const [showManageWarehouseDialog, setShowManageWarehouseDialog] = useState(false);
+  const [warehouseToEdit, setWarehouseToEdit] = useState<WarehouseFormValues | null>(null);
 
   const [currentReport, setCurrentReport] = useState<{key: string, name: string, description: string, icon: React.ElementType} | null>(null);
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -200,20 +200,21 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const [selectedStocktakeForView, setSelectedStocktakeForView] = useState<StocktakeDetails | null>(null);
   const { toast } = useToast();
 
-  const [stockIssueVouchers, setStockIssueVouchers] = useState(initialStockIssueVouchers);
+  const [stockIssueVouchers, setStockIssueVouchers] = useState<StockIssueVoucherFormValues[]>([]);
   const [showManageStockIssueDialog, setShowManageStockIssueDialog] = useState(false);
   const [stockIssueToEdit, setStockIssueToEdit] = useState<StockIssueVoucherFormValues | null>(null);
 
-  const [stockReceiptVouchers, setStockReceiptVouchers] = useState(initialStockReceiptVouchers);
+  const [stockReceiptVouchers, setStockReceiptVouchers] = useState<StockReceiptVoucherFormValues[]>([]);
   const [showManageStockReceiptDialog, setShowManageStockReceiptDialog] = useState(false);
   const [stockReceiptToEdit, setStockReceiptToEdit] = useState<StockReceiptVoucherFormValues | null>(null);
 
-  const [stockRequisitions, setStockRequisitions] = useState(initialStockRequisitions);
+  const [stockRequisitions, setStockRequisitions] = useState<StockRequisitionFormValues[]>([]);
   const [showManageStockRequisitionDialog, setShowManageStockRequisitionDialog] = useState(false);
   const [stockRequisitionToEdit, setStockRequisitionToEdit] = useState<StockRequisitionFormValues | null>(null);
 
   const productForm = useForm<ProductFormValues>({ resolver: zodResolver(productSchema), defaultValues: { sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", image: "", dataAiHint: "" }});
   const categoryForm = useForm<CategoryFormValues>({ resolver: zodResolver(categorySchema), defaultValues: { name: "", description: "" }});
+  const warehouseForm = useForm<WarehouseFormValues>({ resolver: zodResolver(warehouseSchema), defaultValues: { name: "", location: "" }});
   const stocktakeInitiationForm = useForm<StocktakeInitiationFormValues>({ resolver: zodResolver(stocktakeInitiationSchema), defaultValues: { stocktakeDate: new Date(), warehouseId: "", responsiblePerson: "", notes: "" }});
 
   const stockIssueVoucherForm = useForm<StockIssueVoucherFormValues>({ resolver: zodResolver(stockIssueVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""}});
@@ -227,9 +228,17 @@ export default function InventoryClientComponent({ initialData }: { initialData:
 
   useEffect(() => { if (productToEdit) { productForm.reset(productToEdit); setImagePreview(productToEdit.image || null); } else { productForm.reset({ sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", image: "", dataAiHint: "" }); setImagePreview(null); }}, [productToEdit, productForm, showManageProductDialog]);
   useEffect(() => { if (categoryToEdit) { categoryForm.reset(categoryToEdit); } else { categoryForm.reset({ name: "", description: "" }); }}, [categoryToEdit, categoryForm, showManageCategoryDialog]);
+  useEffect(() => { if (warehouseToEdit) { warehouseForm.reset(warehouseToEdit); } else { warehouseForm.reset({ name: "", location: "" }); }}, [warehouseToEdit, warehouseForm, showManageWarehouseDialog]);
   useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
   useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
+
+  useEffect(() => {
+    setProductsData(initialData.products);
+    setCategoriesData(initialData.categories);
+    setSuppliersData(initialData.suppliers);
+    setWarehousesData(initialData.warehouses);
+  }, [initialData]);
 
   const handleProductSubmit = async (values: ProductFormValues) => {
     try {
@@ -263,6 +272,22 @@ export default function InventoryClientComponent({ initialData }: { initialData:
         toast({ title: "خطأ", description: "لم يتم حفظ الفئة.", variant: "destructive" });
     }
   };
+  
+   const handleWarehouseSubmit = async (values: WarehouseFormValues) => {
+     try {
+        if (warehouseToEdit) {
+            await updateWarehouse({ ...values, id: warehouseToEdit.id! });
+            toast({ title: "تم التعديل", description: "تم تعديل بيانات المستودع." });
+        } else {
+            await addWarehouse(values);
+            toast({ title: "تمت الإضافة", description: "تم إضافة المستودع بنجاح." });
+        }
+        setShowManageWarehouseDialog(false);
+        setWarehouseToEdit(null);
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حفظ المستودع.", variant: "destructive" });
+    }
+  };
 
   const handleDeleteProduct = async (productId: string) => {
     try {
@@ -286,6 +311,16 @@ export default function InventoryClientComponent({ initialData }: { initialData:
         toast({ title: "خطأ", description: "لم يتم حذف الفئة.", variant: "destructive" });
     }
   };
+  
+  const handleDeleteWarehouse = async (warehouseId: string) => {
+    // In a real app, check if warehouse is in use.
+    try {
+        await deleteWarehouse(warehouseId);
+        toast({ title: "تم الحذف", description: "تم حذف المستودع.", variant: "destructive" });
+    } catch (error) {
+        toast({ title: "خطأ", description: "لم يتم حذف المستودع.", variant: "destructive" });
+    }
+  };
 
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -307,11 +342,15 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     }
   };
 
-  const handleStartStocktakeSubmit = (values: StocktakeInitiationFormValues) => {
-    console.log("Starting new stocktake with values:", values);
-    toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${mockWarehouses.find(w => w.id === values.warehouseId)?.name || values.warehouseId} بتاريخ ${values.stocktakeDate.toLocaleDateString('ar-SA')}.`, });
-    setShowStartStocktakeDialog(false);
-    stocktakeInitiationForm.reset();
+  const handleStartStocktakeSubmit = async (values: StocktakeInitiationFormValues) => {
+    try {
+        await addStocktake(values);
+        toast({ title: "تم بدء عملية جرد جديدة", description: `سيتم جرد المستودع: ${warehousesData.find(w => w.id === values.warehouseId)?.name || values.warehouseId}.` });
+        setShowStartStocktakeDialog(false);
+        stocktakeInitiationForm.reset();
+    } catch (e) {
+        toast({ title: "خطأ", description: "لم يتم بدء الجرد.", variant: "destructive" });
+    }
   };
 
   const handleViewStocktakeDetails = () => {
@@ -319,40 +358,37 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     setShowViewStocktakeDetailsDialog(true);
   };
 
-  const handleStockIssueSubmit = (values: StockIssueVoucherFormValues) => {
-    if (stockIssueToEdit) {
-        setStockIssueVouchers(prev => prev.map(v => v.id === stockIssueToEdit.id ? {...values, id: stockIssueToEdit.id!} : v));
-        toast({ title: "تم التعديل", description: "تم تعديل إذن الصرف بنجاح." });
-    } else {
-        setStockIssueVouchers(prev => [...prev, {...values, id: `SIV${Date.now()}`}]);
+  const handleStockIssueSubmit = async (values: StockIssueVoucherFormValues) => {
+    try {
+        await addStockIssueVoucher(values);
         toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الصرف بنجاح." });
+        setShowManageStockIssueDialog(false);
+        setStockIssueToEdit(null);
+    } catch(e) {
+        toast({ title: "خطأ", description: "لم يتم إنشاء إذن الصرف.", variant: "destructive" });
     }
-    setShowManageStockIssueDialog(false);
-    setStockIssueToEdit(null);
   };
 
-  const handleStockReceiptSubmit = (values: StockReceiptVoucherFormValues) => {
-    if (stockReceiptToEdit) {
-        setStockReceiptVouchers(prev => prev.map(v => v.id === stockReceiptToEdit.id ? {...values, id: stockReceiptToEdit.id!} : v));
-        toast({ title: "تم التعديل", description: "تم تعديل إذن الإضافة بنجاح." });
-    } else {
-        setStockReceiptVouchers(prev => [...prev, {...values, id: `SRV${Date.now()}`}]);
+  const handleStockReceiptSubmit = async (values: StockReceiptVoucherFormValues) => {
+    try {
+        await addStockReceiptVoucher(values);
         toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الإضافة بنجاح." });
+        setShowManageStockReceiptDialog(false);
+        setStockReceiptToEdit(null);
+    } catch(e) {
+        toast({ title: "خطأ", description: "لم يتم إنشاء إذن الإضافة.", variant: "destructive" });
     }
-    setShowManageStockReceiptDialog(false);
-    setStockReceiptToEdit(null);
   };
 
-  const handleStockRequisitionSubmit = (values: StockRequisitionFormValues) => {
-    if (stockRequisitionToEdit) {
-        setStockRequisitions(prev => prev.map(r => r.id === stockRequisitionToEdit!.id ? {...values, id: stockRequisitionToEdit!.id} : r));
-        toast({ title: "تم التعديل", description: "تم تعديل طلب الصرف بنجاح." });
-    } else {
-        setStockRequisitions(prev => [...prev, {...values, id: `SRQ${Date.now()}`}]);
+  const handleStockRequisitionSubmit = async (values: StockRequisitionFormValues) => {
+    try {
+        await addStockRequisition(values);
         toast({ title: "تم الإنشاء", description: "تم إنشاء طلب الصرف بنجاح." });
+        setShowManageStockRequisitionDialog(false);
+        setStockRequisitionToEdit(null);
+    } catch(e) {
+        toast({ title: "خطأ", description: "لم يتم إنشاء طلب الصرف.", variant: "destructive" });
     }
-    setShowManageStockRequisitionDialog(false);
-    setStockRequisitionToEdit(null);
   };
   
 
@@ -370,7 +406,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
         }
         if (reportKey === "valuation") {
             return productsData
-                .filter(p => !filters.warehouseId || (p.location && p.location.includes(mockWarehouses.find(w=>w.id === filters.warehouseId)?.name || "")))
+                .filter(p => !filters.warehouseId || (p.location && p.location.includes(warehousesData.find(w=>w.id === filters.warehouseId)?.name || "")))
                 .map(p => ({ 
                     ...p, 
                     totalCostValue: p.quantity * p.costPrice, 
@@ -389,7 +425,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
         }
         if (reportKey === "locationReport") {
              return productsData
-                .filter(p => !filters.warehouseId || (p.location && p.location.includes(mockWarehouses.find(w=>w.id === filters.warehouseId)?.name || "")))
+                .filter(p => !filters.warehouseId || (p.location && p.location.includes(warehousesData.find(w=>w.id === filters.warehouseId)?.name || "")))
                 .map(p => ({location: p.location, name: p.name, quantity: p.quantity}));
         }
         if (reportKey === "supplierItems") {
@@ -479,6 +515,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
         <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="itemsList" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Package className="inline-block me-2 h-4 w-4" /> قائمة المنتجات</TabsTrigger>
           <TabsTrigger value="categories" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><ListTree className="inline-block me-2 h-4 w-4" /> فئات الأصناف</TabsTrigger>
+          <TabsTrigger value="warehouses" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Warehouse className="inline-block me-2 h-4 w-4" /> المستودعات</TabsTrigger>
           <TabsTrigger value="stockIssue" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><PackageMinus className="inline-block me-2 h-4 w-4" /> أذونات الصرف</TabsTrigger>
           <TabsTrigger value="stockReceipt" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><ArchiveRestore className="inline-block me-2 h-4 w-4" /> أذونات الإضافة</TabsTrigger>
           <TabsTrigger value="stockRequisition" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><ClipboardList className="inline-block me-2 h-4 w-4" /> طلبات الصرف</TabsTrigger>
@@ -553,6 +590,8 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     </div>
   );
 }
+
+    
 
     
 

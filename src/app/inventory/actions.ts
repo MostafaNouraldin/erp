@@ -3,7 +3,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { products, categories, warehouses } from '@/db/schema';
+import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, stockReceiptVouchers, stockReceiptVoucherItems, stocktakes } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from "zod";
@@ -38,9 +38,68 @@ const warehouseSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1, "اسم المستودع مطلوب"),
     location: z.string().optional(),
-    manager: z.string().optional(),
 });
 export type WarehouseFormValues = z.infer<typeof warehouseSchema>;
+
+const stocktakeInitiationSchema = z.object({
+  stocktakeDate: z.date({ required_error: "تاريخ الجرد مطلوب" }),
+  warehouseId: z.string().min(1, "المستودع مطلوب"),
+  responsiblePerson: z.string().min(1, "المسؤول عن الجرد مطلوب"),
+  notes: z.string().optional(),
+});
+type StocktakeInitiationFormValues = z.infer<typeof stocktakeInitiationSchema>;
+
+const stockIssueItemSchema = z.object({
+  productId: z.string().min(1, "المنتج مطلوب"),
+  quantityIssued: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
+  notes: z.string().optional(),
+});
+const stockIssueVoucherSchema = z.object({
+  date: z.date({ required_error: "التاريخ مطلوب" }),
+  warehouseId: z.string().min(1, "المستودع المصدر مطلوب"),
+  recipient: z.string().min(1, "الجهة المستلمة مطلوبة"),
+  reason: z.string().min(1, "سبب الصرف مطلوب"),
+  items: z.array(stockIssueItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  status: z.enum(["مسودة", "معتمد", "ملغي"]).default("مسودة"),
+  issuedBy: z.string().optional(),
+});
+type StockIssueVoucherFormValues = z.infer<typeof stockIssueVoucherSchema>;
+
+const stockReceiptItemSchema = z.object({
+  productId: z.string().min(1, "المنتج مطلوب"),
+  quantityReceived: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
+  costPricePerUnit: z.coerce.number().min(0).optional(),
+  notes: z.string().optional(),
+});
+const stockReceiptVoucherSchema = z.object({
+  date: z.date({ required_error: "التاريخ مطلوب" }),
+  warehouseId: z.string().min(1, "المستودع المستلم مطلوب"),
+  source: z.string().min(1, "مصدر البضاعة مطلوب (مورد/أمر إنتاج)"),
+  reference: z.string().optional(),
+  items: z.array(stockReceiptItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  status: z.enum(["مسودة", "مرحل للمخزون", "ملغي"]).default("مسودة"),
+  receivedBy: z.string().optional(),
+});
+type StockReceiptVoucherFormValues = z.infer<typeof stockReceiptVoucherSchema>;
+
+const stockRequisitionItemSchema = z.object({
+  productId: z.string().min(1, "المنتج مطلوب"),
+  quantityRequested: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
+  justification: z.string().optional(),
+});
+const stockRequisitionSchema = z.object({
+  requestDate: z.date({ required_error: "تاريخ الطلب مطلوب" }),
+  requestingDepartmentOrPerson: z.string().min(1, "الجهة الطالبة مطلوبة"),
+  requiredByDate: z.date({ required_error: "تاريخ الحاجة مطلوب" }),
+  items: z.array(stockRequisitionItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  overallJustification: z.string().optional(),
+  status: z.enum(["جديد", "قيد المراجعة", "موافق عليه", "مرفوض", "تم الصرف جزئياً", "تم الصرف بالكامل", "ملغي"]).default("جديد"),
+  approvedBy: z.string().optional(),
+  approvalDate: z.date().optional(),
+});
+type StockRequisitionFormValues = z.infer<typeof stockRequisitionSchema>;
 
 
 async function getDb(tenantId: string = 'T001') {
@@ -127,3 +186,35 @@ export async function deleteWarehouse(id: string) {
     await db.delete(warehouses).where(eq(warehouses.id, id));
     revalidatePath('/inventory');
 }
+
+export async function addStocktake(values: StocktakeInitiationFormValues) {
+    const db = await getDb();
+    const newId = `STK${Date.now()}`;
+    await db.insert(stocktakes).values({ ...values, id: newId, status: "مجدول" });
+    revalidatePath('/inventory');
+}
+
+export async function addStockIssueVoucher(values: StockIssueVoucherFormValues) {
+    const db = await getDb();
+    const newId = `SIV${Date.now()}`;
+    await db.insert(stockIssueVouchers).values({ ...values, id: newId });
+    // Add logic to update inventory on approval
+    revalidatePath('/inventory');
+}
+
+export async function addStockReceiptVoucher(values: StockReceiptVoucherFormValues) {
+    const db = await getDb();
+    const newId = `SRV${Date.now()}`;
+    await db.insert(stockReceiptVouchers).values({ ...values, id: newId });
+    // Add logic to update inventory on approval
+    revalidatePath('/inventory');
+}
+
+export async function addStockRequisition(values: StockRequisitionFormValues) {
+    const db = await getDb();
+    const newId = `SRQ${Date.now()}`;
+    await db.insert(stockRequisitions).values({ ...values, id: newId });
+    revalidatePath('/inventory');
+}
+
+    
