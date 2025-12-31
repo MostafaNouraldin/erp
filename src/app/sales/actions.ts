@@ -4,7 +4,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { customers, salesInvoices, salesInvoiceItems, quotations, quotationItems, salesOrders, salesOrderItems, products } from '@/db/schema';
+import { customers, salesInvoices, salesInvoiceItems, quotations, quotationItems, salesOrders, salesOrderItems, products, journalEntries, journalEntryLines } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -86,7 +86,6 @@ const salesOrderSchema = z.object({
 type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
 
 async function getDb() {
-  // This would come from session in a real app
   const tenantId = 'T001';
   const { db } = await connectToTenantDb(tenantId);
   return db;
@@ -98,8 +97,17 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
   const newInvoiceId = `INV-C${Date.now()}`;
   const totalAmount = invoiceData.items.reduce((sum, item) => sum + item.total, 0);
 
+  // Constants for accounting
+  const VAT_RATE = 0.15;
+  const accountsReceivableAccount = "1200";
+  const salesRevenueAccount = "4000";
+  const vatPayableAccount = "2200";
+
+  const totalBeforeTax = totalAmount / (1 + VAT_RATE);
+  const vatAmount = totalAmount - totalBeforeTax;
+
   await db.transaction(async (tx) => {
-    // Check stock availability
+    // 1. Check stock availability
     for (const item of invoiceData.items) {
       const product = await tx.query.products.findFirst({
         where: eq(products.id, item.itemId),
@@ -110,12 +118,14 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
       }
     }
     
+    // 2. Insert sales invoice
     await tx.insert(salesInvoices).values({
       id: newInvoiceId,
       ...invoiceData,
       numericTotalAmount: String(totalAmount),
     });
 
+    // 3. Insert sales invoice items
     if (invoiceData.items.length > 0) {
       await tx.insert(salesInvoiceItems).values(
         invoiceData.items.map(item => ({
@@ -127,18 +137,43 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
           total: String(item.total),
         }))
       );
-      // Update inventory
+      // 4. Update inventory
       for (const item of invoiceData.items) {
           await tx.update(products)
               .set({ quantity: sql`${products.quantity} - ${item.quantity}` })
               .where(eq(products.id, item.itemId));
       }
     }
+
+    // 5. Create Journal Entry
+    const newEntryId = `JV-SI-${newInvoiceId}`;
+    const customer = await tx.query.customers.findFirst({ where: eq(customers.id, invoiceData.customerId) });
+    
+    await tx.insert(journalEntries).values({
+        id: newEntryId,
+        date: invoiceData.date,
+        description: `فاتورة مبيعات رقم ${newInvoiceId} للعميل ${customer?.name || invoiceData.customerId}`,
+        totalAmount: String(totalAmount),
+        status: "مرحل", // Sales invoices are posted immediately
+        sourceModule: "SalesInvoice",
+        sourceDocumentId: newInvoiceId,
+    });
+
+    await tx.insert(journalEntryLines).values([
+        // Debit Accounts Receivable for the full amount
+        { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: String(totalAmount), credit: '0', description: `فاتورة للعميل ${customer?.name}` },
+        // Credit Sales Revenue for the amount before tax
+        { journalEntryId: newEntryId, accountId: salesRevenueAccount, debit: '0', credit: String(totalBeforeTax), description: `إيراد من فاتورة ${newInvoiceId}` },
+        // Credit VAT Payable for the VAT amount
+        { journalEntryId: newEntryId, accountId: vatPayableAccount, debit: '0', credit: String(vatAmount), description: `ضريبة القيمة المضافة لفاتورة ${newInvoiceId}` },
+    ]);
+
   });
 
   revalidatePath('/sales');
   revalidatePath('/accounts-payable-receivable');
   revalidatePath('/inventory');
+  revalidatePath('/general-ledger');
 }
 
 export async function updateSalesInvoice(invoiceData: InvoiceFormValues) {
@@ -172,6 +207,8 @@ export async function updateSalesInvoice(invoiceData: InvoiceFormValues) {
         }))
       );
     }
+    // Note: Updating related journal entries is a complex accounting task (reversing and creating new)
+    // and is omitted here for simplicity.
   });
 
   revalidatePath('/sales');
@@ -182,6 +219,7 @@ export async function deleteSalesInvoice(invoiceId: string) {
     const db = await getDb();
     // Reversing stock changes on delete is complex and often handled by a credit note process in real ERPs.
     // For simplicity, we are just deleting the records here.
+    // Also, deleting the related journal entry would be required.
     await db.transaction(async (tx) => {
         await tx.delete(salesInvoiceItems).where(eq(salesInvoiceItems.invoiceId, invoiceId));
         await tx.delete(salesInvoices).where(eq(salesInvoices.id, invoiceId));
@@ -252,3 +290,4 @@ export async function deleteSalesOrder(id: string) {
   });
   revalidatePath('/sales');
 }
+
