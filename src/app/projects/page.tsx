@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { connectToTenantDb } from '@/db';
 import { projects, projectTasks, projectResources, projectBudgetItems, customers, employees } from '@/db/schema';
@@ -6,8 +5,8 @@ import ProjectsClientComponent from './ProjectsClientComponent';
 
 export default async function ProjectsPage() {
     const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
     try {
+        const { db } = await connectToTenantDb(tenantId);
         const projectsData = await db.select().from(projects);
         const tasksData = await db.select().from(projectTasks);
         const resourcesData = await db.select().from(projectResources);
