@@ -147,24 +147,18 @@ const purchaseReturnSchema = z.object({
 });
 type PurchaseReturnFormValues = z.infer<typeof purchaseReturnSchema>;
 
-const mockItems = [
-    {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 5800, unit: "قطعة"}, 
-    {id: "ITEM002", name: "شاشة 27 بوصة", price: 800, unit: "قطعة"},
-    {id: "ITEM003", name: "ورق طباعة A4 (صندوق)", price: 120, unit: "صندوق"},
-    {id: "SERV001", name: "خدمة شحن دولي", price: 500, unit: "خدمة"},
-    {id: "MAT001", name: "خشب زان", price: 200, unit: "متر مكعب"},
-];
 
 const convertAmountToWords = (amount: number) => {
   return `فقط ${amount.toLocaleString('ar-SA')} ريال سعودي لا غير`;
 };
 
-export default function PurchasesClientComponent({ initialData }: { initialData: { suppliers: any[], purchaseOrders: any[], supplierInvoices: any[], goodsReceivedNotes: any[], purchaseReturns: any[] } }) {
+export default function PurchasesClientComponent({ initialData }: { initialData: { suppliers: any[], purchaseOrders: any[], supplierInvoices: any[], goodsReceivedNotes: any[], purchaseReturns: any[], products: any[] } }) {
   const [suppliersData, setSuppliersData] = useState<SupplierFormValues[]>(initialData.suppliers);
   const [purchaseOrdersData, setPurchaseOrdersData] = useState<PurchaseOrderFormValues[]>(initialData.purchaseOrders);
   const [supplierInvoices, setSupplierInvoicesData] = useState(initialData.supplierInvoices);
   const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState(initialData.goodsReceivedNotes);
   const [purchaseReturns, setPurchaseReturnsData] = useState(initialData.purchaseReturns);
+  const [products, setProducts] = useState(initialData.products);
 
   const [showCreateSupplierDialog, setShowCreateSupplierDialog] = useState(false);
   const [supplierToEdit, setSupplierToEdit] = useState<SupplierFormValues | null>(null);
@@ -251,7 +245,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     } else if (selectedPoForGrn) {
         const grnItems = selectedPoForGrn.items.map(item => ({
             itemId: item.itemId,
-            description: item.description || mockItems.find(i=>i.id===item.itemId)?.name || "",
+            description: item.description || products.find(i=>i.id===item.itemId)?.name || "",
             orderedQuantity: item.quantity,
             receivedQuantity: 0,
             notes: "",
@@ -266,7 +260,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     } else {
         grnForm.reset({ poId: '', supplierId: '', grnDate: new Date(), items: [{itemId: '', description: '', orderedQuantity: 0, receivedQuantity:0}], status: "مستلم جزئياً" });
     }
-  }, [grnToEdit, selectedPoForGrn, grnForm, showCreateGrnDialog]);
+  }, [grnToEdit, selectedPoForGrn, grnForm, showCreateGrnDialog, products]);
 
   useEffect(() => {
     if (purchaseReturnToEdit) purchaseReturnForm.reset(purchaseReturnToEdit);
@@ -279,6 +273,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     setSupplierInvoicesData(initialData.supplierInvoices);
     setGoodsReceivedNotesData(initialData.goodsReceivedNotes);
     setPurchaseReturnsData(initialData.purchaseReturns);
+    setProducts(initialData.products);
   }, [initialData]);
 
 
@@ -543,9 +538,9 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                           <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                               <FormField control={poForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                   <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { poForm.setValue(`items.${index}.unitPrice`, selectedItem.price); poForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(poForm, index); }} value={field.value} dir="rtl">
+                                  <Select onValueChange={(value) => { field.onChange(value); const selectedItem = products.find(i => i.id === value); if (selectedItem) { poForm.setValue(`items.${index}.unitPrice`, selectedItem.costPrice); poForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(poForm, index); }} value={field.value} dir="rtl">
                                       <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
-                                      <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name} ({i.unit})</SelectItem>)}</SelectContent>
+                                      <SelectContent>{products.map(i => <SelectItem key={i.id} value={i.id}>{i.name} ({i.unit})</SelectItem>)}</SelectContent>
                                   </Select><FormMessage className="text-xs"/></FormItem> )} />
                               <FormField control={poForm.control} name={`items.${index}.quantity`} render={({ field }) => (
                                   <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
@@ -633,9 +628,9 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                         <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                                             <FormField control={purchaseReturnForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                                 <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                                <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { purchaseReturnForm.setValue(`items.${index}.unitPrice`, selectedItem.price); purchaseReturnForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(purchaseReturnForm, index); }} value={field.value} dir="rtl">
+                                                <Select onValueChange={(value) => { field.onChange(value); const selectedItem = products.find(i => i.id === value); if (selectedItem) { purchaseReturnForm.setValue(`items.${index}.unitPrice`, selectedItem.costPrice); purchaseReturnForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(purchaseReturnForm, index); }} value={field.value} dir="rtl">
                                                     <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
-                                                    <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                                    <SelectContent>{products.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                                 </Select><FormMessage className="text-xs"/></FormItem> )} />
                                             <FormField control={purchaseReturnForm.control} name={`items.${index}.quantity`} render={({ field }) => (
                                                 <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
@@ -718,3 +713,4 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
+

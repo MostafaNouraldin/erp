@@ -1,15 +1,9 @@
 
+
 import React from 'react';
 import { connectToTenantDb } from '@/db';
-import { inventoryTransfers, products } from '@/db/schema';
+import { inventoryTransfers, products, warehouses } from '@/db/schema';
 import InventoryTransfersClient from './InventoryTransfersClient';
-
-// Mock warehouses as it's not in the schema yet.
-const mockWarehouses = [
-  { id: "WH001", name: "المستودع الرئيسي - الرياض" },
-  { id: "WH002", name: "مستودع فرع جدة" },
-  { id: "WH003", name: "مستودع الدمام" },
-];
 
 export default async function InventoryTransfersPage() {
     const tenantId = 'T001'; // In a real app, this comes from the user session
@@ -17,6 +11,7 @@ export default async function InventoryTransfersPage() {
     try {
         const transfersData = await db.select().from(inventoryTransfers);
         const productsData = await db.select({ id: products.id, name: products.name, quantity: products.quantity }).from(products);
+        const warehousesData = await db.select().from(warehouses);
 
         const initialData = {
             transfers: transfersData.map(t => ({
@@ -24,7 +19,7 @@ export default async function InventoryTransfersPage() {
                 date: new Date(t.date),
             })),
             products: productsData,
-            warehouses: mockWarehouses, // Using mock data for now
+            warehouses: warehousesData,
         };
         
         return <InventoryTransfersClient initialData={initialData} />;

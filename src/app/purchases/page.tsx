@@ -2,7 +2,7 @@
 
 // This is now a true Server Component that fetches data and passes it to the client.
 import { connectToTenantDb } from '@/db';
-import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, purchaseReturns, purchaseReturnItems } from '@/db/schema';
+import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, purchaseReturns, purchaseReturnItems, products } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import React from 'react';
 import PurchasesClientComponent from './PurchasesClientComponent';
@@ -18,6 +18,7 @@ export default async function PurchasesPage() {
         const supplierInvoicesResult = await db.select().from(supplierInvoices);
         const goodsReceivedNotesResult = await db.select().from(goodsReceivedNotes);
         const purchaseReturnsResult = await db.select().from(purchaseReturns);
+        const productsResult = await db.select().from(products);
 
         const purchaseOrdersWithItems = await Promise.all(
             purchaseOrdersResult.map(async (po) => {
@@ -90,6 +91,7 @@ export default async function PurchasesPage() {
             supplierInvoices: supplierInvoicesWithItems,
             goodsReceivedNotes: goodsReceivedNotesWithItems,
             purchaseReturns: purchaseReturnsWithItems,
+            products: productsResult.map(p => ({ ...p, costPrice: parseFloat(p.costPrice), sellingPrice: parseFloat(p.sellingPrice) })),
         };
 
         return <PurchasesClientComponent initialData={initialData} />;

@@ -1,8 +1,9 @@
 
+
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { products, categories } from '@/db/schema';
+import { products, categories, warehouses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from "zod";
@@ -32,6 +33,15 @@ type CategoryValues = {
     name: string;
     description?: string;
 };
+
+const warehouseSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم المستودع مطلوب"),
+    location: z.string().optional(),
+    manager: z.string().optional(),
+});
+export type WarehouseFormValues = z.infer<typeof warehouseSchema>;
+
 
 async function getDb(tenantId: string = 'T001') {
     const { db } = await connectToTenantDb(tenantId);
@@ -93,5 +103,27 @@ export async function updateCategory(categoryData: CategoryValues) {
 export async function deleteCategory(categoryId: string) {
     const db = await getDb();
     await db.delete(categories).where(eq(categories.id, categoryId));
+    revalidatePath('/inventory');
+}
+
+export async function addWarehouse(values: WarehouseFormValues) {
+    const db = await getDb();
+    const newId = `WH${Date.now()}`;
+    await db.insert(warehouses).values({ ...values, id: newId });
+    revalidatePath('/inventory');
+}
+
+export async function updateWarehouse(values: WarehouseFormValues) {
+    const db = await getDb();
+    if (!values.id) {
+        throw new Error("Warehouse ID is required for updating.");
+    }
+    await db.update(warehouses).set(values).where(eq(warehouses.id, values.id));
+    revalidatePath('/inventory');
+}
+
+export async function deleteWarehouse(id: string) {
+    const db = await getDb();
+    await db.delete(warehouses).where(eq(warehouses.id, id));
     revalidatePath('/inventory');
 }

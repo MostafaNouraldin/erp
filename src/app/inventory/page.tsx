@@ -1,7 +1,7 @@
 
 // This is now a true Server Component that fetches data and passes it to the client.
 import { connectToTenantDb } from '@/db';
-import { products, categories, suppliers } from '@/db/schema';
+import { products, categories, suppliers, warehouses } from '@/db/schema';
 import React from 'react';
 import InventoryClientComponent from './InventoryClientComponent';
 
@@ -14,11 +14,13 @@ export default async function InventoryPage() {
         const productsResult = await db.select().from(products);
         const categoriesResult = await db.select().from(categories);
         const suppliersResult = await db.select().from(suppliers);
+        const warehousesResult = await db.select().from(warehouses);
         
         const initialData = {
             products: productsResult.map(p => ({ ...p, costPrice: Number(p.costPrice), sellingPrice: Number(p.sellingPrice) })),
             categories: categoriesResult,
             suppliers: suppliersResult,
+            warehouses: warehousesResult,
         };
 
         return <InventoryClientComponent initialData={initialData} />;
