@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
-import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, addWarehouse, updateWarehouse, deleteWarehouse, addStocktake, addStockIssueVoucher, addStockReceiptVoucher, addStockRequisition } from './actions';
+import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, addWarehouse, updateWarehouse, deleteWarehouse, addStocktake, addStockIssueVoucher, addGoodsReceivedNote, addStockRequisition } from './actions';
 
 
 // Product Schema
@@ -114,25 +114,25 @@ const stockIssueVoucherSchema = z.object({
 });
 type StockIssueVoucherFormValues = z.infer<typeof stockIssueVoucherSchema>;
 
-// Stock Receipt Voucher Schema
-const stockReceiptItemSchema = z.object({
+// Goods Received Note Schema
+const goodsReceivedNoteItemSchema = z.object({
   productId: z.string().min(1, "المنتج مطلوب"),
   quantityReceived: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
   costPricePerUnit: z.coerce.number().min(0).optional(),
   notes: z.string().optional(),
 });
-const stockReceiptVoucherSchema = z.object({
+const goodsReceivedNoteSchema = z.object({
   id: z.string().optional(),
   date: z.date({ required_error: "التاريخ مطلوب" }),
   warehouseId: z.string().min(1, "المستودع المستلم مطلوب"),
   source: z.string().min(1, "مصدر البضاعة مطلوب (مورد/أمر إنتاج)"),
   reference: z.string().optional(),
-  items: z.array(stockReceiptItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   notes: z.string().optional(),
   status: z.enum(["مسودة", "مرحل للمخزون", "ملغي"]).default("مسودة"),
   receivedBy: z.string().optional(),
 });
-type StockReceiptVoucherFormValues = z.infer<typeof stockReceiptVoucherSchema>;
+type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
 
 // Stock Requisition Schema
 const stockRequisitionItemSchema = z.object({
@@ -204,9 +204,9 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const [showManageStockIssueDialog, setShowManageStockIssueDialog] = useState(false);
   const [stockIssueToEdit, setStockIssueToEdit] = useState<StockIssueVoucherFormValues | null>(null);
 
-  const [stockReceiptVouchers, setStockReceiptVouchers] = useState<StockReceiptVoucherFormValues[]>([]);
-  const [showManageStockReceiptDialog, setShowManageStockReceiptDialog] = useState(false);
-  const [stockReceiptToEdit, setStockReceiptToEdit] = useState<StockReceiptVoucherFormValues | null>(null);
+  const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState<GoodsReceivedNoteFormValues[]>([]);
+  const [showManageGoodsReceivedNoteDialog, setShowManageGoodsReceivedNoteDialog] = useState(false);
+  const [goodsReceivedNoteToEdit, setGoodsReceivedNoteToEdit] = useState<GoodsReceivedNoteFormValues | null>(null);
 
   const [stockRequisitions, setStockRequisitions] = useState<StockRequisitionFormValues[]>([]);
   const [showManageStockRequisitionDialog, setShowManageStockRequisitionDialog] = useState(false);
@@ -220,8 +220,8 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const stockIssueVoucherForm = useForm<StockIssueVoucherFormValues>({ resolver: zodResolver(stockIssueVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""}});
   const { fields: stockIssueItemsFields, append: appendStockIssueItem, remove: removeStockIssueItem } = useFieldArray({ control: stockIssueVoucherForm.control, name: "items" });
 
-  const stockReceiptVoucherForm = useForm<StockReceiptVoucherFormValues>({ resolver: zodResolver(stockReceiptVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""}});
-  const { fields: stockReceiptItemsFields, append: appendStockReceiptItem, remove: removeStockReceiptItem } = useFieldArray({ control: stockReceiptVoucherForm.control, name: "items" });
+  const goodsReceivedNoteForm = useForm<GoodsReceivedNoteFormValues>({ resolver: zodResolver(goodsReceivedNoteSchema), defaultValues: { date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""}});
+  const { fields: goodsReceivedNoteItemsFields, append: appendGoodsReceivedNoteItem, remove: removeGoodsReceivedNoteItem } = useFieldArray({ control: goodsReceivedNoteForm.control, name: "items" });
 
   const stockRequisitionForm = useForm<StockRequisitionFormValues>({ resolver: zodResolver(stockRequisitionSchema), defaultValues: { requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""}});
   const { fields: stockRequisitionItemsFields, append: appendStockRequisitionItem, remove: removeStockRequisitionItem } = useFieldArray({ control: stockRequisitionForm.control, name: "items" });
@@ -230,7 +230,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   useEffect(() => { if (categoryToEdit) { categoryForm.reset(categoryToEdit); } else { categoryForm.reset({ name: "", description: "" }); }}, [categoryToEdit, categoryForm, showManageCategoryDialog]);
   useEffect(() => { if (warehouseToEdit) { warehouseForm.reset(warehouseToEdit); } else { warehouseForm.reset({ name: "", location: "" }); }}, [warehouseToEdit, warehouseForm, showManageWarehouseDialog]);
   useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
-  useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
+  useEffect(() => { if (goodsReceivedNoteToEdit) goodsReceivedNoteForm.reset(goodsReceivedNoteToEdit); else goodsReceivedNoteForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""});}, [goodsReceivedNoteToEdit, goodsReceivedNoteForm, showManageGoodsReceivedNoteDialog]);
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
   useEffect(() => {
@@ -369,12 +369,12 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     }
   };
 
-  const handleStockReceiptSubmit = async (values: StockReceiptVoucherFormValues) => {
+  const handleGoodsReceivedNoteSubmit = async (values: GoodsReceivedNoteFormValues) => {
     try {
-        await addStockReceiptVoucher(values);
+        await addGoodsReceivedNote(values);
         toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الإضافة بنجاح." });
-        setShowManageStockReceiptDialog(false);
-        setStockReceiptToEdit(null);
+        setShowManageGoodsReceivedNoteDialog(false);
+        setGoodsReceivedNoteToEdit(null);
     } catch(e) {
         toast({ title: "خطأ", description: "لم يتم إنشاء إذن الإضافة.", variant: "destructive" });
     }
@@ -590,11 +590,3 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-    

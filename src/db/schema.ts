@@ -610,7 +610,7 @@ export const stockIssueVoucherItems = pgTable('stock_issue_voucher_items', {
     notes: text('notes'),
 });
 
-export const stockReceiptVouchers = pgTable('stock_receipt_vouchers', {
+export const goodsReceivedNotes = pgTable('goods_received_notes', {
     id: varchar('id', { length: 256 }).primaryKey(),
     date: timestamp('date').notNull(),
     warehouseId: varchar('warehouse_id', { length: 256 }).notNull().references(() => warehouses.id),
@@ -621,9 +621,9 @@ export const stockReceiptVouchers = pgTable('stock_receipt_vouchers', {
     receivedBy: varchar('received_by', { length: 256 }),
 });
 
-export const stockReceiptVoucherItems = pgTable('stock_receipt_voucher_items', {
+export const goodsReceivedNoteItems = pgTable('goods_received_note_items', {
     id: serial('id').primaryKey(),
-    voucherId: varchar('voucher_id', { length: 256 }).notNull().references(() => stockReceiptVouchers.id, { onDelete: 'cascade' }),
+    voucherId: varchar('voucher_id', { length: 256 }).notNull().references(() => goodsReceivedNotes.id, { onDelete: 'cascade' }),
     productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
     quantityReceived: integer('quantity_received').notNull(),
     costPricePerUnit: numeric('cost_price_per_unit', { precision: 10, scale: 2 }),
@@ -649,27 +649,6 @@ export const stockRequisitionItems = pgTable('stock_requisition_items', {
     quantityRequested: integer('quantity_requested').notNull(),
     justification: text('justification'),
 });
-
-export const goodsReceivedNotes = pgTable('goods_received_notes', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    poId: varchar('po_id', { length: 256 }).notNull().references(() => purchaseOrders.id),
-    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
-    grnDate: timestamp('grn_date').notNull(),
-    notes: text('notes'),
-    status: varchar('status', { length: 50 }).notNull(),
-    receivedBy: varchar('received_by', { length: 256 }),
-});
-
-export const goodsReceivedNoteItems = pgTable('goods_received_note_items', {
-    id: serial('id').primaryKey(),
-    grnId: varchar('grn_id', { length: 256 }).notNull().references(() => goodsReceivedNotes.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
-    description: text('description'),
-    orderedQuantity: integer('ordered_quantity').notNull(),
-    receivedQuantity: integer('received_quantity').notNull(),
-    notes: text('notes'),
-});
-
 
 export const purchaseReturns = pgTable('purchase_returns', {
     id: varchar('id', { length: 256 }).primaryKey(),
@@ -709,16 +688,16 @@ export const purchaseOrderItemsRelations = relations(purchaseOrderItems, ({ one 
 }));
 
 export const goodsReceivedNotesRelations = relations(goodsReceivedNotes, ({ one, many }) => ({
-  purchaseOrder: one(purchaseOrders, {
-    fields: [goodsReceivedNotes.poId],
-    references: [purchaseOrders.id],
-  }),
+    supplier: one(suppliers, {
+        fields: [goodsReceivedNotes.source],
+        references: [suppliers.id],
+    }),
   items: many(goodsReceivedNoteItems),
 }));
 
 export const goodsReceivedNoteItemsRelations = relations(goodsReceivedNoteItems, ({ one }) => ({
   grn: one(goodsReceivedNotes, {
-    fields: [goodsReceivedNoteItems.grnId],
+    fields: [goodsReceivedNoteItems.voucherId],
     references: [goodsReceivedNotes.id],
   }),
 }));

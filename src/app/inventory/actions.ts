@@ -3,7 +3,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, stockReceiptVouchers, stockReceiptVoucherItems, stocktakes } from '@/db/schema';
+import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, goodsReceivedNotes, goodsReceivedNoteItems, stocktakes } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from "zod";
@@ -66,23 +66,23 @@ const stockIssueVoucherSchema = z.object({
 });
 type StockIssueVoucherFormValues = z.infer<typeof stockIssueVoucherSchema>;
 
-const stockReceiptItemSchema = z.object({
+const goodsReceivedNoteItemSchema = z.object({
   productId: z.string().min(1, "المنتج مطلوب"),
   quantityReceived: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
   costPricePerUnit: z.coerce.number().min(0).optional(),
   notes: z.string().optional(),
 });
-const stockReceiptVoucherSchema = z.object({
+const goodsReceivedNoteSchema = z.object({
   date: z.date({ required_error: "التاريخ مطلوب" }),
   warehouseId: z.string().min(1, "المستودع المستلم مطلوب"),
   source: z.string().min(1, "مصدر البضاعة مطلوب (مورد/أمر إنتاج)"),
   reference: z.string().optional(),
-  items: z.array(stockReceiptItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   notes: z.string().optional(),
   status: z.enum(["مسودة", "مرحل للمخزون", "ملغي"]).default("مسودة"),
   receivedBy: z.string().optional(),
 });
-type StockReceiptVoucherFormValues = z.infer<typeof stockReceiptVoucherSchema>;
+type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
 
 const stockRequisitionItemSchema = z.object({
   productId: z.string().min(1, "المنتج مطلوب"),
@@ -202,10 +202,10 @@ export async function addStockIssueVoucher(values: StockIssueVoucherFormValues) 
     revalidatePath('/inventory');
 }
 
-export async function addStockReceiptVoucher(values: StockReceiptVoucherFormValues) {
+export async function addGoodsReceivedNote(values: GoodsReceivedNoteFormValues) {
     const db = await getDb();
-    const newId = `SRV${Date.now()}`;
-    await db.insert(stockReceiptVouchers).values({ ...values, id: newId });
+    const newId = `GRN${Date.now()}`;
+    await db.insert(goodsReceivedNotes).values({ ...values, id: newId });
     // Add logic to update inventory on approval
     revalidatePath('/inventory');
 }
@@ -216,5 +216,3 @@ export async function addStockRequisition(values: StockRequisitionFormValues) {
     await db.insert(stockRequisitions).values({ ...values, id: newId });
     revalidatePath('/inventory');
 }
-
-    
