@@ -584,6 +584,92 @@ export default function InventoryClientComponent({ initialData }: { initialData:
             </CardContent>
           </Card>
         </TabsContent>
+        
+        <TabsContent value="categories">
+            <Card className="shadow-md">
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle>فئات الأصناف</CardTitle>
+                        <Dialog open={showManageCategoryDialog} onOpenChange={(isOpen) => { setShowManageCategoryDialog(isOpen); if(!isOpen) setCategoryToEdit(null); }}>
+                            <DialogTrigger asChild><Button variant="outline" onClick={() => {setCategoryToEdit(null); categoryForm.reset(); setShowManageCategoryDialog(true);}}><PlusCircle className="me-2 h-4 w-4" /> إضافة فئة</Button></DialogTrigger>
+                            <DialogContent className="sm:max-w-md" dir="rtl">
+                                <DialogHeader><DialogTitle>{categoryToEdit ? 'تعديل فئة' : 'إضافة فئة جديدة'}</DialogTitle></DialogHeader>
+                                <Form {...categoryForm}><form onSubmit={categoryForm.handleSubmit(handleCategorySubmit)} className="space-y-4 py-4">
+                                    <FormField control={categoryForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم الفئة</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={categoryForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>الوصف</FormLabel><FormControl><Textarea {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
+                                    <DialogFooter><Button type="submit">{categoryToEdit ? 'حفظ التعديلات' : 'حفظ'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                </form></Form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead>الوصف</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                        {categoriesData.map((cat) => (
+                            <TableRow key={cat.id}>
+                                <TableCell>{cat.name}</TableCell><TableCell>{cat.description}</TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="ghost" size="icon" onClick={() => { setCategoryToEdit(cat); setShowManageCategoryDialog(true); }}><Edit className="h-4 w-4"/></Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                                        <AlertDialogContent dir="rtl">
+                                            <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف الفئة "{cat.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteCategory(cat.id!)}>حذف</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="warehouses">
+            <Card className="shadow-md">
+                 <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle>إدارة المستودعات</CardTitle>
+                        <Dialog open={showManageWarehouseDialog} onOpenChange={(isOpen) => { setShowManageWarehouseDialog(isOpen); if(!isOpen) setWarehouseToEdit(null); }}>
+                            <DialogTrigger asChild><Button variant="outline" onClick={() => {setWarehouseToEdit(null); warehouseForm.reset(); setShowManageWarehouseDialog(true);}}><PlusCircle className="me-2 h-4 w-4" /> إضافة مستودع</Button></DialogTrigger>
+                            <DialogContent className="sm:max-w-md" dir="rtl">
+                                <DialogHeader><DialogTitle>{warehouseToEdit ? 'تعديل مستودع' : 'إضافة مستودع جديد'}</DialogTitle></DialogHeader>
+                                <Form {...warehouseForm}><form onSubmit={warehouseForm.handleSubmit(handleWarehouseSubmit)} className="space-y-4 py-4">
+                                    <FormField control={warehouseForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم المستودع</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={warehouseForm.control} name="location" render={({ field }) => (<FormItem><FormLabel>الموقع</FormLabel><FormControl><Textarea {...field} className="bg-background"/></FormControl><FormMessage /></FormItem>)} />
+                                    <DialogFooter><Button type="submit">{warehouseToEdit ? 'حفظ التعديلات' : 'حفظ'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                </form></Form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                     <Table>
+                        <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead>الموقع</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                        {warehousesData.map((wh) => (
+                            <TableRow key={wh.id}>
+                                <TableCell>{wh.name}</TableCell><TableCell>{wh.location}</TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="ghost" size="icon" onClick={() => { setWarehouseToEdit(wh); setShowManageWarehouseDialog(true); }}><Edit className="h-4 w-4"/></Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                                        <AlertDialogContent dir="rtl">
+                                            <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponentClass>هل أنت متأكد من حذف المستودع "{wh.name}"؟</AlertDialogDescriptionComponentClass></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteWarehouse(wh.id!)}>حذف</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
         {/* Other Tabs omitted for brevity */}
         
       </Tabs>

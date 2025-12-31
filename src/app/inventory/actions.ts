@@ -55,6 +55,7 @@ const stockIssueItemSchema = z.object({
   notes: z.string().optional(),
 });
 const stockIssueVoucherSchema = z.object({
+  id: z.string().optional(),
   date: z.date({ required_error: "التاريخ مطلوب" }),
   warehouseId: z.string().min(1, "المستودع المصدر مطلوب"),
   recipient: z.string().min(1, "الجهة المستلمة مطلوبة"),
@@ -73,6 +74,7 @@ const goodsReceivedNoteItemSchema = z.object({
   notes: z.string().optional(),
 });
 const goodsReceivedNoteSchema = z.object({
+  id: z.string().optional(),
   date: z.date({ required_error: "التاريخ مطلوب" }),
   warehouseId: z.string().min(1, "المستودع المستلم مطلوب"),
   source: z.string().min(1, "مصدر البضاعة مطلوب (مورد/أمر إنتاج)"),
@@ -90,6 +92,7 @@ const stockRequisitionItemSchema = z.object({
   justification: z.string().optional(),
 });
 const stockRequisitionSchema = z.object({
+  id: z.string().optional(),
   requestDate: z.date({ required_error: "تاريخ الطلب مطلوب" }),
   requestingDepartmentOrPerson: z.string().min(1, "الجهة الطالبة مطلوبة"),
   requiredByDate: z.date({ required_error: "تاريخ الحاجة مطلوب" }),
@@ -197,7 +200,17 @@ export async function addStocktake(values: StocktakeInitiationFormValues) {
 export async function addStockIssueVoucher(values: StockIssueVoucherFormValues) {
     const db = await getDb();
     const newId = `SIV${Date.now()}`;
-    await db.insert(stockIssueVouchers).values({ ...values, id: newId });
+    await db.transaction(async (tx) => {
+        await tx.insert(stockIssueVouchers).values({ ...values, id: newId });
+        if(values.items.length > 0) {
+            await tx.insert(stockIssueVoucherItems).values(
+                values.items.map(item => ({
+                    voucherId: newId,
+                    ...item,
+                }))
+            );
+        }
+    });
     // Add logic to update inventory on approval
     revalidatePath('/inventory');
 }
@@ -205,7 +218,17 @@ export async function addStockIssueVoucher(values: StockIssueVoucherFormValues) 
 export async function addGoodsReceivedNote(values: GoodsReceivedNoteFormValues) {
     const db = await getDb();
     const newId = `GRN${Date.now()}`;
-    await db.insert(goodsReceivedNotes).values({ ...values, id: newId });
+    await db.transaction(async (tx) => {
+        await tx.insert(goodsReceivedNotes).values({ ...values, id: newId, date: values.date });
+        if (values.items.length > 0) {
+            await tx.insert(goodsReceivedNoteItems).values(
+                values.items.map(item => ({
+                    grnId: newId,
+                    ...item
+                }))
+            );
+        }
+    });
     // Add logic to update inventory on approval
     revalidatePath('/inventory');
 }
@@ -213,6 +236,16 @@ export async function addGoodsReceivedNote(values: GoodsReceivedNoteFormValues) 
 export async function addStockRequisition(values: StockRequisitionFormValues) {
     const db = await getDb();
     const newId = `SRQ${Date.now()}`;
-    await db.insert(stockRequisitions).values({ ...values, id: newId });
+    await db.transaction(async (tx) => {
+        await tx.insert(stockRequisitions).values({ ...values, id: newId });
+        if (values.items.length > 0) {
+            await tx.insert(stockRequisitionItems).values(
+                values.items.map(item => ({
+                    requisitionId: newId,
+                    ...item
+                }))
+            );
+        }
+    });
     revalidatePath('/inventory');
 }

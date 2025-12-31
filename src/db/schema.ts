@@ -623,7 +623,7 @@ export const goodsReceivedNotes = pgTable('goods_received_notes', {
 
 export const goodsReceivedNoteItems = pgTable('goods_received_note_items', {
     id: serial('id').primaryKey(),
-    voucherId: varchar('voucher_id', { length: 256 }).notNull().references(() => goodsReceivedNotes.id, { onDelete: 'cascade' }),
+    grnId: varchar('grn_id', { length: 256 }).notNull().references(() => goodsReceivedNotes.id, { onDelete: 'cascade' }),
     productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
     quantityReceived: integer('quantity_received').notNull(),
     costPricePerUnit: numeric('cost_price_per_unit', { precision: 10, scale: 2 }),
@@ -697,7 +697,7 @@ export const goodsReceivedNotesRelations = relations(goodsReceivedNotes, ({ one,
 
 export const goodsReceivedNoteItemsRelations = relations(goodsReceivedNoteItems, ({ one }) => ({
   grn: one(goodsReceivedNotes, {
-    fields: [goodsReceivedNoteItems.voucherId],
+    fields: [goodsReceivedNoteItems.grnId],
     references: [goodsReceivedNotes.id],
   }),
 }));
