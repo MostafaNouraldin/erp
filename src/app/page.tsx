@@ -7,8 +7,7 @@ import { CurrencyProvider } from "@/contexts/currency-context";
 import DashboardClient from "./DashboardClient";
 
 async function getDashboardData() {
-  const tenantId = 'T001'; // In a real app, this comes from the user session
-  const { db } = await connectToTenantDb(tenantId);
+  const { db } = await connectToTenantDb();
   try {
     // Total Revenue (from paid invoices)
     const totalRevenueResult = await db

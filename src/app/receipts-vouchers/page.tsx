@@ -7,8 +7,7 @@ import ReceiptsVouchersClient from './ReceiptsVouchersClient';
 import type { Party, Account } from './actions';
 
 export default async function ReceiptsVouchersPage() {
-    const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const voucherEntries = await db.select().from(journalEntries).where(
             or(

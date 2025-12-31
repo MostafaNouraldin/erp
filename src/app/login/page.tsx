@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState } from 'react';
@@ -84,7 +83,7 @@ export default function LoginPage() {
                 name="tenantId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>معرف الشركة (Tenant ID)</FormLabel>
+                    <FormLabel>معرف الشركة (اختياري)</FormLabel>
                     <FormControl>
                       <Input placeholder="مثال: T001 (اتركه فارغاً للدخول كمدير نظام)" {...field} className="bg-background" />
                     </FormControl>

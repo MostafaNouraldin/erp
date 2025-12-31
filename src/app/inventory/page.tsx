@@ -8,8 +8,7 @@ import InventoryClientComponent from './InventoryClientComponent';
 
 // This is now a true Server Component that fetches data and passes it to the client component.
 export default async function InventoryPage() {
-    const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const productsResult = await db.select().from(products);
         const categoriesResult = await db.select().from(categories);
@@ -42,5 +41,3 @@ export default async function InventoryPage() {
         );
     }
 }
-
-    

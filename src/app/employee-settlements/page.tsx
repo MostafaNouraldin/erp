@@ -7,8 +7,7 @@ import EmployeeSettlementsClientComponent from './EmployeeSettlementsClientCompo
 
 
 export default async function EmployeeSettlementsPage() {
-    const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const employeesData = await db.select().from(employees);
         const settlementsData = await db.select().from(employeeSettlements);

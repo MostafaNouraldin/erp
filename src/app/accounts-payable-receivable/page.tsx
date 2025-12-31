@@ -8,8 +8,7 @@ import AccountsPayableReceivableClientComponent from './AccountsPayableReceivabl
 
 // This is now a true Server Component that fetches data and passes it to the client component.
 export default async function AccountsPayableReceivablePage() {
-    const tenantId = 'T001'; // In a real app, this would come from the user's session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     
     const customersResult = await db.select().from(customers);
     const suppliersResult = await db.select().from(suppliers);

@@ -1,13 +1,11 @@
 
-
 import React from 'react';
 import { connectToTenantDb } from '@/db';
 import { inventoryTransfers, products, warehouses } from '@/db/schema';
 import InventoryTransfersClient from './InventoryTransfersClient';
 
 export default async function InventoryTransfersPage() {
-    const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const transfersData = await db.select().from(inventoryTransfers);
         const productsData = await db.select({ id: products.id, name: products.name, quantity: products.quantity }).from(products);

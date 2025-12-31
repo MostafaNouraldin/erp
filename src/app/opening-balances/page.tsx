@@ -6,8 +6,7 @@ import { eq } from 'drizzle-orm';
 import OpeningBalancesClient from './OpeningBalancesClient';
 
 export default async function OpeningBalancesPage() {
-    const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const openingBalanceEntries = await db.select().from(journalEntries).where(eq(journalEntries.sourceModule, "OpeningBalance"));
         

@@ -24,7 +24,7 @@ const allAvailableModules: Module[] = [
 ];
 
 async function getSubscriptionData(tenantId: string) {
-    const { db } = await connectToTenantDb('main');
+    const { db } = await connectToTenantDb(); // Now connects to the single DB
     try {
         const tenantData = await db.query.tenants.findFirst({
             where: eq(tenants.id, tenantId),

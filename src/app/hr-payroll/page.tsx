@@ -7,8 +7,7 @@ import { eq, sql } from 'drizzle-orm';
 import HRClientComponent from './HRClientComponent';
 
 export default async function HRPayrollPage() {
-    const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const employeesResult = await db.select().from(employees);
         const payrollsResult = await db.select().from(payrolls);
@@ -89,9 +88,3 @@ export default async function HRPayrollPage() {
         );
     }
 }
-
-    
-
-
-
-    

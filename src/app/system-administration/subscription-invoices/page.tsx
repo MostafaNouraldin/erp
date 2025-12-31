@@ -1,12 +1,11 @@
 
-
 import React from 'react';
 import { connectToTenantDb } from '@/db';
 import { tenants } from '@/db/schema';
 import SubscriptionInvoicesPage from './SubscriptionInvoicesClient'; // Corrected import name
 
 export default async function SubscriptionInvoicesServerPage() {
-    const { db } = await connectToTenantDb('main');
+    const { db } = await connectToTenantDb();
     try {
         const tenantsData = await db.select({ id: tenants.id, name: tenants.name }).from(tenants);
         

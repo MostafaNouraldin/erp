@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { connectToTenantDb } from '@/db';
 import { chartOfAccounts, salesInvoices, salesInvoiceItems, products, customers, payrolls, attendanceRecords } from '@/db/schema';
@@ -5,8 +6,7 @@ import ReportsClient from './ReportsClient';
 import { eq, desc } from 'drizzle-orm';
 
 async function getReportsData() {
-    const tenantId = 'T001'; // In a real app, this would come from the user's session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
 
     try {
         const accounts = await db.select().from(chartOfAccounts);

@@ -8,8 +8,7 @@ import SalesClientComponent from './SalesClientComponent'; // We will create thi
 
 // This is now a true Server Component that fetches data and passes it to the client component.
 export default async function SalesPage() {
-    const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const customersResult = await db.select().from(customersSchema);
         const invoicesResult = await db.select().from(salesInvoicesSchema);

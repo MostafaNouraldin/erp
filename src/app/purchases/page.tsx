@@ -10,8 +10,7 @@ import PurchasesClientComponent from './PurchasesClientComponent';
 
 // This is now a true Server Component that fetches data and passes it to the client component.
 export default async function PurchasesPage() {
-    const tenantId = 'T001';
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const suppliersResult = await db.select().from(suppliers);
         const purchaseOrdersResult = await db.select().from(purchaseOrders);

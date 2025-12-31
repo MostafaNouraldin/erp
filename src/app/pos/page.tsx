@@ -7,8 +7,7 @@ import POSClientComponent from './POSClientComponent';
 
 
 export default async function POSPage() {
-    const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     
     const productsResult = await db.select().from(products);
     const categoriesResult = await db.selectDistinct({category: products.category}).from(products);

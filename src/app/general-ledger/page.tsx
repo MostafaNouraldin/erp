@@ -6,8 +6,7 @@ import { eq } from 'drizzle-orm';
 import GeneralLedgerClientComponent from './GeneralLedgerClientComponent';
 
 export default async function GeneralLedgerPage() {
-    const tenantId = 'T001'; // In a real app, this would come from the user's session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const chartOfAccountsData = await db.select().from(chartOfAccounts);
         const journalEntriesData = await db.select().from(journalEntries);

@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { connectToTenantDb } from '@/db';
 import { users, roles } from '@/db/schema';
@@ -8,9 +7,7 @@ import type { Role } from '@/types/saas';
 import type { UserFormValues } from './actions';
 
 async function getSettingsData() {
-    // For settings, we might need data from both main and tenant DBs
-    // For now, let's assume users and roles are tenant-specific for management
-    const { db } = await connectToTenantDb('T001'); // Assuming tenant 'T001' for this context
+    const { db } = await connectToTenantDb();
     try {
         const usersData = await db.select().from(users);
         const rolesData = await db.select().from(roles);

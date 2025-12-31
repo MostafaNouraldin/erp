@@ -22,7 +22,7 @@ const subscriptionRequestSchema = z.object({
 export type SubscriptionRequestFormValues = z.infer<typeof subscriptionRequestSchema>;
 
 async function getMainDb() {
-  const { db } = await connectToTenantDb('main');
+  const { db } = await connectToTenantDb();
   return db;
 }
 

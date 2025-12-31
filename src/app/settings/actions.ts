@@ -32,8 +32,8 @@ const roleSchema = z.object({
 
 export type RoleFormValues = z.infer<typeof roleSchema>;
 
-async function getDb(tenantId: string = 'T001') {
-    const { db } = await connectToTenantDb(tenantId);
+async function getDb() {
+    const { db } = await connectToTenantDb();
     return db;
 }
 

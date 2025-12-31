@@ -1,5 +1,4 @@
 
-
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -72,23 +71,10 @@ export const subscriptionRequests = pgTable('subscription_requests', {
 
 // --- Core Tenant-Specific Tables ---
 
-export const roles = pgTable('roles', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    name: varchar('name', { length: 256 }).notNull().unique(),
-    description: text('description'),
-    permissions: jsonb('permissions').default('[]'),
-});
+export const roles = mainRoles;
+export const users = mainUsers;
+export const usersRelations = mainUsersRelations;
 
-export const users = pgTable('users', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    name: varchar('name', { length: 256 }).notNull(),
-    email: varchar('email', { length: 256 }).notNull().unique(),
-    roleId: varchar('role_id', { length: 256 }).notNull().references(() => roles.id),
-    status: varchar('status', { length: 50 }).notNull().default('نشط'),
-    passwordHash: text('password_hash').notNull(),
-    avatarUrl: text('avatar_url'),
-    createdAt: timestamp('created_at').defaultNow(),
-});
 
 export const customers = pgTable('customers', {
   id: varchar('id', { length: 256 }).primaryKey(),

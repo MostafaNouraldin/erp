@@ -26,8 +26,7 @@ const tenantSchema = z.object({
 type TenantFormValues = z.infer<typeof tenantSchema>;
 
 async function getMainDb() {
-    // This action operates on the main database, not a tenant-specific one.
-    const { db } = await connectToTenantDb('main');
+    const { db } = await connectToTenantDb();
     return db;
 }
 

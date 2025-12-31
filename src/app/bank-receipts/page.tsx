@@ -6,8 +6,7 @@ import { like } from 'drizzle-orm';
 import BankReceiptsClient from './BankReceiptsClient';
 
 export default async function BankReceiptsPage() {
-  const tenantId = 'T001'; // In a real app, this comes from the user session
-  const { db } = await connectToTenantDb(tenantId);
+  const { db } = await connectToTenantDb();
 
   try {
     const receiptsData = await db.select().from(bankReceipts);

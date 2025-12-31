@@ -6,8 +6,7 @@ import { eq } from 'drizzle-orm';
 import InventoryAdjustmentsClient from './InventoryAdjustmentsClient';
 
 export default async function InventoryAdjustmentsPage() {
-    const tenantId = 'T001'; // In a real app, this comes from the user session
-    const { db } = await connectToTenantDb(tenantId);
+    const { db } = await connectToTenantDb();
     try {
         const adjustmentsData = await db.select().from(inventoryAdjustments);
         const productsData = await db.select({ id: products.id, name: products.name, quantity: products.quantity }).from(products);

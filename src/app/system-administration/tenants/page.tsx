@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { connectToTenantDb } from '@/db'; // connectToTenantDb is for tenant-specific DBs. We need a main DB connection here.
-import { tenants, tenantModuleSubscriptions } from '@/db/schema'; // Assuming these tables are in the MAIN schema, not tenant schema.
+import { connectToTenantDb } from '@/db';
+import { tenants, tenantModuleSubscriptions } from '@/db/schema';
 import TenantsPageClient from './TenantsPageClient';
 import type { Tenant, TenantSubscribedModule, Module } from '@/types/saas';
 
@@ -24,9 +24,7 @@ const allAvailableModules: Module[] = [
 
 
 export default async function TenantsPage() {
-    // For this admin page, we should connect to the main/public database, not a specific tenant's.
-    // The current `connectToTenantDb` is designed for tenant DBs. We'll assume it can also connect to the main DB for this example.
-    const { db } = await connectToTenantDb('main'); 
+    const { db } = await connectToTenantDb(); 
     try {
         const tenantsData = await db.select().from(tenants);
         const subscriptionsData = await db.select().from(tenantModuleSubscriptions);
