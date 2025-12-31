@@ -1,13 +1,7 @@
 
 
-import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex, pgSchema } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-
-// You can use the `pgSchema` function to declare a schema.
-// Here, we are declaring a schema named "main"
-export const mainSchema = pgSchema("main");
-export const tenantSchema = pgSchema("tenant");
-
 
 // --- System Administration & Settings Tables (MAIN SCHEMA) ---
 export const tenants = pgTable('tenants', {
@@ -573,6 +567,22 @@ export const qualityChecks = pgTable('quality_checks', {
 
 // --- Inventory Control ---
 
+export const warehouses = pgTable('warehouses', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull(),
+    location: text('location'),
+});
+
+export const stocktakes = pgTable('stocktakes', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    stocktakeDate: timestamp('stocktake_date').notNull(),
+    warehouseId: varchar('warehouse_id', { length: 256 }).notNull().references(() => warehouses.id),
+    responsiblePerson: varchar('responsible_person', { length: 256 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مجدول'),
+    notes: text('notes'),
+});
+
+
 export const inventoryAdjustments = pgTable('inventory_adjustments', {
     id: varchar('id', { length: 256 }).primaryKey(),
     date: timestamp('date').notNull(),
@@ -593,6 +603,65 @@ export const inventoryTransfers = pgTable('inventory_transfers', {
     quantity: integer('quantity').notNull(),
     status: varchar('status', { length: 50 }).notNull().default('مسودة'),
     notes: text('notes'),
+});
+
+export const stockIssueVouchers = pgTable('stock_issue_vouchers', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    warehouseId: varchar('warehouse_id', { length: 256 }).notNull().references(() => warehouses.id),
+    recipient: varchar('recipient', { length: 256 }).notNull(),
+    reason: text('reason').notNull(),
+    notes: text('notes'),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+    issuedBy: varchar('issued_by', { length: 256 }),
+});
+
+export const stockIssueVoucherItems = pgTable('stock_issue_voucher_items', {
+    id: serial('id').primaryKey(),
+    voucherId: varchar('voucher_id', { length: 256 }).notNull().references(() => stockIssueVouchers.id, { onDelete: 'cascade' }),
+    productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
+    quantityIssued: integer('quantity_issued').notNull(),
+    notes: text('notes'),
+});
+
+export const stockReceiptVouchers = pgTable('stock_receipt_vouchers', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    warehouseId: varchar('warehouse_id', { length: 256 }).notNull().references(() => warehouses.id),
+    source: varchar('source', { length: 256 }).notNull(),
+    reference: varchar('reference', { length: 256 }),
+    notes: text('notes'),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+    receivedBy: varchar('received_by', { length: 256 }),
+});
+
+export const stockReceiptVoucherItems = pgTable('stock_receipt_voucher_items', {
+    id: serial('id').primaryKey(),
+    voucherId: varchar('voucher_id', { length: 256 }).notNull().references(() => stockReceiptVouchers.id, { onDelete: 'cascade' }),
+    productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
+    quantityReceived: integer('quantity_received').notNull(),
+    costPricePerUnit: numeric('cost_price_per_unit', { precision: 10, scale: 2 }),
+    notes: text('notes'),
+});
+
+
+export const stockRequisitions = pgTable('stock_requisitions', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    requestDate: timestamp('request_date').notNull(),
+    requestingDepartmentOrPerson: varchar('requesting_department_or_person', { length: 256 }).notNull(),
+    requiredByDate: timestamp('required_by_date').notNull(),
+    overallJustification: text('overall_justification'),
+    status: varchar('status', { length: 50 }).notNull().default('جديد'),
+    approvedBy: varchar('approved_by', { length: 256 }),
+    approvalDate: timestamp('approval_date'),
+});
+
+export const stockRequisitionItems = pgTable('stock_requisition_items', {
+    id: serial('id').primaryKey(),
+    requisitionId: varchar('requisition_id', { length: 256 }).notNull().references(() => stockRequisitions.id, { onDelete: 'cascade' }),
+    productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
+    quantityRequested: integer('quantity_requested').notNull(),
+    justification: text('justification'),
 });
 
 export const goodsReceivedNotes = pgTable('goods_received_notes', {
