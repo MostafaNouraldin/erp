@@ -1,12 +1,14 @@
 
 
 import React from 'react';
-import { db } from '@/db';
+import { connectToTenantDb } from '@/db';
 import { employees, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, employeeAllowances, employeeDeductions } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import HRClientComponent from './HRClientComponent';
 
 export default async function HRPayrollPage() {
+    const tenantId = 'T001'; // In a real app, this comes from the user session
+    const { db } = await connectToTenantDb(tenantId);
     try {
         const employeesResult = await db.select().from(employees);
         const payrollsResult = await db.select().from(payrolls);
