@@ -3,7 +3,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, goodsReceivedNotes, goodsReceivedNoteItems, stocktakes } from '@/db/schema';
+import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, stocktakes } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from "zod";
@@ -66,25 +66,6 @@ const stockIssueVoucherSchema = z.object({
   issuedBy: z.string().optional(),
 });
 type StockIssueVoucherFormValues = z.infer<typeof stockIssueVoucherSchema>;
-
-const goodsReceivedNoteItemSchema = z.object({
-  productId: z.string().min(1, "المنتج مطلوب"),
-  quantityReceived: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
-  costPricePerUnit: z.coerce.number().min(0).optional(),
-  notes: z.string().optional(),
-});
-const goodsReceivedNoteSchema = z.object({
-  id: z.string().optional(),
-  date: z.date({ required_error: "التاريخ مطلوب" }),
-  warehouseId: z.string().min(1, "المستودع المستلم مطلوب"),
-  source: z.string().min(1, "مصدر البضاعة مطلوب (مورد/أمر إنتاج)"),
-  reference: z.string().optional(),
-  items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
-  notes: z.string().optional(),
-  status: z.enum(["مسودة", "مرحل للمخزون", "ملغي"]).default("مسودة"),
-  receivedBy: z.string().optional(),
-});
-type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
 
 const stockRequisitionItemSchema = z.object({
   productId: z.string().min(1, "المنتج مطلوب"),
@@ -215,23 +196,6 @@ export async function addStockIssueVoucher(values: StockIssueVoucherFormValues) 
     revalidatePath('/inventory');
 }
 
-export async function addGoodsReceivedNote(values: GoodsReceivedNoteFormValues) {
-    const db = await getDb();
-    const newId = `GRN${Date.now()}`;
-    await db.transaction(async (tx) => {
-        await tx.insert(goodsReceivedNotes).values({ ...values, id: newId, date: values.date });
-        if (values.items.length > 0) {
-            await tx.insert(goodsReceivedNoteItems).values(
-                values.items.map(item => ({
-                    grnId: newId,
-                    ...item
-                }))
-            );
-        }
-    });
-    // Add logic to update inventory on approval
-    revalidatePath('/inventory');
-}
 
 export async function addStockRequisition(values: StockRequisitionFormValues) {
     const db = await getDb();
@@ -249,3 +213,5 @@ export async function addStockRequisition(values: StockRequisitionFormValues) {
     });
     revalidatePath('/inventory');
 }
+
+    
