@@ -1,7 +1,8 @@
 import React from 'react';
 import { connectToTenantDb } from '@/db';
-import { chartOfAccounts } from '@/db/schema';
+import { chartOfAccounts, salesInvoices, salesInvoiceItems, products, customers, payrolls, attendanceRecords } from '@/db/schema';
 import ReportsClient from './ReportsClient';
+import { eq, desc } from 'drizzle-orm';
 
 async function getReportsData() {
     const tenantId = 'T001'; // In a real app, this would come from the user's session
@@ -9,10 +10,52 @@ async function getReportsData() {
 
     try {
         const accounts = await db.select().from(chartOfAccounts);
+        const invoices = await db.select().from(salesInvoices);
+        const invoiceItems = await db.select().from(salesInvoiceItems);
+        const productsData = await db.select().from(products);
+        const customersData = await db.select().from(customers);
+        const payrollsData = await db.select().from(payrolls);
+        const attendanceData = await db.select().from(attendanceRecords);
+
+        // Process sales by product
+        const salesByProductData = invoiceItems.reduce((acc, item) => {
+            if (!acc[item.itemId]) {
+                acc[item.itemId] = { quantity: 0, total: 0, name: productsData.find(p => p.id === item.itemId)?.name || item.itemId };
+            }
+            acc[item.itemId].quantity += item.quantity;
+            acc[item.itemId].total += parseFloat(item.total);
+            return acc;
+        }, {} as Record<string, { quantity: number; total: number, name: string }>);
+
+        // Process sales by customer
+        const salesByCustomerData = invoices.reduce((acc, invoice) => {
+            if (!acc[invoice.customerId]) {
+                acc[invoice.customerId] = { total: 0, name: customersData.find(c => c.id === invoice.customerId)?.name || invoice.customerId };
+            }
+            acc[invoice.customerId].total += parseFloat(invoice.numericTotalAmount);
+            return acc;
+        }, {} as Record<string, { total: number, name: string }>);
+
+        const inventoryValuationData = productsData.map(p => ({
+            id: p.id,
+            name: p.name,
+            quantity: p.quantity,
+            costPrice: parseFloat(p.costPrice),
+            totalValue: p.quantity * parseFloat(p.costPrice),
+        }));
+
+
         return {
             success: true,
             data: {
                 accounts: accounts.map(acc => ({...acc, balance: parseFloat(acc.balance || '0')})),
+                salesByProduct: Object.values(salesByProductData).sort((a, b) => b.total - a.total),
+                salesByCustomer: Object.values(salesByCustomerData).sort((a, b) => b.total - a.total),
+                inventoryValuation: inventoryValuationData,
+                payrolls: payrollsData.map(p => ({...p, basicSalary: parseFloat(p.basicSalary), netSalary: p.netSalary ? parseFloat(p.netSalary) : 0 })),
+                attendances: attendanceData.map(a => ({...a, date: new Date(a.date)})),
+                products: productsData,
+                customers: customersData,
             }
         };
 

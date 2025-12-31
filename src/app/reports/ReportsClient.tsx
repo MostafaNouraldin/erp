@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart2, FileText, DollarSign, ShoppingCart, Package, Users, Download, Eye, Settings2, Filter, BarChartBig, PieChart, LineChart } from "lucide-react";
+import { BarChart2, FileText, DollarSign, ShoppingCart, Package, Users, Download, Eye, Settings2, Filter, BarChartBig, PieChart, LineChart, GanttChartSquare, Clock, Wallet } from "lucide-react";
 import { useCurrency } from '@/hooks/use-currency';
 
 interface Account {
@@ -17,11 +18,47 @@ interface Account {
   balance: number;
 }
 
+interface ProductSale {
+    name: string;
+    quantity: number;
+    total: number;
+}
+
+interface CustomerSale {
+    name: string;
+    total: number;
+}
+
+interface InventoryValuation {
+    id: string;
+    name: string;
+    quantity: number;
+    costPrice: number;
+    totalValue: number;
+}
+
+interface Payroll {
+    id: string;
+    employeeId: string;
+    monthYear: string;
+    netSalary: number;
+    status: string;
+}
+
+interface Attendance {
+    id: string;
+    employeeId: string;
+    date: Date;
+    status: string;
+    checkIn: string | null;
+    checkOut: string | null;
+}
+
 const financialReports = [
   { name: "الميزانية العمومية", key: "balanceSheet", icon: FileText, description: "عرض المركز المالي للشركة في تاريخ محدد." },
   { name: "قائمة الدخل", key: "incomeStatement", icon: DollarSign, description: "ملخص الإيرادات والمصروفات خلال فترة معينة." },
   { name: "ميزان المراجعة", key: "trialBalance", icon: PieChart, description: "قائمة بجميع الحسابات وأرصدتها." },
-  { name: "قائمة التدفقات النقدية", key: "cashFlow", icon: BarChartBig, description: "تتبع حركة النقد الداخل والخارج." },
+  { name: "قائمة التدفقات النقدية", key: "cashFlow", icon: Wallet, description: "تتبع حركة النقد الداخل والخارج." },
 ];
 
 const salesReports = [
@@ -31,17 +68,24 @@ const salesReports = [
 
 const inventoryReports = [
   { name: "تقرير تقييم المخزون", key: "inventoryValuation", icon: Package, description: "عرض قيمة المخزون الحالي." },
-  { name: "تقرير حركة الأصناف", key: "itemMovement", icon: Package, description: "تتبع دخول وخروج الأصناف من المخازن." },
+  { name: "تقرير حركة الأصناف", key: "itemMovement", icon: GanttChartSquare, description: "تتبع دخول وخروج الأصناف من المخازن." },
 ];
 
 const hrReports = [
   { name: "تقرير كشوف المرتبات", key: "payroll", icon: Users, description: "ملخص الرواتب والخصومات والبدلات للموظفين." },
-  { name: "تقرير الحضور والانصراف", key: "attendance", icon: Users, description: "سجل حضور وغياب الموظفين." },
+  { name: "تقرير الحضور والانصراف", key: "attendance", icon: Clock, description: "سجل حضور وغياب الموظفين." },
 ];
 
 interface ReportsClientProps {
   initialData: {
     accounts: Account[];
+    salesByProduct: ProductSale[];
+    salesByCustomer: CustomerSale[];
+    inventoryValuation: InventoryValuation[];
+    payrolls: Payroll[];
+    attendances: Attendance[];
+    products: Array<{ id: string; name: string }>;
+    customers: Array<{ id: string; name: string }>;
   }
 }
 
@@ -62,11 +106,31 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
   const incomeStatementData = useMemo(() => {
     const revenues = initialData.accounts.filter(acc => acc.id.startsWith('4'));
     const expenses = initialData.accounts.filter(acc => acc.id.startsWith('5'));
-    const totalRevenue = revenues.reduce((sum, acc) => sum + Math.abs(acc.balance), 0); // Balances are typically negative for revenue
+    const totalRevenue = revenues.reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
     const totalExpenses = expenses.reduce((sum, acc) => sum + acc.balance, 0);
     const netIncome = totalRevenue - totalExpenses;
     return { revenues, expenses, totalRevenue, totalExpenses, netIncome };
   }, [initialData.accounts]);
+
+  const balanceSheetData = useMemo(() => {
+    const assets = initialData.accounts.filter(acc => acc.id.startsWith('1'));
+    const liabilities = initialData.accounts.filter(acc => acc.id.startsWith('2'));
+    const equity = initialData.accounts.filter(acc => acc.id.startsWith('3'));
+    const totalAssets = assets.reduce((sum, acc) => sum + acc.balance, 0);
+    const totalLiabilities = liabilities.reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
+    const totalEquity = equity.reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
+    const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
+    return { assets, liabilities, equity, totalAssets, totalLiabilities, totalEquity, totalLiabilitiesAndEquity };
+  }, [initialData.accounts]);
+  
+  const cashFlowData = useMemo(() => {
+    // Simplified version: operating activities are revenues and expenses
+    return {
+      operatingInflow: incomeStatementData.totalRevenue,
+      operatingOutflow: incomeStatementData.totalExpenses,
+      netCashFlow: incomeStatementData.totalRevenue - incomeStatementData.totalExpenses,
+    };
+  }, [incomeStatementData]);
 
 
   const renderReportList = (reports: Array<{ name: string; icon: React.ElementType; description: string, key: string }>) => (
@@ -148,6 +212,107 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                         </div>
                     </CardFooter>
                 </div>
+            );
+        case 'balanceSheet':
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 className="font-bold text-xl mb-2">الأصول</h3>
+                        <Table>
+                            <TableBody>
+                                {balanceSheetData.assets.map(acc => (
+                                    <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(acc.balance) }}></TableCell></TableRow>
+                                ))}
+                            </TableBody>
+                            <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الأصول</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalAssets) }}></TableCell></TableRow>
+                        </Table>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-xl mb-2">الخصوم وحقوق الملكية</h3>
+                        <Table>
+                            <TableBody>
+                                {balanceSheetData.liabilities.map(acc => (
+                                    <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(Math.abs(acc.balance)) }}></TableCell></TableRow>
+                                ))}
+                                 <TableRow className="font-semibold bg-muted/30"><TableCell>إجمالي الخصوم</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalLiabilities) }}></TableCell></TableRow>
+                                {balanceSheetData.equity.map(acc => (
+                                    <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(Math.abs(acc.balance)) }}></TableCell></TableRow>
+                                ))}
+                                <TableRow className="font-semibold bg-muted/30"><TableCell>إجمالي حقوق الملكية</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalEquity) }}></TableCell></TableRow>
+                            </TableBody>
+                            <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الخصوم وحقوق الملكية</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalLiabilitiesAndEquity) }}></TableCell></TableRow>
+                        </Table>
+                    </div>
+                </div>
+            );
+        case 'cashFlow':
+            return (
+                 <div>
+                    <h3 className="font-bold text-xl mb-2">التدفقات النقدية من الأنشطة التشغيلية</h3>
+                    <Table>
+                        <TableBody>
+                            <TableRow><TableCell>المقبوضات من العملاء (الإيرادات)</TableCell><TableCell className="text-left text-green-600" dangerouslySetInnerHTML={{ __html: formatCurrency(cashFlowData.operatingInflow) }}></TableCell></TableRow>
+                             <TableRow><TableCell>المدفوعات للموردين والمصروفات</TableCell><TableCell className="text-left text-destructive" dangerouslySetInnerHTML={{ __html: formatCurrency(cashFlowData.operatingOutflow) }}></TableCell></TableRow>
+                        </TableBody>
+                        <TableRow className="font-bold bg-muted/50"><TableCell>صافي التدفق النقدي من الأنشطة التشغيلية</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(cashFlowData.netCashFlow) }}></TableCell></TableRow>
+                    </Table>
+                    <p className="text-muted-foreground text-xs mt-2">ملاحظة: هذا عرض مبسط. قائمة التدفقات النقدية الكاملة تتضمن أنشطة استثمارية وتمويلية.</p>
+                </div>
+            );
+        case 'salesByProduct':
+            return (
+                <Table>
+                    <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead>الكمية المباعة</TableHead><TableHead className="text-left">إجمالي المبيعات</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                        {initialData.salesByProduct.map(p => (
+                             <TableRow key={p.name}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(p.total) }}></TableCell></TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            );
+        case 'salesByCustomer':
+            return (
+                <Table>
+                    <TableHeader><TableRow><TableHead>العميل</TableHead><TableHead className="text-left">إجمالي المبيعات</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                        {initialData.salesByCustomer.map(c => (
+                            <TableRow key={c.name}><TableCell>{c.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(c.total) }}></TableCell></TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            );
+         case 'inventoryValuation':
+            return (
+                <Table>
+                    <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead>الكمية</TableHead><TableHead>تكلفة الوحدة</TableHead><TableHead className="text-left">القيمة الإجمالية</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                        {initialData.inventoryValuation.map(p => (
+                             <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.costPrice) }}></TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(p.totalValue) }}></TableCell></TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            );
+        case 'payroll':
+             return (
+                <Table>
+                    <TableHeader><TableRow><TableHead>الشهر</TableHead><TableHead>معرف الموظف</TableHead><TableHead>صافي الراتب</TableHead><TableHead>الحالة</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                        {initialData.payrolls.map(p => (
+                             <TableRow key={p.id}><TableCell>{p.monthYear}</TableCell><TableCell>{p.employeeId}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.netSalary) }}></TableCell><TableCell>{p.status}</TableCell></TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            );
+        case 'attendance':
+             return (
+                <Table>
+                    <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>معرف الموظف</TableHead><TableHead>الحالة</TableHead><TableHead>الدخول</TableHead><TableHead>الخروج</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                        {initialData.attendances.map(a => (
+                             <TableRow key={a.id}><TableCell>{a.date.toLocaleDateString('ar-SA')}</TableCell><TableCell>{a.employeeId}</TableCell><TableCell>{a.status}</TableCell><TableCell>{a.checkIn || '-'}</TableCell><TableCell>{a.checkOut || '-'}</TableCell></TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             );
         default:
             return <p className="text-muted-foreground text-center py-10">عرض هذا التقرير قيد التطوير.</p>;
