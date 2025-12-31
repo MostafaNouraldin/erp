@@ -820,17 +820,134 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
           </Card>
         </TabsContent>
         {/* Other Tabs omitted for brevity */}
+         <TabsContent value="forms">
+          <div className="space-y-6">
+            {/* Warning Notices Section */}
+            <Card className="shadow-lg">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>لفت النظر</CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => setShowManageWarningNoticeDialog(true)}><PlusCircle className="me-2 h-4 w-4"/> إنشاء جديد</Button>
+                  </div>
+                  <CardDescription>توثيق الملاحظات والتنبيهات غير الرسمية للموظفين.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>السبب</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                        {warningNoticesData.map(notice => (
+                            <TableRow key={notice.id}>
+                                <TableCell>{new Date(notice.date).toLocaleDateString('ar-SA')}</TableCell>
+                                <TableCell>{employees.find(e => e.id === notice.employeeId)?.name}</TableCell>
+                                <TableCell>{notice.reason}</TableCell>
+                                <TableCell><Badge variant="outline">{notice.status}</Badge></TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="ghost" size="icon" onClick={() => handlePrintWarningNotice(notice)}><Printer className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => {setWarningNoticeToEdit(notice); setShowManageWarningNoticeDialog(true);}}><Edit className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteWarningNotice(notice.id!)} className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+            </Card>
+
+            {/* Administrative Decisions Section */}
+            <Card className="shadow-lg">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>القرارات الإدارية</CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => setShowManageAdminDecisionDialog(true)}><PlusCircle className="me-2 h-4 w-4"/> إنشاء جديد</Button>
+                  </div>
+                  <CardDescription>تسجيل القرارات الرسمية مثل الترقيات، النقل، تعديلات الرواتب، وإنهاء الخدمات.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>نوع القرار</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                        {administrativeDecisionsData.map(decision => (
+                            <TableRow key={decision.id}>
+                                <TableCell>{new Date(decision.decisionDate).toLocaleDateString('ar-SA')}</TableCell>
+                                <TableCell>{employees.find(e => e.id === decision.employeeId)?.name}</TableCell>
+                                <TableCell>{decision.decisionType}</TableCell>
+                                <TableCell><Badge>{decision.status}</Badge></TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="ghost" size="icon" onClick={() => handlePrintAdministrativeDecision(decision)}><Printer className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => {setAdminDecisionToEdit(decision); setShowManageAdminDecisionDialog(true);}}><Edit className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteAdministrativeDecision(decision.id!)} className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+            </Card>
+
+             {/* Resignations Section */}
+            <Card className="shadow-lg">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>الاستقالات وإنهاء الخدمة</CardTitle>
+                     <Button variant="outline" size="sm" onClick={() => setShowManageResignationDialog(true)}><PlusCircle className="me-2 h-4 w-4"/> إنشاء جديد</Button>
+                  </div>
+                  <CardDescription>إدارة عمليات تقديم الاستقالات ومتابعة إجراءات إنهاء الخدمة.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow><TableHead>تاريخ التقديم</TableHead><TableHead>الموظف</TableHead><TableHead>آخر يوم عمل</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                       {resignationsData.map(resignation => (
+                            <TableRow key={resignation.id}>
+                                <TableCell>{new Date(resignation.submissionDate).toLocaleDateString('ar-SA')}</TableCell>
+                                <TableCell>{employees.find(e => e.id === resignation.employeeId)?.name}</TableCell>
+                                <TableCell>{new Date(resignation.lastWorkingDate).toLocaleDateString('ar-SA')}</TableCell>
+                                <TableCell><Badge variant={resignation.status === "مقبولة" ? "default" : "secondary"}>{resignation.status}</Badge></TableCell>
+                                 <TableCell className="text-center">
+                                    <Button variant="ghost" size="icon" onClick={() => handlePrintResignation(resignation)}><Printer className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => {setResignationToEdit(resignation); setShowManageResignationDialog(true);}}><Edit className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteResignation(resignation.id!)} className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+            </Card>
+
+            {/* Disciplinary Warnings Section */}
+            <Card className="shadow-lg">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>الإنذارات التأديبية</CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => setShowManageDisciplinaryDialog(true)}><PlusCircle className="me-2 h-4 w-4"/> إنشاء جديد</Button>
+                  </div>
+                  <CardDescription>توثيق الإنذارات الرسمية والإجراءات التأديبية المتخذة.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>نوع الإنذار</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                        {disciplinaryWarningsData.map(warning => (
+                             <TableRow key={warning.id}>
+                                <TableCell>{new Date(warning.warningDate).toLocaleDateString('ar-SA')}</TableCell>
+                                <TableCell>{employees.find(e => e.id === warning.employeeId)?.name}</TableCell>
+                                <TableCell>{warning.warningType}</TableCell>
+                                <TableCell><Badge variant="destructive">{warning.status}</Badge></TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="ghost" size="icon" onClick={() => handlePrintDisciplinaryWarning(warning)}><Printer className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => {setDisciplinaryToEdit(warning); setShowManageDisciplinaryDialog(true);}}><Edit className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteDisciplinaryWarning(warning.id!)} className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
-
-    
-
-    
-
-
-
-    
-
-    
