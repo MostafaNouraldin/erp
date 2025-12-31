@@ -154,10 +154,10 @@ const mockDepartments = [{id: "DEP001", name: "قسم المبيعات"}, {id: "
 const mockRecipients = [...mockDepartments, {id: "CUST001", name: "عميل X"}, {id: "WH002", name: "مستودع فرعي أ (تحويل)"}];
 
 const initialStockIssueVouchers: StockIssueVoucherFormValues[] = [
-    {id: "SIV001", date: new Date("2024-07-28"), warehouseId: "WH001", recipient: "DEP001", reason: "استخدام داخلي لقسم المبيعات", items: [{productId: "ITEM003", quantityIssued: 2}, {productId: "ITEM005", quantityIssued: 5}], status: "معتمد", issuedBy: "USR003"},
+    {id: "SIV001", date: new Date("2024-07-28"), warehouseId: "WH001", recipient: "DEP001", reason: "استخدام داخلي لقسم المبيعات", items: [{productId: "ITEM003", quantityIssued: 2, notes: ""}], status: "معتمد", issuedBy: "USR003"},
 ];
 const initialStockReceiptVouchers: StockReceiptVoucherFormValues[] = [
-    {id: "SRV001", date: new Date("2024-07-29"), warehouseId: "WH001", source: "SUP001", reference: "PO-123", items: [{productId: "ITEM001", quantityReceived: 10, costPricePerUnit: 5750}], status: "مرحل للمخزون", receivedBy: "USR003"},
+    {id: "SRV001", date: new Date("2024-07-29"), warehouseId: "WH001", source: "SUP001", reference: "PO-123", items: [{productId: "ITEM001", quantityReceived: 10, costPricePerUnit: 5750, notes: ""}], status: "مرحل للمخزون", receivedBy: "USR003"},
 ];
 const initialStockRequisitions: StockRequisitionFormValues[] = [
     {id: "SRQ001", requestDate: new Date("2024-07-25"), requestingDepartmentOrPerson: "DEP002", requiredByDate: new Date("2024-07-30"), items: [{productId: "ITEM002", quantityRequested: 1, justification: "طابعة بديلة"}], status: "موافق عليه"},
@@ -216,20 +216,20 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const categoryForm = useForm<CategoryFormValues>({ resolver: zodResolver(categorySchema), defaultValues: { name: "", description: "" }});
   const stocktakeInitiationForm = useForm<StocktakeInitiationFormValues>({ resolver: zodResolver(stocktakeInitiationSchema), defaultValues: { stocktakeDate: new Date(), warehouseId: "", responsiblePerson: "", notes: "" }});
 
-  const stockIssueVoucherForm = useForm<StockIssueVoucherFormValues>({ resolver: zodResolver(stockIssueVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1}], status: "مسودة", notes: ""}});
+  const stockIssueVoucherForm = useForm<StockIssueVoucherFormValues>({ resolver: zodResolver(stockIssueVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""}});
   const { fields: stockIssueItemsFields, append: appendStockIssueItem, remove: removeStockIssueItem } = useFieldArray({ control: stockIssueVoucherForm.control, name: "items" });
 
-  const stockReceiptVoucherForm = useForm<StockReceiptVoucherFormValues>({ resolver: zodResolver(stockReceiptVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0 }], status: "مسودة", notes: ""}});
+  const stockReceiptVoucherForm = useForm<StockReceiptVoucherFormValues>({ resolver: zodResolver(stockReceiptVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""}});
   const { fields: stockReceiptItemsFields, append: appendStockReceiptItem, remove: removeStockReceiptItem } = useFieldArray({ control: stockReceiptVoucherForm.control, name: "items" });
 
-  const stockRequisitionForm = useForm<StockRequisitionFormValues>({ resolver: zodResolver(stockRequisitionSchema), defaultValues: { requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""}});
+  const stockRequisitionForm = useForm<StockRequisitionFormValues>({ resolver: zodResolver(stockRequisitionSchema), defaultValues: { requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""}});
   const { fields: stockRequisitionItemsFields, append: appendStockRequisitionItem, remove: removeStockRequisitionItem } = useFieldArray({ control: stockRequisitionForm.control, name: "items" });
 
   useEffect(() => { if (productToEdit) { productForm.reset(productToEdit); setImagePreview(productToEdit.image || null); } else { productForm.reset({ sku: "", name: "", description: "", category: "", unit: "", costPrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 0, location: "", barcode: "", supplierId: "", image: "", dataAiHint: "" }); setImagePreview(null); }}, [productToEdit, productForm, showManageProductDialog]);
   useEffect(() => { if (categoryToEdit) { categoryForm.reset(categoryToEdit); } else { categoryForm.reset({ name: "", description: "" }); }}, [categoryToEdit, categoryForm, showManageCategoryDialog]);
-  useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
-  useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0 }], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
-  useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
+  useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
+  useEffect(() => { if (stockReceiptToEdit) stockReceiptVoucherForm.reset(stockReceiptToEdit); else stockReceiptVoucherForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""});}, [stockReceiptToEdit, stockReceiptVoucherForm, showManageStockReceiptDialog]);
+  useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
   const handleProductSubmit = async (values: ProductFormValues) => {
     try {
@@ -410,12 +410,6 @@ export default function InventoryClientComponent({ initialData }: { initialData:
         setShowReportDialog(true);
     };
 
-    const handleApplyReportFilters = () => {
-        if(currentReport) {
-            setReportData(generateReportData(currentReport.key, reportFilters));
-        }
-    };
-
     const formatDateForDisplay = (date: Date | string | undefined) => {
         if (!date) return '-';
         return new Date(date).toLocaleDateString('ar-SA', { day: '2-digit', month: '2-digit', year: 'numeric', calendar: 'gregory' });
@@ -493,12 +487,74 @@ export default function InventoryClientComponent({ initialData }: { initialData:
           <TabsTrigger value="reports" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><BarChart3 className="inline-block me-2 h-4 w-4" /> تقارير المخزون</TabsTrigger>
         </TabsList>
 
-        {/* ... Rest of the client component ... */}
+        <TabsContent value="itemsList">
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle>قائمة الأصناف والمنتجات</CardTitle>
+              <CardDescription>عرض وتعديل جميع الأصناف والمنتجات في المخزون.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
+                <div className="relative w-full sm:w-auto grow sm:grow-0">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="بحث بالاسم أو الرمز..." className="pr-10 w-full sm:w-64 bg-background" />
+                </div>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+                        <Filter className="me-2 h-4 w-4" /> تصفية الفئة
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" dir="rtl">
+                      <DropdownMenuLabel>تصفية حسب الفئة</DropdownMenuLabel><DropdownMenuSeparator />
+                       {categoriesData.map(cat => (
+                         <DropdownMenuCheckboxItem key={cat.id}>{cat.name}</DropdownMenuCheckboxItem>
+                       ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>SKU</TableHead><TableHead>الاسم</TableHead><TableHead>الفئة</TableHead>
+                      <TableHead>الكمية الحالية</TableHead><TableHead>سعر التكلفة</TableHead><TableHead>سعر البيع</TableHead>
+                      <TableHead className="text-center">إجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {productsData.map((prod) => (
+                      <TableRow key={prod.id} className={prod.quantity <= prod.reorderLevel && prod.reorderLevel > 0 ? "bg-destructive/10" : ""}>
+                        <TableCell>{prod.sku}</TableCell><TableCell className="font-medium">{prod.name}</TableCell><TableCell>{prod.category}</TableCell>
+                        <TableCell>{prod.quantity} {prod.unit}</TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(prod.costPrice) }}></TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(prod.sellingPrice) }}></TableCell>
+                        <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المنتج" onClick={() => { setProductToEdit(prod); setShowManageProductDialog(true); }}><Edit className="h-4 w-4" /></Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف المنتج"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl">
+                              <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle><AlertDialogDescriptionComponentClass>لا يمكن التراجع عن هذا الإجراء. سيتم حذف المنتج "{prod.name}" نهائياً.</AlertDialogDescriptionComponentClass></AlertDialogHeader>
+                              <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteProduct(prod.id!)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        {/* Other Tabs omitted for brevity */}
         
       </Tabs>
     </div>
   );
 }
+
+    
 
     
 
