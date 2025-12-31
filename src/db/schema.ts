@@ -636,3 +636,46 @@ export const purchaseReturnItems = pgTable('purchase_return_items', {
     reason: text('reason'),
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
+
+// --- Relations ---
+export const purchaseOrdersRelations = relations(purchaseOrders, ({ one, many }) => ({
+  supplier: one(suppliers, {
+    fields: [purchaseOrders.supplierId],
+    references: [suppliers.id],
+  }),
+  items: many(purchaseOrderItems),
+}));
+
+export const purchaseOrderItemsRelations = relations(purchaseOrderItems, ({ one }) => ({
+  purchaseOrder: one(purchaseOrders, {
+    fields: [purchaseOrderItems.poId],
+    references: [purchaseOrders.id],
+  }),
+}));
+
+export const goodsReceivedNotesRelations = relations(goodsReceivedNotes, ({ one, many }) => ({
+  purchaseOrder: one(purchaseOrders, {
+    fields: [goodsReceivedNotes.poId],
+    references: [purchaseOrders.id],
+  }),
+  items: many(goodsReceivedNoteItems),
+}));
+
+export const goodsReceivedNoteItemsRelations = relations(goodsReceivedNoteItems, ({ one }) => ({
+  grn: one(goodsReceivedNotes, {
+    fields: [goodsReceivedNoteItems.grnId],
+    references: [goodsReceivedNotes.id],
+  }),
+}));
+
+
+export const journalEntriesRelations = relations(journalEntries, ({ many }) => ({
+    lines: many(journalEntryLines),
+}));
+
+export const journalEntryLinesRelations = relations(journalEntryLines, ({ one }) => ({
+    journalEntry: one(journalEntries, {
+        fields: [journalEntryLines.journalEntryId],
+        references: [journalEntries.id],
+    }),
+}));

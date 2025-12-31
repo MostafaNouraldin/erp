@@ -595,9 +595,126 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
           </TabsTrigger>
         </TabsList>
       {/* The rest of the component is omitted for brevity but is identical to what was previously generated */}
+       <TabsContent value="purchaseReturns">
+        <Card className="shadow-lg">
+            <CardHeader>
+                <div className="flex justify-between items-center">
+                    <CardTitle>مرتجعات المشتريات</CardTitle>
+                    <Dialog open={showCreatePurchaseReturnDialog} onOpenChange={(isOpen) => { setShowCreatePurchaseReturnDialog(isOpen); if(!isOpen) setPurchaseReturnToEdit(null); }}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" onClick={() => { setPurchaseReturnToEdit(null); purchaseReturnForm.reset(); setShowCreatePurchaseReturnDialog(true);}}>
+                                <PlusCircle className="me-2 h-4 w-4" /> إنشاء مرتجع جديد
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-2xl" dir="rtl">
+                            <DialogHeader>
+                                <DialogTitle>{purchaseReturnToEdit ? 'تعديل مرتجع مشتريات' : 'إنشاء مرتجع مشتريات جديد'}</DialogTitle>
+                            </DialogHeader>
+                            <Form {...purchaseReturnForm}>
+                                <form onSubmit={purchaseReturnForm.handleSubmit(handlePurchaseReturnSubmit)} className="space-y-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                         <FormField control={purchaseReturnForm.control} name="supplierId" render={({ field }) => (
+                                            <FormItem><FormLabel>المورد</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                                <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المورد" /></SelectTrigger></FormControl>
+                                                <SelectContent>{suppliersData.map(sup => <SelectItem key={sup.id} value={sup.id!}>{sup.name}</SelectItem>)}</SelectContent>
+                                                </Select><FormMessage /></FormItem> )} />
+                                        <FormField control={purchaseReturnForm.control} name="date" render={({ field }) => (
+                                            <FormItem className="flex flex-col"><FormLabel>تاريخ المرتجع</FormLabel>
+                                                <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                     </div>
+                                      <FormField control={purchaseReturnForm.control} name="originalInvoiceId" render={({ field }) => (
+                                        <FormItem><FormLabel>الفاتورة الأصلية (اختياري)</FormLabel>
+                                        <FormControl><Input placeholder="أدخل رقم فاتورة الشراء الأصلية" {...field} className="bg-background"/></FormControl>
+                                        <FormMessage /></FormItem>
+                                    )}/>
+                                    <ScrollArea className="h-[200px] border rounded-md p-2">
+                                        {returnItemsFields.map((item, index) => (
+                                        <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
+                                            <FormField control={purchaseReturnForm.control} name={`items.${index}.itemId`} render={({ field }) => (
+                                                <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
+                                                <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { purchaseReturnForm.setValue(`items.${index}.unitPrice`, selectedItem.price); purchaseReturnForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(purchaseReturnForm, index); }} value={field.value} dir="rtl">
+                                                    <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
+                                                    <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                                </Select><FormMessage className="text-xs"/></FormItem> )} />
+                                            <FormField control={purchaseReturnForm.control} name={`items.${index}.quantity`} render={({ field }) => (
+                                                <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
+                                                <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotalForForm(purchaseReturnForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                                <FormMessage className="text-xs"/></FormItem> )} />
+                                            <FormField control={purchaseReturnForm.control} name={`items.${index}.unitPrice`} render={({ field }) => (
+                                                <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">السعر</FormLabel>
+                                                <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotalForForm(purchaseReturnForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
+                                                <FormMessage className="text-xs"/></FormItem> )} />
+                                            <FormField control={purchaseReturnForm.control} name={`items.${index}.total`} render={({ field }) => (
+                                                <FormItem className="col-span-4 sm:col-span-3"><FormLabel className="text-xs">الإجمالي</FormLabel>
+                                                <FormControl><Input type="number" {...field} readOnly className="bg-muted h-9 text-xs" /></FormControl>
+                                                <FormMessage className="text-xs"/></FormItem> )} />
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeReturnItem(index)} className="col-span-2 sm:col-span-1 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
+                                        </div> ))}
+                                    </ScrollArea>
+                                    <Button type="button" variant="outline" onClick={() => appendReturnItem({itemId: '', description: '', quantity:1, unitPrice:0, total:0, reason: ''})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
+                                    <DialogFooter>
+                                        <Button type="submit">{purchaseReturnToEdit ? "حفظ التعديلات" : "حفظ المرتجع"}</Button>
+                                        <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                                    </DialogFooter>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>رقم المرتجع</TableHead>
+                                <TableHead>المورد</TableHead>
+                                <TableHead>التاريخ</TableHead>
+                                <TableHead>المبلغ الإجمالي</TableHead>
+                                <TableHead>الحالة</TableHead>
+                                <TableHead className="text-center">إجراءات</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {purchaseReturns.map((pr) => (
+                                <TableRow key={pr.id} className="hover:bg-muted/50">
+                                    <TableCell>{pr.id}</TableCell>
+                                    <TableCell>{suppliersData.find(s => s.id === pr.supplierId)?.name}</TableCell>
+                                    <TableCell>{formatDateForDisplay(pr.date)}</TableCell>
+                                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(pr.totalAmount) }}></TableCell>
+                                    <TableCell><Badge variant={pr.status === 'معتمد' ? 'default' : 'outline'}>{pr.status}</Badge></TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="ghost" size="icon" onClick={() => handleViewPurchaseReturn(pr)}><Eye className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handlePrintReturn(pr)}><Printer className="h-4 w-4" /></Button>
+                                        {pr.status === 'مسودة' && (
+                                            <>
+                                                <Button variant="ghost" size="icon" onClick={() => { setPurchaseReturnToEdit(pr); setShowCreatePurchaseReturnDialog(true); }}><Edit className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleApprovePurchaseReturn(pr.id!)} className="text-green-600"><CheckCircle className="h-4 w-4" /></Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent dir="rtl">
+                                                        <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف المرتجع رقم "{pr.id}"؟</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeletePurchaseReturn(pr.id!)}>حذف</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+    </TabsContent>
       </Tabs>
       </div>
     );
 }
-
-
