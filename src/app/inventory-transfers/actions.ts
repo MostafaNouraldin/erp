@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { inventoryTransfers, products } from '@/db/schema';
+import { inventoryTransfers, products, journalEntries, journalEntryLines } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -46,19 +46,40 @@ export async function updateTransferStatus(id: string, status: TransferFormValue
 
   await db.transaction(async (tx) => {
     if (status === 'مكتملة' && transfer.status === 'قيد النقل') {
-        // In a real multi-warehouse scenario, you would decrease from fromWarehouseId location
-        // and increase in toWarehouseId location.
-        // For now, this logic is simplified as we don't store stock per warehouse.
-        // This is a placeholder for that logic.
-        // For example: await tx.update(warehouseStock).set...
+        const product = await tx.query.products.findFirst({ where: eq(products.id, transfer.productId) });
+        if (!product) throw new Error("لم يتم العثور على المنتج للتحويل.");
+        
+        // This is where you would handle multi-warehouse inventory.
+        // For now, it's a logical no-op as total inventory doesn't change.
+        // But we can create a journal entry to reflect the movement of value.
+        const transferValue = (parseFloat(product.costPrice) || 0) * transfer.quantity;
+        const fromWarehouseAccount = '1301'; // Placeholder for 'From' warehouse inventory account
+        const toWarehouseAccount = '1302'; // Placeholder for 'To' warehouse inventory account
+        const newEntryId = `JV-TRN-${id}`;
+        
+        await tx.insert(journalEntries).values({
+            id: newEntryId,
+            date: transfer.date,
+            description: `تحويل مخزون: ${transfer.quantity} من ${product.name} من ${transfer.fromWarehouseId} إلى ${transfer.toWarehouseId}`,
+            totalAmount: String(transferValue),
+            status: "مرحل",
+            sourceModule: "InventoryTransfer",
+            sourceDocumentId: transfer.id,
+        });
+
+        await tx.insert(journalEntryLines).values([
+            // Debit the 'To' warehouse account (asset increases)
+            { journalEntryId: newEntryId, accountId: toWarehouseAccount, debit: String(transferValue), credit: '0', description: `استلام ${product.name}` },
+            // Credit the 'From' warehouse account (asset decreases)
+            { journalEntryId: newEntryId, accountId: fromWarehouseAccount, debit: '0', credit: String(transferValue), description: `إرسال ${product.name}` },
+        ]);
     }
      if (status === 'قيد النقل' && transfer.status === 'مسودة') {
         const product = await tx.query.products.findFirst({ where: eq(products.id, transfer.productId) });
         if (!product || product.quantity < transfer.quantity) {
             throw new Error(`الكمية المطلوبة (${transfer.quantity}) غير متوفرة في المخزون للمنتج ${product?.name}. الكمية الحالية: ${product?.quantity || 0}.`);
         }
-        // Here you would deduct from the 'from' warehouse.
-        // As a simplification, we deduct from total stock now.
+        // This is a simplification. With multi-warehouse stock, you'd deduct from the 'from' warehouse.
         await tx.update(products)
             .set({ quantity: sql`${products.quantity} - ${transfer.quantity}`})
             .where(eq(products.id, transfer.productId));
@@ -75,6 +96,7 @@ export async function updateTransferStatus(id: string, status: TransferFormValue
 
   revalidatePath('/inventory-transfers');
   revalidatePath('/inventory');
+  revalidatePath('/general-ledger');
 }
 
 export async function deleteTransfer(id: string) {

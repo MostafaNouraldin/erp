@@ -3,7 +3,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, products, purchaseReturns, purchaseReturnItems } from '@/db/schema';
+import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, products, purchaseReturns, purchaseReturnItems, journalEntries, journalEntryLines } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -465,18 +465,45 @@ export async function approvePurchaseReturn(returnId: string) {
     if (pr.status !== 'مسودة') throw new Error("يمكن فقط اعتماد المرتجعات التي في حالة 'مسودة'.");
 
     await db.transaction(async (tx) => {
-        await tx.update(purchaseReturns).set({ status: 'معتمد' }).where(eq(purchaseReturns.id, returnId));
-        // Decrease inventory
+        // Update inventory
         for (const item of pr.items) {
              const product = await tx.query.products.findFirst({ where: eq(products.id, item.itemId), columns: { quantity: true, name: true }});
             if (!product || product.quantity < item.quantity) {
+                // This check might be too strict for returns, but it's a safe default.
                 throw new Error(`الكمية المراد إرجاعها للمنتج: ${product?.name || item.itemId} غير متوفرة في المخزون. الكمية الحالية: ${product?.quantity || 0}`);
             }
             await tx.update(products)
                 .set({ quantity: sql`${products.quantity} - ${item.quantity}` })
                 .where(eq(products.id, item.itemId));
         }
+
+        // Create Journal Entry
+        const supplier = await tx.query.suppliers.findFirst({ where: eq(suppliers.id, pr.supplierId) });
+        const accountsPayableAccount = '2010'; // Accounts Payable
+        const inventoryAccount = '1300'; // Inventory Account
+        const newEntryId = `JV-PR-${returnId}`;
+        
+        await tx.insert(journalEntries).values({
+            id: newEntryId,
+            date: pr.date,
+            description: `مرتجع مشتريات من ${supplier?.name || pr.supplierId}`,
+            totalAmount: pr.totalAmount,
+            status: "مرحل",
+            sourceModule: "PurchaseReturn",
+            sourceDocumentId: returnId,
+        });
+
+        await tx.insert(journalEntryLines).values([
+            // Debit Accounts Payable (decrease liability)
+            { journalEntryId: newEntryId, accountId: accountsPayableAccount, debit: pr.totalAmount, credit: '0', description: `مرتجع للمورد ${supplier?.name}` },
+            // Credit Inventory (decrease asset)
+            { journalEntryId: newEntryId, accountId: inventoryAccount, debit: '0', credit: pr.totalAmount, description: `إرجاع بضاعة للمورد ${supplier?.name}` },
+        ]);
+
+        // Finally, update the purchase return status
+        await tx.update(purchaseReturns).set({ status: 'معتمد' }).where(eq(purchaseReturns.id, returnId));
     });
     revalidatePath('/purchases');
     revalidatePath('/inventory');
+    revalidatePath('/general-ledger');
 }

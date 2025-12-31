@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { bankReceipts } from '@/db/schema';
+import { bankReceipts, journalEntries, journalEntryLines, chartOfAccounts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -66,7 +66,43 @@ export async function deleteBankReceipt(id: string) {
 
 export async function updateBankReceiptStatus(id: string, status: 'مسودة' | 'مرحل') {
     const db = await getDb();
-    await db.update(bankReceipts).set({ status }).where(eq(bankReceipts.id, id));
-    // Here you would also create a Journal Entry if status is 'مرحل'
+    const receipt = await db.query.bankReceipts.findFirst({ where: eq(bankReceipts.id, id) });
+    if (!receipt) {
+        throw new Error("لم يتم العثور على المقبوضات.");
+    }
+     if (receipt.status === status) {
+        throw new Error(`هذا السند بالفعل في حالة '${status}'.`);
+    }
+
+    if (status === 'مرحل') {
+        const newEntryId = `JV-BREC-${id}`;
+        // The contra-account for a bank receipt is either the revenue account or the customer's AR account.
+        const contraAccountId = receipt.revenueAccountId; // Simplified: always use the specified revenue account.
+
+        await db.transaction(async (tx) => {
+             await tx.insert(journalEntries).values({
+                id: newEntryId,
+                date: receipt.date,
+                description: `ترحيل مقبوضات بنكية: ${receipt.description} (الدافع: ${receipt.payerName})`,
+                totalAmount: String(receipt.amount),
+                status: "مرحل",
+                sourceModule: "ReceiptVoucher",
+                sourceDocumentId: receipt.id,
+            });
+
+            await tx.insert(journalEntryLines).values([
+                // Debit the bank account (asset increases)
+                { journalEntryId: newEntryId, accountId: receipt.bankAccountId, debit: String(receipt.amount), credit: '0', description: `إيداع من ${receipt.payerName}` },
+                // Credit the revenue/customer account (revenue increases/AR decreases)
+                { journalEntryId: newEntryId, accountId: contraAccountId, debit: '0', credit: String(receipt.amount), description: `إيراد من ${receipt.payerName}` },
+            ]);
+            
+            await tx.update(bankReceipts).set({ status }).where(eq(bankReceipts.id, id));
+        });
+    } else { // Un-posting logic
+        await db.update(bankReceipts).set({ status }).where(eq(bankReceipts.id, id));
+    }
+    
     revalidatePath('/bank-receipts');
+    revalidatePath('/general-ledger');
 }
