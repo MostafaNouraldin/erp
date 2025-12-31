@@ -18,7 +18,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 const loginSchema = z.object({
-  tenantId: z.string().min(1, "معرف الشركة مطلوب"),
+  tenantId: z.string().optional(), // Now optional
   email: z.string().email("البريد الإلكتروني غير صالح"),
   password: z.string().min(1, "كلمة المرور مطلوبة"),
 });
@@ -85,7 +85,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>معرف الشركة (Tenant ID)</FormLabel>
                     <FormControl>
-                      <Input placeholder="مثال: T001" {...field} className="bg-background" />
+                      <Input placeholder="مثال: T001 (اتركه فارغاً للدخول كمدير نظام)" {...field} className="bg-background" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
