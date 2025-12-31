@@ -31,10 +31,21 @@ const tenantConnections = new Map<string, ReturnType<typeof drizzle>>();
  * and tenantId is "T001", it will try to connect to "postgres://user:pass@host:port/tenant_T001".
  * The "main" tenantId connects to the main database.
  * 
+ * DEVELOPMENT OVERRIDE:
+ * If USE_MAIN_DB_FOR_TENANTS is set to 'true' in .env.local, this function will
+ * ALWAYS return the main database connection, regardless of the tenantId. This
+ * simplifies development and single-tenant setups.
+ * 
  * @param tenantId The ID of the tenant.
  * @returns A Drizzle instance connected to the tenant's database.
  */
 export async function connectToTenantDb(tenantId: string) {
+  // --- DEVELOPMENT OVERRIDE ---
+  if (process.env.USE_MAIN_DB_FOR_TENANTS === 'true') {
+    return { db: mainDb };
+  }
+  // --- END OVERRIDE ---
+
   if (tenantId === 'main') {
     return { db: mainDb };
   }
