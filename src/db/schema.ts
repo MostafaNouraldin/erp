@@ -612,21 +612,21 @@ export const stockIssueVoucherItems = pgTable('stock_issue_voucher_items', {
 
 export const goodsReceivedNotes = pgTable('goods_received_notes', {
     id: varchar('id', { length: 256 }).primaryKey(),
-    date: timestamp('date').notNull(),
-    warehouseId: varchar('warehouse_id', { length: 256 }).notNull().references(() => warehouses.id),
-    source: varchar('source', { length: 256 }).notNull(),
-    reference: varchar('reference', { length: 256 }),
+    poId: varchar('po_id', { length: 256 }),
+    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+    grnDate: timestamp('grn_date').notNull(),
     notes: text('notes'),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+    status: varchar('status', { length: 50 }).notNull(),
     receivedBy: varchar('received_by', { length: 256 }),
 });
 
 export const goodsReceivedNoteItems = pgTable('goods_received_note_items', {
     id: serial('id').primaryKey(),
     grnId: varchar('grn_id', { length: 256 }).notNull().references(() => goodsReceivedNotes.id, { onDelete: 'cascade' }),
-    productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
-    quantityReceived: integer('quantity_received').notNull(),
-    costPricePerUnit: numeric('cost_price_per_unit', { precision: 10, scale: 2 }),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
+    description: text('description'),
+    orderedQuantity: integer('ordered_quantity'),
+    receivedQuantity: integer('received_quantity').notNull(),
     notes: text('notes'),
 });
 
@@ -689,7 +689,7 @@ export const purchaseOrderItemsRelations = relations(purchaseOrderItems, ({ one 
 
 export const goodsReceivedNotesRelations = relations(goodsReceivedNotes, ({ one, many }) => ({
     supplier: one(suppliers, {
-        fields: [goodsReceivedNotes.source],
+        fields: [goodsReceivedNotes.supplierId],
         references: [suppliers.id],
     }),
   items: many(goodsReceivedNoteItems),
@@ -713,3 +713,20 @@ export const journalEntryLinesRelations = relations(journalEntryLines, ({ one })
         references: [journalEntries.id],
     }),
 }));
+
+export const purchaseReturnsRelations = relations(purchaseReturns, ({ one, many }) => ({
+    supplier: one(suppliers, {
+        fields: [purchaseReturns.supplierId],
+        references: [suppliers.id],
+    }),
+    items: many(purchaseReturnItems),
+}));
+
+export const purchaseReturnItemsRelations = relations(purchaseReturnItems, ({ one }) => ({
+    purchaseReturn: one(purchaseReturns, {
+        fields: [purchaseReturnItems.returnId],
+        references: [purchaseReturns.id],
+    }),
+}));
+
+    
