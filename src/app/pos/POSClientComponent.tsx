@@ -17,7 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; 
 import { useCurrency } from '@/hooks/use-currency';
 import { addSalesInvoice } from '@/app/sales/actions';
-import { addJournalEntry } from '@/app/general-ledger/actions';
+import { settlePosTransactions } from './actions';
+
 
 const CASH_CUSTOMER_ID = "__cash_customer__";
 
@@ -199,43 +200,39 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
   };
 
   const handlePostToGL = async () => {
-    const settledSalesTotal = recentTransactions
-        .filter(trx => trx.paymentMethod === "نقدي" || trx.paymentMethod === "بطاقة" || trx.paymentMethod === "تحويل")
-        .reduce((sum, trx) => sum + trx.total, 0);
+    // Aggregate sales from recent transactions by payment method
+    const settlementData = recentTransactions.reduce((acc, trx) => {
+        if (trx.paymentMethod === 'نقدي') acc.cashSales += trx.total;
+        else if (trx.paymentMethod === 'بطاقة') acc.cardSales += trx.total;
+        else if (trx.paymentMethod === 'تحويل') acc.bankTransferSales += trx.total;
+        else if (trx.paymentMethod === 'آجل') acc.deferredSales += trx.total;
+        return acc;
+    }, { cashSales: 0, cardSales: 0, bankTransferSales: 0, deferredSales: 0 });
 
-    if (settledSalesTotal <= 0) {
+    const totalToSettle = settlementData.cashSales + settlementData.cardSales + settlementData.bankTransferSales + settlementData.deferredSales;
+
+    if (totalToSettle <= 0) {
         toast({
-            title: "لا يوجد رصيد مبيعات (نقدية/بطاقة/تحويل) للترحيل",
-            description: "لم يتم تسجيل أي مبيعات نقدية أو بالبطاقة أو تحويل مؤخراً.",
+            title: "لا توجد مبيعات للترحيل",
+            description: "لم يتم تسجيل أي معاملات مؤخراً.",
             variant: "destructive"
         });
         return;
     }
     
-    const journalEntryData = {
-        date: new Date(),
-        description: `ترحيل إجمالي مبيعات نقاط البيع (نقدية/بطاقة/تحويل) - ${new Date().toLocaleDateString('ar-SA')}`,
-        lines: [
-            { accountId: "1013", debit: settledSalesTotal, credit: 0, description: "إجمالي مبيعات نقاط البيع (نقدية/بطاقة/تحويل)" }, 
-            { accountId: "4010", debit: 0, credit: settledSalesTotal, description: "إيراد مبيعات نقاط البيع" }, 
-        ],
-        totalAmount: settledSalesTotal,
-        status: "مرحل" as const,
-        sourceModule: "POS" as const,
-        sourceDocumentId: `POS_SETTLED_${Date.now().toString().slice(-5)}`
-    };
-    
     try {
-        await addJournalEntry(journalEntryData);
+        await settlePosTransactions({ ...settlementData, settlementDate: new Date() });
         toast({
-            title: "تم ترحيل المبيعات المسددة",
-            description: `تم ترحيل قيد إجمالي المبيعات بمبلغ ${formatCurrency(settledSalesTotal)}.`,
+            title: "تم ترحيل مبيعات اليومية",
+            description: `تم إنشاء قيد محاسبي إجمالي بمبلغ ${formatCurrency(totalToSettle)}.`,
             variant: "default",
         });
-    } catch (error) {
+        // Optionally clear recent transactions after settlement
+        // setRecentTransactions([]);
+    } catch (error: any) {
         toast({
             title: "خطأ في الترحيل",
-            description: "لم يتمكن النظام من ترحيل القيد إلى الحسابات العامة.",
+            description: error.message || "لم يتمكن النظام من ترحيل القيد إلى الحسابات العامة.",
             variant: "destructive",
         });
     }
@@ -455,7 +452,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
             )}
              <Separator />
               <CardContent className="p-4">
-                 <Button variant="secondary" className="w-full shadow-sm" onClick={handlePostToGL} disabled={recentTransactions.filter(trx => trx.paymentMethod !== "آجل").length === 0 /* Disable if no settled transactions to post*/}>
+                 <Button variant="secondary" className="w-full shadow-sm" onClick={handlePostToGL} disabled={recentTransactions.length === 0}>
                     <UploadCloud className="me-2 h-4 w-4" /> ترحيل إجمالي المبيعات للقيود
                   </Button>
               </CardContent>
