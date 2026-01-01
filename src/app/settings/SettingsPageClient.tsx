@@ -8,7 +8,7 @@ import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,8 +20,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Role } from '@/types/saas';
-import { addRole, updateRole, deleteRole, addUser, updateUser } from './actions';
-import type { UserFormValues, RoleFormValues } from './actions';
+import { addRole, updateRole, deleteRole, addUser, updateUser, saveCompanySettings } from './actions';
+import type { UserFormValues, RoleFormValues, SettingsFormValues } from './actions';
+import { availableCurrencies } from '@/contexts/currency-context';
 
 
 const permissionGroups = {
@@ -61,11 +62,23 @@ const roleSchema = z.object({
     permissions: z.array(z.string()).default([]),
 });
 
+const settingsSchema = z.object({
+  companyName: z.string().optional(),
+  companyAddress: z.string().optional(),
+  companyEmail: z.string().email({ message: "بريد إلكتروني غير صالح" }).optional().or(z.literal('')),
+  companyPhone: z.string().optional(),
+  companyVatNumber: z.string().optional(),
+  defaultCurrency: z.string().optional(),
+  vatRate: z.coerce.number().min(0).max(100).optional(),
+  themePrimaryColor: z.string().optional(),
+});
+
 
 interface SettingsPageProps {
   initialData: {
     users: UserFormValues[];
     roles: Role[];
+    settings: SettingsFormValues;
   }
 }
 
@@ -90,11 +103,17 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         resolver: zodResolver(roleSchema),
         defaultValues: { name: "", description: "", permissions: []},
     });
+
+    const settingsForm = useForm<SettingsFormValues>({
+        resolver: zodResolver(settingsSchema),
+        defaultValues: initialData.settings,
+    });
     
     useEffect(() => {
         setUsers(initialData.users);
         setRoles(initialData.roles);
-    }, [initialData]);
+        settingsForm.reset(initialData.settings);
+    }, [initialData, settingsForm]);
 
     useEffect(() => {
         if (userToEdit) {
@@ -147,7 +166,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
             setShowManageRoleDialog(false);
             setRoleToEdit(null);
         } catch (error: any) {
-             toast({ title: "خطأ", description: error.message, variant: "destructive" });
+             toast({ title: "خطأ", description: error.message, variant: "destructive"});
         }
     };
     
@@ -159,6 +178,22 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
             toast({ title: "خطأ", description: e.message, variant: "destructive"});
         }
     };
+
+    const handleSettingsSubmit = async (values: SettingsFormValues) => {
+        try {
+            await saveCompanySettings('T001', values); // Assuming a single tenant for now
+            toast({ title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح." });
+            
+            // Apply theme color dynamically
+            if (values.themePrimaryColor) {
+                const [h, s, l] = values.themePrimaryColor.split(' ').map(Number);
+                document.documentElement.style.setProperty('--primary', `${h} ${s}% ${l}%`);
+            }
+
+        } catch (e: any) {
+            toast({ title: "خطأ", description: e.message, variant: "destructive"});
+        }
+    }
     
     return (
         <div className="container mx-auto py-6" dir="rtl">
@@ -172,12 +207,71 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                 </CardHeader>
             </Card>
 
-            <Tabs defaultValue="users" className="w-full mt-6">
+            <Tabs defaultValue="company" className="w-full mt-6">
                 <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
-                    <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Users className="inline-block me-2 h-4 w-4" /> إدارة المستخدمين</TabsTrigger>
-                    <TabsTrigger value="roles" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Shield className="inline-block me-2 h-4 w-4" /> إدارة الأدوار والصلاحيات</TabsTrigger>
+                    <TabsTrigger value="company" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
+                    <TabsTrigger value="financial" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
+                    <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Users className="inline-block me-2 h-4 w-4" /> المستخدمين والأدوار</TabsTrigger>
                     <TabsTrigger value="appearance" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Palette className="inline-block me-2 h-4 w-4" /> المظهر</TabsTrigger>
                 </TabsList>
+                
+                <Form {...settingsForm}>
+                    <form onSubmit={settingsForm.handleSubmit(handleSettingsSubmit)}>
+                        <TabsContent value="company">
+                            <Card className="shadow-md">
+                                <CardHeader><CardTitle>معلومات الشركة</CardTitle><CardDescription>هذه المعلومات ستظهر في المستندات المطبوعة مثل الفواتير.</CardDescription></CardHeader>
+                                <CardContent className="space-y-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={settingsForm.control} name="companyName" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={settingsForm.control} name="companyVatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={settingsForm.control} name="companyEmail" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={settingsForm.control} name="companyPhone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <div className="md:col-span-2">
+                                            <FormField control={settingsForm.control} name="companyAddress" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Textarea {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        </div>
+                                     </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="financial">
+                             <Card className="shadow-md">
+                                <CardHeader><CardTitle>الإعدادات المالية والضريبية</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                         <FormField control={settingsForm.control} name="defaultCurrency" render={({ field }) => (
+                                            <FormItem><FormLabel>العملة الافتراضية</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                                    <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العملة" /></SelectTrigger></FormControl>
+                                                    <SelectContent>{availableCurrencies.map(c => <SelectItem key={c.code} value={c.code}>{c.name} ({c.symbol})</SelectItem>)}</SelectContent>
+                                                </Select><FormMessage /></FormItem> )} />
+                                        <FormField control={settingsForm.control} name="vatRate" render={({ field }) => ( <FormItem><FormLabel>نسبة ضريبة القيمة المضافة (%)</FormLabel><FormControl><Input type="number" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                     </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="appearance">
+                             <Card className="shadow-md">
+                                <CardHeader><CardTitle>تخصيص المظهر</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                     <FormField control={settingsForm.control} name="themePrimaryColor" render={({ field }) => (
+                                        <FormItem className="max-w-xs"><FormLabel>اللون الأساسي للنظام</FormLabel>
+                                            <div className="flex items-center gap-2">
+                                                <FormControl><Input type="color" {...field} className="bg-background p-1 h-10 w-14" /></FormControl>
+                                                <Input value={field.value || ''} onChange={field.onChange} placeholder="e.g., 221 83 53" className="bg-background text-left" dir="ltr"/>
+                                            </div>
+                                            <DialogDescriptionComponent className="text-xs text-muted-foreground">أدخل قيم HSL (Hue Saturation Lightness) بدون رموز. مثال: 221 83 53</DialogDescriptionComponent>
+                                        <FormMessage/></FormItem> )} />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                         <div className="flex justify-start mt-6">
+                            <Button type="submit" className="shadow-md hover:shadow-lg transition-shadow">
+                                <Save className="me-2 h-4 w-4" /> حفظ الإعدادات
+                            </Button>
+                        </div>
+                    </form>
+                </Form>
+
                 <TabsContent value="users">
                     <Card className="shadow-md">
                         <CardHeader>
@@ -292,17 +386,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="appearance">
-                    <Card className="shadow-md">
-                        <CardHeader>
-                            <CardTitle>إعدادات المظهر</CardTitle>
-                             <CardDescription>تخصيص ألوان وهوية النظام لتناسب علامتك التجارية.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <p className="text-muted-foreground">هذه الميزة قيد التطوير.</p>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                
             </Tabs>
         </div>
     );

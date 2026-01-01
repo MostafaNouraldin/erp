@@ -68,6 +68,11 @@ export const subscriptionRequests = pgTable('subscription_requests', {
     createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const companySettings = pgTable('company_settings', {
+    id: varchar('id', { length: 256 }).primaryKey(), // Usually the tenantId
+    settings: jsonb('settings').notNull().default('{}'), // Store all settings as a single JSON object
+});
+
 
 // --- Core Tenant-Specific Tables ---
 
@@ -728,7 +733,3 @@ export const purchaseReturnItemsRelations = relations(purchaseReturnItems, ({ on
         references: [purchaseReturns.id],
     }),
 }));
-
-    
-
-    

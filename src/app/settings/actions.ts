@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { users, roles } from '@/db/schema';
+import { users, roles, companySettings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -31,6 +31,19 @@ const roleSchema = z.object({
 });
 
 export type RoleFormValues = z.infer<typeof roleSchema>;
+
+const settingsSchema = z.object({
+  companyName: z.string().optional(),
+  companyAddress: z.string().optional(),
+  companyEmail: z.string().email().optional(),
+  companyPhone: z.string().optional(),
+  companyVatNumber: z.string().optional(),
+  defaultCurrency: z.string().optional(),
+  vatRate: z.coerce.number().min(0).max(100).optional(),
+  themePrimaryColor: z.string().optional(),
+});
+export type SettingsFormValues = z.infer<typeof settingsSchema>;
+
 
 async function getDb() {
     const { db } = await connectToTenantDb();
@@ -118,4 +131,25 @@ export async function deleteRole(id: string) {
     }
     await db.delete(roles).where(eq(roles.id, id));
     revalidatePath('/settings');
+}
+
+// --- General Settings Actions ---
+export async function getCompanySettings(tenantId: string) {
+  const db = await getDb();
+  const result = await db.query.companySettings.findFirst({
+    where: eq(companySettings.id, tenantId),
+  });
+  return result?.settings as SettingsFormValues | undefined;
+}
+
+export async function saveCompanySettings(tenantId: string, settings: SettingsFormValues) {
+  const db = await getDb();
+  await db.insert(companySettings)
+    .values({ id: tenantId, settings })
+    .onConflictDoUpdate({
+      target: companySettings.id,
+      set: { settings },
+    });
+  revalidatePath('/settings');
+  return { success: true };
 }
