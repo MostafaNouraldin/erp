@@ -366,5 +366,3 @@ export default function BankReceiptsClient({ initialData }: ClientComponentProps
     </div>
   );
 }
-
-    
