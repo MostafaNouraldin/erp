@@ -589,6 +589,87 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
             <CornerDownLeft className="inline-block me-2 h-4 w-4" /> مرتجعات المشتريات
           </TabsTrigger>
         </TabsList>
+      
+        <TabsContent value="suppliers">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                  <CardTitle>قائمة الموردين</CardTitle>
+                   <Dialog open={showCreateSupplierDialog} onOpenChange={(isOpen) => { setShowCreateSupplierDialog(isOpen); if(!isOpen) setSupplierToEdit(null); }}>
+                      <DialogTrigger asChild>
+                        <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setSupplierToEdit(null); supplierForm.reset(); setShowCreateSupplierDialog(true); }}>
+                          <PlusCircle className="me-2 h-4 w-4" /> إضافة مورد جديد
+                        </Button>
+                      </DialogTrigger>
+                       <DialogContent className="sm:max-w-lg" dir="rtl">
+                         <DialogHeader>
+                           <DialogTitle>{supplierToEdit ? 'تعديل بيانات مورد' : 'إضافة مورد جديد'}</DialogTitle>
+                         </DialogHeader>
+                         <Form {...supplierForm}>
+                            <form onSubmit={supplierForm.handleSubmit(handleSupplierSubmit)} className="space-y-4 py-4">
+                                <FormField control={supplierForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم المورد</FormLabel><FormControl><Input placeholder="اسم المورد أو الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={supplierForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" placeholder="example@supplier.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={supplierForm.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={supplierForm.control} name="contactPerson" render={({ field }) => ( <FormItem><FormLabel>اسم جهة الاتصال</FormLabel><FormControl><Input placeholder="اسم الشخص المسؤول" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={supplierForm.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان المورد" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={supplierForm.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للمورد" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                 <FormField control={supplierForm.control} name="notes" render={({ field }) => ( <FormItem><FormLabel>ملاحظات</FormLabel><FormControl><Textarea placeholder="أي ملاحظات إضافية" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                <DialogFooter>
+                                  <Button type="submit">{supplierToEdit ? 'حفظ التعديلات' : 'إضافة المورد'}</Button>
+                                  <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                                </DialogFooter>
+                            </form>
+                         </Form>
+                       </DialogContent>
+                   </Dialog>
+              </div>
+              <CardDescription>إدارة بيانات جميع الموردين، معلومات الاتصال، وسجل التعاملات.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="mb-4">
+                    <Input placeholder="بحث باسم المورد أو الرقم..." className="max-w-sm bg-background" />
+                </div>
+                 <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>الاسم</TableHead>
+                                <TableHead>جهة الاتصال</TableHead>
+                                <TableHead>البريد الإلكتروني</TableHead>
+                                <TableHead>الهاتف</TableHead>
+                                <TableHead className="text-center">إجراءات</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {suppliersData.map((supplier) => (
+                                <TableRow key={supplier.id}>
+                                    <TableCell>{supplier.name}</TableCell>
+                                    <TableCell>{supplier.contactPerson}</TableCell>
+                                    <TableCell>{supplier.email}</TableCell>
+                                    <TableCell>{supplier.phone}</TableCell>
+                                    <TableCell className="text-center">
+                                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSupplierToEdit(supplier); setShowCreateSupplierDialog(true); }}><Edit className="h-4 w-4" /></Button>
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent dir="rtl">
+                                                <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف المورد "{supplier.name}"؟</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteSupplier(supplier.id!)}>حذف</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                 </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       {/* The rest of the component is omitted for brevity but is identical to what was previously generated */}
        <TabsContent value="purchaseReturns">
         <Card className="shadow-lg">
@@ -713,4 +794,5 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
+
 

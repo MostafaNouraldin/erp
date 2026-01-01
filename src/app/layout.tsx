@@ -6,11 +6,11 @@ import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton, type SidebarMenuItemProps } from "@/components/ui/sidebar"; // Import SidebarMenuItemProps
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, type SidebarMenuItemProps } from "@/components/ui/sidebar"; // Import SidebarMenuItemProps
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail, GanttChartSquare } from "lucide-react"; // Added FolderOpen and Mail
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail, GanttChartSquare, CreditCardIcon as CreditCardIconSidebar } from "lucide-react"; // Added FolderOpen and Mail, aliased CreditCardIcon
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/currency-context";
@@ -94,7 +94,7 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
   { href: "/hr-payroll", label: "الموارد البشرية والرواتب", icon: Users, module: "HR" },
   { href: "/production", label: "الإنتاج", icon: Cog, module: "Production" },
   { href: "/projects", label: "المشاريع", icon: GanttChartSquare, module: "Projects" },
-  { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" },
+  { href: "/pos", label: "نقاط البيع", icon: CreditCardIconSidebar, module: "POS" },
   { href: "/reports", label: "التقارير والتحليل", icon: BarChart2, module: "BI" },
   {
     label: "الإعدادات",
@@ -168,6 +168,17 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     const navItems = allNavItems
       .filter(item => {
         const moduleKey = item.module.toLowerCase();
+        // Super admin should not see tenant-specific settings like 'Subscription'
+        if (auth.isSuperAdmin && (item.module === 'Settings' || item.module === 'Dashboard')) {
+             if(item.href === '/subscription') return false;
+             if(item.href === '/') return false;
+        }
+
+        // Regular users should not see 'System Administration'
+        if (!auth.isSuperAdmin && item.module === 'SystemAdministration') {
+            return false;
+        }
+        
         const mainPermission = `${moduleKey}.view`;
         return currentTenantSubscription.modules[item.module] && (auth.hasPermission(mainPermission) || item.subItems?.some(sub => auth.hasPermission(sub.permissionKey)));
       })
@@ -200,22 +211,24 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                 ))}
                             </SidebarMenu>
                         </SidebarContent>
-                        <SidebarFooter className="p-2">
-                            <Card className="bg-muted/50 border-dashed">
-                                <CardContent className="p-2 text-xs">
-                                    <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
-                                        <p className="font-semibold text-primary">{currentTenant.name}</p>
-                                        <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
-                                    </div>
-                                    <Button variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden">
-                                        إدارة الاشتراك
-                                    </Button>
-                                    <div className="flex justify-center items-center group-data-[collapsible=icon]:block hidden">
-                                        <CreditCardIcon className="h-5 w-5 text-muted-foreground" />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </SidebarFooter>
+                        {!auth.isSuperAdmin && (
+                            <SidebarFooter className="p-2">
+                                <Card className="bg-muted/50 border-dashed">
+                                    <CardContent className="p-2 text-xs">
+                                        <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
+                                            <p className="font-semibold text-primary">{currentTenant.name}</p>
+                                            <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
+                                        </div>
+                                        <Button variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden">
+                                            إدارة الاشتراك
+                                        </Button>
+                                        <div className="flex justify-center items-center group-data-[collapsible=icon]:block hidden">
+                                            <CreditCardIconSidebar className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </SidebarFooter>
+                        )}
                     </Sidebar>
 
                     <div className="flex flex-col flex-1">
@@ -252,14 +265,18 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                                 </div>
                                             </DropdownMenuLabel>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem disabled>
-                                                <div className="flex flex-col space-y-0.5 text-right text-xs w-full">
-                                                    <p className="text-muted-foreground">الشركة الحالية:</p>
-                                                    <p className="font-medium">{currentTenant.name}</p>
-                                                    <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
-                                                </div>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
+                                            {!auth.isSuperAdmin && (
+                                                <>
+                                                    <DropdownMenuItem disabled>
+                                                        <div className="flex flex-col space-y-0.5 text-right text-xs w-full">
+                                                            <p className="text-muted-foreground">الشركة الحالية:</p>
+                                                            <p className="font-medium">{currentTenant.name}</p>
+                                                            <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
+                                                        </div>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                </>
+                                            )}
                                             <DropdownMenuItem>
                                                 <UserCircle className="me-2 h-4 w-4" />
                                                 <span>الملف الشخصي</span>
