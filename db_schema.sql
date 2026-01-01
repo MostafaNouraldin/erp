@@ -1,66 +1,68 @@
 
--- Drop existing tables to start fresh (optional, but recommended for a clean slate)
--- You may need to run these one by one in Supabase if there are dependency issues.
+-- Drop existing tables in reverse order of dependency to avoid foreign key constraints errors
 DROP TABLE IF EXISTS "tenant_module_subscriptions" CASCADE;
 DROP TABLE IF EXISTS "subscription_requests" CASCADE;
+DROP TABLE IF EXISTS "company_settings" CASCADE;
 DROP TABLE IF EXISTS "journal_entry_lines" CASCADE;
 DROP TABLE IF EXISTS "journal_entries" CASCADE;
+DROP TABLE IF EXISTS "checks" CASCADE;
+DROP TABLE IF EXISTS "bank_expenses" CASCADE;
+DROP TABLE IF EXISTS "bank_receipts" CASCADE;
+DROP TABLE IF EXISTS "cash_expenses" CASCADE;
+DROP TABLE IF EXISTS "bank_accounts" CASCADE;
+DROP TABLE IF EXISTS "project_budget_items" CASCADE;
+DROP TABLE IF EXISTS "project_resources" CASCADE;
+DROP TABLE IF EXISTS "project_tasks" CASCADE;
+DROP TABLE IF EXISTS "projects" CASCADE;
 DROP TABLE IF EXISTS "sales_invoice_items" CASCADE;
 DROP TABLE IF EXISTS "sales_invoices" CASCADE;
 DROP TABLE IF EXISTS "sales_order_items" CASCADE;
 DROP TABLE IF EXISTS "sales_orders" CASCADE;
 DROP TABLE IF EXISTS "quotation_items" CASCADE;
 DROP TABLE IF EXISTS "quotations" CASCADE;
+DROP TABLE IF EXISTS "customers" CASCADE;
 DROP TABLE IF EXISTS "purchase_return_items" CASCADE;
 DROP TABLE IF EXISTS "purchase_returns" CASCADE;
 DROP TABLE IF EXISTS "goods_received_note_items" CASCADE;
 DROP TABLE IF EXISTS "goods_received_notes" CASCADE;
 DROP TABLE IF EXISTS "purchase_order_items" CASCADE;
 DROP TABLE IF EXISTS "purchase_orders" CASCADE;
-DROP TABLE IF EXISTS "supplier_invoice_items" CASCADE;
-DROP TABLE IF EXISTS "supplier_invoices" CASCADE;
-DROP TABLE IF EXISTS "project_budget_items" CASCADE;
-DROP TABLE IF EXISTS "project_resources" CASCADE;
-DROP TABLE IF EXISTS "project_tasks" CASCADE;
-DROP TABLE IF EXISTS "projects" CASCADE;
-DROP TABLE IF EXISTS "bill_of_material_items" CASCADE;
-DROP TABLE IF EXISTS "bills_of_material" CASCADE;
+DROP TABLE IF EXISTS "suppliers" CASCADE;
 DROP TABLE IF EXISTS "work_order_production_logs" CASCADE;
 DROP TABLE IF EXISTS "quality_checks" CASCADE;
 DROP TABLE IF EXISTS "work_orders" CASCADE;
 DROP TABLE IF EXISTS "production_plans" CASCADE;
-DROP TABLE IF EXISTS "stock_issue_voucher_items" CASCADE;
-DROP TABLE IF EXISTS "stock_issue_vouchers" CASCADE;
-DROP TABLE IF EXISTS "stock_requisition_items" CASCADE;
-DROP TABLE IF EXISTS "stock_requisitions" CASCADE;
+DROP TABLE IF EXISTS "bill_of_material_items" CASCADE;
+DROP TABLE IF EXISTS "bills_of_material" CASCADE;
 DROP TABLE IF EXISTS "inventory_transfers" CASCADE;
 DROP TABLE IF EXISTS "inventory_adjustments" CASCADE;
+DROP TABLE IF EXISTS "stock_requisition_items" CASCADE;
+DROP TABLE IF EXISTS "stock_requisitions" CASCADE;
+DROP TABLE IF EXISTS "stock_issue_voucher_items" CASCADE;
+DROP TABLE IF EXISTS "stock_issue_vouchers" CASCADE;
 DROP TABLE IF EXISTS "stocktakes" CASCADE;
 DROP TABLE IF EXISTS "warehouses" CASCADE;
-DROP TABLE IF EXISTS "categories" CASCADE;
 DROP TABLE IF EXISTS "products" CASCADE;
-DROP TABLE IF EXISTS "suppliers" CASCADE;
-DROP TABLE IF EXISTS "checks" CASCADE;
-DROP TABLE IF EXISTS "bank_expenses" CASCADE;
-DROP TABLE IF EXISTS "cash_expenses" CASCADE;
-DROP TABLE IF EXISTS "bank_receipts" CASCADE;
-DROP TABLE IF EXISTS "bank_accounts" CASCADE;
-DROP TABLE IF EXISTS "employee_settlements" CASCADE;
-DROP TABLE IF EXISTS "disciplinary_warnings" CASCADE;
-DROP TABLE IF EXISTS "resignations" CASCADE;
-DROP TABLE IF EXISTS "administrative_decisions" CASCADE;
-DROP TABLE IF EXISTS "warning_notices" CASCADE;
-DROP TABLE IF EXISTS "leave_requests" CASCADE;
-DROP TABLE IF EXISTS "attendance_records" CASCADE;
-DROP TABLE IF EXISTS "payrolls" CASCADE;
-DROP TABLE IF EXISTS "employee_deductions" CASCADE;
+DROP TABLE IF EXISTS "categories" CASCADE;
 DROP TABLE IF EXISTS "employee_allowances" CASCADE;
+DROP TABLE IF EXISTS "employee_deductions" CASCADE;
+DROP TABLE IF EXISTS "payrolls" CASCADE;
+DROP TABLE IF EXISTS "employee_settlements" CASCADE;
+DROP TABLE IF EXISTS "attendance_records" CASCADE;
+DROP TABLE IF EXISTS "leave_requests" CASCADE;
+DROP TABLE IF EXISTS "warning_notices" CASCADE;
+DROP TABLE IF EXISTS "administrative_decisions" CASCADE;
+DROP TABLE IF EXISTS "resignations" CASCADE;
+DROP TABLE IF EXISTS "disciplinary_warnings" CASCADE;
 DROP TABLE IF EXISTS "employees" CASCADE;
+DROP TABLE IF EXISTS "departments" CASCADE;
+DROP TABLE IF EXISTS "job_titles" CASCADE;
+DROP TABLE IF EXISTS "leave_types" CASCADE;
 DROP TABLE IF EXISTS "chart_of_accounts" CASCADE;
 DROP TABLE IF EXISTS "users" CASCADE;
 DROP TABLE IF EXISTS "roles" CASCADE;
-DROP TABLE IF EXISTS "customers" CASCADE;
 DROP TABLE IF EXISTS "tenants" CASCADE;
+
 
 -- System Administration & Settings Tables
 CREATE TABLE "tenants" (
@@ -115,6 +117,11 @@ CREATE TABLE "subscription_requests" (
     "payment_proof" text NOT NULL,
     "status" varchar(50) NOT NULL DEFAULT 'pending',
     "created_at" timestamp DEFAULT now()
+);
+
+CREATE TABLE "company_settings" (
+    "id" varchar(256) PRIMARY KEY NOT NULL,
+    "settings" jsonb NOT NULL DEFAULT '{}'
 );
 
 -- Core Tenant-Specific Tables
@@ -314,6 +321,21 @@ CREATE TABLE "supplier_invoice_items" (
 );
 
 -- HR & Payroll
+CREATE TABLE "departments" (
+    "id" varchar(256) PRIMARY KEY NOT NULL,
+    "name" varchar(256) NOT NULL UNIQUE
+);
+
+CREATE TABLE "job_titles" (
+    "id" varchar(256) PRIMARY KEY NOT NULL,
+    "name" varchar(256) NOT NULL UNIQUE
+);
+
+CREATE TABLE "leave_types" (
+    "id" varchar(256) PRIMARY KEY NOT NULL,
+    "name" varchar(256) NOT NULL UNIQUE
+);
+
 CREATE TABLE "employee_allowances" (
     "id" serial PRIMARY KEY NOT NULL,
     "employee_id" varchar(256) NOT NULL REFERENCES "employees"("id") ON DELETE cascade,
@@ -704,72 +726,3 @@ CREATE TABLE "purchase_return_items" (
     "reason" text,
     "total" numeric(10, 2) NOT NULL
 );
-
--- Insert initial data (Roles)
-INSERT INTO "roles" ("id", "name", "description", "permissions") VALUES
-('ROLE_SUPER_ADMIN', 'Super Admin', 'صلاحيات كاملة على النظام وإدارة الشركات.', '["admin.manage_tenants", "admin.manage_modules", "admin.manage_billing", "admin.manage_requests"]'),
-('ROLE001', 'مدير النظام', 'صلاحيات كاملة على النظام.', '["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles", "projects.view", "projects.create", "projects.edit", "projects.delete", "production.view", "production.create", "production.edit", "production.delete", "pos.use"]'),
-('ROLE002', 'محاسب', 'صلاحيات على وحدات الحسابات والمالية.', '["accounting.view", "accounting.create", "accounting.edit", "reports.view_financial"]'),
-('ROLE003', 'موظف مبيعات', 'صلاحيات على وحدة المبيعات وعروض الأسعار.', '["sales.view", "sales.create", "reports.view_sales"]'),
-('ROLE004', 'مدير مخزون', 'صلاحيات على وحدة المخزون والمستودعات.', '["inventory.view", "inventory.create", "inventory.edit", "reports.view_inventory", "inventory.adjust_stock"]');
-
--- Insert initial data (Users)
-INSERT INTO "users" ("id", "name", "email", "role_id", "status", "password_hash", "avatar_url") VALUES
-('USER001', 'مدير النظام', 'manager@example.com', 'ROLE001', 'نشط', 'hashed_password', 'https://i.pravatar.cc/150?u=manager'),
-('USER002', 'محاسب أول', 'accountant@example.com', 'ROLE002', 'نشط', 'hashed_password', 'https://i.pravatar.cc/150?u=accountant'),
-('USER003', 'مندوب مبيعات', 'sales@example.com', 'ROLE003', 'نشط', 'hashed_password', 'https://i.pravatar.cc/150?u=sales'),
-('USER_SUPER', 'Super Admin', 'super@admin.com', 'ROLE_SUPER_ADMIN', 'نشط', 'hashed_password', 'https://i.pravatar.cc/150?u=superadmin');
-
-
--- Insert initial data for Chart of Accounts (example)
-INSERT INTO "chart_of_accounts" ("id", "name", "type", "parent_id") VALUES
-('1', 'الأصول', 'رئيسي', NULL),
-('10', 'الأصول المتداولة', 'فرعي', '1'),
-('101', 'النقد وما في حكمه', 'فرعي', '10'),
-('1011', 'صندوق', 'تحليلي', '101'),
-('1012', 'بنك', 'تحليلي', '101'),
-('12', 'الذمم المدينة', 'فرعي', '10'),
-('1200', 'العملاء', 'تحليلي', '12'),
-('13', 'المخزون', 'فرعي', '10'),
-('1300', 'مخزون بضاعة تامة', 'تحليلي', '13'),
-('1301', 'مخزون مستودع أ', 'تحليلي', '13'),
-('1302', 'مخزون مستودع ب', 'تحليلي', '13'),
-('2', 'الخصوم', 'رئيسي', NULL),
-('20', 'الخصوم المتداولة', 'فرعي', '2'),
-('201', 'الذمم الدائنة', 'فرعي', '20'),
-('2010', 'الموردون', 'تحليلي', '201'),
-('21', 'رواتب مستحقة', 'فرعي', '20'),
-('2100', 'رواتب وأجور مستحقة', 'تحليلي', '21'),
-('22', 'ضرائب مستحقة', 'فرعي', '20'),
-('2200', 'ضريبة القيمة المضافة المستحقة', 'تحليلي', '22'),
-('3', 'حقوق الملكية', 'رئيسي', NULL),
-('30', 'رأس المال', 'فرعي', '3'),
-('3000', 'رأس المال', 'تحليلي', '30'),
-('4', 'الإيرادات', 'رئيسي', NULL),
-('40', 'إيرادات النشاط الرئيسي', 'فرعي', '4'),
-('4000', 'إيرادات المبيعات', 'تحليلي', '40'),
-('5', 'المصروفات', 'رئيسي', NULL),
-('50', 'تكلفة البضاعة المباعة', 'فرعي', '5'),
-('5000', 'تكلفة البضاعة المباعة', 'تحليلي', '50'),
-('51', 'مصاريف عمومية وإدارية', 'فرعي', '5'),
-('5100', 'مصاريف متنوعة', 'تحليلي', '51');
-
--- Insert initial data for Customers & Suppliers
-INSERT INTO "customers" ("id", "name", "email", "phone", "type", "address", "vat_number") VALUES
-('CUST001', 'عميل نقدي', 'cash@customer.com', 'N/A', 'فرد', 'N/A', 'N/A'),
-('CUST002', 'شركة الأمل للتجارة', 'contact@alamal.com', '0112345678', 'شركة', 'الرياض، المملكة العربية السعودية', '300012345600003');
-
-INSERT INTO "suppliers" ("id", "name", "email", "phone", "address") VALUES
-('SUP001', 'مورد عام', 'general@supplier.com', '0501112222', 'جدة، المملكة العربية السعودية'),
-('SUP002', 'شركة الإلكترونيات المتقدمة', 'info@adv-electronics.com', '0123456789', 'الدمام، المملكة العربية السعودية');
-
--- Insert initial data for Products
-INSERT INTO "products" ("id", "sku", "name", "description", "category", "unit", "cost_price", "selling_price", "quantity", "reorder_level", "supplier_id") VALUES
-('ITEM001', 'LP-DELL-XPS15', 'لابتوب Dell XPS 15', 'لابتوب عالي الأداء بشاشة 15 بوصة', 'أجهزة لابتوب', 'قطعة', '5500.00', '6500.00', 50, 10, 'SUP002'),
-('ITEM002', 'PRN-HP-LJ', 'طابعة HP LaserJet', 'طابعة ليزر متعددة الوظائف', 'طابعات', 'قطعة', '1000.00', '1200.00', 20, 5, 'SUP002'),
-('SERV001', 'CONS-A', 'خدمة استشارية A', 'خدمة استشارية في مجال التسويق الرقمي', 'خدمات', 'ساعة', '0.00', '150.00', 9999, 0, NULL);
-
--- Insert initial data for Employees
-INSERT INTO "employees" ("id", "name", "job_title", "department", "contract_start_date", "contract_end_date", "employment_type", "status", "basic_salary", "email") VALUES
-('EMP001', 'أحمد محمود', 'مدير مبيعات', 'قسم المبيعات', '2023-01-01', '2025-01-01', 'دوام كامل', 'نشط', '12000.00', 'ahmed.m@example.com'),
-('EMP002', 'سارة عبدالله', 'أخصائية تسويق', 'قسم التسويق', '2023-03-15', '2025-03-15', 'دوام كامل', 'نشط', '8500.00', 'sara.a@example.com');
