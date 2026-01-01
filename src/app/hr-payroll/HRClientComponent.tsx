@@ -27,7 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
-import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, LeaveRequestFormValues, WarningNoticeFormValues, AdministrativeDecisionFormValues, ResignationFormValues, DisciplinaryWarningFormValues } from './actions';
+import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, LeaveRequestFormValues, WarningNoticeFormValues, AdministrativeDecisionFormValues, ResignationFormValues, DisciplinaryWarningFormValues, Department, JobTitle, LeaveType } from './actions';
 import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, updatePayrollStatus, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning, postPayrollToGL } from './actions';
 
 
@@ -169,10 +169,7 @@ const disciplinaryWarningSchema = z.object({
     status: z.enum(["مسودة", "تم التسليم", "معترض عليه", "منفذ"]).default("مسودة"),
 });
 
-const mockDepartments = ["قسم المبيعات", "قسم التسويق", "قسم المالية", "قسم الموارد البشرية", "قسم التشغيل", "الإدارة"];
-const mockJobTitles = ["مدير مبيعات", "أخصائية تسويق", "محاسب أول", "مسؤول موارد بشرية", "فني صيانة", "مدير قسم", "مساعد إداري"];
 const mockEmploymentTypes = ["دوام كامل", "دوام جزئي", "عقد محدد", "مستقل"];
-const mockLeaveTypes = ["إجازة سنوية", "إجازة مرضية", "إجازة عارضة", "إجازة بدون راتب", "إجازة أمومة", "إجازة زواج", "أخرى"];
 const mockManagers = [{id: "EMP001", name: "أحمد محمود"}];
 const mockDecisionTypes = ["ترقية", "نقل", "تعديل راتب", "إنهاء خدمات", "أخرى"];
 const mockWarningTypes = ["إنذار أول", "إنذار ثاني", "إنذار نهائي", "إجراء تأديبي آخر"];
@@ -199,6 +196,9 @@ interface HRClientComponentProps {
         administrativeDecisions: AdministrativeDecisionFormValues[];
         resignations: ResignationFormValues[];
         disciplinaryWarnings: DisciplinaryWarningFormValues[];
+        departments: Department[];
+        jobTitles: JobTitle[];
+        leaveTypes: LeaveType[];
     }
 }
 
@@ -212,7 +212,9 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   const [administrativeDecisionsData, setAdministrativeDecisionsData] = useState(initialData.administrativeDecisions);
   const [resignationsData, setResignationsData] = useState(initialData.resignations);
   const [disciplinaryWarningsData, setDisciplinaryWarningsData] = useState(initialData.disciplinaryWarnings);
-
+  const [departments, setDepartments] = useState(initialData.departments);
+  const [jobTitles, setJobTitles] = useState(initialData.jobTitles);
+  const [leaveTypes, setLeaveTypes] = useState(initialData.leaveTypes);
 
   const [showAddEmployeeDialog, setShowAddEmployeeDialog] = useState(false);
   const [employeeToEdit, setEmployeeToEdit] = useState<EmployeeFormValues | null>(null);
@@ -269,8 +271,9 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   const disciplinaryWarningForm = useForm<DisciplinaryWarningFormValues>({ resolver: zodResolver(disciplinaryWarningSchema), defaultValues: { employeeId: '', warningDate: new Date(), warningType: undefined, violationDetails: '', actionTaken: '', issuingManager: '', status: "مسودة" } });
 
   const payrollForm = useForm<PayrollFormValues>({ resolver: zodResolver(payrollSchema) });
-  const { fields: payrollAllowanceFields, append: appendPayrollAllowance, remove: removePayrollAllowance } = useFieldArray({ control: payrollForm.control, name: "allowances" });
-  const { fields: payrollDeductionFields, append: appendPayrollDeduction, remove: removePayrollDeduction } = useFieldArray({ control: payrollForm.control, name: "deductions" });
+  const { fields: payrollAllowanceFields, append: appendPayrollAllowance, remove: removePayrollAllowance, replace: replacePayrollAllowances } = useFieldArray({ control: payrollForm.control, name: "allowances" });
+  const { fields: payrollDeductionFields, append: appendPayrollDeduction, remove: removePayrollDeduction, replace: replacePayrollDeductions } = useFieldArray({ control: payrollForm.control, name: "deductions" });
+
 
   const attendanceForm = useForm<AttendanceFormValues>({ resolver: zodResolver(attendanceSchema) });
   const leaveRequestForm = useForm<LeaveRequestFormValues>({ resolver: zodResolver(leaveRequestSchema) });
@@ -284,6 +287,9 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     setAdministrativeDecisionsData(initialData.administrativeDecisions);
     setResignationsData(initialData.resignations);
     setDisciplinaryWarningsData(initialData.disciplinaryWarnings);
+    setDepartments(initialData.departments);
+    setJobTitles(initialData.jobTitles);
+    setLeaveTypes(initialData.leaveTypes);
   }, [initialData]);
 
   useEffect(() => {
@@ -304,6 +310,22 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
         payrollForm.reset({ employeeId: "", monthYear: currentMonthYear, basicSalary: 0, allowances: [], deductions: [], notes: "", status: "مسودة", paymentDate: null });
     }
   }, [payrollToEdit, payrollForm, showCreatePayrollDialog, employees]);
+
+  // New useEffect to auto-populate payroll form based on selected employee
+  const selectedEmployeeIdForPayroll = payrollForm.watch("employeeId");
+  useEffect(() => {
+      if (!payrollToEdit && selectedEmployeeIdForPayroll) { // Only run for new payrolls
+          const employee = employees.find(e => e.id === selectedEmployeeIdForPayroll);
+          if (employee) {
+              const fixedAllowances = employee.allowances?.filter(a => a.type === 'ثابت') || [];
+              const fixedDeductions = employee.deductions?.filter(d => d.type === 'ثابت') || [];
+              payrollForm.setValue('basicSalary', employee.basicSalary);
+              replacePayrollAllowances(fixedAllowances);
+              replacePayrollDeductions(fixedDeductions);
+          }
+      }
+  }, [selectedEmployeeIdForPayroll, employees, payrollForm, payrollToEdit, replacePayrollAllowances, replacePayrollDeductions]);
+
 
   useEffect(() => {
     if (attendanceToEdit) attendanceForm.reset({...attendanceToEdit, date: new Date(attendanceToEdit.date)});
@@ -634,10 +656,10 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <FormField control={employeeForm.control} name="jobTitle" render={({ field }) => (<FormItem><FormLabel>المسمى الوظيفي</FormLabel>
                                                 <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المسمى" /></SelectTrigger></FormControl>
-                                                <SelectContent>{mockJobTitles.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <SelectContent>{jobTitles.map(pos => <SelectItem key={pos.id} value={pos.name}>{pos.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                             <FormField control={employeeForm.control} name="department" render={({ field }) => (<FormItem><FormLabel>القسم</FormLabel>
                                                 <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر القسم" /></SelectTrigger></FormControl>
-                                                <SelectContent>{mockDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                                <SelectContent>{departments.map(dep => <SelectItem key={dep.id} value={dep.name}>{dep.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <FormField control={employeeForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
@@ -784,3 +806,4 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     </div>
   );
 }
+

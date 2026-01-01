@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -8,7 +9,7 @@ import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save, Briefcase, CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,8 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Role } from '@/types/saas';
-import { addRole, updateRole, deleteRole, addUser, updateUser, saveCompanySettings } from './actions';
-import type { UserFormValues, RoleFormValues, SettingsFormValues } from './actions';
+import { addRole, updateRole, deleteRole, addUser, updateUser, saveCompanySettings, addDepartment, updateDepartment, deleteDepartment, addJobTitle, updateJobTitle, deleteJobTitle, addLeaveType, updateLeaveType, deleteLeaveType } from './actions';
+import type { UserFormValues, RoleFormValues, SettingsFormValues, Department, JobTitle, LeaveType } from './actions';
 import { availableCurrencies } from '@/contexts/currency-context';
 
 
@@ -73,18 +74,39 @@ const settingsSchema = z.object({
   themePrimaryColor: z.string().optional(),
 });
 
+const departmentSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم القسم مطلوب"),
+});
+
+const jobTitleSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم المسمى الوظيفي مطلوب"),
+});
+
+const leaveTypeSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم نوع الإجازة مطلوب"),
+});
+
 
 interface SettingsPageProps {
   initialData: {
     users: UserFormValues[];
     roles: Role[];
     settings: SettingsFormValues;
+    departments: Department[];
+    jobTitles: JobTitle[];
+    leaveTypes: LeaveType[];
   }
 }
 
 export default function SettingsPage({ initialData }: SettingsPageProps) {
     const [users, setUsers] = useState<UserFormValues[]>(initialData.users);
     const [roles, setRoles] = useState<Role[]>(initialData.roles);
+    const [departments, setDepartments] = useState<Department[]>(initialData.departments);
+    const [jobTitles, setJobTitles] = useState<JobTitle[]>(initialData.jobTitles);
+    const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>(initialData.leaveTypes);
 
     const [showManageUserDialog, setShowManageUserDialog] = useState(false);
     const [userToEdit, setUserToEdit] = useState<UserFormValues | null>(null);
@@ -92,108 +114,105 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
     const [showManageRoleDialog, setShowManageRoleDialog] = useState(false);
     const [roleToEdit, setRoleToEdit] = useState<Role | null>(null);
 
+    const [showManageDepartmentDialog, setShowManageDepartmentDialog] = useState(false);
+    const [departmentToEdit, setDepartmentToEdit] = useState<Department | null>(null);
+
+    const [showManageJobTitleDialog, setShowManageJobTitleDialog] = useState(false);
+    const [jobTitleToEdit, setJobTitleToEdit] = useState<JobTitle | null>(null);
+
+    const [showManageLeaveTypeDialog, setShowManageLeaveTypeDialog] = useState(false);
+    const [leaveTypeToEdit, setLeaveTypeToEdit] = useState<LeaveType | null>(null);
+
     const { toast } = useToast();
 
-    const userForm = useForm<UserFormValues>({
-        resolver: zodResolver(userSchema),
-        defaultValues: { name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""},
-    });
+    const userForm = useForm<UserFormValues>({ resolver: zodResolver(userSchema), defaultValues: { name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""}, });
+    const roleForm = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema), defaultValues: { name: "", description: "", permissions: []}, });
+    const settingsForm = useForm<SettingsFormValues>({ resolver: zodResolver(settingsSchema), defaultValues: initialData.settings, });
+    const departmentForm = useForm<Department>({ resolver: zodResolver(departmentSchema), defaultValues: { name: "" } });
+    const jobTitleForm = useForm<JobTitle>({ resolver: zodResolver(jobTitleSchema), defaultValues: { name: "" } });
+    const leaveTypeForm = useForm<LeaveType>({ resolver: zodResolver(leaveTypeSchema), defaultValues: { name: "" } });
 
-    const roleForm = useForm<RoleFormValues>({
-        resolver: zodResolver(roleSchema),
-        defaultValues: { name: "", description: "", permissions: []},
-    });
-
-    const settingsForm = useForm<SettingsFormValues>({
-        resolver: zodResolver(settingsSchema),
-        defaultValues: initialData.settings,
-    });
     
     useEffect(() => {
         setUsers(initialData.users);
         setRoles(initialData.roles);
         settingsForm.reset(initialData.settings);
+        setDepartments(initialData.departments);
+        setJobTitles(initialData.jobTitles);
+        setLeaveTypes(initialData.leaveTypes);
     }, [initialData, settingsForm]);
 
-    useEffect(() => {
-        if (userToEdit) {
-            userForm.reset({...userToEdit, password: ''});
-        } else {
-            userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""});
-        }
-    }, [userToEdit, userForm, showManageUserDialog]);
-    
-    useEffect(() => {
-        if (roleToEdit) {
-            roleForm.reset(roleToEdit);
-        } else {
-            roleForm.reset({ name: "", description: "", permissions: []});
-        }
-    }, [roleToEdit, roleForm, showManageRoleDialog]);
+    useEffect(() => { if (userToEdit) { userForm.reset({...userToEdit, password: ''}); } else { userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""}); } }, [userToEdit, userForm, showManageUserDialog]);
+    useEffect(() => { if (roleToEdit) { roleForm.reset(roleToEdit); } else { roleForm.reset({ name: "", description: "", permissions: []}); } }, [roleToEdit, roleForm, showManageRoleDialog]);
+    useEffect(() => { if (departmentToEdit) { departmentForm.reset(departmentToEdit); } else { departmentForm.reset({ name: "" }); } }, [departmentToEdit, departmentForm, showManageDepartmentDialog]);
+    useEffect(() => { if (jobTitleToEdit) { jobTitleForm.reset(jobTitleToEdit); } else { jobTitleForm.reset({ name: "" }); } }, [jobTitleToEdit, jobTitleForm, showManageJobTitleDialog]);
+    useEffect(() => { if (leaveTypeToEdit) { leaveTypeForm.reset(leaveTypeToEdit); } else { leaveTypeForm.reset({ name: "" }); } }, [leaveTypeToEdit, leaveTypeForm, showManageLeaveTypeDialog]);
 
     const handleUserSubmit = async (values: UserFormValues) => {
-        if (userToEdit && !values.password) {
-            delete values.password; // Don't send empty password
-        } else if (!userToEdit && !values.password) {
-            userForm.setError("password", {type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد"});
-            return;
-        }
-
+        if (userToEdit && !values.password) { delete values.password; } else if (!userToEdit && !values.password) { userForm.setError("password", {type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد"}); return; }
         try {
-            if (userToEdit) {
-                await updateUser({...values, id: userToEdit.id!});
-                toast({ title: "تم التعديل", description: "تم تعديل بيانات المستخدم." });
-            } else {
-                await addUser(values);
-                toast({ title: "تمت الإضافة", description: "تمت إضافة المستخدم بنجاح." });
-            }
-            setShowManageUserDialog(false);
-            setUserToEdit(null);
-        } catch (error: any) {
-            toast({ title: "خطأ", description: error.message, variant: "destructive" });
-        }
+            if (userToEdit) { await updateUser({...values, id: userToEdit.id!}); toast({ title: "تم التعديل", description: "تم تعديل بيانات المستخدم." }); } 
+            else { await addUser(values); toast({ title: "تمت الإضافة", description: "تمت إضافة المستخدم بنجاح." }); }
+            setShowManageUserDialog(false); setUserToEdit(null);
+        } catch (error: any) { toast({ title: "خطأ", description: error.message, variant: "destructive" }); }
     };
 
     const handleRoleSubmit = async (values: RoleFormValues) => {
         try {
-            if (roleToEdit) {
-                await updateRole({ ...values, id: roleToEdit.id });
-                toast({ title: "تم التعديل", description: "تم تعديل الدور بنجاح." });
-            } else {
-                await addRole(values);
-                toast({ title: "تمت الإضافة", description: "تمت إضافة الدور بنجاح." });
-            }
-            setShowManageRoleDialog(false);
-            setRoleToEdit(null);
-        } catch (error: any) {
-             toast({ title: "خطأ", description: error.message, variant: "destructive"});
-        }
+            if (roleToEdit) { await updateRole({ ...values, id: roleToEdit.id }); toast({ title: "تم التعديل", description: "تم تعديل الدور بنجاح." }); } 
+            else { await addRole(values); toast({ title: "تمت الإضافة", description: "تمت إضافة الدور بنجاح." }); }
+            setShowManageRoleDialog(false); setRoleToEdit(null);
+        } catch (error: any) { toast({ title: "خطأ", description: error.message, variant: "destructive"}); }
     };
     
     const handleDeleteRole = async (roleId: string) => {
-        try {
-            await deleteRole(roleId);
-            toast({title: "تم الحذف", description: "تم حذف الدور بنجاح.", variant: "destructive"})
-        } catch (e: any) {
-            toast({ title: "خطأ", description: e.message, variant: "destructive"});
-        }
+        try { await deleteRole(roleId); toast({title: "تم الحذف", description: "تم حذف الدور بنجاح.", variant: "destructive"}) } 
+        catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
     };
 
     const handleSettingsSubmit = async (values: SettingsFormValues) => {
         try {
             await saveCompanySettings('T001', values); // Assuming a single tenant for now
             toast({ title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح." });
-            
-            // Apply theme color dynamically
-            if (values.themePrimaryColor) {
-                const [h, s, l] = values.themePrimaryColor.split(' ').map(Number);
-                document.documentElement.style.setProperty('--primary', `${h} ${s}% ${l}%`);
-            }
-
-        } catch (e: any) {
-            toast({ title: "خطأ", description: e.message, variant: "destructive"});
-        }
+            if (values.themePrimaryColor) { const [h, s, l] = values.themePrimaryColor.split(' ').map(Number); document.documentElement.style.setProperty('--primary', `${h} ${s}% ${l}%`); }
+        } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
     }
+    
+    const handleDepartmentSubmit = async (values: Department) => {
+        try {
+            if (departmentToEdit) { await updateDepartment({ ...values, id: departmentToEdit.id }); toast({ title: "تم التعديل", description: "تم تعديل القسم." }); }
+            else { await addDepartment(values); toast({ title: "تمت الإضافة", description: "تمت إضافة القسم." }); }
+            setShowManageDepartmentDialog(false); setDepartmentToEdit(null);
+        } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
+    };
+    const handleDeleteDepartment = async (id: string) => {
+        try { await deleteDepartment(id); toast({title: "تم الحذف", description: "تم حذف القسم.", variant: "destructive"}) }
+        catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
+    };
+
+    const handleJobTitleSubmit = async (values: JobTitle) => {
+        try {
+            if (jobTitleToEdit) { await updateJobTitle({ ...values, id: jobTitleToEdit.id }); toast({ title: "تم التعديل", description: "تم تعديل المسمى الوظيفي." }); }
+            else { await addJobTitle(values); toast({ title: "تمت الإضافة", description: "تمت إضافة المسمى الوظيفي." }); }
+            setShowManageJobTitleDialog(false); setJobTitleToEdit(null);
+        } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
+    };
+    const handleDeleteJobTitle = async (id: string) => {
+        try { await deleteJobTitle(id); toast({title: "تم الحذف", description: "تم حذف المسمى الوظيفي.", variant: "destructive"}) }
+        catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
+    };
+    
+    const handleLeaveTypeSubmit = async (values: LeaveType) => {
+        try {
+            if (leaveTypeToEdit) { await updateLeaveType({ ...values, id: leaveTypeToEdit.id }); toast({ title: "تم التعديل", description: "تم تعديل نوع الإجازة." }); }
+            else { await addLeaveType(values); toast({ title: "تمت الإضافة", description: "تمت إضافة نوع الإجازة." }); }
+            setShowManageLeaveTypeDialog(false); setLeaveTypeToEdit(null);
+        } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
+    };
+    const handleDeleteLeaveType = async (id: string) => {
+        try { await deleteLeaveType(id); toast({title: "تم الحذف", description: "تم حذف نوع الإجازة.", variant: "destructive"}) }
+        catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
+    };
     
     return (
         <div className="container mx-auto py-6" dir="rtl">
@@ -211,6 +230,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                 <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
                     <TabsTrigger value="company" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
                     <TabsTrigger value="financial" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
+                     <TabsTrigger value="hr" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Briefcase className="inline-block me-2 h-4 w-4" /> الموارد البشرية</TabsTrigger>
                     <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Users className="inline-block me-2 h-4 w-4" /> المستخدمين</TabsTrigger>
                     <TabsTrigger value="roles" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Shield className="inline-block me-2 h-4 w-4" /> الأدوار والصلاحيات</TabsTrigger>
                     <TabsTrigger value="appearance" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Palette className="inline-block me-2 h-4 w-4" /> المظهر</TabsTrigger>
@@ -249,6 +269,73 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                      </div>
                                 </CardContent>
                             </Card>
+                        </TabsContent>
+                         <TabsContent value="hr">
+                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                 {/* Departments */}
+                                 <Card className="shadow-md">
+                                    <CardHeader>
+                                        <div className="flex justify-between items-center"><CardTitle>الأقسام</CardTitle>
+                                        <Dialog open={showManageDepartmentDialog} onOpenChange={(isOpen) => { setShowManageDepartmentDialog(isOpen); if(!isOpen) setDepartmentToEdit(null);}}>
+                                            <DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => {setDepartmentToEdit(null); departmentForm.reset(); setShowManageDepartmentDialog(true);}}><PlusCircle className="h-5 w-5 text-primary"/></Button></DialogTrigger>
+                                            <DialogContent className="sm:max-w-md" dir="rtl">
+                                                <DialogHeader><DialogTitle>{departmentToEdit ? "تعديل قسم" : "إضافة قسم"}</DialogTitle></DialogHeader>
+                                                <Form {...departmentForm}><form onSubmit={departmentForm.handleSubmit(handleDepartmentSubmit)} className="space-y-4 py-4">
+                                                    <FormField control={departmentForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم القسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                                    <DialogFooter><Button type="submit">حفظ</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                                </form></Form>
+                                            </DialogContent>
+                                        </Dialog>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent><Table>
+                                        <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead className="text-left">إجراء</TableHead></TableRow></TableHeader>
+                                        <TableBody>{departments.map(d => (<TableRow key={d.id}><TableCell>{d.name}</TableCell><TableCell className="text-left"><Button variant="ghost" size="icon" onClick={() => {setDepartmentToEdit(d); setShowManageDepartmentDialog(true);}}><Edit className="h-4 w-4"/></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={()=>handleDeleteDepartment(d.id)}><Trash2 className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
+                                    </Table></CardContent>
+                                 </Card>
+                                 {/* Job Titles */}
+                                 <Card className="shadow-md">
+                                    <CardHeader>
+                                        <div className="flex justify-between items-center"><CardTitle>المسميات الوظيفية</CardTitle>
+                                        <Dialog open={showManageJobTitleDialog} onOpenChange={(isOpen) => { setShowManageJobTitleDialog(isOpen); if(!isOpen) setJobTitleToEdit(null);}}>
+                                            <DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => {setJobTitleToEdit(null); jobTitleForm.reset(); setShowManageJobTitleDialog(true);}}><PlusCircle className="h-5 w-5 text-primary"/></Button></DialogTrigger>
+                                            <DialogContent className="sm:max-w-md" dir="rtl">
+                                                <DialogHeader><DialogTitle>{jobTitleToEdit ? "تعديل مسمى وظيفي" : "إضافة مسمى وظيفي"}</DialogTitle></DialogHeader>
+                                                <Form {...jobTitleForm}><form onSubmit={jobTitleForm.handleSubmit(handleJobTitleSubmit)} className="space-y-4 py-4">
+                                                    <FormField control={jobTitleForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم المسمى الوظيفي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                                    <DialogFooter><Button type="submit">حفظ</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                                </form></Form>
+                                            </DialogContent>
+                                        </Dialog>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent><Table>
+                                        <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead className="text-left">إجراء</TableHead></TableRow></TableHeader>
+                                        <TableBody>{jobTitles.map(jt => (<TableRow key={jt.id}><TableCell>{jt.name}</TableCell><TableCell className="text-left"><Button variant="ghost" size="icon" onClick={() => {setJobTitleToEdit(jt); setShowManageJobTitleDialog(true);}}><Edit className="h-4 w-4"/></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={()=>handleDeleteJobTitle(jt.id)}><Trash2 className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
+                                    </Table></CardContent>
+                                 </Card>
+                                 {/* Leave Types */}
+                                 <Card className="shadow-md">
+                                    <CardHeader>
+                                        <div className="flex justify-between items-center"><CardTitle>أنواع الإجازات</CardTitle>
+                                        <Dialog open={showManageLeaveTypeDialog} onOpenChange={(isOpen) => { setShowManageLeaveTypeDialog(isOpen); if(!isOpen) setLeaveTypeToEdit(null);}}>
+                                            <DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => {setLeaveTypeToEdit(null); leaveTypeForm.reset(); setShowManageLeaveTypeDialog(true);}}><PlusCircle className="h-5 w-5 text-primary"/></Button></DialogTrigger>
+                                            <DialogContent className="sm:max-w-md" dir="rtl">
+                                                <DialogHeader><DialogTitle>{leaveTypeToEdit ? "تعديل نوع إجازة" : "إضافة نوع إجازة"}</DialogTitle></DialogHeader>
+                                                <Form {...leaveTypeForm}><form onSubmit={leaveTypeForm.handleSubmit(handleLeaveTypeSubmit)} className="space-y-4 py-4">
+                                                    <FormField control={leaveTypeForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم نوع الإجازة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                                    <DialogFooter><Button type="submit">حفظ</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                                </form></Form>
+                                            </DialogContent>
+                                        </Dialog>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent><Table>
+                                        <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead className="text-left">إجراء</TableHead></TableRow></TableHeader>
+                                        <TableBody>{leaveTypes.map(lt => (<TableRow key={lt.id}><TableCell>{lt.name}</TableCell><TableCell className="text-left"><Button variant="ghost" size="icon" onClick={() => {setLeaveTypeToEdit(lt); setShowManageLeaveTypeDialog(true);}}><Edit className="h-4 w-4"/></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={()=>handleDeleteLeaveType(lt.id)}><Trash2 className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
+                                    </Table></CardContent>
+                                 </Card>
+                             </div>
                         </TabsContent>
                         <TabsContent value="appearance">
                              <Card className="shadow-md">

@@ -1,8 +1,9 @@
 
+
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { users, roles, companySettings } from '@/db/schema';
+import { users, roles, companySettings, departments, jobTitles, leaveTypes } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -43,6 +44,25 @@ const settingsSchema = z.object({
   themePrimaryColor: z.string().optional(),
 });
 export type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+const departmentSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم القسم مطلوب"),
+});
+export type Department = z.infer<typeof departmentSchema>;
+
+const jobTitleSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم المسمى الوظيفي مطلوب"),
+});
+export type JobTitle = z.infer<typeof jobTitleSchema>;
+
+const leaveTypeSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم نوع الإجازة مطلوب"),
+});
+export type LeaveType = z.infer<typeof leaveTypeSchema>;
+
 
 
 async function getDb() {
@@ -152,4 +172,56 @@ export async function saveCompanySettings(tenantId: string, settings: SettingsFo
     });
   revalidatePath('/settings');
   return { success: true };
+}
+
+// --- HR Settings Actions ---
+export async function addDepartment(values: Department) {
+    const db = await getDb();
+    await db.insert(departments).values({ ...values, id: `DEP${Date.now()}` });
+    revalidatePath('/settings');
+}
+export async function updateDepartment(values: Department) {
+    const db = await getDb();
+    if (!values.id) throw new Error("ID is required.");
+    await db.update(departments).set({ name: values.name }).where(eq(departments.id, values.id));
+    revalidatePath('/settings');
+}
+export async function deleteDepartment(id: string) {
+    const db = await getDb();
+    await db.delete(departments).where(eq(departments.id, id));
+    revalidatePath('/settings');
+}
+
+export async function addJobTitle(values: JobTitle) {
+    const db = await getDb();
+    await db.insert(jobTitles).values({ ...values, id: `JT${Date.now()}` });
+    revalidatePath('/settings');
+}
+export async function updateJobTitle(values: JobTitle) {
+    const db = await getDb();
+    if (!values.id) throw new Error("ID is required.");
+    await db.update(jobTitles).set({ name: values.name }).where(eq(jobTitles.id, values.id));
+    revalidatePath('/settings');
+}
+export async function deleteJobTitle(id: string) {
+    const db = await getDb();
+    await db.delete(jobTitles).where(eq(jobTitles.id, id));
+    revalidatePath('/settings');
+}
+
+export async function addLeaveType(values: LeaveType) {
+    const db = await getDb();
+    await db.insert(leaveTypes).values({ ...values, id: `LT${Date.now()}` });
+    revalidatePath('/settings');
+}
+export async function updateLeaveType(values: LeaveType) {
+    const db = await getDb();
+    if (!values.id) throw new Error("ID is required.");
+    await db.update(leaveTypes).set({ name: values.name }).where(eq(leaveTypes.id, values.id));
+    revalidatePath('/settings');
+}
+export async function deleteLeaveType(id: string) {
+    const db = await getDb();
+    await db.delete(leaveTypes).where(eq(leaveTypes.id, id));
+    revalidatePath('/settings');
 }

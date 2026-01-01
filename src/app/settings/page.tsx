@@ -1,10 +1,11 @@
 
+
 import React from 'react';
 import { connectToTenantDb } from '@/db';
-import { users, roles, companySettings } from '@/db/schema';
+import { users, roles, companySettings, departments, jobTitles, leaveTypes } from '@/db/schema';
 import SettingsPage from './SettingsPageClient';
 import type { Role } from '@/types/saas';
-import type { UserFormValues, SettingsFormValues } from './actions';
+import type { UserFormValues, SettingsFormValues, Department, JobTitle, LeaveType } from './actions';
 import { eq } from 'drizzle-orm';
 
 async function getSettingsData(tenantId: string) {
@@ -15,6 +16,9 @@ async function getSettingsData(tenantId: string) {
         const settingsData = await db.query.companySettings.findFirst({
             where: eq(companySettings.id, tenantId)
         });
+        const departmentsData = await db.select().from(departments);
+        const jobTitlesData = await db.select().from(jobTitles);
+        const leaveTypesData = await db.select().from(leaveTypes);
         
         return {
             success: true,
@@ -22,6 +26,9 @@ async function getSettingsData(tenantId: string) {
                 users: usersData.map(u => ({ ...u, password: '' })), // Don't send password hash to client
                 roles: rolesData,
                 settings: settingsData?.settings as SettingsFormValues || {},
+                departments: departmentsData,
+                jobTitles: jobTitlesData,
+                leaveTypes: leaveTypesData,
             }
         };
     } catch (error) {
@@ -46,5 +53,5 @@ export default async function SettingsServerPage() {
         );
     }
 
-    return <SettingsPage initialData={result.data as { users: UserFormValues[], roles: Role[], settings: SettingsFormValues }} />;
+    return <SettingsPage initialData={result.data as { users: UserFormValues[], roles: Role[], settings: SettingsFormValues, departments: Department[], jobTitles: JobTitle[], leaveTypes: LeaveType[] }} />;
 }

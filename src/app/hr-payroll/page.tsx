@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { connectToTenantDb } from '@/db';
-import { employees, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, employeeAllowances, employeeDeductions } from '@/db/schema';
+import { employees, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, employeeAllowances, employeeDeductions, departments, jobTitles, leaveTypes } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import HRClientComponent from './HRClientComponent';
 
@@ -17,6 +17,9 @@ export default async function HRPayrollPage() {
         const administrativeDecisionsResult = await db.select().from(administrativeDecisions);
         const resignationsResult = await db.select().from(resignations);
         const disciplinaryWarningsResult = await db.select().from(disciplinaryWarnings);
+        const departmentsResult = await db.select().from(departments);
+        const jobTitlesResult = await db.select().from(jobTitles);
+        const leaveTypesResult = await db.select().from(leaveTypes);
 
         const employeesWithDetails = await Promise.all(
             employeesResult.map(async (emp) => {
@@ -67,6 +70,9 @@ export default async function HRPayrollPage() {
             administrativeDecisions: administrativeDecisionsResult.map(d => ({...d, decisionDate: new Date(d.decisionDate), effectiveDate: new Date(d.effectiveDate)})),
             resignations: resignationsResult.map(r => ({...r, submissionDate: new Date(r.submissionDate), lastWorkingDate: new Date(r.lastWorkingDate), managerNotifiedDate: r.managerNotifiedDate ? new Date(r.managerNotifiedDate) : null })),
             disciplinaryWarnings: disciplinaryWarningsResult.map(d => ({...d, warningDate: new Date(d.warningDate)})),
+            departments: departmentsResult,
+            jobTitles: jobTitlesResult,
+            leaveTypes: leaveTypesResult,
         };
 
         return <HRClientComponent initialData={initialData} />;
