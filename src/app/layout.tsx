@@ -1,5 +1,4 @@
 
-      
 "use client";
 
 import type { Metadata } from "next";
@@ -250,7 +249,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                                                 <Avatar className="h-9 w-9">
-                                                    <AvatarImage src={auth.user.avatarUrl} alt={auth.user.name} data-ai-hint="person" />
+                                                    <AvatarImage src={auth.user.avatar_url} alt={auth.user.name} data-ai-hint="person" />
                                                     <AvatarFallback>{auth.user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                                                 </Avatar>
                                             </Button>
@@ -335,6 +334,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-
-    

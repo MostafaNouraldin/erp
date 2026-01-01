@@ -9,16 +9,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { LogIn } from "lucide-react";
+import { LogIn, UserShield } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { useToast } from "@/hooks/use-toast";
 import { login } from './actions';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const loginSchema = z.object({
-  tenantId: z.string().optional(), // Now optional
+  isSuperAdmin: z.boolean().default(false),
+  tenantId: z.string().optional(),
   email: z.string().email("البريد الإلكتروني غير صالح"),
   password: z.string().min(1, "كلمة المرور مطلوبة"),
 });
@@ -33,8 +36,23 @@ export default function LoginPage() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { tenantId: "T001", email: "manager@example.com", password: "password" },
+    defaultValues: { isSuperAdmin: false, tenantId: "T001", email: "manager@example.com", password: "password" },
   });
+
+  const isSuperAdminLogin = form.watch("isSuperAdmin");
+
+  useEffect(() => {
+    if (isSuperAdminLogin) {
+        form.setValue("tenantId", ""); // Clear tenantId when switching to super admin
+        form.setValue("email", "super@admin.com");
+        form.setValue("password", "superadmin_password");
+    } else {
+        form.setValue("tenantId", "T001");
+        form.setValue("email", "manager@example.com");
+        form.setValue("password", "password");
+    }
+  }, [isSuperAdminLogin, form]);
+
 
   const handleLoginSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
@@ -46,7 +64,7 @@ export default function LoginPage() {
           title: "تم تسجيل الدخول بنجاح",
           description: `مرحباً بك، ${result.user.name}!`,
         });
-        router.push('/'); // Redirect to dashboard
+        router.push('/');
       } else {
         toast({
           title: "خطأ في تسجيل الدخول",
@@ -78,19 +96,36 @@ export default function LoginPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleLoginSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="tenantId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>معرف الشركة (اختياري)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="مثال: T001 (اتركه فارغاً للدخول كمدير نظام)" {...field} className="bg-background" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                    control={form.control}
+                    name="isSuperAdmin"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-center gap-3 space-y-0 rounded-md border p-3 shadow-sm bg-muted/50">
+                            <FormControl>
+                                <Switch id="superadmin-switch" checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                            <FormLabel htmlFor="superadmin-switch" className="flex items-center gap-2 cursor-pointer">
+                                <UserShield className="h-5 w-5 text-primary"/>
+                                <span>تسجيل دخول كمدير نظام</span>
+                            </FormLabel>
+                        </FormItem>
+                    )}
+                />
+              {!isSuperAdminLogin && (
+                  <FormField
+                    control={form.control}
+                    name="tenantId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>معرف الشركة</FormLabel>
+                        <FormControl>
+                          <Input placeholder="مثال: T001" {...field} className="bg-background" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              )}
               <FormField
                 control={form.control}
                 name="email"
@@ -98,7 +133,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>البريد الإلكتروني</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="admin@company.com" {...field} className="bg-background" />
+                      <Input type="email" placeholder={isSuperAdminLogin ? "super@admin.com" : "admin@company.com"} {...field} className="bg-background" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

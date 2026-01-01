@@ -30,7 +30,7 @@ export const mainUsers = pgTable('users', {
     roleId: varchar('role_id', { length: 256 }).notNull().references(() => mainRoles.id),
     status: varchar('status', { length: 50 }).notNull().default('نشط'),
     passwordHash: text('password_hash').notNull(),
-    avatarUrl: text('avatar_url'),
+    avatar_url: text('avatar_url'),
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -116,7 +116,7 @@ export const employees = pgTable('employees', {
     basicSalary: numeric('basic_salary', { precision: 10, scale: 2 }).notNull(),
     email: varchar('email', { length: 256 }),
     phone: varchar('phone', { length: 50 }),
-    avatarUrl: text('avatar_url'),
+    avatar_url: text('avatar_url'),
     dataAiHint: varchar('data_ai_hint', { length: 256 }),
     nationality: varchar('nationality', { length: 100 }),
     idNumber: varchar('id_number', { length: 50 }),

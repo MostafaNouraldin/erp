@@ -33,7 +33,7 @@ const employeeSchema = z.object({
   basicSalary: z.coerce.number().min(0, "الراتب الأساسي يجب أن يكون إيجابياً"),
   email: z.string().email("بريد إلكتروني غير صالح").optional().or(z.literal('')),
   phone: z.string().optional(),
-  avatarUrl: z.string().url("رابط الصورة غير صالح").optional().or(z.literal('')),
+  avatar_url: z.string().url("رابط الصورة غير صالح").optional().or(z.literal('')),
   dataAiHint: z.string().max(30).optional(),
   nationality: z.string().optional(),
   idNumber: z.string().optional(),

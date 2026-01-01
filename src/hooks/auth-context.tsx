@@ -9,7 +9,7 @@ export interface User {
     name: string;
     roleId: string;
     email: string;
-    avatarUrl: string | null;
+    avatar_url: string | null;
     tenantId?: string; // Add tenantId to user object
 }
 

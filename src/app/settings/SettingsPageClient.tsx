@@ -52,7 +52,7 @@ const userSchema = z.object({
   roleId: z.string().min(1, "الدور مطلوب"),
   status: z.enum(["نشط", "غير نشط"]).default("نشط"),
   password: z.string().optional(),
-  avatarUrl: z.string().url().optional().or(z.literal('')),
+  avatar_url: z.string().url().optional().or(z.literal('')),
 });
 
 const roleSchema = z.object({
@@ -96,7 +96,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
     const userForm = useForm<UserFormValues>({
         resolver: zodResolver(userSchema),
-        defaultValues: { name: "", email: "", roleId: "", status: "نشط", password: "", avatarUrl: ""},
+        defaultValues: { name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""},
     });
 
     const roleForm = useForm<RoleFormValues>({
@@ -119,7 +119,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         if (userToEdit) {
             userForm.reset({...userToEdit, password: ''});
         } else {
-            userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password: "", avatarUrl: ""});
+            userForm.reset({ name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""});
         }
     }, [userToEdit, userForm, showManageUserDialog]);
     
@@ -211,7 +211,8 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                 <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
                     <TabsTrigger value="company" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
                     <TabsTrigger value="financial" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
-                    <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Users className="inline-block me-2 h-4 w-4" /> المستخدمين والأدوار</TabsTrigger>
+                    <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Users className="inline-block me-2 h-4 w-4" /> المستخدمين</TabsTrigger>
+                    <TabsTrigger value="roles" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Shield className="inline-block me-2 h-4 w-4" /> الأدوار والصلاحيات</TabsTrigger>
                     <TabsTrigger value="appearance" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Palette className="inline-block me-2 h-4 w-4" /> المظهر</TabsTrigger>
                 </TabsList>
                 

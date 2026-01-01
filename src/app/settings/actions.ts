@@ -18,7 +18,7 @@ const userSchema = z.object({
   roleId: z.string().min(1, "الدور مطلوب"),
   status: z.enum(["نشط", "غير نشط"]).default("نشط"),
   password: z.string().optional(),
-  avatarUrl: z.string().url().optional().or(z.literal('')),
+  avatar_url: z.string().url().optional().or(z.literal('')),
 });
 
 export type UserFormValues = z.infer<typeof userSchema>;
@@ -67,7 +67,7 @@ export async function addUser(values: UserFormValues) {
         email: values.email,
         roleId: values.roleId,
         status: values.status,
-        avatarUrl: values.avatarUrl,
+        avatar_url: values.avatar_url,
         passwordHash: passwordHash,
     });
     revalidatePath('/settings');
@@ -83,7 +83,7 @@ export async function updateUser(values: UserFormValues) {
         email: values.email,
         roleId: values.roleId,
         status: values.status,
-        avatarUrl: values.avatarUrl,
+        avatar_url: values.avatar_url,
     };
 
     if (values.password) {

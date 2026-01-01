@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const loginSchema = z.object({
+  isSuperAdmin: z.boolean().optional(),
   tenantId: z.string().optional(),
   email: z.string().email(),
   password: z.string(),
@@ -21,8 +22,6 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
 
 export async function login(values: z.infer<typeof loginSchema>): Promise<{ success: boolean; user?: any; error?: string }> {
   try {
-    // Since we now have a single DB, we don't need complex tenant switching logic here.
-    // The connectToTenantDb function will always return the main connection.
     const { db } = await connectToTenantDb();
     
     const user = await db.query.users.findFirst({
@@ -44,10 +43,19 @@ export async function login(values: z.infer<typeof loginSchema>): Promise<{ succ
     
     const isSuperAdmin = user.roleId === 'ROLE_SUPER_ADMIN';
 
+    // If the login form indicates super admin, but the user role doesn't match, deny access.
+    if(values.isSuperAdmin && !isSuperAdmin) {
+        return { success: false, error: "هذا الحساب لا يمتلك صلاحيات مدير النظام."};
+    }
+    
+    // If the login form is for a regular user, but they have a super admin role, deny tenant-specific access.
+    if(!values.isSuperAdmin && isSuperAdmin) {
+        return { success: false, error: "حساب مدير النظام يجب أن يسجل الدخول من وضع مدير النظام."};
+    }
+
     // Exclude password hash from the user object returned to the client
     const { passwordHash, ...userToReturn } = user;
 
-    // Use a default tenantId for non-super-admins if none is provided, or 'main' for super-admins.
     const tenantId = isSuperAdmin ? 'main' : values.tenantId || 'T001';
 
     return { success: true, user: {...userToReturn, tenantId } };
