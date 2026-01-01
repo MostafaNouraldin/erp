@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { connectToTenantDb } from '@/db';
@@ -507,7 +506,3 @@ export async function approvePurchaseReturn(returnId: string) {
     revalidatePath('/inventory');
     revalidatePath('/general-ledger');
 }
-
-    
-
-    

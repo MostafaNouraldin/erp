@@ -68,7 +68,7 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
     module: "Accounting",
     subItems: [
       { href: "/general-ledger", label: "الحسابات العامة", icon: BookOpen, permissionKey: "accounting.view" },
-      { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer, permissionKey: "accounting.view" },
+      { href: "/receipts-vouchers", label: "سندات القبض والصرف", icon: Printer, permissionKey: "accounting.create" },
       { href: "/accounts-payable-receivable", label: "الحسابات المدينة والدائنة", icon: Users, permissionKey: "accounting.view" },
       { href: "/banks", label: "البنوك", icon: Landmark, permissionKey: "accounting.view" },
       { href: "/opening-balances", label: "الأرصدة الافتتاحية", icon: FileArchive, permissionKey: "accounting.create" },
