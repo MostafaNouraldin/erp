@@ -1,5 +1,4 @@
 
-
 // src/app/sales/actions.ts
 'use server';
 
@@ -145,32 +144,35 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
       }
     }
 
-    // 5. Create Journal Entry
-    const newEntryId = `JV-SI-${newInvoiceId}`;
-    const customer = await tx.query.customers.findFirst({ where: eq(customers.id, invoiceData.customerId) });
-    
-    await tx.insert(journalEntries).values({
-        id: newEntryId,
-        date: invoiceData.date,
-        description: `فاتورة مبيعات رقم ${newInvoiceId} للعميل ${customer?.name || invoiceData.customerId}`,
-        totalAmount: String(totalAmount),
-        status: "مرحل", // Sales invoices are posted immediately
-        sourceModule: "SalesInvoice",
-        sourceDocumentId: newInvoiceId,
-    });
+    // 5. Create Journal Entry if not from POS (POS settles in batch)
+    if (invoiceData.source !== 'POS') {
+        const newEntryId = `JV-SI-${newInvoiceId}`;
+        const customer = await tx.query.customers.findFirst({ where: eq(customers.id, invoiceData.customerId) });
+        
+        await tx.insert(journalEntries).values({
+            id: newEntryId,
+            date: invoiceData.date,
+            description: `فاتورة مبيعات رقم ${newInvoiceId} للعميل ${customer?.name || invoiceData.customerId}`,
+            totalAmount: String(totalAmount),
+            status: "مرحل", // Sales invoices are posted immediately
+            sourceModule: "SalesInvoice",
+            sourceDocumentId: newInvoiceId,
+        });
 
-    await tx.insert(journalEntryLines).values([
-        // Debit Accounts Receivable for the full amount
-        { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: String(totalAmount), credit: '0', description: `فاتورة للعميل ${customer?.name}` },
-        // Credit Sales Revenue for the amount before tax
-        { journalEntryId: newEntryId, accountId: salesRevenueAccount, debit: '0', credit: String(totalBeforeTax), description: `إيراد من فاتورة ${newInvoiceId}` },
-        // Credit VAT Payable for the VAT amount
-        { journalEntryId: newEntryId, accountId: vatPayableAccount, debit: '0', credit: String(vatAmount), description: `ضريبة القيمة المضافة لفاتورة ${newInvoiceId}` },
-    ]);
+        await tx.insert(journalEntryLines).values([
+            // Debit Accounts Receivable for the full amount
+            { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: String(totalAmount), credit: '0', description: `فاتورة للعميل ${customer?.name}` },
+            // Credit Sales Revenue for the amount before tax
+            { journalEntryId: newEntryId, accountId: salesRevenueAccount, debit: '0', credit: String(totalBeforeTax), description: `إيراد من فاتورة ${newInvoiceId}` },
+            // Credit VAT Payable for the VAT amount
+            { journalEntryId: newEntryId, accountId: vatPayableAccount, debit: '0', credit: String(vatAmount), description: `ضريبة القيمة المضافة لفاتورة ${newInvoiceId}` },
+        ]);
+    }
 
   });
 
   revalidatePath('/sales');
+  revalidatePath('/pos');
   revalidatePath('/accounts-payable-receivable');
   revalidatePath('/inventory');
   revalidatePath('/general-ledger');
@@ -290,4 +292,3 @@ export async function deleteSalesOrder(id: string) {
   });
   revalidatePath('/sales');
 }
-

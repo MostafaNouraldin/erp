@@ -216,7 +216,7 @@ export const salesOrderItems = pgTable('sales_order_items', {
 export const salesInvoices = pgTable('sales_invoices', {
   id: varchar('id', { length: 256 }).primaryKey(),
   orderId: varchar('order_id', { length: 256 }),
-  customerId: varchar('customer_id', { length: 256 }).notNull().references(() => customers.id),
+  customerId: varchar('customer_id', { length: 256 }).notNull(),
   date: timestamp('date').notNull(),
   dueDate: timestamp('due_date').notNull(),
   numericTotalAmount: numeric('numeric_total_amount', { precision: 10, scale: 2 }).notNull(),

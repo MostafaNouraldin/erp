@@ -10,7 +10,7 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail, GanttChartSquare, CreditCardIcon as CreditCardIconSidebar } from "lucide-react"; // Added FolderOpen and Mail, aliased CreditCardIcon
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail, GanttChartSquare } from "lucide-react"; // Added FolderOpen and Mail, aliased CreditCardIcon
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/currency-context";
@@ -94,7 +94,7 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
   { href: "/hr-payroll", label: "الموارد البشرية والرواتب", icon: Users, module: "HR" },
   { href: "/production", label: "الإنتاج", icon: Cog, module: "Production" },
   { href: "/projects", label: "المشاريع", icon: GanttChartSquare, module: "Projects" },
-  { href: "/pos", label: "نقاط البيع", icon: CreditCardIconSidebar, module: "POS" },
+  { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" },
   { href: "/reports", label: "التقارير والتحليل", icon: BarChart2, module: "BI" },
   {
     label: "الإعدادات",
@@ -223,7 +223,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                             إدارة الاشتراك
                                         </Button>
                                         <div className="flex justify-center items-center group-data-[collapsible=icon]:block hidden">
-                                            <CreditCardIconSidebar className="h-5 w-5 text-muted-foreground" />
+                                            <CreditCardIcon className="h-5 w-5 text-muted-foreground" />
                                         </div>
                                     </CardContent>
                                 </Card>
