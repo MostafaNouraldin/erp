@@ -1,8 +1,9 @@
 
+
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings } from '@/db/schema';
+import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, journalEntries, journalEntryLines } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -58,7 +59,7 @@ const payrollSchema = z.object({
   allowances: z.array(payrollItemSchema).optional(),
   deductions: z.array(payrollItemSchema).optional(),
   notes: z.string().optional(),
-  status: z.enum(["مسودة", "قيد المعالجة", "مدفوع", "ملغي"]),
+  status: z.enum(["مسودة", "معتمد", "مرحل للحسابات", "مدفوع", "ملغي"]),
   netSalary: z.coerce.number().optional(),
   paymentDate: z.date().optional().nullable(),
 });
@@ -200,6 +201,83 @@ export async function updatePayrollStatus(id: string, status: PayrollFormValues[
     const db = await getDb();
     await db.update(payrolls).set({ status, paymentDate: status === "مدفوع" ? new Date() : null }).where(eq(payrolls.id, id));
     revalidatePath('/hr-payroll');
+}
+
+export async function postPayrollToGL(payrollId: string) {
+    const db = await getDb();
+    const payroll = await db.query.payrolls.findFirst({ where: eq(payrolls.id, payrollId) });
+
+    if (!payroll) {
+        throw new Error("مسير الرواتب غير موجود.");
+    }
+    if (payroll.status === "مرحل للحسابات" || payroll.status === "مدفوع") {
+        throw new Error("هذا المسير تم ترحيله مسبقاً.");
+    }
+
+    const employee = await db.query.employees.findFirst({ where: eq(employees.id, payroll.employeeId) });
+
+    const salaryExpenseAccount = '5000'; // حساب مصروف الرواتب
+    const allowancesExpenseAccount = '5010'; // حساب مصروف البدلات
+    const salariesPayableAccount = '2100'; // حساب الرواتب المستحقة
+
+    const totalAllowances = (payroll.allowances as any[] || []).reduce((sum, item) => sum + Number(item.amount), 0);
+    const totalDeductions = (payroll.deductions as any[] || []).reduce((sum, item) => sum + Number(item.amount), 0);
+    
+    // Total expense is basic salary + allowances
+    const totalExpense = Number(payroll.basicSalary) + totalAllowances;
+    
+    const newEntryId = `JV-PAY-${payrollId}`;
+
+    await db.transaction(async (tx) => {
+        // Create Journal Entry
+        await tx.insert(journalEntries).values({
+            id: newEntryId,
+            date: new Date(), // Or use payroll month/year to create a date
+            description: `ترحيل مسير رواتب ${payroll.monthYear} للموظف ${employee?.name}`,
+            totalAmount: String(totalExpense),
+            status: "مرحل",
+            sourceModule: "Payroll",
+            sourceDocumentId: payroll.id,
+        });
+
+        const entryLines = [];
+
+        // Debit Salary Expense
+        entryLines.push({
+            journalEntryId: newEntryId, accountId: salaryExpenseAccount, debit: String(payroll.basicSalary), credit: '0', description: `راتب أساسي - ${employee?.name}`
+        });
+
+        // Debit Allowances Expense
+        if (totalAllowances > 0) {
+            entryLines.push({
+                journalEntryId: newEntryId, accountId: allowancesExpenseAccount, debit: String(totalAllowances), credit: '0', description: `إجمالي البدلات - ${employee?.name}`
+            });
+        }
+        
+        // Credit Salaries Payable (Net Salary)
+        if (payroll.netSalary && payroll.netSalary > 0) {
+             entryLines.push({
+                journalEntryId: newEntryId, accountId: salariesPayableAccount, debit: '0', credit: String(payroll.netSalary), description: `صافي الراتب المستحق - ${employee?.name}`
+            });
+        }
+       
+        // Credit each deduction to its respective liability/asset account
+        // This part needs more detailed logic based on deduction types (e.g., loan, advance)
+        // For now, we'll credit a generic deductions account '2110' for simplicity
+        if (totalDeductions > 0) {
+             entryLines.push({
+                journalEntryId: newEntryId, accountId: '2110', debit: '0', credit: String(totalDeductions), description: `إجمالي الخصومات - ${employee?.name}`
+            });
+        }
+        
+        await tx.insert(journalEntryLines).values(entryLines);
+
+        // Update payroll status
+        await tx.update(payrolls).set({ status: 'مرحل للحسابات' }).where(eq(payrolls.id, payrollId));
+    });
+
+    revalidatePath('/hr-payroll');
+    revalidatePath('/general-ledger');
 }
 
 

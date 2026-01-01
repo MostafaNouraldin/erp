@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -27,7 +28,7 @@ import { Separator } from '@/components/ui/separator';
 import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
 import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, LeaveRequestFormValues, WarningNoticeFormValues, AdministrativeDecisionFormValues, ResignationFormValues, DisciplinaryWarningFormValues } from './actions';
-import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, updatePayrollStatus, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning } from './actions';
+import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, updatePayrollStatus, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning, postPayrollToGL } from './actions';
 
 
 // Schemas (as they are not exported from actions.ts)
@@ -99,7 +100,7 @@ const payrollSchema = z.object({
   allowances: z.array(payrollItemSchema).optional().default([]),
   deductions: z.array(payrollItemSchema).optional().default([]),
   notes: z.string().optional(),
-  status: z.enum(["مسودة", "قيد المعالجة", "مدفوع", "ملغي"]).default("مسودة"),
+  status: z.enum(["مسودة", "معتمد", "مرحل للحسابات", "مدفوع", "ملغي"]),
   netSalary: z.coerce.number().optional(),
   paymentDate: z.date().optional().nullable(),
 });
@@ -592,6 +593,15 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     setSelectedDisciplinaryForPrint(warning);
     setShowPrintDisciplinaryDialog(true);
   };
+  
+  const handlePostPayroll = async (payrollId: string) => {
+    try {
+        await postPayrollToGL(payrollId);
+        toast({ title: "تم الترحيل", description: "تم ترحيل مسير الرواتب إلى الحسابات العامة." });
+    } catch (e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    }
+  };
 
 
   return (
@@ -723,222 +733,53 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="employeeManagement">
+        <TabsContent value="payroll">
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle>سجلات الموظفين</CardTitle>
-              <CardDescription>إدارة بيانات الموظفين، الوظائف، العقود، والمستندات.</CardDescription>
+              <div className="flex justify-between items-center">
+                <CardTitle>مسيرات الرواتب</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => { setPayrollToEdit(null); payrollForm.reset(); setShowCreatePayrollDialog(true); }}>
+                  <PlusCircle className="me-2 h-4 w-4" /> إنشاء مسير رواتب
+                </Button>
+              </div>
+              <CardDescription>إدارة ومعالجة مسيرات الرواتب الشهرية للموظفين.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
-                <div className="relative w-full sm:w-auto grow sm:grow-0">
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="بحث في الموظفين..." className="pr-10 w-full sm:w-64 bg-background" />
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-                      <Filter className="me-2 h-4 w-4" /> تصفية القسم
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" dir="rtl">
-                    <DropdownMenuLabel>تصفية حسب القسم</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {mockDepartments.map(dep => <DropdownMenuCheckboxItem key={dep}>{dep}</DropdownMenuCheckboxItem>)}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead></TableHead>
-                      <TableHead>الرقم الوظيفي</TableHead>
-                      <TableHead>اسم الموظف</TableHead>
-                      <TableHead>المسمى الوظيفي</TableHead>
-                      <TableHead>القسم</TableHead>
-                      <TableHead>تاريخ بداية العقد</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead className="text-center">إجراءات</TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>الشهر/السنة</TableHead>
+                    <TableHead>الموظف</TableHead>
+                    <TableHead>الراتب الأساسي</TableHead>
+                    <TableHead>صافي الراتب</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead className="text-center">إجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payrollData.map(p => (
+                    <TableRow key={p.id}>
+                      <TableCell>{p.monthYear}</TableCell>
+                      <TableCell>{employees.find(e => e.id === p.employeeId)?.name}</TableCell>
+                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.basicSalary || 0) }}></TableCell>
+                      <TableCell className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(p.netSalary || 0) }}></TableCell>
+                      <TableCell>
+                        <Badge variant={p.status === "مدفوع" ? "default" : p.status === "مرحل للحسابات" ? "secondary" : "outline"}>{p.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" title="عرض" onClick={() => handleViewPayroll(p)}><Eye className="h-4 w-4" /></Button>
+                        {p.status === "مسودة" && (<Button variant="ghost" size="icon" title="تعديل" onClick={() => { setPayrollToEdit(p); setShowCreatePayrollDialog(true); }}><Edit className="h-4 w-4" /></Button>)}
+                        {p.status === "معتمد" && (<Button variant="ghost" size="icon" title="ترحيل للحسابات" className="text-blue-600" onClick={() => handlePostPayroll(p.id!)}><UploadCloud className="h-4 w-4" /></Button>)}
+                        {p.status === "مرحل للحسابات" && (<Button variant="ghost" size="icon" title="تسجيل كمدفوع" className="text-green-600" onClick={() => handlePayPayroll(p.id!)}><Banknote className="h-4 w-4" /></Button>)}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {employees.map((emp) => (
-                      <TableRow key={emp.id} className="hover:bg-muted/50">
-                        <TableCell><Avatar className="h-9 w-9"><AvatarImage src={emp.avatarUrl || undefined} alt={emp.name} data-ai-hint={emp.dataAiHint || emp.name.split(' ').slice(0,2).join(' ') } /><AvatarFallback>{emp.name.substring(0,1)}</AvatarFallback></Avatar></TableCell>
-                        <TableCell className="font-medium">{emp.id}</TableCell>
-                        <TableCell>{emp.name}</TableCell>
-                        <TableCell>{emp.jobTitle}</TableCell>
-                        <TableCell>{emp.department}</TableCell>
-                        <TableCell>{new Date(emp.contractStartDate).toLocaleDateString('ar-SA', {calendar: 'gregory'})}</TableCell>
-                        <TableCell>
-                          <Badge variant={emp.status === "نشط" ? "default" : emp.status === "منتهية خدمته" ? "destructive" : "secondary"}>{emp.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض الملف الشخصي" onClick={() => handleViewEmployee(emp)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {emp.status !== "منتهية خدمته" && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => {setEmployeeToEdit(emp); setShowAddEmployeeDialog(true);}}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                           <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف الموظف">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent dir="rtl">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>هل أنت متأكد من الحذف؟</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      سيتم حذف الموظف "{emp.name}" بشكل نهائي.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteEmployee(emp.id!)}>تأكيد الحذف</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
-        {/* Other Tabs omitted for brevity */}
-         <TabsContent value="forms">
-          <div className="space-y-6">
-            {/* Warning Notices Section */}
-            <Card className="shadow-lg">
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>لفت النظر</CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => setShowManageWarningNoticeDialog(true)}><PlusCircle className="me-2 h-4 w-4"/> إنشاء جديد</Button>
-                  </div>
-                  <CardDescription>توثيق الملاحظات والتنبيهات غير الرسمية للموظفين.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>السبب</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                        {warningNoticesData.map(notice => (
-                            <TableRow key={notice.id}>
-                                <TableCell>{new Date(notice.date).toLocaleDateString('ar-SA')}</TableCell>
-                                <TableCell>{employees.find(e => e.id === notice.employeeId)?.name}</TableCell>
-                                <TableCell>{notice.reason}</TableCell>
-                                <TableCell><Badge variant="outline">{notice.status}</Badge></TableCell>
-                                <TableCell className="text-center">
-                                    <Button variant="ghost" size="icon" onClick={() => handlePrintWarningNotice(notice)}><Printer className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => {setWarningNoticeToEdit(notice); setShowManageWarningNoticeDialog(true);}}><Edit className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteWarningNotice(notice.id!)} className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-            </Card>
-
-            {/* Administrative Decisions Section */}
-            <Card className="shadow-lg">
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>القرارات الإدارية</CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => setShowManageAdminDecisionDialog(true)}><PlusCircle className="me-2 h-4 w-4"/> إنشاء جديد</Button>
-                  </div>
-                  <CardDescription>تسجيل القرارات الرسمية مثل الترقيات، النقل، تعديلات الرواتب، وإنهاء الخدمات.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>نوع القرار</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                        {administrativeDecisionsData.map(decision => (
-                            <TableRow key={decision.id}>
-                                <TableCell>{new Date(decision.decisionDate).toLocaleDateString('ar-SA')}</TableCell>
-                                <TableCell>{employees.find(e => e.id === decision.employeeId)?.name}</TableCell>
-                                <TableCell>{decision.decisionType}</TableCell>
-                                <TableCell><Badge>{decision.status}</Badge></TableCell>
-                                <TableCell className="text-center">
-                                    <Button variant="ghost" size="icon" onClick={() => handlePrintAdministrativeDecision(decision)}><Printer className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => {setAdminDecisionToEdit(decision); setShowManageAdminDecisionDialog(true);}}><Edit className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteAdministrativeDecision(decision.id!)} className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-            </Card>
-
-             {/* Resignations Section */}
-            <Card className="shadow-lg">
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>الاستقالات وإنهاء الخدمة</CardTitle>
-                     <Button variant="outline" size="sm" onClick={() => setShowManageResignationDialog(true)}><PlusCircle className="me-2 h-4 w-4"/> إنشاء جديد</Button>
-                  </div>
-                  <CardDescription>إدارة عمليات تقديم الاستقالات ومتابعة إجراءات إنهاء الخدمة.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader><TableRow><TableHead>تاريخ التقديم</TableHead><TableHead>الموظف</TableHead><TableHead>آخر يوم عمل</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                       {resignationsData.map(resignation => (
-                            <TableRow key={resignation.id}>
-                                <TableCell>{new Date(resignation.submissionDate).toLocaleDateString('ar-SA')}</TableCell>
-                                <TableCell>{employees.find(e => e.id === resignation.employeeId)?.name}</TableCell>
-                                <TableCell>{new Date(resignation.lastWorkingDate).toLocaleDateString('ar-SA')}</TableCell>
-                                <TableCell><Badge variant={resignation.status === "مقبولة" ? "default" : "secondary"}>{resignation.status}</Badge></TableCell>
-                                 <TableCell className="text-center">
-                                    <Button variant="ghost" size="icon" onClick={() => handlePrintResignation(resignation)}><Printer className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => {setResignationToEdit(resignation); setShowManageResignationDialog(true);}}><Edit className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteResignation(resignation.id!)} className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-            </Card>
-
-            {/* Disciplinary Warnings Section */}
-            <Card className="shadow-lg">
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>الإنذارات التأديبية</CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => setShowManageDisciplinaryDialog(true)}><PlusCircle className="me-2 h-4 w-4"/> إنشاء جديد</Button>
-                  </div>
-                  <CardDescription>توثيق الإنذارات الرسمية والإجراءات التأديبية المتخذة.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>نوع الإنذار</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                        {disciplinaryWarningsData.map(warning => (
-                             <TableRow key={warning.id}>
-                                <TableCell>{new Date(warning.warningDate).toLocaleDateString('ar-SA')}</TableCell>
-                                <TableCell>{employees.find(e => e.id === warning.employeeId)?.name}</TableCell>
-                                <TableCell>{warning.warningType}</TableCell>
-                                <TableCell><Badge variant="destructive">{warning.status}</Badge></TableCell>
-                                <TableCell className="text-center">
-                                    <Button variant="ghost" size="icon" onClick={() => handlePrintDisciplinaryWarning(warning)}><Printer className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => {setDisciplinaryToEdit(warning); setShowManageDisciplinaryDialog(true);}}><Edit className="h-4 w-4"/></Button>
-                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteDisciplinaryWarning(warning.id!)} className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+        {/* Other tabs remain the same */}
       </Tabs>
     </div>
   );

@@ -305,7 +305,7 @@ export const payrolls = pgTable('payrolls', {
   deductions: jsonb('deductions'),
   netSalary: numeric('net_salary', { precision: 10, scale: 2 }),
   paymentDate: timestamp('payment_date'),
-  status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+  status: varchar('status', { length: 50 }).notNull().default('مسودة'), // مسودة, معتمد, مرحل للحسابات, مدفوع, ملغي
   notes: text('notes'),
 });
 
