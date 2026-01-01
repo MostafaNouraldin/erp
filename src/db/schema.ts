@@ -280,6 +280,21 @@ export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
 
 // --- HR & Payroll ---
 
+export const departments = pgTable('departments', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull().unique(),
+});
+
+export const jobTitles = pgTable('job_titles', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull().unique(),
+});
+
+export const leaveTypes = pgTable('leave_types', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull().unique(),
+});
+
 export const employeeAllowances = pgTable('employee_allowances', {
     id: serial('id').primaryKey(),
     employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
