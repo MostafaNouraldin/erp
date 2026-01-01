@@ -13,20 +13,30 @@ import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 import { addTenant } from '../tenants/actions'; // Assuming this action can be used
 
-// Mock data, in a real app this would come from a database
-const mockRequests = [
-    { id: 1, companyName: "شركة الأمل للتجارة", email: "contact@alamal.com", phone: "0501234567", totalAmount: 5500, billingCycle: "yearly", status: "pending", createdAt: new Date("2024-07-29T10:00:00Z"), selectedModules: ["Accounting", "Inventory", "Sales"], paymentProof: "https://picsum.photos/seed/proof1/400/300" },
-    { id: 2, companyName: "مؤسسة البناء الحديث", email: "info@modern-build.com", phone: "0559876543", totalAmount: 800, billingCycle: "monthly", status: "pending", createdAt: new Date("2024-07-28T15:30:00Z"), selectedModules: ["Accounting", "HR", "Projects"], paymentProof: "https://picsum.photos/seed/proof2/400/300" },
-    { id: 3, companyName: "مصنع الشرقية للكيماويات", email: "ceo@echem.com", phone: "0533344455", totalAmount: 12500, billingCycle: "yearly", status: "approved", createdAt: new Date("2024-07-27T09:00:00Z"), selectedModules: ["Accounting", "Inventory", "Sales", "Purchases", "Production"], paymentProof: "https://picsum.photos/seed/proof3/400/300" },
-];
-
-type SubscriptionRequest = typeof mockRequests[0];
+// In a real app this would come from a database via props
+type SubscriptionRequest = {
+    id: number;
+    companyName: string;
+    email: string;
+    phone?: string | null;
+    totalAmount: number | string;
+    billingCycle: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: Date | string;
+    selectedModules: string[];
+    paymentProof: string;
+};
 
 export default function SubscriptionRequestsPage() {
-    const [requests, setRequests] = useState<SubscriptionRequest[]>(mockRequests);
+    const [requests, setRequests] = useState<SubscriptionRequest[]>([]);
     const [selectedRequest, setSelectedRequest] = useState<SubscriptionRequest | null>(null);
     const [showViewDialog, setShowViewDialog] = useState(false);
     const { toast } = useToast();
+
+    // In a real app, you would fetch this data via props from a server component
+    useEffect(() => {
+        // setRequests(initialData.requests); // If data was passed via props
+    }, []);
 
     const handleApprove = async (request: SubscriptionRequest) => {
         try {
@@ -103,7 +113,7 @@ export default function SubscriptionRequestsPage() {
                                         <TableCell className="font-medium">{req.companyName}</TableCell>
                                         <TableCell>{req.email}</TableCell>
                                         <TableCell>{new Date(req.createdAt).toLocaleDateString('ar-SA')}</TableCell>
-                                        <TableCell>{req.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                                        <TableCell>{typeof req.totalAmount === 'number' ? req.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' }) : req.totalAmount}</TableCell>
                                         <TableCell>
                                             <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
                                                 {req.status === 'pending' ? 'معلق' : req.status === 'approved' ? 'مقبول' : 'مرفوض'}
@@ -126,6 +136,13 @@ export default function SubscriptionRequestsPage() {
                                         </TableCell>
                                     </TableRow>
                                 ))}
+                                 {requests.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
+                                            لا توجد طلبات اشتراك حالياً.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </div>
@@ -143,7 +160,7 @@ export default function SubscriptionRequestsPage() {
                             <p><strong>الهاتف:</strong> {selectedRequest.phone}</p>
                             <p><strong>الوحدات المطلوبة:</strong> {selectedRequest.selectedModules.join(', ')}</p>
                             <p><strong>دورة الفوترة:</strong> {selectedRequest.billingCycle === 'yearly' ? 'سنوي' : 'شهري'}</p>
-                            <p><strong>المبلغ الإجمالي:</strong> {selectedRequest.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</p>
+                            <p><strong>المبلغ الإجمالي:</strong> {typeof selectedRequest.totalAmount === 'number' ? selectedRequest.totalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' }) : selectedRequest.totalAmount}</p>
                              <div>
                                 <Label className='font-semibold'>إثبات الدفع:</Label>
                                 <div className="mt-2 border rounded-md p-2 flex justify-center">

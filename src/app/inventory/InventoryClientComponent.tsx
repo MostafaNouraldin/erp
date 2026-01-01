@@ -158,7 +158,6 @@ const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلو
 const mockUsers = [{ id: "USR001", name: "فريق الجرد أ" }, { id: "USR002", name: "أحمد المسؤول" }, { id: "USR003", name: "مدير المخازن" }];
 const mockDepartments = [{id: "DEP001", name: "قسم المبيعات"}, {id: "DEP002", name: "قسم الصيانة"}];
 
-const stockMovements = [ { id: "MV001", date: new Date("2024-07-20"), type: "دخول (شراء)", item: "ITEM001", quantity: 20, fromTo: "مورد X", reference: "PO-123" }, { id: "MV002", date: new Date("2024-07-21"), type: "خروج (بيع)", item: "ITEM003", quantity: 10, fromTo: "عميل Y", reference: "SO-456" }, { id: "MV003", date: new Date("2024-07-22"), type: "تحويل داخلي", item: "ITEM002", quantity: 2, fromTo: "مستودع A -> مستودع B", reference: "TRN-001" }, { id: "MV004", date: new Date("2024-07-23"), type: "تعديل جرد (زيادة)", item: "ITEM005", quantity: 5, fromTo: "جرد سنوي", reference: "ADJ-001" },];
 const inventoryReportTypes = [ 
     { key: "itemMovement", name: "تقرير حركة صنف", icon: History, description: "تتبع حركة صنف معين خلال فترة." }, 
     { key: "valuation", name: "تقرير تقييم المخزون", icon: Layers, description: "عرض قيمة المخزون الحالي بالتكلفة والسعر." }, 
@@ -167,11 +166,6 @@ const inventoryReportTypes = [
     { key: "locationReport", name: "تقرير مواقع التخزين", icon: Warehouse, description: "عرض الأصناف وكمياتها في كل موقع تخزين." }, 
     { key: "supplierItems", name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },
 ];
-const sampleChartData = [ { month: "يناير", "ITEM001": 100, "ITEM002": 50 }, { month: "فبراير", "ITEM001": 120, "ITEM002": 60 }, { month: "مارس", "ITEM001": 80, "ITEM002": 40 }, { month: "ابريل", "ITEM001": 150, "ITEM002": 70 }, { month: "مايو", "ITEM001": 110, "ITEM002": 55 }, { month: "يونيو", "ITEM001": 130, "ITEM002": 65 },];
-const chartConfig = { "ITEM001": { label: "لابتوب Dell XPS 15", color: "hsl(var(--chart-1))" }, "ITEM002": { label: "طابعة HP LaserJet Pro", color: "hsl(var(--chart-2))" },} satisfies ChartConfig;
-
-const mockStocktakeDetail: StocktakeDetails = { id: "STK-2024-06-30-A", date: new Date("2024-06-30").toLocaleDateString('ar-SA'), warehouse: "مستودع A", status: "مكتمل", responsible: "فريق الجرد ألف", itemsCounted: 3, discrepanciesFound: 2, notes: "تم الجرد الدوري للمستودع أ. بعض الفروقات الطفيفة تم تسجيلها.", items: [ { productId: "ITEM001", productName: "لابتوب Dell XPS 15", expectedQuantity: 48, countedQuantity: 48, difference: 0, differenceValue: 0 }, { productId: "ITEM002", productName: "طابعة HP LaserJet Pro", expectedQuantity: 7, countedQuantity: 6, difference: -1, differenceValue: -1000 }, { productId: "ITEM003", productName: "ورق طباعة A4 (صندوق)", expectedQuantity: 195, countedQuantity: 198, difference: 3, differenceValue: 360 },],};
-
 
 export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[], warehouses: any[] } }) {
   const [productsData, setProductsData] = useState<ProductFormValues[]>(initialData.products);
@@ -354,8 +348,11 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   };
 
   const handleViewStocktakeDetails = () => {
-    setSelectedStocktakeForView(mockStocktakeDetail);
-    setShowViewStocktakeDetailsDialog(true);
+    // In a real app, you would fetch the details for a specific stocktake ID.
+    // We are using a mock detail object for now.
+    // setSelectedStocktakeForView(mockStocktakeDetail);
+    // setShowViewStocktakeDetailsDialog(true);
+    toast({ title: "قيد التطوير", description: "عرض تفاصيل الجرد سيتم تنفيذه في تحديث قادم.", variant: "default" });
   };
 
   const handleStockIssueSubmit = async (values: StockIssueVoucherFormValues) => {
@@ -391,51 +388,8 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     }
   };
   
-
     const generateReportData = (reportKey: string, filters: typeof reportFilters) => {
         // This is mock data generation. In a real app, you'd fetch and filter data.
-        if (reportKey === "itemMovement") {
-            return stockMovements
-                .filter(m => !filters.itemId || m.item === filters.itemId)
-                .filter(m => {
-                    if (!filters.dateRange?.from || !filters.dateRange?.to) return true;
-                    const moveDate = new Date(m.date);
-                    return moveDate >= filters.dateRange.from && moveDate <= filters.dateRange.to;
-                })
-                .map(m => ({ ...m, itemName: productsData.find(p => p.id === m.item)?.name || m.item }));
-        }
-        if (reportKey === "valuation") {
-            return productsData
-                .filter(p => !filters.warehouseId || (p.location && p.location.includes(warehousesData.find(w=>w.id === filters.warehouseId)?.name || "")))
-                .map(p => ({ 
-                    ...p, 
-                    totalCostValue: p.quantity * p.costPrice, 
-                    totalSellingValue: p.quantity * p.sellingPrice 
-                }));
-        }
-        if (reportKey === "stocktakeDiscrepancy") return mockStocktakeDetail.items;
-        if (reportKey === "obsoleteStock") {
-            return productsData
-                .filter(p => p.quantity > 0 && (!filters.lastMovementDate || (stockMovements.filter(m => m.item === p.id && new Date(m.date) > filters.lastMovementDate!).length === 0)))
-                .map(p => ({
-                    ...p,
-                    lastMovementDate: stockMovements.filter(m => m.item === p.id).sort((a,b) => b.date.getTime() - a.date.getTime())[0]?.date.toLocaleDateString('ar-SA') || "لا توجد حركة",
-                    value: p.quantity * p.costPrice
-                }));
-        }
-        if (reportKey === "locationReport") {
-             return productsData
-                .filter(p => !filters.warehouseId || (p.location && p.location.includes(warehousesData.find(w=>w.id === filters.warehouseId)?.name || "")))
-                .map(p => ({location: p.location, name: p.name, quantity: p.quantity}));
-        }
-        if (reportKey === "supplierItems") {
-            return productsData
-                .filter(p => !filters.supplierId || p.supplierId === filters.supplierId)
-                .map(p => ({
-                    ...p,
-                    lastPurchaseDate: stockMovements.find(m => m.item === p.id && m.type.includes("شراء") && m.fromTo === suppliersData.find(s=>s.id === p.supplierId)?.name)?.date.toLocaleDateString('ar-SA') || "N/A"
-                }));
-        }
         return [];
     };
 

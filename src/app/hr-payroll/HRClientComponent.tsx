@@ -30,17 +30,6 @@ import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, Leave
 import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, updatePayrollStatus, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning } from './actions';
 
 
-// Mock data for some sections
-const initialDelegationsData: any[] = [
-  { id: "DEL001", employeeId: "EMP001", description: "مهمة عمل لمعرض دبي", startDate: new Date("2024-09-01"), endDate: new Date("2024-09-05"), location: "دبي", status: "مخطط له" },
-  { id: "DEL002", employeeId: "EMP002", description: "ورشة عمل تسويقية في جدة", startDate: new Date("2024-10-10"), endDate: new Date("2024-10-12"), location: "جدة", status: "مخطط له" },
-];
-
-const mockManagers = [{id: "EMP001", name: "أحمد محمود"}];
-const mockDecisionTypes = ["ترقية", "نقل", "تعديل راتب", "إنهاء خدمات", "أخرى"];
-const mockWarningTypes = ["إنذار أول", "إنذار ثاني", "إنذار نهائي", "إجراء تأديبي آخر"];
-
-
 // Schemas (as they are not exported from actions.ts)
 const employeeAllowanceSchema = z.object({
   id: z.string().optional(),
@@ -183,6 +172,9 @@ const mockDepartments = ["قسم المبيعات", "قسم التسويق", "ق
 const mockJobTitles = ["مدير مبيعات", "أخصائية تسويق", "محاسب أول", "مسؤول موارد بشرية", "فني صيانة", "مدير قسم", "مساعد إداري"];
 const mockEmploymentTypes = ["دوام كامل", "دوام جزئي", "عقد محدد", "مستقل"];
 const mockLeaveTypes = ["إجازة سنوية", "إجازة مرضية", "إجازة عارضة", "إجازة بدون راتب", "إجازة أمومة", "إجازة زواج", "أخرى"];
+const mockManagers = [{id: "EMP001", name: "أحمد محمود"}];
+const mockDecisionTypes = ["ترقية", "نقل", "تعديل راتب", "إنهاء خدمات", "أخرى"];
+const mockWarningTypes = ["إنذار أول", "إنذار ثاني", "إنذار نهائي", "إجراء تأديبي آخر"];
 
 const employeeDefaultValues = {
   name: "", department: "", jobTitle: "", contractStartDate: new Date(), contractEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),

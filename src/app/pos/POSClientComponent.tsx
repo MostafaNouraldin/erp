@@ -54,13 +54,6 @@ interface RecentTransaction {
   customerName?: string;
 }
 
-const initialRecentTransactions: RecentTransaction[] = [
-    { id: "TRX001", time: "10:30 ص", items: 2, total: 30, paymentMethod: "نقدي" },
-    { id: "TRX002", time: "10:35 ص", items: 1, total: 15, paymentMethod: "بطاقة" },
-    { id: "TRX003", time: "10:42 ص", items: 3, total: 45, paymentMethod: "نقدي" },
-];
-
-
 interface POSClientComponentProps {
   initialData: {
     products: Product[];
@@ -82,7 +75,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(CASH_CUSTOMER_ID); 
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const { toast } = useToast();
-  const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>(initialRecentTransactions);
+  const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
   const { formatCurrency } = useCurrency();
 
 

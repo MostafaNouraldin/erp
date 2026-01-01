@@ -11,14 +11,17 @@ import { Input } from "@/components/ui/input";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data, in a real app this would come from props/database
-const mockInvoices = [
-    { id: "INV-SUB-001", tenantId: "T001", tenantName: "شركة الأمل للتجارة", issueDate: new Date("2024-07-01"), dueDate: new Date("2024-07-31"), totalAmount: 5500, status: "paid", paidDate: new Date("2024-07-15") },
-    { id: "INV-SUB-002", tenantId: "T002", tenantName: "مؤسسة البناء الحديث", issueDate: new Date("2024-07-05"), dueDate: new Date("2024-08-04"), totalAmount: 800, status: "unpaid" },
-    { id: "INV-SUB-003", tenantId: "T003", tenantName: "مصنع الشرقية للكيماويات", issueDate: new Date("2024-06-15"), dueDate: new Date("2024-07-15"), totalAmount: 12500, status: "overdue" },
-];
-
-type SubscriptionInvoice = typeof mockInvoices[0];
+// In a real app this would come from props/database
+type SubscriptionInvoice = {
+    id: string;
+    tenantId: string;
+    tenantName: string;
+    issueDate: Date;
+    dueDate: Date;
+    totalAmount: number;
+    status: 'paid' | 'unpaid' | 'overdue';
+    paidDate?: Date;
+};
 
 interface ClientProps {
   initialData: {
@@ -27,7 +30,7 @@ interface ClientProps {
 }
 
 export default function SubscriptionInvoicesPage({ initialData }: ClientProps) {
-    const [invoices, setInvoices] = useState<SubscriptionInvoice[]>(mockInvoices);
+    const [invoices, setInvoices] = useState<SubscriptionInvoice[]>([]);
     const { toast } = useToast();
 
     const handleMarkAsPaid = (invoiceId: string) => {
@@ -104,6 +107,13 @@ export default function SubscriptionInvoicesPage({ initialData }: ClientProps) {
                                         </TableCell>
                                     </TableRow>
                                 ))}
+                                {invoices.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
+                                            لا توجد فواتير لعرضها.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </div>
