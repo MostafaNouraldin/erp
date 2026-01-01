@@ -670,7 +670,6 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
             </CardContent>
           </Card>
         </TabsContent>
-      {/* The rest of the component is omitted for brevity but is identical to what was previously generated */}
        <TabsContent value="purchaseReturns">
         <Card className="shadow-lg">
             <CardHeader>
@@ -794,5 +793,6 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
+
 
 

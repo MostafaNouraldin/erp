@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -350,8 +351,6 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const handleViewStocktakeDetails = () => {
     // In a real app, you would fetch the details for a specific stocktake ID.
     // We are using a mock detail object for now.
-    // setSelectedStocktakeForView(mockStocktakeDetail);
-    // setShowViewStocktakeDetailsDialog(true);
     toast({ title: "قيد التطوير", description: "عرض تفاصيل الجرد سيتم تنفيذه في تحديث قادم.", variant: "default" });
   };
 
