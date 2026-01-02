@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -290,7 +289,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                     </CardHeader>
                                     <CardContent><Table>
                                         <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead className="text-left">إجراء</TableHead></TableRow></TableHeader>
-                                        <TableBody>{departments.map(d => (<TableRow key={d.id}><TableCell>{d.name}</TableCell><TableCell className="text-left"><Button variant="ghost" size="icon" onClick={() => {setDepartmentToEdit(d); setShowManageDepartmentDialog(true);}}><Edit className="h-4 w-4"/></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={()=>handleDeleteDepartment(d.id)}><Trash2 className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
+                                        <TableBody>{departments.map(d => (<TableRow key={d.id}><TableCell>{d.name}</TableCell><TableCell className="text-left"><Button variant="ghost" size="icon" onClick={() => {setDepartmentToEdit(d); setShowManageDepartmentDialog(true);}}><Edit className="h-4 w-4"/></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={()=>handleDeleteDepartment(d.id!)}><Trash2 className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
                                     </Table></CardContent>
                                  </Card>
                                  {/* Job Titles */}
@@ -311,7 +310,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                     </CardHeader>
                                     <CardContent><Table>
                                         <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead className="text-left">إجراء</TableHead></TableRow></TableHeader>
-                                        <TableBody>{jobTitles.map(jt => (<TableRow key={jt.id}><TableCell>{jt.name}</TableCell><TableCell className="text-left"><Button variant="ghost" size="icon" onClick={() => {setJobTitleToEdit(jt); setShowManageJobTitleDialog(true);}}><Edit className="h-4 w-4"/></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={()=>handleDeleteJobTitle(jt.id)}><Trash2 className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
+                                        <TableBody>{jobTitles.map(jt => (<TableRow key={jt.id}><TableCell>{jt.name}</TableCell><TableCell className="text-left"><Button variant="ghost" size="icon" onClick={() => {setJobTitleToEdit(jt); setShowManageJobTitleDialog(true);}}><Edit className="h-4 w-4"/></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={()=>handleDeleteJobTitle(jt.id!)}><Trash2 className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
                                     </Table></CardContent>
                                  </Card>
                                  {/* Leave Types */}
@@ -332,7 +331,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                     </CardHeader>
                                     <CardContent><Table>
                                         <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead className="text-left">إجراء</TableHead></TableRow></TableHeader>
-                                        <TableBody>{leaveTypes.map(lt => (<TableRow key={lt.id}><TableCell>{lt.name}</TableCell><TableCell className="text-left"><Button variant="ghost" size="icon" onClick={() => {setLeaveTypeToEdit(lt); setShowManageLeaveTypeDialog(true);}}><Edit className="h-4 w-4"/></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={()=>handleDeleteLeaveType(lt.id)}><Trash2 className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
+                                        <TableBody>{leaveTypes.map(lt => (<TableRow key={lt.id}><TableCell>{lt.name}</TableCell><TableCell className="text-left"><Button variant="ghost" size="icon" onClick={() => {setLeaveTypeToEdit(lt); setShowManageLeaveTypeDialog(true);}}><Edit className="h-4 w-4"/></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={()=>handleDeleteLeaveType(lt.id!)}><Trash2 className="h-4 w-4"/></Button></TableCell></TableRow>))}</TableBody>
                                     </Table></CardContent>
                                  </Card>
                              </div>
