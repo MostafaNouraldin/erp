@@ -2,7 +2,7 @@
 
 // This is now a true Server Component that fetches data and passes it to the client.
 import { connectToTenantDb } from '@/db';
-import { products, categories, suppliers, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems } from '@/db/schema';
+import { products, categories, suppliers, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, goodsReceivedNotes, goodsReceivedNoteItems } from '@/db/schema';
 import React from 'react';
 import InventoryClientComponent from './InventoryClientComponent';
 import { eq } from 'drizzle-orm';
@@ -18,6 +18,7 @@ export default async function InventoryPage() {
         const warehousesResult = await db.select().from(warehouses);
         const stockRequisitionsResult = await db.select().from(stockRequisitions);
         const stockIssueVouchersResult = await db.select().from(stockIssueVouchers);
+        const goodsReceivedNotesResult = await db.select().from(goodsReceivedNotes);
 
         const requisitionsWithItems = await Promise.all(
             stockRequisitionsResult.map(async (req) => {
@@ -33,6 +34,17 @@ export default async function InventoryPage() {
             })
         );
 
+        const goodsReceivedNotesWithItems = await Promise.all(
+            goodsReceivedNotesResult.map(async (grn) => {
+                const items = await db.select().from(goodsReceivedNoteItems).where(eq(goodsReceivedNoteItems.grnId, grn.id));
+                return { 
+                    ...grn,
+                    grnDate: new Date(grn.grnDate),
+                    items: items.map(item => ({...item, receivedQuantity: item.receivedQuantity || 0, orderedQuantity: item.orderedQuantity || 0 })) 
+                };
+            })
+        );
+
         const initialData = {
             products: productsResult.map(p => ({ ...p, costPrice: Number(p.costPrice), sellingPrice: Number(p.sellingPrice) })),
             categories: categoriesResult,
@@ -40,6 +52,7 @@ export default async function InventoryPage() {
             warehouses: warehousesResult,
             stockRequisitions: requisitionsWithItems,
             stockIssueVouchers: issueVouchersWithItems,
+            goodsReceivedNotes: goodsReceivedNotesWithItems,
         };
 
         return <InventoryClientComponent initialData={initialData} />;

@@ -117,20 +117,20 @@ type StockIssueVoucherFormValues = z.infer<typeof stockIssueVoucherSchema>;
 
 // Goods Received Note Schema
 const goodsReceivedNoteItemSchema = z.object({
-  productId: z.string().min(1, "المنتج مطلوب"),
-  quantityReceived: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
-  costPricePerUnit: z.coerce.number().min(0).optional(),
+  itemId: z.string().min(1, "المنتج مطلوب"),
+  description: z.string().optional(),
+  orderedQuantity: z.coerce.number().min(0),
+  receivedQuantity: z.coerce.number().min(0, "الكمية المستلمة يجب أن تكون إيجابية أو صفر").max(Number.MAX_SAFE_INTEGER, "الكمية كبيرة جداً"),
   notes: z.string().optional(),
 });
 const goodsReceivedNoteSchema = z.object({
   id: z.string().optional(),
-  date: z.date({ required_error: "التاريخ مطلوب" }),
-  warehouseId: z.string().min(1, "المستودع المستلم مطلوب"),
-  source: z.string().min(1, "مصدر البضاعة مطلوب (مورد/أمر إنتاج)"),
-  reference: z.string().optional(),
-  items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  poId: z.string().min(1, "أمر الشراء مطلوب"),
+  supplierId: z.string().min(1, "المورد مطلوب"),
+  grnDate: z.date({ required_error: "تاريخ الاستلام مطلوب" }),
+  items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل مستلم"),
   notes: z.string().optional(),
-  status: z.enum(["مسودة", "مرحل للمخزون", "ملغي"]).default("مسودة"),
+  status: z.enum(["مستلم جزئياً", "مستلم بالكامل"]),
   receivedBy: z.string().optional(),
 });
 type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
@@ -168,7 +168,7 @@ const inventoryReportTypes = [
     { key: "supplierItems", name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },
 ];
 
-export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[], warehouses: any[], stockRequisitions: any[], stockIssueVouchers: any[] } }) {
+export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[], warehouses: any[], stockRequisitions: any[], stockIssueVouchers: any[], goodsReceivedNotes: any[] } }) {
   const [productsData, setProductsData] = useState<ProductFormValues[]>(initialData.products);
   const [categoriesData, setCategoriesData] = useState<CategoryFormValues[]>(initialData.categories);
   const [suppliersData, setSuppliersData] = useState<any[]>(initialData.suppliers);
@@ -199,7 +199,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const [showManageStockIssueDialog, setShowManageStockIssueDialog] = useState(false);
   const [stockIssueToEdit, setStockIssueToEdit] = useState<StockIssueVoucherFormValues | null>(null);
 
-  const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState<GoodsReceivedNoteFormValues[]>([]);
+  const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState<GoodsReceivedNoteFormValues[]>(initialData.goodsReceivedNotes);
   const [showManageGoodsReceivedNoteDialog, setShowManageGoodsReceivedNoteDialog] = useState(false);
   const [goodsReceivedNoteToEdit, setGoodsReceivedNoteToEdit] = useState<GoodsReceivedNoteFormValues | null>(null);
 
@@ -215,7 +215,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const stockIssueVoucherForm = useForm<StockIssueVoucherFormValues>({ resolver: zodResolver(stockIssueVoucherSchema), defaultValues: { date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""}});
   const { fields: stockIssueItemsFields, append: appendStockIssueItem, remove: removeStockIssueItem } = useFieldArray({ control: stockIssueVoucherForm.control, name: "items" });
 
-  const goodsReceivedNoteForm = useForm<GoodsReceivedNoteFormValues>({ resolver: zodResolver(goodsReceivedNoteSchema), defaultValues: { date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""}});
+  const goodsReceivedNoteForm = useForm<GoodsReceivedNoteFormValues>({ resolver: zodResolver(goodsReceivedNoteSchema), defaultValues: { grnDate: new Date(), items: [{ itemId: "", description: "", orderedQuantity: 0, receivedQuantity:0 }], status: "مستلم جزئياً", notes: ""}});
   const { fields: goodsReceivedNoteItemsFields, append: appendGoodsReceivedNoteItem, remove: removeGoodsReceivedNoteItem } = useFieldArray({ control: goodsReceivedNoteForm.control, name: "items" });
 
   const stockRequisitionForm = useForm<StockRequisitionFormValues>({ resolver: zodResolver(stockRequisitionSchema), defaultValues: { requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""}});
@@ -225,7 +225,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   useEffect(() => { if (categoryToEdit) { categoryForm.reset(categoryToEdit); } else { categoryForm.reset({ name: "", description: "" }); }}, [categoryToEdit, categoryForm, showManageCategoryDialog]);
   useEffect(() => { if (warehouseToEdit) { warehouseForm.reset(warehouseToEdit); } else { warehouseForm.reset({ name: "", location: "" }); }}, [warehouseToEdit, warehouseForm, showManageWarehouseDialog]);
   useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
-  useEffect(() => { if (goodsReceivedNoteToEdit) goodsReceivedNoteForm.reset(goodsReceivedNoteToEdit); else goodsReceivedNoteForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""});}, [goodsReceivedNoteToEdit, goodsReceivedNoteForm, showManageGoodsReceivedNoteDialog]);
+  useEffect(() => { if (goodsReceivedNoteToEdit) goodsReceivedNoteForm.reset(goodsReceivedNoteToEdit); else goodsReceivedNoteForm.reset({ poId: '', supplierId: '', grnDate: new Date(), items: [{ itemId: "", description: "", orderedQuantity: 0, receivedQuantity:0 }], status: "مستلم جزئياً", notes: ""});}, [goodsReceivedNoteToEdit, goodsReceivedNoteForm, showManageGoodsReceivedNoteDialog]);
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset({...stockRequisitionToEdit, requestDate: new Date(stockRequisitionToEdit.requestDate), requiredByDate: new Date(stockRequisitionToEdit.requiredByDate) }); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
   useEffect(() => {
@@ -235,6 +235,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     setWarehousesData(initialData.warehouses);
     setStockRequisitions(initialData.stockRequisitions);
     setStockIssueVouchers(initialData.stockIssueVouchers);
+    setGoodsReceivedNotesData(initialData.goodsReceivedNotes);
   }, [initialData]);
 
   const handleProductSubmit = async (values: ProductFormValues) => {
@@ -374,8 +375,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
 
   const handleGoodsReceivedNoteSubmit = async (values: GoodsReceivedNoteFormValues) => {
     try {
-        // Here you would call a server action to save the GRN
-        // await addGoodsReceivedNote(values);
+        await addGoodsReceivedNote(values);
         toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الإضافة بنجاح." });
         setShowManageGoodsReceivedNoteDialog(false);
         setGoodsReceivedNoteToEdit(null);
@@ -692,6 +692,37 @@ export default function InventoryClientComponent({ initialData }: { initialData:
                     </Table>
                 </CardContent>
             </Card>
+        </TabsContent>
+        <TabsContent value="stockReceipt">
+          <Card>
+              <CardHeader>
+                  <div className="flex justify-between items-center">
+                      <CardTitle>أذونات استلام البضاعة (GRN)</CardTitle>
+                      {/* Button to create GRN is in Purchases tab based on PO */}
+                  </div>
+              </CardHeader>
+              <CardContent>
+                  <div className="overflow-x-auto">
+                      <Table>
+                          <TableHeader><TableRow><TableHead>الرقم</TableHead><TableHead>أمر الشراء</TableHead><TableHead>المورد</TableHead><TableHead>تاريخ الاستلام</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                          <TableBody>
+                              {goodsReceivedNotes.map(grn => (
+                                  <TableRow key={grn.id}>
+                                      <TableCell>{grn.id}</TableCell>
+                                      <TableCell>{grn.poId}</TableCell>
+                                      <TableCell>{suppliersData.find(s=> s.id === grn.supplierId)?.name}</TableCell>
+                                      <TableCell>{formatDateForDisplay(grn.grnDate)}</TableCell>
+                                      <TableCell><Badge variant={grn.status === 'مستلم بالكامل' ? 'default' : 'secondary'}>{grn.status}</Badge></TableCell>
+                                      <TableCell className="text-center">
+                                          <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                  </div>
+              </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="stockRequisition">
             <Card>

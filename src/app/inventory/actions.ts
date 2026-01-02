@@ -68,20 +68,20 @@ const stockIssueVoucherSchema = z.object({
 type StockIssueVoucherFormValues = z.infer<typeof stockIssueVoucherSchema>;
 
 const goodsReceivedNoteItemSchema = z.object({
-  productId: z.string().min(1, "المنتج مطلوب"),
-  quantityReceived: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
-  costPricePerUnit: z.coerce.number().min(0).optional(),
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().optional(),
+  orderedQuantity: z.coerce.number().min(0),
+  receivedQuantity: z.coerce.number().min(0, "الكمية المستلمة يجب أن تكون إيجابية أو صفر").max(Number.MAX_SAFE_INTEGER, "الكمية كبيرة جداً"),
   notes: z.string().optional(),
 });
 const goodsReceivedNoteSchema = z.object({
   id: z.string().optional(),
-  date: z.date({ required_error: "التاريخ مطلوب" }),
-  warehouseId: z.string().min(1, "المستودع المستلم مطلوب"),
-  source: z.string().min(1, "مصدر البضاعة مطلوب (مورد/أمر إنتاج)"),
-  reference: z.string().optional(),
-  items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  poId: z.string().min(1, "أمر الشراء مطلوب"),
+  supplierId: z.string().min(1, "المورد مطلوب"),
+  grnDate: z.date({ required_error: "تاريخ الاستلام مطلوب" }),
+  items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل مستلم"),
   notes: z.string().optional(),
-  status: z.enum(["مسودة", "مرحل للمخزون", "ملغي"]).default("مسودة"),
+  status: z.enum(["مستلم جزئياً", "مستلم بالكامل"]),
   receivedBy: z.string().optional(),
 });
 type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
@@ -243,17 +243,24 @@ export async function addGoodsReceivedNote(values: GoodsReceivedNoteFormValues) 
     const newId = `GRN${Date.now()}`;
     await db.transaction(async (tx) => {
         await tx.insert(goodsReceivedNotes).values({ ...values, id: newId });
-        if (values.items.length > 0) {
+        const receivedItems = values.items.filter(item => item.receivedQuantity > 0);
+        if (receivedItems.length > 0) {
             await tx.insert(goodsReceivedNoteItems).values(
-                values.items.map(item => ({
+                receivedItems.map(item => ({
                     grnId: newId,
                     ...item,
                 }))
             );
+            // Update inventory for received items
+            for (const item of receivedItems) {
+                await tx.update(products)
+                    .set({ quantity: sql`${products.quantity} + ${item.receivedQuantity}` })
+                    .where(eq(products.id, item.itemId));
+            }
         }
     });
-    // This is simplified. A real GRN would update stock levels on approval.
     revalidatePath('/inventory');
+    revalidatePath('/purchases');
 }
 
 
