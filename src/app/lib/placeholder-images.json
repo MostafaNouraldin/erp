@@ -1,0 +1,43 @@
+
+[
+  {
+    "id": "1",
+    "src": "https://picsum.photos/seed/1/200/200",
+    "keywords": ["person", "man", "businessman", "avatar"]
+  },
+  {
+    "id": "2",
+    "src": "https://picsum.photos/seed/2/200/200",
+    "keywords": ["person", "woman", "businesswoman", "avatar"]
+  },
+  {
+    "id": "3",
+    "src": "https://picsum.photos/seed/3/200/200",
+    "keywords": ["product", "device", "electronics"]
+  },
+  {
+    "id": "4",
+    "src": "https://picsum.photos/seed/4/200/200",
+    "keywords": ["office", "desk", "furniture", "wood"]
+  },
+    {
+    "id": "5",
+    "src": "https://picsum.photos/seed/5/200/200",
+    "keywords": ["chair", "furniture"]
+  },
+  {
+    "id": "6",
+    "src": "https://picsum.photos/seed/6/200/200",
+    "keywords": ["laptop", "computer", "device"]
+  },
+  {
+    "id": "7",
+    "src": "https://picsum.photos/seed/7/200/200",
+    "keywords": ["printer", "device", "office"]
+  },
+  {
+    "id": "8",
+    "src": "https://picsum.photos/seed/8/200/200",
+    "keywords": ["service", "consulting"]
+  }
+]

@@ -30,6 +30,7 @@ import AppLogo from '@/components/app-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
 import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, addWarehouse, updateWarehouse, deleteWarehouse, addStocktake, addStockIssueVoucher, addStockRequisition, addGoodsReceivedNote } from './actions';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 
 // Product Schema
@@ -167,6 +168,18 @@ const inventoryReportTypes = [
     { key: "locationReport", name: "تقرير مواقع التخزين", icon: Warehouse, description: "عرض الأصناف وكمياتها في كل موقع تخزين." }, 
     { key: "supplierItems", name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },
 ];
+
+const getPlaceholderImage = (keywords: string | null | undefined): string => {
+  if (!keywords) return 'https://picsum.photos/seed/default/200/200';
+  const searchKeywords = keywords.toLowerCase().split(' ');
+  for (const image of placeholderImages) {
+    if (searchKeywords.some(keyword => image.keywords.includes(keyword))) {
+      return image.src;
+    }
+  }
+  return 'https://picsum.photos/seed/fallback/200/200';
+};
+
 
 export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[], warehouses: any[], stockRequisitions: any[], stockIssueVouchers: any[], goodsReceivedNotes: any[] } }) {
   const [productsData, setProductsData] = useState<ProductFormValues[]>(initialData.products);
@@ -456,7 +469,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
                         <FormControl>
                             <Input type="file" accept="image/*" onChange={handleImageChange} className="bg-background"/>
                         </FormControl>
-                        {imagePreview && <Image src={imagePreview} alt="معاينة المنتج" width={100} height={100} className="mt-2 rounded-md border object-cover" data-ai-hint={productForm.getValues("dataAiHint") || "product"}/>}
+                        {imagePreview && <Image src={imagePreview} alt="معاينة المنتج" width={100} height={100} className="mt-2 rounded-md border object-cover" />}
                         <FormMessage />
                     </FormItem>
                 )}/>
@@ -782,3 +795,4 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     </div>
   );
 }
+

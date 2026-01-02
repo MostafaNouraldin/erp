@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
-import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle, Shield, Banknote, CalendarPlus, CalendarCheck2, UserCog, Award, Plane, UploadCloud, Printer, FileWarning, FileEdit, UserMinus, AlertOctagon, FolderOpen, BookText, UserX, ClipboardSignature } from "lucide-react";
+import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle, Shield, Banknote, CalendarPlus, CalendarCheck2, UserCog, Award, Plane, UploadCloud, Printer, FileWarning, FileEdit, UserX, ClipboardSignature, FolderOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -29,6 +29,7 @@ import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
 import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, LeaveRequestFormValues, WarningNoticeFormValues, AdministrativeDecisionFormValues, ResignationFormValues, DisciplinaryWarningFormValues, Department, JobTitle, LeaveType } from './actions';
 import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, updatePayrollStatus, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning, postPayrollToGL } from './actions';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 
 // Schemas (as they are not exported from actions.ts)
@@ -203,6 +204,18 @@ interface HRClientComponentProps {
     }
 }
 
+const getPlaceholderImage = (keywords: string | null | undefined): string => {
+  if (!keywords) return 'https://picsum.photos/seed/default/200/200';
+  const searchKeywords = keywords.toLowerCase().split(' ');
+  for (const image of placeholderImages) {
+    if (searchKeywords.some(keyword => image.keywords.includes(keyword))) {
+      return image.src;
+    }
+  }
+  return 'https://picsum.photos/seed/fallback/200/200';
+};
+
+
 // Main Component
 export default function HRClientComponent({ initialData }: HRClientComponentProps) {
   const [employees, setEmployeesData] = useState<EmployeeFormValues[]>(initialData.employees);
@@ -216,6 +229,9 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   const [departments, setDepartments] = useState(initialData.departments);
   const [jobTitles, setJobTitles] = useState(initialData.jobTitles);
   const [leaveTypes, setLeaveTypes] = useState(initialData.leaveTypes);
+
+  const [activeTab, setActiveTab] = useState("employeeManagement");
+  const [activeSubTab, setActiveSubTab] = useState("warningNotice");
 
   const [showAddEmployeeDialog, setShowAddEmployeeDialog] = useState(false);
   const [employeeToEdit, setEmployeeToEdit] = useState<EmployeeFormValues | null>(null);
@@ -740,7 +756,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
         </div>
       </div>
 
-      <Tabs defaultValue="employeeManagement" className="w-full" dir="rtl">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
         <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="employeeManagement" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <Users className="inline-block me-2 h-4 w-4" /> إدارة الموظفين
@@ -759,6 +775,96 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="employeeManagement">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle>قائمة الموظفين</CardTitle>
+                    <CardDescription>عرض وتعديل بيانات جميع الموظفين في النظام.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
+                        <div className="relative w-full sm:w-auto grow sm:grow-0">
+                            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="بحث باسم الموظف أو القسم..." className="pr-10 w-full sm:w-64 bg-background" />
+                        </div>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+                                    <Filter className="me-2 h-4 w-4" /> تصفية الحالة
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" dir="rtl">
+                                <DropdownMenuLabel>تصفية حسب حالة الموظف</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuCheckboxItem>نشط</DropdownMenuCheckboxItem>
+                                <DropdownMenuCheckboxItem>في إجازة</DropdownMenuCheckboxItem>
+                                <DropdownMenuCheckboxItem>منتهية خدمته</DropdownMenuCheckboxItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead></TableHead>
+                                    <TableHead>اسم الموظف</TableHead>
+                                    <TableHead>المسمى الوظيفي</TableHead>
+                                    <TableHead>القسم</TableHead>
+                                    <TableHead>البريد الإلكتروني</TableHead>
+                                    <TableHead>الحالة</TableHead>
+                                    <TableHead className="text-center">إجراءات</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {employees.map((emp) => (
+                                <TableRow key={emp.id}>
+                                    <TableCell>
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarImage src={emp.avatarUrl || getPlaceholderImage(emp.dataAiHint)} alt={emp.name} />
+                                            <AvatarFallback>{emp.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                    </TableCell>
+                                    <TableCell className="font-medium">{emp.name}</TableCell>
+                                    <TableCell>{emp.jobTitle}</TableCell>
+                                    <TableCell>{emp.department}</TableCell>
+                                    <TableCell>{emp.email}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={emp.status === "نشط" ? "default" : "outline"}>{emp.status}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض الملف الشخصي" onClick={() => handleViewEmployee(emp)}><Eye className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setEmployeeToEdit(emp); setShowAddEmployeeDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="إنهاء خدمة">
+                                                <UserMinus className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent dir="rtl">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>تأكيد إنهاء الخدمة</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    هل أنت متأكد من إنهاء خدمة الموظف "{emp.name}"؟ سيتم تغيير حالته إلى "منتهية خدمته".
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleTerminateEmployee(emp.id!)} className={buttonVariants({ variant: "destructive" })}>
+                                                    تأكيد إنهاء الخدمة
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                    </TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        
         <TabsContent value="payroll">
           <Card className="shadow-lg">
             <CardHeader>
@@ -805,12 +911,217 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
             </CardContent>
           </Card>
         </TabsContent>
-        {/* Other tabs remain the same */}
+        
+        <TabsContent value="attendance">
+            <Card>
+                <CardHeader>
+                    <CardTitle>سجل الحضور والانصراف</CardTitle>
+                    <CardDescription>تسجيل ومتابعة حضور وانصراف الموظفين اليومي.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
+                         <div className="flex items-center gap-2">
+                            <Search className="h-5 w-5 text-muted-foreground" />
+                            <Input placeholder="بحث باسم الموظف..." className="max-w-sm bg-background" />
+                        </div>
+                        <DatePickerWithPresets mode="range"/>
+                        <Button variant="outline" size="sm" onClick={() => { setAttendanceToEdit(null); attendanceForm.reset(); setShowEditAttendanceDialog(true); }}><PlusCircle className="me-2 h-4 w-4" /> تسجيل يدوي</Button>
+                    </div>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>التاريخ</TableHead>
+                                <TableHead>الموظف</TableHead>
+                                <TableHead>وقت الحضور</TableHead>
+                                <TableHead>وقت الانصراف</TableHead>
+                                <TableHead>إجمالي الساعات</TableHead>
+                                <TableHead>الحالة</TableHead>
+                                <TableHead className="text-center">إجراءات</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {attendanceData.map(a => (
+                                <TableRow key={a.id}>
+                                    <TableCell>{new Date(a.date).toLocaleDateString('ar-SA')}</TableCell>
+                                    <TableCell>{employees.find(e => e.id === a.employeeId)?.name}</TableCell>
+                                    <TableCell>{a.checkIn || '-'}</TableCell>
+                                    <TableCell>{a.checkOut || '-'}</TableCell>
+                                    <TableCell>{a.hours || '-'}</TableCell>
+                                    <TableCell><Badge variant={a.status === 'حاضر' ? 'default' : a.status === 'غائب' ? 'destructive' : 'secondary'}>{a.status}</Badge></TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="ghost" size="icon" onClick={() => {setAttendanceToEdit(a); setShowEditAttendanceDialog(true);}}><Edit className="h-4 w-4"/></Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="leaveRequests">
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                    <CardTitle>طلبات الإجازات</CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => { setLeaveRequestToEdit(null); leaveRequestForm.reset(); setShowCreateLeaveDialog(true); }}><PlusCircle className="me-2 h-4 w-4" /> طلب إجازة جديد</Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>الموظف</TableHead>
+                                <TableHead>نوع الإجازة</TableHead>
+                                <TableHead>من</TableHead>
+                                <TableHead>إلى</TableHead>
+                                <TableHead>عدد الأيام</TableHead>
+                                <TableHead>الحالة</TableHead>
+                                <TableHead className="text-center">إجراءات</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {leaveRequests.map(l => (
+                                <TableRow key={l.id}>
+                                    <TableCell>{employees.find(e => e.id === l.employeeId)?.name}</TableCell>
+                                    <TableCell>{leaveTypes.find(lt => lt.name === l.leaveType)?.name || l.leaveType}</TableCell>
+                                    <TableCell>{new Date(l.startDate).toLocaleDateString('ar-SA')}</TableCell>
+                                    <TableCell>{new Date(l.endDate).toLocaleDateString('ar-SA')}</TableCell>
+                                    <TableCell>{l.days}</TableCell>
+                                    <TableCell><Badge variant={l.status === 'موافق عليها' ? 'default' : l.status === 'مرفوضة' ? 'destructive' : 'outline'}>{l.status}</Badge></TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="ghost" size="icon" onClick={() => handleViewLeave(l)}><Eye className="h-4 w-4"/></Button>
+                                        {l.status === "مقدمة" && (
+                                            <>
+                                            <Button variant="ghost" size="icon" className="text-green-600" onClick={() => handleLeaveAction(l.id!, "موافق عليها")}><CheckCircle className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleLeaveAction(l.id!, "مرفوضة")}><XCircle className="h-4 w-4"/></Button>
+                                            </>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="forms">
+            <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full" dir="rtl">
+                 <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
+                    <TabsTrigger value="warningNotice" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileWarning className="inline-block me-2 h-4 w-4" /> لفت النظر</TabsTrigger>
+                    <TabsTrigger value="adminDecision" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileEdit className="inline-block me-2 h-4 w-4" /> القرارات الإدارية</TabsTrigger>
+                    <TabsTrigger value="resignation" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><UserX className="inline-block me-2 h-4 w-4" /> الاستقالات</TabsTrigger>
+                    <TabsTrigger value="disciplinaryWarning" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><ClipboardSignature className="inline-block me-2 h-4 w-4" /> الإنذارات التأديبية</TabsTrigger>
+                </TabsList>
+                 <TabsContent value="warningNotice">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex justify-between items-center"><CardTitle>نماذج لفت النظر</CardTitle>
+                            <Button variant="outline" size="sm" onClick={() => { setWarningNoticeToEdit(null); warningNoticeForm.reset(); setShowManageWarningNoticeDialog(true); }}><PlusCircle className="me-2 h-4 w-4" /> إنشاء نموذج جديد</Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <Table><TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>السبب</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {warningNoticesData.map(wn => (
+                                        <TableRow key={wn.id}>
+                                            <TableCell>{new Date(wn.date).toLocaleDateString('ar-SA')}</TableCell>
+                                            <TableCell>{employees.find(e => e.id === wn.employeeId)?.name}</TableCell>
+                                            <TableCell>{wn.reason}</TableCell>
+                                            <TableCell className="text-center">
+                                                <Button variant="ghost" size="icon" onClick={() => handlePrintWarningNotice(wn)}><Printer className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => { setWarningNoticeToEdit(wn); setShowManageWarningNoticeDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="adminDecision">
+                     <Card>
+                        <CardHeader>
+                           <div className="flex justify-between items-center"><CardTitle>القرارات الإدارية</CardTitle>
+                            <Button variant="outline" size="sm" onClick={() => { setAdminDecisionToEdit(null); adminDecisionForm.reset(); setShowManageAdminDecisionDialog(true);}}><PlusCircle className="me-2 h-4 w-4" /> إنشاء قرار جديد</Button>
+                           </div>
+                        </CardHeader>
+                        <CardContent>
+                             <Table><TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>نوع القرار</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {administrativeDecisionsData.map(ad => (
+                                        <TableRow key={ad.id}>
+                                            <TableCell>{new Date(ad.decisionDate).toLocaleDateString('ar-SA')}</TableCell>
+                                            <TableCell>{employees.find(e => e.id === ad.employeeId)?.name}</TableCell>
+                                            <TableCell>{ad.decisionType}</TableCell>
+                                            <TableCell className="text-center">
+                                                <Button variant="ghost" size="icon" onClick={() => handlePrintAdministrativeDecision(ad)}><Printer className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => {setAdminDecisionToEdit(ad); setShowManageAdminDecisionDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                     </Card>
+                </TabsContent>
+                <TabsContent value="resignation">
+                     <Card>
+                        <CardHeader>
+                           <div className="flex justify-between items-center"><CardTitle>طلبات الاستقالة</CardTitle>
+                            <Button variant="outline" size="sm" onClick={() => { setResignationToEdit(null); resignationForm.reset(); setShowManageResignationDialog(true);}}><PlusCircle className="me-2 h-4 w-4" /> تسجيل استقالة</Button>
+                           </div>
+                        </CardHeader>
+                         <CardContent>
+                             <Table><TableHeader><TableRow><TableHead>تاريخ التقديم</TableHead><TableHead>الموظف</TableHead><TableHead>آخر يوم عمل</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {resignationsData.map(res => (
+                                        <TableRow key={res.id}>
+                                            <TableCell>{new Date(res.submissionDate).toLocaleDateString('ar-SA')}</TableCell>
+                                            <TableCell>{employees.find(e => e.id === res.employeeId)?.name}</TableCell>
+                                            <TableCell>{new Date(res.lastWorkingDate).toLocaleDateString('ar-SA')}</TableCell>
+                                            <TableCell><Badge variant={res.status === 'مقبولة' ? 'default' : 'outline'}>{res.status}</Badge></TableCell>
+                                            <TableCell className="text-center">
+                                                <Button variant="ghost" size="icon" onClick={() => handlePrintResignation(res)}><Printer className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => { setResignationToEdit(res); setShowManageResignationDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                     </Card>
+                </TabsContent>
+                <TabsContent value="disciplinaryWarning">
+                     <Card>
+                         <CardHeader>
+                           <div className="flex justify-between items-center"><CardTitle>الإنذارات التأديبية</CardTitle>
+                            <Button variant="outline" size="sm" onClick={() => { setDisciplinaryToEdit(null); disciplinaryWarningForm.reset(); setShowManageDisciplinaryDialog(true);}}><PlusCircle className="me-2 h-4 w-4" /> إنشاء إنذار جديد</Button>
+                           </div>
+                        </CardHeader>
+                         <CardContent>
+                             <Table><TableHeader><TableRow><TableHead>تاريخ الإنذار</TableHead><TableHead>الموظف</TableHead><TableHead>نوع الإنذار</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {disciplinaryWarningsData.map(dw => (
+                                        <TableRow key={dw.id}>
+                                            <TableCell>{new Date(dw.warningDate).toLocaleDateString('ar-SA')}</TableCell>
+                                            <TableCell>{employees.find(e => e.id === dw.employeeId)?.name}</TableCell>
+                                            <TableCell>{dw.warningType}</TableCell>
+                                            <TableCell className="text-center">
+                                                <Button variant="ghost" size="icon" onClick={() => handlePrintDisciplinaryWarning(dw)}><Printer className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => {setDisciplinaryToEdit(dw); setShowManageDisciplinaryDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                     </Card>
+                </TabsContent>
+            </Tabs>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-
-
-    

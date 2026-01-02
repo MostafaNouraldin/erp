@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -14,10 +15,11 @@ import { Label } from "@/components/ui/label";
 import { ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud, UserCheck, CreditCardIcon } from "lucide-react";
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast"; 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; 
 import { useCurrency } from '@/hooks/use-currency';
 import { addSalesInvoice } from '@/app/sales/actions';
 import { settlePosTransactions } from './actions';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 
 const CASH_CUSTOMER_ID = "__cash_customer__";
@@ -43,6 +45,7 @@ interface CartItem {
   price: number;
   quantity: number;
   image: string | null | undefined;
+  dataAiHint?: string | null;
 }
 
 interface RecentTransaction {
@@ -61,6 +64,18 @@ interface POSClientComponentProps {
     customers: Customer[];
   };
 }
+
+const getPlaceholderImage = (keywords: string | null | undefined): string => {
+  if (!keywords) return 'https://picsum.photos/seed/default/200/200';
+  const searchKeywords = keywords.toLowerCase().split(' ');
+  for (const image of placeholderImages) {
+    if (searchKeywords.some(keyword => image.keywords.includes(keyword))) {
+      return image.src;
+    }
+  }
+  return 'https://picsum.photos/seed/fallback/200/200';
+};
+
 
 export default function POSClientComponent({ initialData }: POSClientComponentProps) {
   const [products, setProducts] = useState(initialData.products);
@@ -284,11 +299,11 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                 {filteredProducts.map(product => (
                   <Card 
                     key={product.id} 
-                    className="cursor-pointer hover:shadow-xl transition-shadow duration-200 flex flex-col items-center text-center overflow-hidden"
+                    className="cursor-pointer hover:shadow-xl transition-shadow flex flex-col items-center text-center overflow-hidden"
                     onClick={() => addToCart(product)}
                   >
                     <div className="relative w-full h-32 sm:h-36 md:h-40">
-                        <Image src={product.image || 'https://picsum.photos/200/200'} alt={product.name} layout="fill" objectFit="cover" data-ai-hint={product.dataAiHint || 'product'} />
+                        <Image src={product.image || getPlaceholderImage(product.dataAiHint)} alt={product.name} layout="fill" objectFit="cover" />
                     </div>
                     <CardHeader className="p-2 w-full">
                       <CardTitle className="text-sm font-semibold truncate">{product.name}</CardTitle>
@@ -325,7 +340,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                 ) : (
                   cart.map(item => (
                     <div key={item.id} className="flex items-center gap-3 p-2 border rounded-md bg-muted/30">
-                      <Image src={item.image || 'https://picsum.photos/200/200'} alt={item.name} width={48} height={48} className="rounded-md object-cover" data-ai-hint={products.find(p=>p.id===item.id)?.dataAiHint || 'product'}/>
+                      <Image src={item.image || getPlaceholderImage(item.dataAiHint)} alt={item.name} width={48} height={48} className="rounded-md object-cover"/>
                       <div className="flex-grow">
                         <p className="font-semibold truncate text-sm">{item.name}</p>
                         <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: formatCurrency(item.price) }}></p>
@@ -478,3 +493,4 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
     </div>
   );
 }
+
