@@ -31,6 +31,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
 import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, addWarehouse, updateWarehouse, deleteWarehouse, addStocktake, addStockIssueVoucher, addStockRequisition, addGoodsReceivedNote } from './actions';
 import placeholderImages from '@/app/lib/placeholder-images.json';
+import type { InventoryMovementLog } from './actions';
 
 
 // Product Schema
@@ -156,7 +157,6 @@ const stockRequisitionSchema = z.object({
 type StockRequisitionFormValues = z.infer<typeof stockRequisitionSchema>;
 
 // Mock data (some are kept for selection inputs)
-const mockUnits = ["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة"];
 const mockUsers = [{ id: "USR001", name: "فريق الجرد أ" }, { id: "USR002", name: "أحمد المسؤول" }, { id: "USR003", name: "مدير المخازن" }];
 const mockDepartments = [{id: "DEP001", name: "قسم المبيعات"}, {id: "DEP002", name: "قسم الصيانة"}];
 
@@ -181,11 +181,12 @@ const getPlaceholderImage = (keywords: string | null | undefined): string => {
 };
 
 
-export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[], warehouses: any[], stockRequisitions: any[], stockIssueVouchers: any[], goodsReceivedNotes: any[] } }) {
+export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[], warehouses: any[], stockRequisitions: any[], stockIssueVouchers: any[], goodsReceivedNotes: any[], inventoryMovements: InventoryMovementLog[] } }) {
   const [productsData, setProductsData] = useState<ProductFormValues[]>(initialData.products);
   const [categoriesData, setCategoriesData] = useState<CategoryFormValues[]>(initialData.categories);
   const [suppliersData, setSuppliersData] = useState<any[]>(initialData.suppliers);
   const [warehousesData, setWarehousesData] = useState<WarehouseFormValues[]>(initialData.warehouses);
+  const [inventoryMovements, setInventoryMovements] = useState<InventoryMovementLog[]>(initialData.inventoryMovements);
   
   const [showManageProductDialog, setShowManageProductDialog] = useState(false);
   const [productToEdit, setProductToEdit] = useState<ProductFormValues | null>(null);
@@ -249,6 +250,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     setStockRequisitions(initialData.stockRequisitions);
     setStockIssueVouchers(initialData.stockIssueVouchers);
     setGoodsReceivedNotesData(initialData.goodsReceivedNotes);
+    setInventoryMovements(initialData.inventoryMovements);
   }, [initialData]);
 
   const handleProductSubmit = async (values: ProductFormValues) => {
@@ -448,7 +450,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
               <FormField control={productForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>الوصف</FormLabel><FormControl><Textarea {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={productForm.control} name="category" render={({ field }) => (<FormItem><FormLabel>الفئة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفئة" /></SelectTrigger></FormControl><SelectContent>{categoriesData.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                <FormField control={productForm.control} name="unit" render={({ field }) => (<FormItem><FormLabel>الوحدة الأساسية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الوحدة" /></SelectTrigger></FormControl><SelectContent>{mockUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={productForm.control} name="unit" render={({ field }) => (<FormItem><FormLabel>الوحدة الأساسية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الوحدة" /></SelectTrigger></FormControl><SelectContent>{["قطعة", "صندوق", "كرتون", "علبة", "كيلوجرام", "متر", "لتر", "حبة"].map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={productForm.control} name="costPrice" render={({ field }) => (<FormItem><FormLabel>سعر التكلفة</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
@@ -650,145 +652,50 @@ export default function InventoryClientComponent({ initialData }: { initialData:
             </Card>
         </TabsContent>
         
-        <TabsContent value="stockIssue">
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-center">
-                    <CardTitle>أذونات صرف المخزون</CardTitle>
-                    <Dialog open={showManageStockIssueDialog} onOpenChange={(isOpen) => {setShowManageStockIssueDialog(isOpen); if(!isOpen) setStockIssueToEdit(null);}}>
-                        <DialogTrigger asChild><Button variant="outline" onClick={() => {setStockIssueToEdit(null); stockIssueVoucherForm.reset(); setShowManageStockIssueDialog(true);}}><PlusCircle className="me-2 h-4 w-4"/> إنشاء إذن صرف</Button></DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl" dir="rtl">
-                             <DialogHeader><DialogTitle>{stockIssueToEdit ? 'تعديل إذن صرف' : 'إنشاء إذن صرف جديد'}</DialogTitle></DialogHeader>
-                             <Form {...stockIssueVoucherForm}>
-                                <form onSubmit={stockIssueVoucherForm.handleSubmit(handleStockIssueSubmit)} className="space-y-4 py-4">
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField control={stockIssueVoucherForm.control} name="warehouseId" render={({ field }) => ( <FormItem><FormLabel>المستودع المصدر</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر المستودع"/></SelectTrigger></FormControl><SelectContent>{warehousesData.map(w=><SelectItem key={w.id} value={w.id!}>{w.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
-                                        <FormField control={stockIssueVoucherForm.control} name="date" render={({ field }) => ( <FormItem className="flex flex-col"><FormLabel>تاريخ الصرف</FormLabel><DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange}/><FormMessage/></FormItem> )}/>
-                                    </div>
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField control={stockIssueVoucherForm.control} name="recipient" render={({ field }) => ( <FormItem><FormLabel>الجهة المستلمة</FormLabel><FormControl><Input placeholder="اسم القسم أو الموظف" {...field}/></FormControl><FormMessage/></FormItem> )}/>
-                                        <FormField control={stockIssueVoucherForm.control} name="reason" render={({ field }) => ( <FormItem><FormLabel>سبب الصرف</FormLabel><FormControl><Input placeholder="مثال: طلب داخلي، أمر عمل" {...field}/></FormControl><FormMessage/></FormItem> )}/>
-                                    </div>
-                                    <ScrollArea className="h-[200px] border rounded-md p-2">
-                                        {stockIssueItemsFields.map((item, index) => (
-                                        <div key={item.id} className="grid grid-cols-12 gap-2 items-end p-1 border-b mb-2">
-                                            <FormField control={stockIssueVoucherForm.control} name={`items.${index}.productId`} render={({ field }) => ( <FormItem className="col-span-6"><FormLabel className="text-xs">الصنف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر الصنف"/></SelectTrigger></FormControl><SelectContent>{productsData.map(p=><SelectItem key={p.id} value={p.id!}>{p.name} (المتاح: {p.quantity})</SelectItem>)}</SelectContent></Select><FormMessage className="text-xs"/></FormItem> )}/>
-                                            <FormField control={stockIssueVoucherForm.control} name={`items.${index}.quantityIssued`} render={({ field }) => ( <FormItem className="col-span-4"><FormLabel className="text-xs">الكمية</FormLabel><FormControl><Input type="number" {...field} className="h-9 text-xs"/></FormControl><FormMessage className="text-xs"/></FormItem> )}/>
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeStockIssueItem(index)} className="col-span-2 h-9 w-9 text-destructive"><MinusCircle className="h-4 w-4"/></Button>
-                                        </div> ))}
-                                    </ScrollArea>
-                                    <Button type="button" variant="outline" size="sm" onClick={() => appendStockIssueItem({productId: '', quantityIssued: 1, notes: ''})}><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
-                                    <DialogFooter><Button type="submit">{stockIssueToEdit ? 'حفظ التعديلات' : 'حفظ الإذن'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
-                                </form>
-                             </Form>
-                        </DialogContent>
-                    </Dialog>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader><TableRow><TableHead>الرقم</TableHead><TableHead>التاريخ</TableHead><TableHead>المستودع</TableHead><TableHead>المستلم</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                        <TableBody>
-                            {stockIssueVouchers.map(v => (
-                            <TableRow key={v.id}>
-                                <TableCell>{v.id}</TableCell>
-                                <TableCell>{formatDateForDisplay(v.date)}</TableCell>
-                                <TableCell>{warehousesData.find(w=>w.id===v.warehouseId)?.name}</TableCell>
-                                <TableCell>{v.recipient}</TableCell>
-                                <TableCell><Badge variant={v.status === 'معتمد' ? 'default' : 'outline'}>{v.status}</Badge></TableCell>
-                                <TableCell className="text-center">
-                                    <Button variant="ghost" size="icon"><Eye className="h-4 w-4"/></Button>
-                                     {v.status === "مسودة" && (<Button variant="ghost" size="icon" className="text-green-600"><CheckCircle className="h-4 w-4"/></Button>)}
-                                </TableCell>
-                            </TableRow>))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </TabsContent>
-        <TabsContent value="stockReceipt">
-          <Card>
-              <CardHeader>
-                  <div className="flex justify-between items-center">
-                      <CardTitle>أذونات استلام البضاعة (GRN)</CardTitle>
-                      {/* Button to create GRN is in Purchases tab based on PO */}
-                  </div>
-              </CardHeader>
-              <CardContent>
-                  <div className="overflow-x-auto">
-                      <Table>
-                          <TableHeader><TableRow><TableHead>الرقم</TableHead><TableHead>أمر الشراء</TableHead><TableHead>المورد</TableHead><TableHead>تاريخ الاستلام</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                          <TableBody>
-                              {goodsReceivedNotes.map(grn => (
-                                  <TableRow key={grn.id}>
-                                      <TableCell>{grn.id}</TableCell>
-                                      <TableCell>{grn.poId}</TableCell>
-                                      <TableCell>{suppliersData.find(s=> s.id === grn.supplierId)?.name}</TableCell>
-                                      <TableCell>{formatDateForDisplay(grn.grnDate)}</TableCell>
-                                      <TableCell><Badge variant={grn.status === 'مستلم بالكامل' ? 'default' : 'secondary'}>{grn.status}</Badge></TableCell>
-                                      <TableCell className="text-center">
-                                          <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
-                                      </TableCell>
-                                  </TableRow>
-                              ))}
-                          </TableBody>
-                      </Table>
-                  </div>
-              </CardContent>
+        <TabsContent value="stockMovement">
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle>سجل حركة المخزون</CardTitle>
+              <CardDescription>عرض جميع الحركات التي تمت على الأصناف (دخول وخروج).</CardDescription>
+            </CardHeader>
+            <CardContent>
+               <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
+                <div className="relative w-full sm:w-auto grow sm:grow-0">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="بحث باسم المنتج أو المصدر..." className="pr-10 w-full sm:w-64 bg-background" />
+                </div>
+                 <DatePickerWithPresets mode="range"/>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>التاريخ</TableHead>
+                      <TableHead>المنتج</TableHead>
+                      <TableHead>نوع الحركة</TableHead>
+                      <TableHead>الكمية</TableHead>
+                      <TableHead>المصدر</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {inventoryMovements.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{formatDateForDisplay(log.date)}</TableCell>
+                        <TableCell>{productsData.find(p => p.id === log.productId)?.name || log.productId}</TableCell>
+                        <TableCell>
+                          <Badge variant={log.type === "IN" ? "default" : "destructive"} className={log.type === "IN" ? "bg-green-600 hover:bg-green-700" : ""}>{log.type === "IN" ? "إضافة" : "صرف"}</Badge>
+                        </TableCell>
+                        <TableCell className="font-semibold">{log.quantity}</TableCell>
+                        <TableCell>{log.sourceType}: {log.sourceId}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="stockRequisition">
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-center">
-                    <CardTitle>طلبات صرف المواد</CardTitle>
-                    <Dialog open={showManageStockRequisitionDialog} onOpenChange={(isOpen) => {setShowManageStockRequisitionDialog(isOpen); if(!isOpen) setStockRequisitionToEdit(null);}}>
-                        <DialogTrigger asChild><Button variant="outline" onClick={() => {setStockRequisitionToEdit(null); stockRequisitionForm.reset(); setShowManageStockRequisitionDialog(true);}}><PlusCircle className="me-2 h-4 w-4"/> إنشاء طلب صرف</Button></DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl" dir="rtl">
-                            <DialogHeader><DialogTitle>{stockRequisitionToEdit ? 'تعديل طلب صرف' : 'إنشاء طلب صرف جديد'}</DialogTitle></DialogHeader>
-                            <Form {...stockRequisitionForm}>
-                                <form onSubmit={stockRequisitionForm.handleSubmit(handleStockRequisitionSubmit)} className="space-y-4 py-4">
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField control={stockRequisitionForm.control} name="requestingDepartmentOrPerson" render={({ field }) => ( <FormItem><FormLabel>الجهة الطالبة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر الجهة"/></SelectTrigger></FormControl><SelectContent>{mockDepartments.map(d=><SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
-                                        <FormField control={stockRequisitionForm.control} name="requestDate" render={({ field }) => ( <FormItem className="flex flex-col"><FormLabel>تاريخ الطلب</FormLabel><DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange}/><FormMessage/></FormItem> )}/>
-                                    </div>
-                                    <ScrollArea className="h-[200px] border rounded-md p-2">
-                                        {stockRequisitionItemsFields.map((item, index) => (
-                                        <div key={item.id} className="grid grid-cols-12 gap-2 items-end p-1 border-b mb-2">
-                                            <FormField control={stockRequisitionForm.control} name={`items.${index}.productId`} render={({ field }) => ( <FormItem className="col-span-6"><FormLabel className="text-xs">الصنف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر الصنف"/></SelectTrigger></FormControl><SelectContent>{productsData.map(p=><SelectItem key={p.id} value={p.id!}>{p.name}</SelectItem>)}</SelectContent></Select><FormMessage className="text-xs"/></FormItem> )}/>
-                                            <FormField control={stockRequisitionForm.control} name={`items.${index}.quantityRequested`} render={({ field }) => ( <FormItem className="col-span-4"><FormLabel className="text-xs">الكمية المطلوبة</FormLabel><FormControl><Input type="number" {...field} className="h-9 text-xs"/></FormControl><FormMessage className="text-xs"/></FormItem> )}/>
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeStockRequisitionItem(index)} className="col-span-2 h-9 w-9 text-destructive"><MinusCircle className="h-4 w-4"/></Button>
-                                        </div> ))}
-                                    </ScrollArea>
-                                    <Button type="button" variant="outline" size="sm" onClick={() => appendStockRequisitionItem({productId: '', quantityRequested: 1, justification: ''})}><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
-                                    <DialogFooter><Button type="submit">{stockRequisitionToEdit ? 'حفظ التعديلات' : 'حفظ الطلب'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader><TableRow><TableHead>الرقم</TableHead><TableHead>التاريخ</TableHead><TableHead>الجهة الطالبة</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
-                        <TableBody>
-                            {stockRequisitions.map(req => (
-                            <TableRow key={req.id}>
-                                <TableCell>{req.id}</TableCell>
-                                <TableCell>{formatDateForDisplay(req.requestDate)}</TableCell>
-                                <TableCell>{req.requestingDepartmentOrPerson}</TableCell>
-                                <TableCell><Badge variant={req.status === 'موافق عليه' ? 'default' : 'outline'}>{req.status}</Badge></TableCell>
-                                <TableCell className="text-center">
-                                    <Button variant="ghost" size="icon"><Eye className="h-4 w-4"/></Button>
-                                    {req.status === "جديد" && (<Button variant="ghost" size="icon" className="text-green-600"><CheckCircle className="h-4 w-4"/></Button>)}
-                                    <Button variant="ghost" size="icon" onClick={() => {setStockRequisitionToEdit(req); setShowManageStockRequisitionDialog(true);}}><Edit className="h-4 w-4"/></Button>
-                                </TableCell>
-                            </TableRow>))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </TabsContent>
+
         {/* Other Tabs omitted for brevity */}
         
       </Tabs>

@@ -3,7 +3,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, stocktakes, goodsReceivedNotes, goodsReceivedNoteItems, sql } from '@/db/schema';
+import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, stocktakes, goodsReceivedNotes, goodsReceivedNoteItems, sql, inventoryMovementLog } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from "zod";
@@ -104,6 +104,7 @@ const stockRequisitionSchema = z.object({
   approvalDate: z.date().optional(),
 });
 type StockRequisitionFormValues = z.infer<typeof stockRequisitionSchema>;
+export type InventoryMovementLog = typeof inventoryMovementLog.$inferSelect;
 
 
 async function getDb(tenantId: string = 'T001') {
@@ -225,12 +226,18 @@ export async function addStockIssueVoucher(values: StockIssueVoucherFormValues) 
         }
         
         // If status is 'approved' on creation, update stock immediately. 
-        // This is a simplified flow. A better flow would be to have a separate approval action.
         if (values.status === 'معتمد') {
              for (const item of values.items) {
                 await tx.update(products)
                     .set({ quantity: sql`${products.quantity} - ${item.quantityIssued}` })
                     .where(eq(products.id, item.productId));
+                 await tx.insert(inventoryMovementLog).values({
+                    productId: item.productId,
+                    quantity: item.quantityIssued,
+                    type: 'OUT',
+                    sourceType: 'إذن صرف',
+                    sourceId: newId,
+                });
             }
         }
     });
@@ -251,11 +258,18 @@ export async function addGoodsReceivedNote(values: GoodsReceivedNoteFormValues) 
                     ...item,
                 }))
             );
-            // Update inventory for received items
+            // Update inventory
             for (const item of receivedItems) {
                 await tx.update(products)
                     .set({ quantity: sql`${products.quantity} + ${item.receivedQuantity}` })
                     .where(eq(products.id, item.itemId));
+                 await tx.insert(inventoryMovementLog).values({
+                    productId: item.itemId,
+                    quantity: item.receivedQuantity,
+                    type: 'IN',
+                    sourceType: 'استلام بضاعة',
+                    sourceId: newId,
+                });
             }
         }
     });
@@ -280,3 +294,4 @@ export async function addStockRequisition(values: StockRequisitionFormValues) {
     });
     revalidatePath('/inventory');
 }
+

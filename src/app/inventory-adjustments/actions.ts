@@ -1,8 +1,9 @@
 
+
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { inventoryAdjustments, products } from '@/db/schema';
+import { inventoryAdjustments, products, inventoryMovementLog } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -68,11 +69,25 @@ export async function approveAdjustment(id: string) {
     let newQuantity;
     if (adjustment.type === 'زيادة') {
       newQuantity = product.quantity + adjustment.quantity;
+       await tx.insert(inventoryMovementLog).values({
+        productId: adjustment.productId,
+        quantity: adjustment.quantity,
+        type: 'IN',
+        sourceType: 'تسوية جرد',
+        sourceId: id,
+      });
     } else {
       newQuantity = product.quantity - adjustment.quantity;
       if (newQuantity < 0) {
         throw new Error("لا يمكن أن تكون كمية المنتج سالبة بعد التسوية.");
       }
+       await tx.insert(inventoryMovementLog).values({
+        productId: adjustment.productId,
+        quantity: adjustment.quantity,
+        type: 'OUT',
+        sourceType: 'تسوية جرد',
+        sourceId: id,
+      });
     }
 
     await tx.update(products).set({ quantity: newQuantity }).where(eq(products.id, adjustment.productId));

@@ -2,10 +2,10 @@
 
 // This is now a true Server Component that fetches data and passes it to the client.
 import { connectToTenantDb } from '@/db';
-import { products, categories, suppliers, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, goodsReceivedNotes, goodsReceivedNoteItems } from '@/db/schema';
+import { products, categories, suppliers, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, goodsReceivedNotes, goodsReceivedNoteItems, inventoryMovementLog } from '@/db/schema';
 import React from 'react';
 import InventoryClientComponent from './InventoryClientComponent';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 
 
 // This is now a true Server Component that fetches data and passes it to the client component.
@@ -19,6 +19,7 @@ export default async function InventoryPage() {
         const stockRequisitionsResult = await db.select().from(stockRequisitions);
         const stockIssueVouchersResult = await db.select().from(stockIssueVouchers);
         const goodsReceivedNotesResult = await db.select().from(goodsReceivedNotes);
+        const inventoryMovementsResult = await db.select().from(inventoryMovementLog).orderBy(desc(inventoryMovementLog.date)).limit(100);
 
         const requisitionsWithItems = await Promise.all(
             stockRequisitionsResult.map(async (req) => {
@@ -53,6 +54,7 @@ export default async function InventoryPage() {
             stockRequisitions: requisitionsWithItems,
             stockIssueVouchers: issueVouchersWithItems,
             goodsReceivedNotes: goodsReceivedNotesWithItems,
+            inventoryMovements: inventoryMovementsResult.map(log => ({...log, date: new Date(log.date)})),
         };
 
         return <InventoryClientComponent initialData={initialData} />;
