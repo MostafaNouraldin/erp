@@ -74,6 +74,15 @@ export const companySettings = pgTable('company_settings', {
     settings: jsonb('settings').notNull().default('{}'), // Store all settings as a single JSON object
 });
 
+export const notifications = pgTable('notifications', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 256 }).notNull().references(() => mainUsers.id, { onDelete: 'cascade' }),
+  message: text('message').notNull(),
+  link: text('link'),
+  isRead: boolean('is_read').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 
 // --- Core Tenant-Specific Tables ---
 

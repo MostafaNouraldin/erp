@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Metadata } from "next";
@@ -18,12 +19,13 @@ import { LanguageToggle } from "@/components/language-toggle";
 import AppLogo from "@/components/app-logo";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Bell } from "lucide-react";
+import { Search } from "lucide-react";
 import { AuthProvider, AuthContext, useAuth } from "@/hooks/auth-context";
 import { useContext } from 'react';
 import LoginPage from './login/page';
 import { usePathname } from "next/navigation";
 import { allNavItems } from "@/lib/nav-links";
+import NotificationsPopover from "@/components/notifications-popover";
 
 
 const cairo = Cairo({
@@ -183,9 +185,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                 <Button variant="ghost" size="icon" aria-label="Search">
                                     <Search className="h-5 w-5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" aria-label="Notifications">
-                                    <Bell className="h-5 w-5" />
-                                </Button>
+                                <NotificationsPopover />
                                 <LanguageToggle />
                                 <ModeToggle />
                                 {auth.isAuthenticated && auth.user && (
