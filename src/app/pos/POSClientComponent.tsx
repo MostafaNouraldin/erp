@@ -3,6 +3,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,14 +15,17 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud, UserCheck, CreditCardIcon } from "lucide-react";
+import { ShoppingCart, Search, PlusCircle, MinusCircle, Trash2, Printer, UserPlus, Percent, ScanLine, History, X, CreditCard, Landmark, CircleDollarSign, UploadCloud, UserCheck, CreditCardIcon, PlayCircle, LogOut } from "lucide-react";
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; 
 import { useCurrency } from '@/hooks/use-currency';
+import { useAuth } from '@/hooks/auth-context';
 import { addSalesInvoice } from '@/app/sales/actions';
-import { settlePosTransactions } from './actions';
+import { startPosSession, closePosSession, getActiveSession } from './actions';
+import type { PosSessionStartValues, PosCloseSessionValues } from './actions';
 import placeholderImages from '@/app/lib/placeholder-images.json';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 
 const CASH_CUSTOMER_ID = "__cash_customer__";
@@ -57,11 +63,21 @@ interface RecentTransaction {
   customerName?: string;
 }
 
+interface ActiveSession {
+    id: string;
+    userId: string;
+    openingTime: string | Date;
+    openingBalance: number;
+    status: "open" | "closed";
+    user: { name: string };
+}
+
 interface POSClientComponentProps {
   initialData: {
     products: Product[];
     categories: string[];
     customers: Customer[];
+    activeSession: ActiveSession | null;
   };
 }
 
@@ -76,11 +92,20 @@ const getPlaceholderImage = (keywords: string | null | undefined): string => {
   return 'https://picsum.photos/seed/fallback/200/200';
 };
 
+const sessionStartSchema = z.object({
+  openingBalance: z.coerce.number().min(0, "الرصيد الافتتاحي لا يمكن أن يكون سالبًا"),
+});
+
+const sessionCloseSchema = z.object({
+  closingBalance: z.coerce.number().min(0, "المبلغ الفعلي لا يمكن أن يكون سالبًا"),
+});
+
 
 export default function POSClientComponent({ initialData }: POSClientComponentProps) {
   const [products, setProducts] = useState(initialData.products);
   const [categories, setCategories] = useState(initialData.categories);
   const [customers, setCustomers] = useState(initialData.customers);
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(initialData.activeSession);
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,18 +117,56 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
   const { toast } = useToast();
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
   const { formatCurrency } = useCurrency();
+  const { user } = useAuth();
 
+  const startSessionForm = useForm<z.infer<typeof sessionStartSchema>>({
+    resolver: zodResolver(sessionStartSchema),
+    defaultValues: { openingBalance: 0 }
+  });
+
+  const closeSessionForm = useForm<z.infer<typeof sessionCloseSchema>>({
+    resolver: zodResolver(sessionCloseSchema),
+    defaultValues: { closingBalance: 0 }
+  });
 
   useEffect(() => {
     setProducts(initialData.products);
     setCategories(initialData.categories);
     setCustomers(initialData.customers);
+    setActiveSession(initialData.activeSession);
   }, [initialData]);
   
   useEffect(() => {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     setTotalAmount(subtotal - discount);
   }, [cart, discount]);
+
+  const handleStartSession = async (values: z.infer<typeof sessionStartSchema>) => {
+    if (!user) {
+        toast({ title: "خطأ", description: "يجب تسجيل الدخول لبدء جلسة.", variant: "destructive" });
+        return;
+    }
+    try {
+        const newSession = await startPosSession({ userId: user.id, openingBalance: values.openingBalance });
+        setActiveSession(newSession as ActiveSession);
+        toast({ title: "تم بدء الجلسة", description: `مرحباً ${user.name}! تم بدء الجلسة برصيد افتتاحي ${formatCurrency(values.openingBalance)}.` });
+    } catch(e: any) {
+        toast({ title: "خطأ في بدء الجلسة", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleCloseSession = async (values: z.infer<typeof sessionCloseSchema>) => {
+    if (!activeSession) return;
+    try {
+        await closePosSession(activeSession.id, values);
+        setActiveSession(null);
+        clearCart();
+        toast({ title: "تم إغلاق الجلسة", description: "تم إغلاق الجلسة وترحيل القيود بنجاح." });
+    } catch (e: any) {
+        toast({ title: "خطأ في إغلاق الجلسة", description: e.message, variant: "destructive" });
+    }
+  };
+
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {
@@ -207,56 +270,88 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
     }
   };
 
-  const handlePostToGL = async () => {
-    // Aggregate sales from recent transactions by payment method
-    const settlementData = recentTransactions.reduce((acc, trx) => {
-        if (trx.paymentMethod === 'نقدي') acc.cashSales += trx.total;
-        else if (trx.paymentMethod === 'بطاقة') acc.cardSales += trx.total;
-        else if (trx.paymentMethod === 'تحويل') acc.bankTransferSales += trx.total;
-        else if (trx.paymentMethod === 'آجل') acc.deferredSales += trx.total;
-        return acc;
-    }, { cashSales: 0, cardSales: 0, bankTransferSales: 0, deferredSales: 0 });
 
-    const totalToSettle = settlementData.cashSales + settlementData.cardSales + settlementData.bankTransferSales + settlementData.deferredSales;
-
-    if (totalToSettle <= 0) {
-        toast({
-            title: "لا توجد مبيعات للترحيل",
-            description: "لم يتم تسجيل أي معاملات مؤخراً.",
-            variant: "destructive"
-        });
-        return;
-    }
-    
-    try {
-        await settlePosTransactions({ ...settlementData, settlementDate: new Date() });
-        toast({
-            title: "تم ترحيل مبيعات اليومية",
-            description: `تم إنشاء قيد محاسبي إجمالي بمبلغ ${formatCurrency(totalToSettle)}.`,
-            variant: "default",
-        });
-        // Optionally clear recent transactions after settlement
-        // setRecentTransactions([]);
-    } catch (error: any) {
-        toast({
-            title: "خطأ في الترحيل",
-            description: error.message || "لم يتمكن النظام من ترحيل القيد إلى الحسابات العامة.",
-            variant: "destructive",
-        });
-    }
-  };
+  if (!activeSession) {
+    return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]" dir="rtl">
+            <Dialog open={true}>
+                 <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">بدء جلسة نقاط بيع جديدة</DialogTitle>
+                        <DialogDescriptionComponent>يجب بدء جلسة جديدة لتتمكن من تسجيل المبيعات. أدخل الرصيد الافتتاحي في درج النقود.</DialogDescriptionComponent>
+                    </DialogHeader>
+                    <Form {...startSessionForm}>
+                        <form onSubmit={startSessionForm.handleSubmit(handleStartSession)} className="space-y-4 py-4">
+                            <FormField control={startSessionForm.control} name="openingBalance" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>الرصيد الافتتاحي</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="0.00" {...field} className="bg-background text-lg text-center" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <DialogFooter>
+                                <Button type="submit" className="w-full">
+                                    <PlayCircle className="me-2 h-4 w-4" /> بدء الجلسة
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                 </DialogContent>
+            </Dialog>
+        </div>
+    );
+  }
 
 
   return (
     <div className="container mx-auto py-6 h-[calc(100vh-theme(spacing.24))] flex flex-col" dir="rtl">
-      <Card className="shadow-lg mb-6">
-        <CardHeader>
+      <Card className="shadow-lg mb-6 flex justify-between items-center">
+        <CardHeader className="flex-grow">
           <CardTitle className="flex items-center text-2xl md:text-3xl">
             <CreditCardIcon className="me-2 h-8 w-8 text-primary" /> 
-            نقطة البيع (POS)
+            نقطة البيع (POS) - جلسة نشطة
           </CardTitle>
-          <CardDescription>إدارة عمليات البيع بالتجزئة، طباعة الإيصالات، وتتبع المبيعات.</CardDescription>
+          <CardDescription>
+            الموظف: <span className="font-semibold text-primary">{activeSession.user?.name || activeSession.userId}</span> | 
+            وقت البدء: {new Date(activeSession.openingTime).toLocaleTimeString('ar-SA')} | 
+            الرصيد الافتتاحي: <span dangerouslySetInnerHTML={{ __html: formatCurrency(activeSession.openingBalance) }}></span>
+          </CardDescription>
         </CardHeader>
+        <CardContent className="p-6 pt-0">
+             <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="destructive" className="shadow-md">
+                        <LogOut className="me-2 h-4 w-4" /> إغلاق الجلسة
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>إغلاق جلسة نقاط البيع</DialogTitle>
+                         <DialogDescriptionComponent>أدخل المبلغ الفعلي الموجود في درج النقود لإنهاء الجلسة.</DialogDescriptionComponent>
+                    </DialogHeader>
+                     <Form {...closeSessionForm}>
+                        <form onSubmit={closeSessionForm.handleSubmit(handleCloseSession)} className="space-y-4 py-4">
+                            <FormField control={closeSessionForm.control} name="closingBalance" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>المبلغ الفعلي في الصندوق</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="0.00" {...field} className="bg-background text-lg text-center" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <DialogFooter>
+                                <Button type="submit" variant="destructive" className="w-full">
+                                   تأكيد وإغلاق الجلسة
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+        </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow overflow-hidden">
@@ -458,16 +553,11 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                 </CardContent>
               </>
             )}
-             <Separator />
-              <CardContent className="p-4">
-                 <Button variant="secondary" className="w-full shadow-sm" onClick={handlePostToGL} disabled={recentTransactions.length === 0}>
-                    <UploadCloud className="me-2 h-4 w-4" /> ترحيل إجمالي المبيعات للقيود
-                  </Button>
-              </CardContent>
+            
           </Card>
           <Card className="shadow-md">
             <CardHeader>
-                <CardTitle className="text-md flex items-center"><History className="me-2 h-4 w-4 text-primary"/> آخر العمليات</CardTitle>
+                <CardTitle className="text-md flex items-center"><History className="me-2 h-4 w-4 text-primary"/> آخر العمليات في هذه الجلسة</CardTitle>
             </CardHeader>
             <CardContent className="p-2">
                 <ScrollArea className="h-24">
@@ -493,4 +583,3 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
     </div>
   );
 }
-

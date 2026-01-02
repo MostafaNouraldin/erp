@@ -701,6 +701,22 @@ export const purchaseReturnItems = pgTable('purchase_return_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
+// --- POS ---
+export const posSessions = pgTable('pos_sessions', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    userId: varchar('user_id', { length: 256 }).notNull().references(() => users.id),
+    openingTime: timestamp('opening_time').notNull(),
+    closingTime: timestamp('closing_time'),
+    openingBalance: numeric('opening_balance', { precision: 10, scale: 2 }).notNull(),
+    closingBalance: numeric('closing_balance', { precision: 10, scale: 2 }),
+    expectedBalance: numeric('expected_balance', { precision: 10, scale: 2 }),
+    cashSales: numeric('cash_sales', { precision: 10, scale: 2 }),
+    cardSales: numeric('card_sales', { precision: 10, scale: 2 }),
+    difference: numeric('difference', { precision: 10, scale: 2 }),
+    status: varchar('status', { length: 50 }).notNull(), // 'open', 'closed'
+});
+
+
 // --- Relations ---
 export const purchaseOrdersRelations = relations(purchaseOrders, ({ one, many }) => ({
   supplier: one(suppliers, {
@@ -757,4 +773,11 @@ export const purchaseReturnItemsRelations = relations(purchaseReturnItems, ({ on
         fields: [purchaseReturnItems.returnId],
         references: [purchaseReturns.id],
     }),
+}));
+
+export const posSessionsRelations = relations(posSessions, ({ one }) => ({
+  user: one(users, {
+    fields: [posSessions.userId],
+    references: [users.id],
+  }),
 }));

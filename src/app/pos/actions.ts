@@ -2,115 +2,184 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { journalEntries, journalEntryLines } from '@/db/schema';
+import { journalEntries, journalEntryLines, posSessions } from '@/db/schema';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { eq } from 'drizzle-orm';
 
-const posSettlementSchema = z.object({
-  settlementDate: z.date(),
-  cashSales: z.number().min(0),
-  cardSales: z.number().min(0),
-  bankTransferSales: z.number().min(0),
-  deferredSales: z.number().min(0),
+const posSessionSchema = z.object({
+  id: z.string().optional(),
+  userId: z.string(),
+  openingBalance: z.number().min(0, "الرصيد الافتتاحي لا يمكن أن يكون سالبًا"),
 });
-
-type PosSettlementData = z.infer<typeof posSettlementSchema>;
-
-const VAT_RATE = 0.15;
-const CASH_ACCOUNT = "1011"; // حساب الصندوق
-const BANK_ACCOUNT = "1012"; // حساب البنك
-const SALES_REVENUE_ACCOUNT = "4000"; // حساب إيرادات المبيعات
-const VAT_PAYABLE_ACCOUNT = "2200"; // حساب ضريبة القيمة المضافة المستحقة
-const ACCOUNTS_RECEIVABLE_ACCOUNT = "1200"; // حساب الذمم المدينة (للآجل)
+export type PosSessionStartValues = z.infer<typeof posSessionSchema>;
 
 
-export async function settlePosTransactions(data: PosSettlementData) {
+const posCloseSessionSchema = z.object({
+    closingBalance: z.coerce.number().min(0, "المبلغ الفعلي لا يمكن أن يكون سالبًا"),
+});
+export type PosCloseSessionValues = z.infer<typeof posCloseSessionSchema>;
+
+
+async function getDb() {
+  const tenantId = 'T001'; 
+  const { db } = await connectToTenantDb(tenantId);
+  return db;
+}
+
+
+export async function startPosSession(values: PosSessionStartValues) {
+    const db = await getDb();
+    const existingSession = await db.query.posSessions.findFirst({
+        where: eq(posSessions.status, "open"),
+    });
+
+    if (existingSession) {
+        throw new Error("يوجد جلسة مفتوحة بالفعل. يرجى إغلاقها أولاً.");
+    }
+    
+    const newSessionId = `SESS${Date.now()}`;
+    await db.insert(posSessions).values({
+        id: newSessionId,
+        userId: values.userId,
+        openingTime: new Date(),
+        openingBalance: String(values.openingBalance),
+        status: 'open',
+    });
+
+    revalidatePath('/pos');
+    const newSession = await db.query.posSessions.findFirst({ where: eq(posSessions.id, newSessionId) });
+    return newSession;
+}
+
+
+export async function closePosSession(sessionId: string, values: PosCloseSessionValues) {
+    const db = await getDb();
+    const session = await db.query.posSessions.findFirst({
+        where: eq(posSessions.id, sessionId),
+    });
+
+    if (!session || session.status !== 'open') {
+        throw new Error("لا توجد جلسة مفتوحة لإغلاقها أو أن الجلسة غير صالحة.");
+    }
+
+    // This is a simplified calculation. A real implementation would query all invoices for this session.
+    // For now, let's assume we can get these totals. We'll use dummy data.
+    // TODO: Fetch actual sales data for the session from sales_invoices table.
+    const cashSales = 500; // Dummy value
+    const cardSales = 350; // Dummy value
+    const deferredSales = 150; // Dummy value
+
+    const expectedBalance = (parseFloat(session.openingBalance) || 0) + cashSales;
+    const difference = values.closingBalance - expectedBalance;
+
+    await db.update(posSessions).set({
+        closingTime: new Date(),
+        closingBalance: String(values.closingBalance),
+        expectedBalance: String(expectedBalance),
+        cashSales: String(cashSales),
+        cardSales: String(cardSales),
+        difference: String(difference),
+        status: 'closed',
+    }).where(eq(posSessions.id, sessionId));
+
+    // Post to General Ledger
+    await settlePosSession(sessionId, {
+        openingBalance: parseFloat(session.openingBalance),
+        cashSales,
+        cardSales,
+        deferredSales,
+        closingBalance: values.closingBalance,
+        difference,
+        userId: session.userId,
+    });
+
+
+    revalidatePath('/pos');
+}
+
+export async function getActiveSession() {
+    const db = await getDb();
+    const activeSession = await db.query.posSessions.findFirst({
+        where: eq(posSessions.status, "open"),
+    });
+    return activeSession;
+}
+
+
+// This function will post the financial impact of the closed session to the GL
+async function settlePosSession(sessionId: string, data: {
+    openingBalance: number;
+    cashSales: number;
+    cardSales: number;
+    deferredSales: number;
+    closingBalance: number;
+    difference: number;
+    userId: string;
+}) {
   const db = await getDb();
-
-  const totalSettledSales = data.cashSales + data.cardSales + data.bankTransferSales;
-  const totalDeferredSales = data.deferredSales;
-  const totalSales = totalSettledSales + totalDeferredSales;
-
-  if (totalSales <= 0) {
-    throw new Error("لا توجد مبيعات للترحيل.");
-  }
-
+  
+  const totalSales = data.cashSales + data.cardSales + data.deferredSales;
+  const VAT_RATE = 0.15;
   const totalBeforeTax = totalSales / (1 + VAT_RATE);
   const vatAmount = totalSales - totalBeforeTax;
 
-  const newEntryId = `JV-POS-${Date.now()}`;
+  const newEntryId = `JV-POSS-${sessionId}`;
+
+  // Account IDs - These should be configurable
+  const POS_CASH_ACCOUNT = '1011'; // حساب صندوق نقاط البيع
+  const BANK_ACCOUNT = '1012'; // حساب البنك (لمبيعات البطاقات)
+  const ACCOUNTS_RECEIVABLE = '1200'; // الذمم المدينة
+  const SALES_REVENUE = '4000'; // إيرادات المبيعات
+  const VAT_PAYABLE = '2200'; // ضريبة القيمة المضافة المستحقة
+  const CASH_OVER_SHORT = '5500'; // حساب العجز والزيادة في الصندوق
 
   await db.transaction(async (tx) => {
-    // 1. Create the main Journal Entry
     await tx.insert(journalEntries).values({
       id: newEntryId,
-      date: data.settlementDate,
-      description: `ترحيل إجمالي مبيعات نقاط البيع ليوم ${data.settlementDate.toLocaleDateString('ar-SA')}`,
-      totalAmount: String(totalSales),
+      date: new Date(),
+      description: `ترحيل جلسة نقاط البيع رقم ${sessionId} للموظف ${data.userId}`,
+      totalAmount: String(totalSales + data.openingBalance), // Total debits
       status: "مرحل",
-      sourceModule: "POS",
-      sourceDocumentId: `POS-SETTLE-${data.settlementDate.toISOString().split('T')[0]}`,
+      sourceModule: "POSSession",
+      sourceDocumentId: sessionId,
     });
 
     const lines = [];
 
-    // 2. Add debit entries for cash, bank, and deferred payments
-    if (data.cashSales > 0) {
-      lines.push({
-        journalEntryId: newEntryId,
-        accountId: CASH_ACCOUNT,
-        debit: String(data.cashSales),
-        credit: '0',
-        description: 'إجمالي المبيعات النقدية',
-      });
+    // --- Debit Side ---
+    // 1. Debit POS cash account with closing balance
+    lines.push({ journalEntryId: newEntryId, accountId: POS_CASH_ACCOUNT, debit: String(data.closingBalance), credit: '0', description: 'إثبات المبلغ المقفول في الصندوق' });
+    // 2. Debit Bank account for card sales
+    if (data.cardSales > 0) {
+        lines.push({ journalEntryId: newEntryId, accountId: BANK_ACCOUNT, debit: String(data.cardSales), credit: '0', description: 'إثبات مبيعات البطاقات' });
     }
-    if (data.cardSales + data.bankTransferSales > 0) {
-      lines.push({
-        journalEntryId: newEntryId,
-        accountId: BANK_ACCOUNT,
-        debit: String(data.cardSales + data.bankTransferSales),
-        credit: '0',
-        description: 'إجمالي مبيعات البطاقات والتحويلات',
-      });
-    }
+    // 3. Debit Accounts Receivable for deferred sales
     if (data.deferredSales > 0) {
-        lines.push({
-            journalEntryId: newEntryId,
-            accountId: ACCOUNTS_RECEIVABLE_ACCOUNT,
-            debit: String(data.deferredSales),
-            credit: '0',
-            description: 'إجمالي المبيعات الآجلة',
-        });
+        lines.push({ journalEntryId: newEntryId, accountId: ACCOUNTS_RECEIVABLE, debit: String(data.deferredSales), credit: '0', description: 'إثبات المبيعات الآجلة' });
+    }
+    // 4. Debit Cash Over/Short if there was a shortage (difference is negative)
+    if (data.difference < 0) {
+        lines.push({ journalEntryId: newEntryId, accountId: CASH_OVER_SHORT, debit: String(Math.abs(data.difference)), credit: '0', description: 'تسجيل عجز في الصندوق' });
     }
 
-    // 3. Add credit entries for revenue and VAT
-    lines.push({
-      journalEntryId: newEntryId,
-      accountId: SALES_REVENUE_ACCOUNT,
-      debit: '0',
-      credit: String(totalBeforeTax),
-      description: 'إجمالي إيرادات المبيعات قبل الضريبة',
-    });
-    lines.push({
-      journalEntryId: newEntryId,
-      accountId: VAT_PAYABLE_ACCOUNT,
-      debit: '0',
-      credit: String(vatAmount),
-      description: 'إجمالي ضريبة القيمة المضافة',
-    });
+    // --- Credit Side ---
+    // 1. Credit POS cash account with opening balance (as it's now part of the closing balance)
+    lines.push({ journalEntryId: newEntryId, accountId: POS_CASH_ACCOUNT, debit: '0', credit: String(data.openingBalance), description: 'عكس الرصيد الافتتاحي' });
+    // 2. Credit Sales Revenue
+    lines.push({ journalEntryId: newEntryId, accountId: SALES_REVENUE, debit: '0', credit: String(totalBeforeTax), description: 'إثبات إيرادات المبيعات' });
+    // 3. Credit VAT Payable
+    lines.push({ journalEntryId: newEntryId, accountId: VAT_PAYABLE, debit: '0', credit: String(vatAmount), description: 'إثبات ضريبة القيمة المضافة' });
+    // 4. Credit Cash Over/Short if there was an overage (difference is positive)
+    if (data.difference > 0) {
+        lines.push({ journalEntryId: newEntryId, accountId: CASH_OVER_SHORT, debit: '0', credit: String(data.difference), description: 'تسجيل زيادة في الصندوق' });
+    }
 
-    // 4. Insert all journal entry lines
     if (lines.length > 0) {
       await tx.insert(journalEntryLines).values(lines);
     }
   });
 
-  revalidatePath('/pos');
   revalidatePath('/general-ledger');
 }
 
-async function getDb() {
-  const tenantId = 'T001'; // This would come from session in a real app
-  const { db } = await connectToTenantDb(tenantId);
-  return db;
-}
