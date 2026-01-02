@@ -1,5 +1,6 @@
 
-import { LayoutDashboard, BookUser, BookOpen, FileArchive, UserCheck, Landmark, ArrowUpCircle, ArrowDownCircle, ArrowDownSquare, BookCopy, Package, Truck, SlidersHorizontal, ShoppingCart, Briefcase, Users, Cog, GanttChartSquare, CreditCardIcon, BarChart2, Settings, Shield, Settings2, Building2, Mail, CircleHelpIcon } from 'lucide-react';
+
+import { LayoutDashboard, BookUser, BookOpen, FileArchive, UserCheck, Landmark, ArrowUpCircle, ArrowDownCircle, ArrowDownSquare, BookCopy, Package, Truck, SlidersHorizontal, ShoppingCart, Briefcase, Users, Cog, GanttChartSquare, CreditCardIcon, BarChart2, Settings, Shield, Settings2, Building2, Mail, CircleHelpIcon, FolderOpen, FileWarning, FileEdit, UserX, ClipboardSignature } from 'lucide-react';
 import type { SidebarMenuItemProps } from '@/components/ui/sidebar';
 
 export const allNavItems: SidebarMenuItemProps['item'][] = [ 
@@ -56,7 +57,23 @@ export const allNavItems: SidebarMenuItemProps['item'][] = [
         { href: "/purchases", label: "لوحة المشتريات", icon: Briefcase, permissionKey: "purchases.view" },
     ]
   },
-  { href: "/hr-payroll", label: "الموارد البشرية والرواتب", icon: Users, module: "HR" },
+  { 
+    label: "الموارد البشرية", 
+    icon: Users, 
+    module: "HR",
+    subItems: [
+        { href: "/hr-payroll", label: "الموظفين والرواتب", icon: Users, permissionKey: "hr.view"},
+        { 
+            label: "النماذج", icon: FolderOpen, permissionKey: "hr.view",
+            subItems: [
+                { href: "/hr-payroll?tab=forms&subTab=warningNotice", label: "لفت النظر", icon: FileWarning },
+                { href: "/hr-payroll?tab=forms&subTab=adminDecision", label: "القرارات الإدارية", icon: FileEdit },
+                { href: "/hr-payroll?tab=forms&subTab=resignation", label: "الاستقالات", icon: UserX },
+                { href: "/hr-payroll?tab=forms&subTab=disciplinaryWarning", label: "الإنذارات التأديبية", icon: ClipboardSignature },
+            ]
+        },
+    ]
+  },
   { href: "/production", label: "الإنتاج", icon: Cog, module: "Production" },
   { href: "/projects", label: "المشاريع", icon: GanttChartSquare, module: "Projects" },
   { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" },
@@ -83,3 +100,5 @@ export const allNavItems: SidebarMenuItemProps['item'][] = [
   },
   { href: "/help", label: "المساعدة", icon: CircleHelpIcon, module: "Help" },
 ];
+
+    

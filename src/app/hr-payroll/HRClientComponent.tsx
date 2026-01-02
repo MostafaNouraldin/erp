@@ -85,6 +85,7 @@ const employeeSchema = z.object({
   socialInsuranceNumber: z.string().optional(),
   allowances: z.array(employeeAllowanceSchema).optional().default([]), 
   deductions: z.array(employeeDeductionSchema).optional().default([]),
+  managerId: z.string().optional().nullable(),
 });
 
 const payrollItemSchema = z.object({
@@ -178,7 +179,7 @@ const employeeDefaultValues = {
   name: "", department: "", jobTitle: "", contractStartDate: new Date(), contractEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
   status: "نشط" as const, basicSalary: 0, email: "", phone: "", avatarUrl: "", dataAiHint: "",
   employmentType: "دوام كامل" as const,
-  nationality: "", idNumber: "", bankName: "", iban: "", socialInsuranceNumber: "",
+  nationality: "", idNumber: "", bankName: "", iban: "", socialInsuranceNumber: "", managerId: null,
   allowances: [], deductions: [],
 };
 
@@ -661,6 +662,9 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                                                 <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر القسم" /></SelectTrigger></FormControl>
                                                 <SelectContent>{departments.map(dep => <SelectItem key={dep.id} value={dep.name}>{dep.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                         </div>
+                                         <FormField control={employeeForm.control} name="managerId" render={({ field }) => (<FormItem><FormLabel>المدير المباشر</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر المدير المباشر" /></SelectTrigger></FormControl>
+                                            <SelectContent>{employees.map(emp => <SelectItem key={emp.id} value={emp.id!}>{emp.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <FormField control={employeeForm.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
                                             <FormField control={employeeForm.control} name="phone" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
@@ -807,3 +811,6 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   );
 }
 
+
+
+    
