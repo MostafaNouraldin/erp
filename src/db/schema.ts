@@ -1,5 +1,4 @@
 
-
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -109,6 +108,7 @@ export const employees = pgTable('employees', {
     name: varchar('name', { length: 256 }).notNull(),
     jobTitle: varchar('job_title', { length: 256 }).notNull(),
     department: varchar('department', { length: 256 }).notNull(),
+    managerId: varchar('manager_id', { length: 256 }).references(() => employees.id),
     contractStartDate: timestamp('contract_start_date').notNull(),
     contractEndDate: timestamp('contract_end_date').notNull(),
     employmentType: varchar('employment_type', { length: 50 }).notNull(),

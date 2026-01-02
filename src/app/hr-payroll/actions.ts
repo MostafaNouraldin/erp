@@ -27,6 +27,7 @@ const employeeSchema = z.object({
   name: z.string().min(1, "اسم الموظف مطلوب"),
   jobTitle: z.string().min(1, "المسمى الوظيفي مطلوب"),
   department: z.string().min(1, "القسم مطلوب"),
+  managerId: z.string().optional().nullable(),
   contractStartDate: z.date({ required_error: "تاريخ بداية العقد مطلوب" }),
   contractEndDate: z.date({ required_error: "تاريخ نهاية العقد مطلوب" }),
   employmentType: z.enum(["دوام كامل", "دوام جزئي", "عقد محدد", "مستقل"]),
@@ -410,3 +411,6 @@ export async function deleteDisciplinaryWarning(id: string) {
   await db.delete(disciplinaryWarnings).where(eq(disciplinaryWarnings.id, id));
   revalidatePath('/hr-payroll');
 }
+
+// HR Settings Actions (Department, JobTitle, LeaveType)
+export { addDepartment, updateDepartment, deleteDepartment, addJobTitle, updateJobTitle, deleteJobTitle, addLeaveType, updateLeaveType, deleteLeaveType } from '../settings/actions';
