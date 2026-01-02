@@ -687,6 +687,64 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="purchaseOrders">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle>أوامر الشراء</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>رقم الأمر</TableHead>
+                                <TableHead>المورد</TableHead>
+                                <TableHead>التاريخ</TableHead>
+                                <TableHead>المبلغ الإجمالي</TableHead>
+                                <TableHead>الحالة</TableHead>
+                                <TableHead className="text-center">إجراءات</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {purchaseOrdersData.map((po) => (
+                                <TableRow key={po.id}>
+                                    <TableCell>{po.id}</TableCell>
+                                    <TableCell>{suppliersData.find(s => s.id === po.supplierId)?.name}</TableCell>
+                                    <TableCell>{formatDateForDisplay(po.date)}</TableCell>
+                                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(po.totalAmount) }}></TableCell>
+                                    <TableCell><Badge variant={po.status === 'معتمد' ? 'default' : 'outline'}>{po.status}</Badge></TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="ghost" size="icon" onClick={() => handleViewPo(po)}><Eye className="h-4 w-4"/></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handlePrintPo(po)}><Printer className="h-4 w-4"/></Button>
+                                        {po.status === "مسودة" && (
+                                            <>
+                                                <Button variant="ghost" size="icon" onClick={() => { setPoToEdit(po); setShowCreatePoDialog(true); }}><Edit className="h-4 w-4"/></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleApprovePo(po.id!)} className="text-green-600"><CheckCircle className="h-4 w-4"/></Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                                                    <AlertDialogContent dir="rtl">
+                                                        <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف أمر الشراء "{po.id}"؟</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeletePo(po.id!)}>حذف</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </>
+                                        )}
+                                        {po.status === "معتمد" && (
+                                            <>
+                                                <Button variant="ghost" size="icon" onClick={() => openCreateGrnDialogFromPo(po)} className="text-blue-600"><Truck className="h-4 w-4"/></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => openCreateInvoiceFromPo(po)} className="text-purple-600"><FileText className="h-4 w-4"/></Button>
+                                            </>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
        <TabsContent value="purchaseReturns">
         <Card className="shadow-lg">
             <CardHeader>
@@ -821,3 +879,4 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
+
