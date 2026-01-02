@@ -3,7 +3,7 @@
 
 import { connectToTenantDb } from '@/db';
 import { cashExpenses, journalEntries, journalEntryLines } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -65,14 +65,13 @@ export async function deleteCashExpense(id: string) {
 export async function updateCashExpenseStatus(id: string, status: 'مسودة' | 'مرحل') {
     const db = await getDb();
     
+    const expense = await db.query.cashExpenses.findFirst({ where: eq(cashExpenses.id, id) });
+    if (!expense) {
+        throw new Error("لم يتم العثور على المصروف.");
+    }
+    
     if (status === 'مرحل') {
-        const expense = await db.query.cashExpenses.findFirst({ where: eq(cashExpenses.id, id) });
-        if (!expense) {
-            throw new Error("لم يتم العثور على المصروف.");
-        }
-        if (expense.status === 'مرحل') {
-            throw new Error("هذا المصروف مرحّل بالفعل.");
-        }
+        if (expense.status === 'مرحل') throw new Error("هذا المصروف مرحّل بالفعل.");
 
         const newEntryId = `JV-CEXP-${id}`;
         await db.transaction(async (tx) => {
@@ -94,9 +93,37 @@ export async function updateCashExpenseStatus(id: string, status: 'مسودة' |
             await tx.update(cashExpenses).set({ status }).where(eq(cashExpenses.id, id));
         });
 
-    } else {
-        // Logic for un-posting if needed
-        await db.update(cashExpenses).set({ status }).where(eq(cashExpenses.id, id));
+    } else { // Un-posting logic
+        if (expense.status === 'مسودة') throw new Error("هذا المصروف في حالة مسودة بالفعل.");
+
+        const reversalEntryId = `RJV-CEXP-${id}`;
+         await db.transaction(async (tx) => {
+            // Create a reversing journal entry
+            await tx.insert(journalEntries).values({
+                id: reversalEntryId,
+                date: new Date(), // Use today's date for reversal
+                description: `عكس قيد ترحيل مصروف نقدي رقم: ${id}`,
+                totalAmount: String(expense.amount),
+                status: "مرحل",
+                sourceModule: "Reversal",
+                sourceDocumentId: expense.id,
+            });
+
+            // Insert reversed lines
+            await tx.insert(journalEntryLines).values([
+                { journalEntryId: reversalEntryId, accountId: expense.cashAccountId, debit: String(expense.amount), credit: '0', description: `عكس دفع نقداً لـ ${expense.beneficiary}` },
+                { journalEntryId: reversalEntryId, accountId: expense.expenseAccountId, debit: '0', credit: String(expense.amount), description: `عكس مصروف لـ ${expense.beneficiary}` },
+            ]);
+
+            // Now, find the original journal entry and mark it as void or create a link to the reversal
+            const originalEntryId = `JV-CEXP-${id}`;
+            await tx.update(journalEntries)
+              .set({ description: `(ملغي) ${expense.description}` })
+              .where(eq(journalEntries.id, originalEntryId));
+
+            // Finally, update the expense status back to draft
+            await tx.update(cashExpenses).set({ status }).where(eq(cashExpenses.id, id));
+        });
     }
 
     revalidatePath('/cash-expenses');
