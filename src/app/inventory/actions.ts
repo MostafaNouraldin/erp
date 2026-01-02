@@ -3,7 +3,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, stocktakes } from '@/db/schema';
+import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, stocktakes, goodsReceivedNotes, goodsReceivedNoteItems, sql } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from "zod";
@@ -66,6 +66,26 @@ const stockIssueVoucherSchema = z.object({
   issuedBy: z.string().optional(),
 });
 type StockIssueVoucherFormValues = z.infer<typeof stockIssueVoucherSchema>;
+
+const goodsReceivedNoteItemSchema = z.object({
+  productId: z.string().min(1, "المنتج مطلوب"),
+  quantityReceived: z.coerce.number().min(1, "الكمية يجب أن تكون أكبر من صفر"),
+  costPricePerUnit: z.coerce.number().min(0).optional(),
+  notes: z.string().optional(),
+});
+const goodsReceivedNoteSchema = z.object({
+  id: z.string().optional(),
+  date: z.date({ required_error: "التاريخ مطلوب" }),
+  warehouseId: z.string().min(1, "المستودع المستلم مطلوب"),
+  source: z.string().min(1, "مصدر البضاعة مطلوب (مورد/أمر إنتاج)"),
+  reference: z.string().optional(),
+  items: z.array(goodsReceivedNoteItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  status: z.enum(["مسودة", "مرحل للمخزون", "ملغي"]).default("مسودة"),
+  receivedBy: z.string().optional(),
+});
+type GoodsReceivedNoteFormValues = z.infer<typeof goodsReceivedNoteSchema>;
+
 
 const stockRequisitionItemSchema = z.object({
   productId: z.string().min(1, "المنتج مطلوب"),
@@ -180,8 +200,20 @@ export async function addStocktake(values: StocktakeInitiationFormValues) {
 
 export async function addStockIssueVoucher(values: StockIssueVoucherFormValues) {
     const db = await getDb();
-    const newId = `SIV${Date.now()}`;
+    
     await db.transaction(async (tx) => {
+        // Validate stock before proceeding
+        for (const item of values.items) {
+            const product = await tx.query.products.findFirst({
+                where: eq(products.id, item.productId),
+                columns: { quantity: true, name: true }
+            });
+            if (!product || product.quantity < item.quantityIssued) {
+                throw new Error(`الكمية المطلوبة للصنف "${product?.name || item.productId}" غير متوفرة. المتاح: ${product?.quantity || 0}`);
+            }
+        }
+
+        const newId = `SIV${Date.now()}`;
         await tx.insert(stockIssueVouchers).values({ ...values, id: newId });
         if(values.items.length > 0) {
             await tx.insert(stockIssueVoucherItems).values(
@@ -191,8 +223,36 @@ export async function addStockIssueVoucher(values: StockIssueVoucherFormValues) 
                 }))
             );
         }
+        
+        // If status is 'approved' on creation, update stock immediately. 
+        // This is a simplified flow. A better flow would be to have a separate approval action.
+        if (values.status === 'معتمد') {
+             for (const item of values.items) {
+                await tx.update(products)
+                    .set({ quantity: sql`${products.quantity} - ${item.quantityIssued}` })
+                    .where(eq(products.id, item.productId));
+            }
+        }
     });
-    // Add logic to update inventory on approval
+
+    revalidatePath('/inventory');
+}
+
+export async function addGoodsReceivedNote(values: GoodsReceivedNoteFormValues) {
+    const db = await getDb();
+    const newId = `GRN${Date.now()}`;
+    await db.transaction(async (tx) => {
+        await tx.insert(goodsReceivedNotes).values({ ...values, id: newId });
+        if (values.items.length > 0) {
+            await tx.insert(goodsReceivedNoteItems).values(
+                values.items.map(item => ({
+                    grnId: newId,
+                    ...item,
+                }))
+            );
+        }
+    });
+    // This is simplified. A real GRN would update stock levels on approval.
     revalidatePath('/inventory');
 }
 
@@ -213,5 +273,3 @@ export async function addStockRequisition(values: StockRequisitionFormValues) {
     });
     revalidatePath('/inventory');
 }
-
-    

@@ -1,9 +1,11 @@
 
+
 // This is now a true Server Component that fetches data and passes it to the client.
 import { connectToTenantDb } from '@/db';
-import { products, categories, suppliers, warehouses } from '@/db/schema';
+import { products, categories, suppliers, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems } from '@/db/schema';
 import React from 'react';
 import InventoryClientComponent from './InventoryClientComponent';
+import { eq } from 'drizzle-orm';
 
 
 // This is now a true Server Component that fetches data and passes it to the client component.
@@ -14,12 +16,30 @@ export default async function InventoryPage() {
         const categoriesResult = await db.select().from(categories);
         const suppliersResult = await db.select().from(suppliers);
         const warehousesResult = await db.select().from(warehouses);
+        const stockRequisitionsResult = await db.select().from(stockRequisitions);
+        const stockIssueVouchersResult = await db.select().from(stockIssueVouchers);
+
+        const requisitionsWithItems = await Promise.all(
+            stockRequisitionsResult.map(async (req) => {
+                const items = await db.select().from(stockRequisitionItems).where(eq(stockRequisitionItems.requisitionId, req.id));
+                return { ...req, items };
+            })
+        );
         
+        const issueVouchersWithItems = await Promise.all(
+            stockIssueVouchersResult.map(async (voucher) => {
+                const items = await db.select().from(stockIssueVoucherItems).where(eq(stockIssueVoucherItems.voucherId, voucher.id));
+                return { ...voucher, items };
+            })
+        );
+
         const initialData = {
             products: productsResult.map(p => ({ ...p, costPrice: Number(p.costPrice), sellingPrice: Number(p.sellingPrice) })),
             categories: categoriesResult,
             suppliers: suppliersResult,
             warehouses: warehousesResult,
+            stockRequisitions: requisitionsWithItems,
+            stockIssueVouchers: issueVouchersWithItems,
         };
 
         return <InventoryClientComponent initialData={initialData} />;

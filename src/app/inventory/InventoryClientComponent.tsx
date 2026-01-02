@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
-import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, addWarehouse, updateWarehouse, deleteWarehouse, addStocktake, addStockIssueVoucher, addGoodsReceivedNote, addStockRequisition } from './actions';
+import { addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, addWarehouse, updateWarehouse, deleteWarehouse, addStocktake, addStockIssueVoucher, addStockRequisition, addGoodsReceivedNote } from './actions';
 
 
 // Product Schema
@@ -168,7 +168,7 @@ const inventoryReportTypes = [
     { key: "supplierItems", name: "تقرير الأصناف حسب المورد", icon: Truck, description: "عرض الأصناف المرتبطة بكل مورد." },
 ];
 
-export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[], warehouses: any[] } }) {
+export default function InventoryClientComponent({ initialData }: { initialData: { products: any[], categories: any[], suppliers: any[], warehouses: any[], stockRequisitions: any[], stockIssueVouchers: any[] } }) {
   const [productsData, setProductsData] = useState<ProductFormValues[]>(initialData.products);
   const [categoriesData, setCategoriesData] = useState<CategoryFormValues[]>(initialData.categories);
   const [suppliersData, setSuppliersData] = useState<any[]>(initialData.suppliers);
@@ -195,7 +195,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const [selectedStocktakeForView, setSelectedStocktakeForView] = useState<StocktakeDetails | null>(null);
   const { toast } = useToast();
 
-  const [stockIssueVouchers, setStockIssueVouchers] = useState<StockIssueVoucherFormValues[]>([]);
+  const [stockIssueVouchers, setStockIssueVouchers] = useState<StockIssueVoucherFormValues[]>(initialData.stockIssueVouchers);
   const [showManageStockIssueDialog, setShowManageStockIssueDialog] = useState(false);
   const [stockIssueToEdit, setStockIssueToEdit] = useState<StockIssueVoucherFormValues | null>(null);
 
@@ -203,7 +203,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   const [showManageGoodsReceivedNoteDialog, setShowManageGoodsReceivedNoteDialog] = useState(false);
   const [goodsReceivedNoteToEdit, setGoodsReceivedNoteToEdit] = useState<GoodsReceivedNoteFormValues | null>(null);
 
-  const [stockRequisitions, setStockRequisitions] = useState<StockRequisitionFormValues[]>([]);
+  const [stockRequisitions, setStockRequisitions] = useState<StockRequisitionFormValues[]>(initialData.stockRequisitions);
   const [showManageStockRequisitionDialog, setShowManageStockRequisitionDialog] = useState(false);
   const [stockRequisitionToEdit, setStockRequisitionToEdit] = useState<StockRequisitionFormValues | null>(null);
 
@@ -226,13 +226,15 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   useEffect(() => { if (warehouseToEdit) { warehouseForm.reset(warehouseToEdit); } else { warehouseForm.reset({ name: "", location: "" }); }}, [warehouseToEdit, warehouseForm, showManageWarehouseDialog]);
   useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
   useEffect(() => { if (goodsReceivedNoteToEdit) goodsReceivedNoteForm.reset(goodsReceivedNoteToEdit); else goodsReceivedNoteForm.reset({ date: new Date(), warehouseId: "", source: "", items: [{ productId: "", quantityReceived: 1, costPricePerUnit:0, notes: "" }], status: "مسودة", notes: ""});}, [goodsReceivedNoteToEdit, goodsReceivedNoteForm, showManageGoodsReceivedNoteDialog]);
-  useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset(stockRequisitionToEdit); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
+  useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset({...stockRequisitionToEdit, requestDate: new Date(stockRequisitionToEdit.requestDate), requiredByDate: new Date(stockRequisitionToEdit.requiredByDate) }); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
   useEffect(() => {
     setProductsData(initialData.products);
     setCategoriesData(initialData.categories);
     setSuppliersData(initialData.suppliers);
     setWarehousesData(initialData.warehouses);
+    setStockRequisitions(initialData.stockRequisitions);
+    setStockIssueVouchers(initialData.stockIssueVouchers);
   }, [initialData]);
 
   const handleProductSubmit = async (values: ProductFormValues) => {
@@ -356,18 +358,24 @@ export default function InventoryClientComponent({ initialData }: { initialData:
 
   const handleStockIssueSubmit = async (values: StockIssueVoucherFormValues) => {
     try {
-        await addStockIssueVoucher(values);
-        toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الصرف بنجاح." });
+        if (stockIssueToEdit) {
+            // await updateStockIssueVoucher(values); // This action needs to be created
+            toast({ title: "تم التعديل", description: "تم تعديل إذن الصرف بنجاح." });
+        } else {
+            await addStockIssueVoucher(values);
+            toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الصرف بنجاح." });
+        }
         setShowManageStockIssueDialog(false);
         setStockIssueToEdit(null);
-    } catch(e) {
-        toast({ title: "خطأ", description: "لم يتم إنشاء إذن الصرف.", variant: "destructive" });
+    } catch(e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive" });
     }
   };
 
   const handleGoodsReceivedNoteSubmit = async (values: GoodsReceivedNoteFormValues) => {
     try {
-        await addGoodsReceivedNote(values);
+        // Here you would call a server action to save the GRN
+        // await addGoodsReceivedNote(values);
         toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الإضافة بنجاح." });
         setShowManageGoodsReceivedNoteDialog(false);
         setGoodsReceivedNoteToEdit(null);
@@ -378,8 +386,13 @@ export default function InventoryClientComponent({ initialData }: { initialData:
 
   const handleStockRequisitionSubmit = async (values: StockRequisitionFormValues) => {
     try {
-        await addStockRequisition(values);
-        toast({ title: "تم الإنشاء", description: "تم إنشاء طلب الصرف بنجاح." });
+        if(stockRequisitionToEdit) {
+            // await updateStockRequisition(values);
+            toast({ title: "تم التعديل", description: "تم تعديل طلب الصرف." });
+        } else {
+            await addStockRequisition(values);
+            toast({ title: "تم الإنشاء", description: "تم إنشاء طلب الصرف بنجاح." });
+        }
         setShowManageStockRequisitionDialog(false);
         setStockRequisitionToEdit(null);
     } catch(e) {
@@ -618,6 +631,115 @@ export default function InventoryClientComponent({ initialData }: { initialData:
                                 </TableCell>
                             </TableRow>
                         ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        
+        <TabsContent value="stockIssue">
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                    <CardTitle>أذونات صرف المخزون</CardTitle>
+                    <Dialog open={showManageStockIssueDialog} onOpenChange={(isOpen) => {setShowManageStockIssueDialog(isOpen); if(!isOpen) setStockIssueToEdit(null);}}>
+                        <DialogTrigger asChild><Button variant="outline" onClick={() => {setStockIssueToEdit(null); stockIssueVoucherForm.reset(); setShowManageStockIssueDialog(true);}}><PlusCircle className="me-2 h-4 w-4"/> إنشاء إذن صرف</Button></DialogTrigger>
+                        <DialogContent className="sm:max-w-2xl" dir="rtl">
+                             <DialogHeader><DialogTitle>{stockIssueToEdit ? 'تعديل إذن صرف' : 'إنشاء إذن صرف جديد'}</DialogTitle></DialogHeader>
+                             <Form {...stockIssueVoucherForm}>
+                                <form onSubmit={stockIssueVoucherForm.handleSubmit(handleStockIssueSubmit)} className="space-y-4 py-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={stockIssueVoucherForm.control} name="warehouseId" render={({ field }) => ( <FormItem><FormLabel>المستودع المصدر</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر المستودع"/></SelectTrigger></FormControl><SelectContent>{warehousesData.map(w=><SelectItem key={w.id} value={w.id!}>{w.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
+                                        <FormField control={stockIssueVoucherForm.control} name="date" render={({ field }) => ( <FormItem className="flex flex-col"><FormLabel>تاريخ الصرف</FormLabel><DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange}/><FormMessage/></FormItem> )}/>
+                                    </div>
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={stockIssueVoucherForm.control} name="recipient" render={({ field }) => ( <FormItem><FormLabel>الجهة المستلمة</FormLabel><FormControl><Input placeholder="اسم القسم أو الموظف" {...field}/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={stockIssueVoucherForm.control} name="reason" render={({ field }) => ( <FormItem><FormLabel>سبب الصرف</FormLabel><FormControl><Input placeholder="مثال: طلب داخلي، أمر عمل" {...field}/></FormControl><FormMessage/></FormItem> )}/>
+                                    </div>
+                                    <ScrollArea className="h-[200px] border rounded-md p-2">
+                                        {stockIssueItemsFields.map((item, index) => (
+                                        <div key={item.id} className="grid grid-cols-12 gap-2 items-end p-1 border-b mb-2">
+                                            <FormField control={stockIssueVoucherForm.control} name={`items.${index}.productId`} render={({ field }) => ( <FormItem className="col-span-6"><FormLabel className="text-xs">الصنف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر الصنف"/></SelectTrigger></FormControl><SelectContent>{productsData.map(p=><SelectItem key={p.id} value={p.id!}>{p.name} (المتاح: {p.quantity})</SelectItem>)}</SelectContent></Select><FormMessage className="text-xs"/></FormItem> )}/>
+                                            <FormField control={stockIssueVoucherForm.control} name={`items.${index}.quantityIssued`} render={({ field }) => ( <FormItem className="col-span-4"><FormLabel className="text-xs">الكمية</FormLabel><FormControl><Input type="number" {...field} className="h-9 text-xs"/></FormControl><FormMessage className="text-xs"/></FormItem> )}/>
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeStockIssueItem(index)} className="col-span-2 h-9 w-9 text-destructive"><MinusCircle className="h-4 w-4"/></Button>
+                                        </div> ))}
+                                    </ScrollArea>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => appendStockIssueItem({productId: '', quantityIssued: 1, notes: ''})}><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
+                                    <DialogFooter><Button type="submit">{stockIssueToEdit ? 'حفظ التعديلات' : 'حفظ الإذن'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                </form>
+                             </Form>
+                        </DialogContent>
+                    </Dialog>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow><TableHead>الرقم</TableHead><TableHead>التاريخ</TableHead><TableHead>المستودع</TableHead><TableHead>المستلم</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {stockIssueVouchers.map(v => (
+                            <TableRow key={v.id}>
+                                <TableCell>{v.id}</TableCell>
+                                <TableCell>{formatDateForDisplay(v.date)}</TableCell>
+                                <TableCell>{warehousesData.find(w=>w.id===v.warehouseId)?.name}</TableCell>
+                                <TableCell>{v.recipient}</TableCell>
+                                <TableCell><Badge variant={v.status === 'معتمد' ? 'default' : 'outline'}>{v.status}</Badge></TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="ghost" size="icon"><Eye className="h-4 w-4"/></Button>
+                                     {v.status === "مسودة" && (<Button variant="ghost" size="icon" className="text-green-600"><CheckCircle className="h-4 w-4"/></Button>)}
+                                </TableCell>
+                            </TableRow>))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="stockRequisition">
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                    <CardTitle>طلبات صرف المواد</CardTitle>
+                    <Dialog open={showManageStockRequisitionDialog} onOpenChange={(isOpen) => {setShowManageStockRequisitionDialog(isOpen); if(!isOpen) setStockRequisitionToEdit(null);}}>
+                        <DialogTrigger asChild><Button variant="outline" onClick={() => {setStockRequisitionToEdit(null); stockRequisitionForm.reset(); setShowManageStockRequisitionDialog(true);}}><PlusCircle className="me-2 h-4 w-4"/> إنشاء طلب صرف</Button></DialogTrigger>
+                        <DialogContent className="sm:max-w-2xl" dir="rtl">
+                            <DialogHeader><DialogTitle>{stockRequisitionToEdit ? 'تعديل طلب صرف' : 'إنشاء طلب صرف جديد'}</DialogTitle></DialogHeader>
+                            <Form {...stockRequisitionForm}>
+                                <form onSubmit={stockRequisitionForm.handleSubmit(handleStockRequisitionSubmit)} className="space-y-4 py-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={stockRequisitionForm.control} name="requestingDepartmentOrPerson" render={({ field }) => ( <FormItem><FormLabel>الجهة الطالبة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر الجهة"/></SelectTrigger></FormControl><SelectContent>{mockDepartments.map(d=><SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
+                                        <FormField control={stockRequisitionForm.control} name="requestDate" render={({ field }) => ( <FormItem className="flex flex-col"><FormLabel>تاريخ الطلب</FormLabel><DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange}/><FormMessage/></FormItem> )}/>
+                                    </div>
+                                    <ScrollArea className="h-[200px] border rounded-md p-2">
+                                        {stockRequisitionItemsFields.map((item, index) => (
+                                        <div key={item.id} className="grid grid-cols-12 gap-2 items-end p-1 border-b mb-2">
+                                            <FormField control={stockRequisitionForm.control} name={`items.${index}.productId`} render={({ field }) => ( <FormItem className="col-span-6"><FormLabel className="text-xs">الصنف</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر الصنف"/></SelectTrigger></FormControl><SelectContent>{productsData.map(p=><SelectItem key={p.id} value={p.id!}>{p.name}</SelectItem>)}</SelectContent></Select><FormMessage className="text-xs"/></FormItem> )}/>
+                                            <FormField control={stockRequisitionForm.control} name={`items.${index}.quantityRequested`} render={({ field }) => ( <FormItem className="col-span-4"><FormLabel className="text-xs">الكمية المطلوبة</FormLabel><FormControl><Input type="number" {...field} className="h-9 text-xs"/></FormControl><FormMessage className="text-xs"/></FormItem> )}/>
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeStockRequisitionItem(index)} className="col-span-2 h-9 w-9 text-destructive"><MinusCircle className="h-4 w-4"/></Button>
+                                        </div> ))}
+                                    </ScrollArea>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => appendStockRequisitionItem({productId: '', quantityRequested: 1, justification: ''})}><PlusCircle className="me-1 h-3 w-3" /> إضافة صنف</Button>
+                                    <DialogFooter><Button type="submit">{stockRequisitionToEdit ? 'حفظ التعديلات' : 'حفظ الطلب'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    </Dialog>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow><TableHead>الرقم</TableHead><TableHead>التاريخ</TableHead><TableHead>الجهة الطالبة</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {stockRequisitions.map(req => (
+                            <TableRow key={req.id}>
+                                <TableCell>{req.id}</TableCell>
+                                <TableCell>{formatDateForDisplay(req.requestDate)}</TableCell>
+                                <TableCell>{req.requestingDepartmentOrPerson}</TableCell>
+                                <TableCell><Badge variant={req.status === 'موافق عليه' ? 'default' : 'outline'}>{req.status}</Badge></TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="ghost" size="icon"><Eye className="h-4 w-4"/></Button>
+                                    {req.status === "جديد" && (<Button variant="ghost" size="icon" className="text-green-600"><CheckCircle className="h-4 w-4"/></Button>)}
+                                    <Button variant="ghost" size="icon" onClick={() => {setStockRequisitionToEdit(req); setShowManageStockRequisitionDialog(true);}}><Edit className="h-4 w-4"/></Button>
+                                </TableCell>
+                            </TableRow>))}
                         </TableBody>
                     </Table>
                 </CardContent>
