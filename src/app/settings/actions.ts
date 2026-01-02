@@ -36,7 +36,7 @@ export type RoleFormValues = z.infer<typeof roleSchema>;
 const settingsSchema = z.object({
   companyName: z.string().optional(),
   companyAddress: z.string().optional(),
-  companyEmail: z.string().email().optional(),
+  companyEmail: z.string().email().optional().or(z.literal('')),
   companyPhone: z.string().optional(),
   companyVatNumber: z.string().optional(),
   defaultCurrency: z.string().optional(),

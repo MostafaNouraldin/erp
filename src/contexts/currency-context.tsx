@@ -2,6 +2,8 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
+import { useAuth } from '@/hooks/auth-context'; // Import useAuth
+import { getCompanySettings } from '@/app/settings/actions'; // Import server action
 
 export interface Currency {
   code: string; // e.g., "SAR", "USD", "EUR", "EGP"
@@ -33,7 +35,6 @@ export const CurrencyContext = createContext<CurrencyContextProps>({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
-    // Apply special class for SAR
     if (defaultCurrency.code === 'SAR') {
         return `${formatted} <span class="srs">${symbol}</span>`;
     }
@@ -46,21 +47,27 @@ interface CurrencyProviderProps {
 }
 
 export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) => {
+  const { user } = useAuth();
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(defaultCurrency);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedCurrencyCode = localStorage.getItem('selectedCurrency');
-      const initialCurrency = availableCurrencies.find(c => c.code === storedCurrencyCode) || defaultCurrency;
-      setSelectedCurrency(initialCurrency);
+    async function loadCurrencyPreference() {
+      if (user?.tenantId) {
+        try {
+          const settings = await getCompanySettings(user.tenantId);
+          const currencyCode = settings?.defaultCurrency;
+          const userCurrency = availableCurrencies.find(c => c.code === currencyCode) || defaultCurrency;
+          setSelectedCurrency(userCurrency);
+        } catch (error) {
+          console.error("Failed to fetch company settings for currency:", error);
+          setSelectedCurrency(defaultCurrency); // Fallback to default
+        }
+      } else {
+        setSelectedCurrency(defaultCurrency); // Fallback for users without tenantId
+      }
     }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('selectedCurrency', selectedCurrency.code);
-    }
-  }, [selectedCurrency]);
+    loadCurrencyPreference();
+  }, [user]);
 
   const formatCurrency = (amount: number): string => {
     const { symbol } = selectedCurrency;
@@ -69,21 +76,14 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
       maximumFractionDigits: 2,
     }).format(amount);
     
-    // Apply special class for SAR
     if (selectedCurrency.code === 'SAR') {
         return `${formatted} <span class="srs">${symbol}</span>`;
     }
     return `${formatted} ${symbol}`;
   };
 
-  const formatCurrencyForDisplay = (amount: number) => {
-    const formattedString = formatCurrency(amount);
-    return <span dangerouslySetInnerHTML={{ __html: formattedString }} />;
-  };
-
-
   return (
-    <CurrencyContext.Provider value={{ selectedCurrency, setSelectedCurrency, formatCurrency: (amount: number) => formatCurrency(amount) }}>
+    <CurrencyContext.Provider value={{ selectedCurrency, setSelectedCurrency, formatCurrency }}>
       {children}
     </CurrencyContext.Provider>
   );

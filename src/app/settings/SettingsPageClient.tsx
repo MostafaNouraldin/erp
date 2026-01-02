@@ -226,13 +226,13 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
             </Card>
 
             <Tabs defaultValue="company" className="w-full mt-6">
-                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
-                    <TabsTrigger value="company" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
-                    <TabsTrigger value="financial" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
-                     <TabsTrigger value="hr" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Briefcase className="inline-block me-2 h-4 w-4" /> الموارد البشرية</TabsTrigger>
-                    <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Users className="inline-block me-2 h-4 w-4" /> المستخدمين</TabsTrigger>
-                    <TabsTrigger value="roles" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Shield className="inline-block me-2 h-4 w-4" /> الأدوار والصلاحيات</TabsTrigger>
-                    <TabsTrigger value="appearance" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Palette className="inline-block me-2 h-4 w-4" /> المظهر</TabsTrigger>
+                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto justify-start">
+                    <TabsTrigger value="company" className="flex-shrink-0"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
+                    <TabsTrigger value="financial" className="flex-shrink-0"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
+                     <TabsTrigger value="hr" className="flex-shrink-0"><Briefcase className="inline-block me-2 h-4 w-4" /> الموارد البشرية</TabsTrigger>
+                    <TabsTrigger value="users" className="flex-shrink-0"><Users className="inline-block me-2 h-4 w-4" /> المستخدمين</TabsTrigger>
+                    <TabsTrigger value="roles" className="flex-shrink-0"><Shield className="inline-block me-2 h-4 w-4" /> الأدوار والصلاحيات</TabsTrigger>
+                    <TabsTrigger value="appearance" className="flex-shrink-0"><Palette className="inline-block me-2 h-4 w-4" /> المظهر</TabsTrigger>
                 </TabsList>
                 
                 <Form {...settingsForm}>

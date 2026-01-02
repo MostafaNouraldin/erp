@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { Metadata } from "next";
@@ -176,12 +175,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                         )}
                     </Sidebar>
 
-                    <div className="flex flex-col flex-1">
+                    <div className="flex flex-col flex-1 overflow-x-hidden">
                         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 shadow-sm">
                             <div className="flex-1">
                             </div>
                             <SidebarTrigger className="md:hidden order-first md:order-last" />
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 md:gap-4">
                                 <Button variant="ghost" size="icon" aria-label="Search">
                                     <Search className="h-5 w-5" />
                                 </Button>
@@ -260,6 +259,7 @@ export default function RootLayout({
       <head>
         <title>Al-Mustaqbal ERP</title>
         <meta name="description" content="نظام ERP متكامل للشركات المتوسطة والكبيرة" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
         <AuthProvider>
