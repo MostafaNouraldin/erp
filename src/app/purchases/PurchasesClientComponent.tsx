@@ -746,6 +746,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                 <TableHead>رقم المرتجع</TableHead>
                                 <TableHead>المورد</TableHead>
                                 <TableHead>التاريخ</TableHead>
+                                <TableHead>الفاتورة الأصلية</TableHead>
                                 <TableHead>المبلغ الإجمالي</TableHead>
                                 <TableHead>الحالة</TableHead>
                                 <TableHead className="text-center">إجراءات</TableHead>
@@ -757,6 +758,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                     <TableCell>{pr.id}</TableCell>
                                     <TableCell>{suppliersData.find(s => s.id === pr.supplierId)?.name}</TableCell>
                                     <TableCell>{formatDateForDisplay(pr.date)}</TableCell>
+                                    <TableCell>{pr.originalInvoiceId || "-"}</TableCell>
                                     <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(pr.totalAmount) }}></TableCell>
                                     <TableCell><Badge variant={pr.status === 'معتمد' ? 'default' : 'outline'}>{pr.status}</Badge></TableCell>
                                     <TableCell className="text-center">
@@ -793,6 +795,3 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
-
-
-
