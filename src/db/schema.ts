@@ -117,13 +117,21 @@ export const employees = pgTable('employees', {
     basicSalary: numeric('basic_salary', { precision: 10, scale: 2 }).notNull(),
     email: varchar('email', { length: 256 }),
     phone: varchar('phone', { length: 50 }),
-    avatar_url: text('avatar_url'),
+    avatarUrl: text('avatar_url'),
     dataAiHint: varchar('data_ai_hint', { length: 256 }),
     nationality: varchar('nationality', { length: 100 }),
     idNumber: varchar('id_number', { length: 50 }),
     bankName: varchar('bank_name', { length: 256 }),
     iban: varchar('iban', { length: 256 }),
     socialInsuranceNumber: varchar('social_insurance_number', { length: 100 }),
+    medicalInsuranceProvider: varchar('medical_insurance_provider', { length: 256 }),
+    medicalInsurancePolicyNumber: varchar('medical_insurance_policy_number', { length: 100 }),
+    medicalInsuranceClass: varchar('medical_insurance_class', { length: 100 }),
+    medicalInsuranceStartDate: timestamp('medical_insurance_start_date'),
+    medicalInsuranceEndDate: timestamp('medical_insurance_end_date'),
+    annualLeaveBalance: integer('annual_leave_balance').default(0),
+    sickLeaveBalance: integer('sick_leave_balance').default(0),
+    emergencyLeaveBalance: integer('emergency_leave_balance').default(0),
 });
 
 export const products = pgTable('products', {

@@ -35,7 +35,7 @@ const employeeSchema = z.object({
   basicSalary: z.coerce.number().min(0, "الراتب الأساسي يجب أن يكون إيجابياً"),
   email: z.string().email("بريد إلكتروني غير صالح").optional().or(z.literal('')),
   phone: z.string().optional(),
-  avatar_url: z.string().url("رابط الصورة غير صالح").optional().or(z.literal('')),
+  avatarUrl: z.string().url("رابط الصورة غير صالح").optional().or(z.literal('')),
   dataAiHint: z.string().max(30).optional(),
   nationality: z.string().optional(),
   idNumber: z.string().optional(),
@@ -44,6 +44,14 @@ const employeeSchema = z.object({
   socialInsuranceNumber: z.string().optional(),
   allowances: z.array(employeeAllowanceSchema).optional(),
   deductions: z.array(employeeDeductionSchema).optional(),
+  medicalInsuranceProvider: z.string().optional(),
+  medicalInsurancePolicyNumber: z.string().optional(),
+  medicalInsuranceClass: z.string().optional(),
+  medicalInsuranceStartDate: z.date().optional().nullable(),
+  medicalInsuranceEndDate: z.date().optional().nullable(),
+  annualLeaveBalance: z.coerce.number().int().min(0).default(0),
+  sickLeaveBalance: z.coerce.number().int().min(0).default(0),
+  emergencyLeaveBalance: z.coerce.number().int().min(0).default(0),
 });
 export type EmployeeFormValues = z.infer<typeof employeeSchema>;
 
@@ -414,3 +422,4 @@ export async function deleteDisciplinaryWarning(id: string) {
 
 // HR Settings Actions (Department, JobTitle, LeaveType)
 export { addDepartment, updateDepartment, deleteDepartment, addJobTitle, updateJobTitle, deleteJobTitle, addLeaveType, updateLeaveType, deleteLeaveType } from '../settings/actions';
+

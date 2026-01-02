@@ -32,6 +32,8 @@ export default async function HRPayrollPage() {
                     contractEndDate: new Date(emp.contractEndDate),
                     allowances: allowances.map(a => ({...a, amount: parseFloat(a.amount)})),
                     deductions: deductions.map(d => ({...d, amount: parseFloat(d.amount)})),
+                    medicalInsuranceStartDate: emp.medicalInsuranceStartDate ? new Date(emp.medicalInsuranceStartDate) : null,
+                    medicalInsuranceEndDate: emp.medicalInsuranceEndDate ? new Date(emp.medicalInsuranceEndDate) : null,
                 };
             })
         );
@@ -94,3 +96,4 @@ export default async function HRPayrollPage() {
         );
     }
 }
+

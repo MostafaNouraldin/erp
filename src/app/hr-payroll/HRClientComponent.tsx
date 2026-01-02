@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
-import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle, Shield, Banknote, CalendarPlus, CalendarCheck2, UserCog, Award, Plane, UploadCloud, Printer, FileWarning, FileEdit, UserX, ClipboardSignature, FolderOpen } from "lucide-react";
+import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle, Shield, Banknote, CalendarPlus, CalendarCheck2, UserCog, Award, Plane, UploadCloud, Printer, FileWarning, FileEdit, UserX, ClipboardSignature, FolderOpen, UserMinus, HeartPulse } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -87,6 +87,14 @@ const employeeSchema = z.object({
   allowances: z.array(employeeAllowanceSchema).optional().default([]), 
   deductions: z.array(employeeDeductionSchema).optional().default([]),
   managerId: z.string().optional().nullable(),
+  medicalInsuranceProvider: z.string().optional(),
+  medicalInsurancePolicyNumber: z.string().optional(),
+  medicalInsuranceClass: z.string().optional(),
+  medicalInsuranceStartDate: z.date().optional().nullable(),
+  medicalInsuranceEndDate: z.date().optional().nullable(),
+  annualLeaveBalance: z.coerce.number().int().min(0).default(0),
+  sickLeaveBalance: z.coerce.number().int().min(0).default(0),
+  emergencyLeaveBalance: z.coerce.number().int().min(0).default(0),
 });
 
 const payrollItemSchema = z.object({
@@ -182,6 +190,8 @@ const employeeDefaultValues = {
   employmentType: "دوام كامل" as const,
   nationality: "", idNumber: "", bankName: "", iban: "", socialInsuranceNumber: "", managerId: null,
   allowances: [], deductions: [],
+  medicalInsuranceProvider: "", medicalInsurancePolicyNumber: "", medicalInsuranceClass: "", medicalInsuranceStartDate: null, medicalInsuranceEndDate: null,
+  annualLeaveBalance: 21, sickLeaveBalance: 15, emergencyLeaveBalance: 5,
 };
 
 const convertAmountToWords = (amount: number) => {
@@ -310,7 +320,13 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   }, [initialData]);
 
   useEffect(() => {
-    if (employeeToEdit) employeeForm.reset({...employeeToEdit, contractStartDate: new Date(employeeToEdit.contractStartDate), contractEndDate: new Date(employeeToEdit.contractEndDate)});
+    if (employeeToEdit) employeeForm.reset({
+        ...employeeToEdit, 
+        contractStartDate: new Date(employeeToEdit.contractStartDate), 
+        contractEndDate: new Date(employeeToEdit.contractEndDate),
+        medicalInsuranceStartDate: employeeToEdit.medicalInsuranceStartDate ? new Date(employeeToEdit.medicalInsuranceStartDate) : null,
+        medicalInsuranceEndDate: employeeToEdit.medicalInsuranceEndDate ? new Date(employeeToEdit.medicalInsuranceEndDate) : null,
+    });
     else employeeForm.reset(employeeDefaultValues);
   }, [employeeToEdit, employeeForm, showAddEmployeeDialog]);
 
@@ -642,6 +658,15 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     }
   };
 
+  const calculateAccruedLeave = (employee: EmployeeFormValues | null) => {
+    if (!employee) return 0;
+    const startDate = new Date(employee.contractStartDate);
+    const today = new Date();
+    const monthsOfService = (today.getFullYear() - startDate.getFullYear()) * 12 + (today.getMonth() - startDate.getMonth());
+    const accrued = (employee.annualLeaveBalance / 12) * Math.max(0, monthsOfService);
+    return Math.floor(accrued); // Return whole days
+  };
+
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -654,7 +679,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                 <PlusCircle className="me-2 h-4 w-4" /> إضافة موظف جديد
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-3xl flex flex-col max-h-[90vh]" dir="rtl">
+            <DialogContent className="sm:max-w-4xl flex flex-col max-h-[90vh]" dir="rtl">
                 <DialogHeader className="flex-shrink-0">
                     <DialogTitle>{employeeToEdit ? "تعديل بيانات موظف" : "إضافة موظف جديد"}</DialogTitle>
                 </DialogHeader>
@@ -664,8 +689,9 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                             <Tabs defaultValue="personal" className="w-full flex flex-col" dir="rtl">
                                 <TabsList className="w-full mb-4 flex-shrink-0 sticky top-0 bg-background z-10 border-b">
                                     <TabsTrigger value="personal" className="flex-1">معلومات شخصية ووظيفية</TabsTrigger>
-                                    <TabsTrigger value="contract" className="flex-1">العقد والتوظيف</TabsTrigger>
-                                    <TabsTrigger value="financial" className="flex-1">المعلومات المالية</TabsTrigger>
+                                    <TabsTrigger value="contract" className="flex-1">العقد والراتب</TabsTrigger>
+                                    <TabsTrigger value="financial" className="flex-1">المعلومات المالية والبدلات</TabsTrigger>
+                                    <TabsTrigger value="insurance" className="flex-1">التأمين والإجازات</TabsTrigger>
                                 </TabsList>
                                 <div className="flex-grow overflow-y-auto min-h-0">
                                     <TabsContent value="personal" className="space-y-4 mt-0">
@@ -706,10 +732,10 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                                             <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الحالة" /></SelectTrigger></FormControl>
                                             <SelectContent>{["نشط", "في إجازة", "منتهية خدمته", "متوقف مؤقتاً"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                         </div>
+                                        <FormField control={employeeForm.control} name="basicSalary" render={({ field }) => (<FormItem><FormLabel>الراتب الأساسي (SAR)</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
                                     </TabsContent>
 
                                     <TabsContent value="financial" className="space-y-4 mt-0">
-                                        <FormField control={employeeForm.control} name="basicSalary" render={({ field }) => (<FormItem><FormLabel>الراتب الأساسي (SAR)</FormLabel><FormControl><Input type="number" {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <FormField control={employeeForm.control} name="bankName" render={({ field }) => (<FormItem><FormLabel>اسم البنك</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
                                             <FormField control={employeeForm.control} name="iban" render={({ field }) => (<FormItem><FormLabel>رقم الآيبان (IBAN)</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>)} />
@@ -741,6 +767,30 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                                             </Card>
                                         ))}
                                         <Button type="button" variant="outline" size="sm" onClick={() => appendDeductionField({description: '', amount: 0, type: "ثابت"})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة خصم</Button>
+                                    </TabsContent>
+                                    <TabsContent value="insurance" className="space-y-4 mt-0">
+                                        <Card>
+                                            <CardHeader><CardTitle className="text-base">بيانات التأمين الطبي</CardTitle></CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <FormField control={employeeForm.control} name="medicalInsuranceProvider" render={({ field }) => (<FormItem><FormLabel>شركة التأمين</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem>)} />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <FormField control={employeeForm.control} name="medicalInsurancePolicyNumber" render={({ field }) => (<FormItem><FormLabel>رقم البوليصة</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem>)} />
+                                                    <FormField control={employeeForm.control} name="medicalInsuranceClass" render={({ field }) => (<FormItem><FormLabel>فئة التأمين</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem>)} />
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <FormField control={employeeForm.control} name="medicalInsuranceStartDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ بداية التأمين</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage/></FormItem>)} />
+                                                    <FormField control={employeeForm.control} name="medicalInsuranceEndDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>تاريخ نهاية التأمين</FormLabel><DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage/></FormItem>)} />
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                         <Card>
+                                            <CardHeader><CardTitle className="text-base">أرصدة الإجازات السنوية</CardTitle></CardHeader>
+                                            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <FormField control={employeeForm.control} name="annualLeaveBalance" render={({ field }) => (<FormItem><FormLabel>الإجازة السنوية</FormLabel><FormControl><Input type="number" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem>)} />
+                                                <FormField control={employeeForm.control} name="sickLeaveBalance" render={({ field }) => (<FormItem><FormLabel>الإجازة المرضية</FormLabel><FormControl><Input type="number" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem>)} />
+                                                <FormField control={employeeForm.control} name="emergencyLeaveBalance" render={({ field }) => (<FormItem><FormLabel>الإجازة الطارئة</FormLabel><FormControl><Input type="number" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem>)} />
+                                            </CardContent>
+                                        </Card>
                                     </TabsContent>
                                 </div>
                             </Tabs>
@@ -1121,7 +1171,40 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
             </Tabs>
         </TabsContent>
       </Tabs>
+      <Dialog open={showViewEmployeeDialog} onOpenChange={setShowViewEmployeeDialog}>
+        <DialogContent className="sm:max-w-2xl" dir="rtl">
+            <DialogHeader>
+                <DialogTitle>ملف الموظف: {selectedEmployeeForView?.name}</DialogTitle>
+            </DialogHeader>
+            {selectedEmployeeForView && (
+                <ScrollArea className="max-h-[70vh] p-2">
+                    <div className="space-y-4">
+                        <Card>
+                            <CardHeader><CardTitle className="text-base">أرصدة الإجازات</CardTitle></CardHeader>
+                            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                <div><p className="text-muted-foreground text-sm">الرصيد السنوي</p><p className="font-bold text-lg">{selectedEmployeeForView.annualLeaveBalance}</p></div>
+                                <div><p className="text-muted-foreground text-sm">المكتسب الفعلي</p><p className="font-bold text-lg text-primary">{calculateAccruedLeave(selectedEmployeeForView)}</p></div>
+                                <div><p className="text-muted-foreground text-sm">رصيد المرضي</p><p className="font-bold text-lg">{selectedEmployeeForView.sickLeaveBalance}</p></div>
+                                <div><p className="text-muted-foreground text-sm">رصيد الطارئة</p><p className="font-bold text-lg">{selectedEmployeeForView.emergencyLeaveBalance}</p></div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle className="text-base">بيانات التأمين الطبي</CardTitle></CardHeader>
+                             <CardContent className="text-sm space-y-1">
+                                <p><strong>شركة التأمين:</strong> {selectedEmployeeForView.medicalInsuranceProvider || "غير محدد"}</p>
+                                <p><strong>رقم البوليصة:</strong> {selectedEmployeeForView.medicalInsurancePolicyNumber || "غير محدد"}</p>
+                                <p><strong>الفئة:</strong> {selectedEmployeeForView.medicalInsuranceClass || "غير محدد"}</p>
+                                <p><strong>تاريخ الصلاحية:</strong> {selectedEmployeeForView.medicalInsuranceStartDate ? new Date(selectedEmployeeForView.medicalInsuranceStartDate).toLocaleDateString('ar-SA') : '-'} إلى {selectedEmployeeForView.medicalInsuranceEndDate ? new Date(selectedEmployeeForView.medicalInsuranceEndDate).toLocaleDateString('ar-SA') : '-'}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </ScrollArea>
+            )}
+             <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
