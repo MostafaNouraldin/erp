@@ -4,7 +4,7 @@
 import * as React from "react"
 import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from "./dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./dropdown-menu";
 import { Button } from "./button";
 
 interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
@@ -117,51 +117,41 @@ const TableCell = React.forwardRef<
   const parentTable = React.useContext(TableContext);
   const effectiveSize = size || parentTable.size || "default";
 
-  // Check if children are buttons for actions column on mobile
   const childrenArray = React.Children.toArray(children);
   const isActionCell = childrenArray.every(child => React.isValidElement(child) && child.type === Button);
-
-  if (isActionCell) {
-    return (
-      <td
-        ref={ref}
-        className={cn(
-          "align-middle rtl:[&:has([role=checkbox])]:pl-0 ltr:[&:has([role=checkbox])]:pr-0",
-           effectiveSize === "sm" ? "p-2" : "p-4", 
-          className
-        )}
-        {...props}
-      >
-        <div className="hidden md:flex items-center justify-center gap-1">
-          {children}
-        </div>
-        <div className="md:hidden">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="flex flex-col items-stretch gap-1 p-1">
-                  {children}
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-      </td>
-    );
-  }
 
   return (
     <td
       ref={ref}
       className={cn(
-        "text-right align-middle rtl:[&:has([role=checkbox])]:pl-0 ltr:[&:has([role=checkbox])]:pr-0",
+        "align-middle rtl:[&:has([role=checkbox])]:pl-0 ltr:[&:has([role=checkbox])]:pr-0",
         effectiveSize === "sm" ? "p-2" : "p-4", 
+        isActionCell ? "md:text-center" : "text-right",
         className
       )}
       {...props}
     >
-      {children}
+        {isActionCell ? (
+            <>
+              <div className="hidden md:flex items-center md:justify-center gap-1">
+                {children}
+              </div>
+              <div className="md:hidden">
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {React.Children.map(children, (child, index) => (
+                           <DropdownMenuItem key={index} asChild>{React.cloneElement(child as React.ReactElement, { className: 'w-full justify-start' })}</DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+              </div>
+            </>
+        ) : children}
     </td>
   )
 })

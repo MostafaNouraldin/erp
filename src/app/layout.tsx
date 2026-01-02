@@ -151,35 +151,46 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                 ))}
                             </SidebarMenu>
                         </SidebarContent>
+                        <SidebarFooter>
                         {!auth.isSuperAdmin && (
-                            <SidebarFooter className="p-2">
-                                <Card className="bg-muted/50 border-dashed">
-                                    <CardContent className="p-2 text-xs">
-                                        <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
-                                            <p className="font-semibold text-primary">{currentTenant.name}</p>
-                                            <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
-                                        </div>
-                                        <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden">
-                                          <Link href="/subscription">
-                                            إدارة الاشتراك
-                                          </Link>
-                                        </Button>
-                                        <div className="flex justify-center items-center group-data-[collapsible=icon]:block hidden">
-                                           <Link href="/subscription">
-                                            <CreditCardIcon className="h-5 w-5 text-muted-foreground" />
-                                           </Link>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </SidebarFooter>
+                            <Card className="bg-muted/50 border-dashed">
+                                <CardContent className="p-2 text-xs">
+                                    <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
+                                        <p className="font-semibold text-primary">{currentTenant.name}</p>
+                                        <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
+                                    </div>
+                                    <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden">
+                                      <Link href="/subscription">
+                                        إدارة الاشتراك
+                                      </Link>
+                                    </Button>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <div className="flex justify-center items-center group-data-[collapsible=icon]:block hidden">
+                                            <Link href="/subscription">
+                                              <Button variant="ghost" size="icon">
+                                                  <CreditCardIcon className="h-5 w-5 text-muted-foreground" />
+                                              </Button>
+                                            </Link>
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="left" align="center">
+                                          <p>إدارة الاشتراك</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                </CardContent>
+                            </Card>
                         )}
+                        </SidebarFooter>
                     </Sidebar>
 
                     <div className="flex flex-col flex-1 overflow-x-hidden">
                         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 shadow-sm">
                             <div className="flex-1">
+                                <SidebarTrigger className="md:hidden order-first" />
                             </div>
-                            <SidebarTrigger className="md:hidden order-first md:order-last" />
                             <div className="flex items-center gap-2 md:gap-4">
                                 <Button variant="ghost" size="icon" aria-label="Search">
                                     <Search className="h-5 w-5" />
