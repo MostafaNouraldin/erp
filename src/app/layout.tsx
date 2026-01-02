@@ -5,11 +5,11 @@ import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, type SidebarMenuItemProps } from "@/components/ui/sidebar"; // Import SidebarMenuItemProps
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, type SidebarMenuItemProps } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail, GanttChartSquare, Banknote } from "lucide-react"; // Added FolderOpen and Mail, aliased CreditCardIcon
+import { UserCircle, Settings, LogOut, CreditCardIcon } from "lucide-react";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/currency-context";
@@ -23,6 +23,7 @@ import { AuthProvider, AuthContext, useAuth } from "@/hooks/auth-context";
 import { useContext } from 'react';
 import LoginPage from './login/page';
 import { usePathname } from "next/navigation";
+import { allNavItems } from "@/lib/nav-links";
 
 
 const cairo = Cairo({
@@ -57,91 +58,6 @@ const currentTenantSubscription = {
   } as Record<string, boolean>,
   billingCycle: 'yearly' as 'monthly' | 'yearly',
 };
-
-
-const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
-  { href: "/", label: "لوحة التحكم", icon: LayoutDashboard, module: "Dashboard" },
-  {
-    label: "الحسابات",
-    icon: BookUser,
-    module: "Accounting",
-    subItems: [
-        { 
-            label: "دفتر الأستاذ", icon: BookOpen, permissionKey: "accounting.view",
-            subItems: [
-                { href: "/general-ledger", label: "الحسابات العامة والقيود", icon: BookOpen },
-                { href: "/opening-balances", label: "الأرصدة الافتتاحية", icon: FileArchive },
-                { href: "/employee-settlements", label: "تسويات الموظفين", icon: UserCheck },
-            ]
-        },
-        { 
-            label: "الخزينة والبنوك", icon: Landmark, permissionKey: "accounting.view",
-            subItems: [
-                { href: "/bank-receipts", label: "المقبوضات البنكية", icon: ArrowUpCircle },
-                { href: "/bank-expenses", label: "المصروفات البنكية", icon: ArrowDownCircle },
-                { href: "/cash-expenses", label: "المصروفات النقدية", icon: ArrowDownSquare },
-                { href: "/checkbook-register", label: "دفتر الشيكات", icon: BookCopy },
-                { href: "/banks", label: "إدارة الحسابات البنكية", icon: Landmark },
-            ]
-        },
-        { href: "/accounts-payable-receivable", label: "الذمم المدينة والدائنة", icon: Users, permissionKey: "accounting.view" },
-    ],
-  },
-  {
-    label: "المخزون",
-    icon: Package,
-    module: "Inventory",
-    subItems: [
-      { href: "/inventory", label: "إدارة المخزون", icon: Package, permissionKey: "inventory.view" },
-      { href: "/inventory-transfers", label: "تحويلات المخزون", icon: Truck, permissionKey: "inventory.create" },
-      { href: "/inventory-adjustments", label: "تسويات جردية", icon: SlidersHorizontal, permissionKey: "inventory.adjust_stock" },
-    ],
-  },
-    {
-    label: "المبيعات",
-    icon: ShoppingCart,
-    module: "Sales",
-    subItems: [
-      { href: "/sales", label: "لوحة المبيعات", icon: ShoppingCart, permissionKey: "sales.view" },
-      // Sub-items for Quotations, Sales Orders, Invoices, Customers are now inside the SalesClientComponent
-    ],
-  },
-  {
-    label: "المشتريات",
-    icon: Briefcase,
-    module: "Purchases",
-    subItems: [
-        { href: "/purchases", label: "لوحة المشتريات", icon: Briefcase, permissionKey: "purchases.view" },
-        // Sub-items for Suppliers, POs, Invoices, GRNs, Returns are inside PurchasesClientComponent
-    ]
-  },
-  { href: "/hr-payroll", label: "الموارد البشرية والرواتب", icon: Users, module: "HR" },
-  { href: "/production", label: "الإنتاج", icon: Cog, module: "Production" },
-  { href: "/projects", label: "المشاريع", icon: GanttChartSquare, module: "Projects" },
-  { href: "/pos", label: "نقاط البيع", icon: CreditCardIcon, module: "POS" },
-  { href: "/reports", label: "التقارير والتحليل", icon: BarChart2, module: "BI" },
-  {
-    label: "الإعدادات",
-    icon: Settings,
-    module: "Settings",
-    subItems: [
-      { href: "/settings", label: "الإعدادات العامة", icon: Settings, permissionKey: "settings.view" },
-      { href: "/subscription", label: "الاشتراك والفوترة", icon: Shield, permissionKey: "settings.view" },
-    ]
-  },
-  {
-    label: "إدارة النظام",
-    icon: Settings2,
-    module: "SystemAdministration",
-    subItems: [
-      { href: "/system-administration/tenants", label: "إدارة الشركات (العملاء)", icon: Building2, permissionKey: "admin.manage_tenants" },
-      { href: "/system-administration/modules", label: "إعدادات الوحدات والاشتراكات", icon: SlidersHorizontal, permissionKey: "admin.manage_modules" },
-      { href: "/system-administration/subscription-invoices", label: "فواتير الاشتراكات", icon: FileText, permissionKey: "admin.manage_billing" },
-      { href: "/system-administration/subscription-requests", label: "طلبات الاشتراك", icon: Mail, permissionKey: "admin.manage_requests" },
-    ],
-  },
-  { href: "/help", label: "المساعدة", icon: CircleHelpIcon, module: "Help" },
-];
 
 
 function AppLayout({ children }: { children: React.ReactNode }) {
