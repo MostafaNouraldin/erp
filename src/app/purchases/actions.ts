@@ -57,7 +57,7 @@ const supplierInvoiceSchema = z.object({
   dueDate: z.date({ required_error: "تاريخ الاستحقاق مطلوب" }),
   items: z.array(supplierInvoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   totalAmount: z.coerce.number().default(0),
-  paidAmount: z.coerce.number().default(0).optional(),
+  paidAmount: z.coerce.number().default(0),
   status: z.enum(["غير مدفوع", "مدفوع جزئياً", "مدفوع", "متأخر"]).default("غير مدفوع"),
   notes: z.string().optional(),
 });

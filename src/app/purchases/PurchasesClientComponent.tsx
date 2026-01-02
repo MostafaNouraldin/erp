@@ -211,7 +211,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
   const { fields: grnItemsFields, replace: replaceGrnItems } = useFieldArray({ control: grnForm.control, name: "items" });
 
   const purchaseReturnForm = useForm<PurchaseReturnFormValues>({ resolver: zodResolver(purchaseReturnSchema) });
-  const { fields: returnItemsFields, append: appendReturnItem, remove: removeReturnItem } = useFieldArray({ control: purchaseReturnForm.control, name: "items" });
+  const { fields: returnItemsFields, append: appendReturnItem, remove: removeReturnItem, replace: replaceReturnItems } = useFieldArray({ control: purchaseReturnForm.control, name: "items" });
 
 
   useEffect(() => {
@@ -225,8 +225,11 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
   }, [poToEdit, poForm, showCreatePoDialog]);
 
   useEffect(() => {
-    if (supplierInvoiceToEdit) supplierInvoiceForm.reset(supplierInvoiceToEdit);
-    else supplierInvoiceForm.reset({ supplierId: '', invoiceDate: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0 });
+    if (supplierInvoiceToEdit) {
+        supplierInvoiceForm.reset(supplierInvoiceToEdit);
+    } else {
+        supplierInvoiceForm.reset({ supplierId: '', poId: '', invoiceDate: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", paidAmount: 0 });
+    }
   }, [supplierInvoiceToEdit, supplierInvoiceForm, showCreateSupplierInvoiceDialog]);
   
   useEffect(() => {
@@ -349,6 +352,20 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     } catch(e) {
         toast({ title: "خطأ", description: "لم يتم حفظ فاتورة المورد.", variant: "destructive" });
     }
+  };
+
+  const openCreateInvoiceFromPo = (po: PurchaseOrderFormValues) => {
+    setSupplierInvoiceToEdit(null); // Ensure create mode
+    supplierInvoiceForm.reset({
+        supplierId: po.supplierId,
+        poId: po.id,
+        invoiceDate: new Date(),
+        dueDate: new Date(new Date().setDate(new Date().getDate() + 30)), // Due in 30 days
+        items: po.items,
+        totalAmount: po.totalAmount,
+        status: "غير مدفوع",
+    });
+    setShowCreateSupplierInvoiceDialog(true);
   };
   
   const handleViewSupplierInvoice = (invoice: SupplierInvoiceFormValues) => {
@@ -700,7 +717,16 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                      </div>
                                       <FormField control={purchaseReturnForm.control} name="originalInvoiceId" render={({ field }) => (
                                         <FormItem><FormLabel>الفاتورة الأصلية (اختياري)</FormLabel>
-                                        <FormControl><Input placeholder="أدخل رقم فاتورة الشراء الأصلية" {...field} className="bg-background"/></FormControl>
+                                            <Select onValueChange={(value) => { 
+                                                field.onChange(value);
+                                                const originalInvoice = supplierInvoices.find(inv => inv.id === value);
+                                                if (originalInvoice) {
+                                                    replaceReturnItems(originalInvoice.items);
+                                                }
+                                            }} value={field.value} dir="rtl">
+                                            <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفاتورة الأصلية لتعبئة الأصناف" /></SelectTrigger></FormControl>
+                                            <SelectContent>{supplierInvoices.filter(inv => inv.supplierId === purchaseReturnForm.watch('supplierId')).map(inv => <SelectItem key={inv.id} value={inv.id}>{inv.id}</SelectItem>)}</SelectContent>
+                                            </Select>
                                         <FormMessage /></FormItem>
                                     )}/>
                                     <ScrollArea className="h-[200px] border rounded-md p-2">
