@@ -1071,13 +1071,14 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <Table><TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>السبب</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                            <Table><TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>السبب</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {warningNoticesData.map(wn => (
                                         <TableRow key={wn.id}>
                                             <TableCell>{new Date(wn.date).toLocaleDateString('ar-SA')}</TableCell>
                                             <TableCell>{employees.find(e => e.id === wn.employeeId)?.name}</TableCell>
                                             <TableCell>{wn.reason}</TableCell>
+                                            <TableCell><Badge variant={wn.status === "تم التسليم" ? "default" : "outline"}>{wn.status}</Badge></TableCell>
                                             <TableCell className="text-center">
                                                 <Button variant="ghost" size="icon" onClick={() => handlePrintWarningNotice(wn)}><Printer className="h-4 w-4" /></Button>
                                                 <Button variant="ghost" size="icon" onClick={() => { setWarningNoticeToEdit(wn); setShowManageWarningNoticeDialog(true);}}><Edit className="h-4 w-4" /></Button>
@@ -1097,13 +1098,14 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                            </div>
                         </CardHeader>
                         <CardContent>
-                             <Table><TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>نوع القرار</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                             <Table><TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>نوع القرار</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {administrativeDecisionsData.map(ad => (
                                         <TableRow key={ad.id}>
                                             <TableCell>{new Date(ad.decisionDate).toLocaleDateString('ar-SA')}</TableCell>
                                             <TableCell>{employees.find(e => e.id === ad.employeeId)?.name}</TableCell>
                                             <TableCell>{ad.decisionType}</TableCell>
+                                            <TableCell><Badge variant={ad.status === "معتمد" ? "default" : "outline"}>{ad.status}</Badge></TableCell>
                                             <TableCell className="text-center">
                                                 <Button variant="ghost" size="icon" onClick={() => handlePrintAdministrativeDecision(ad)}><Printer className="h-4 w-4" /></Button>
                                                 <Button variant="ghost" size="icon" onClick={() => {setAdminDecisionToEdit(ad); setShowManageAdminDecisionDialog(true);}}><Edit className="h-4 w-4" /></Button>
@@ -1150,13 +1152,14 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                            </div>
                         </CardHeader>
                          <CardContent>
-                             <Table><TableHeader><TableRow><TableHead>تاريخ الإنذار</TableHead><TableHead>الموظف</TableHead><TableHead>نوع الإنذار</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                             <Table><TableHeader><TableRow><TableHead>تاريخ الإنذار</TableHead><TableHead>الموظف</TableHead><TableHead>نوع الإنذار</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {disciplinaryWarningsData.map(dw => (
                                         <TableRow key={dw.id}>
                                             <TableCell>{new Date(dw.warningDate).toLocaleDateString('ar-SA')}</TableCell>
                                             <TableCell>{employees.find(e => e.id === dw.employeeId)?.name}</TableCell>
                                             <TableCell>{dw.warningType}</TableCell>
+                                            <TableCell><Badge variant={dw.status === "تم التسليم" ? "default" : "outline"}>{dw.status}</Badge></TableCell>
                                             <TableCell className="text-center">
                                                 <Button variant="ghost" size="icon" onClick={() => handlePrintDisciplinaryWarning(dw)}><Printer className="h-4 w-4" /></Button>
                                                 <Button variant="ghost" size="icon" onClick={() => {setDisciplinaryToEdit(dw); setShowManageDisciplinaryDialog(true);}}><Edit className="h-4 w-4" /></Button>
@@ -1203,8 +1206,96 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
              <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
+
+        {/* Print Dialogs */}
+        <Dialog open={showPrintWarningNoticeDialog} onOpenChange={setShowPrintWarningNoticeDialog}>
+            <DialogContent className="sm:max-w-2xl" dir="rtl">
+                <DialogHeader><DialogTitle>طباعة لفت نظر</DialogTitle></DialogHeader>
+                {selectedWarningNoticeForPrint && (<div className="printable-area p-6 font-cairo">
+                    <h2 className="text-xl font-bold text-center mb-6">لفت نظر</h2>
+                    <p><strong>إلى السيد/ة:</strong> {employees.find(e=>e.id === selectedWarningNoticeForPrint.employeeId)?.name}</p>
+                    <p><strong>بتاريخ:</strong> {new Date(selectedWarningNoticeForPrint.date).toLocaleDateString('ar-SA')}</p>
+                    <p className="mt-4"><strong>الموضوع: {selectedWarningNoticeForPrint.reason}</strong></p>
+                    <p className="mt-2"><strong>التفاصيل:</strong></p>
+                    <p className="border p-2 min-h-[100px]">{selectedWarningNoticeForPrint.details}</p>
+                    <div className="mt-10 grid grid-cols-2 gap-4 text-center">
+                        <div><p>توقيع المدير المباشر</p><p className="mt-10">...................</p><p>{selectedWarningNoticeForPrint.issuingManager}</p></div>
+                        <div><p>استلام الموظف</p><p className="mt-10">...................</p></div>
+                    </div>
+                </div>)}
+                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+            </DialogContent>
+        </Dialog>
+        
+        <Dialog open={showPrintAdminDecisionDialog} onOpenChange={setShowPrintAdminDecisionDialog}>
+             <DialogContent className="sm:max-w-2xl" dir="rtl">
+                <DialogHeader><DialogTitle>طباعة قرار إداري</DialogTitle></DialogHeader>
+                {selectedAdminDecisionForPrint && (<div className="printable-area p-6 font-cairo">
+                    <div className="text-center mb-6"><AppLogo /></div>
+                    <h2 className="text-xl font-bold text-center mb-6">قرار إداري رقم: {selectedAdminDecisionForPrint.id}</h2>
+                    <p><strong>بناءً على الصلاحيات الممنوحة لنا، فقد تقرر ما يلي:</strong></p>
+                    <p className="mt-2"><strong>نوع القرار:</strong> {selectedAdminDecisionForPrint.decisionType}</p>
+                    <p className="mt-2"><strong>بشأن الموظف:</strong> {employees.find(e=>e.id === selectedAdminDecisionForPrint.employeeId)?.name}</p>
+                    <p className="mt-4"><strong>نص القرار:</strong></p>
+                    <p className="border p-2 min-h-[150px]">{selectedAdminDecisionForPrint.details}</p>
+                    <p className="mt-4"><strong>يسري هذا القرار اعتباراً من تاريخ:</strong> {new Date(selectedAdminDecisionForPrint.effectiveDate).toLocaleDateString('ar-SA')}</p>
+                    <div className="mt-10 text-left">
+                        <p><strong>الجهة المصدرة للقرار:</strong> {selectedAdminDecisionForPrint.issuingAuthority}</p>
+                        <p><strong>التاريخ:</strong> {new Date(selectedAdminDecisionForPrint.decisionDate).toLocaleDateString('ar-SA')}</p>
+                        <p className="mt-10">...................</p>
+                        <p>التوقيع</p>
+                    </div>
+                </div>)}
+                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog open={showPrintResignationDialog} onOpenChange={setShowPrintResignationDialog}>
+             <DialogContent className="sm:max-w-2xl" dir="rtl">
+                <DialogHeader><DialogTitle>طباعة نموذج استقالة</DialogTitle></DialogHeader>
+                {selectedResignationForPrint && (<div className="printable-area p-6 font-cairo">
+                    <h2 className="text-xl font-bold text-center mb-6">نموذج طلب استقالة</h2>
+                    <p><strong>إلى السيد/ المدير العام</strong></p>
+                    <p><strong>تحية طيبة وبعد،</strong></p>
+                    <p className="mt-4">أتقدم لسيادتكم بطلب استقالتي من العمل بالشركة، وذلك للأسباب التالية:</p>
+                    <p className="border p-2 min-h-[100px] mt-2">{selectedResignationForPrint.reason}</p>
+                    <p className="mt-4">على أن يكون آخر يوم عمل لي هو: <strong>{new Date(selectedResignationForPrint.lastWorkingDate).toLocaleDateString('ar-SA')}</strong>.</p>
+                    <p className="mt-4">مع خالص الشكر والتقدير.</p>
+                     <div className="mt-10">
+                        <p><strong>مقدم الطلب:</strong> {employees.find(e=>e.id === selectedResignationForPrint.employeeId)?.name}</p>
+                        <p><strong>التاريخ:</strong> {new Date(selectedResignationForPrint.submissionDate).toLocaleDateString('ar-SA')}</p>
+                        <p className="mt-6"><strong>التوقيع:</strong> ...................</p>
+                    </div>
+                </div>)}
+                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+         <Dialog open={showPrintDisciplinaryDialog} onOpenChange={setShowPrintDisciplinaryDialog}>
+             <DialogContent className="sm:max-w-2xl" dir="rtl">
+                <DialogHeader><DialogTitle>طباعة إنذار تأديبي</DialogTitle></DialogHeader>
+                {selectedDisciplinaryForPrint && (<div className="printable-area p-6 font-cairo">
+                    <h2 className="text-xl font-bold text-center mb-6">إجراء تأديبي / {selectedDisciplinaryForPrint.warningType}</h2>
+                    <p><strong>إلى السيد/ة:</strong> {employees.find(e=>e.id === selectedDisciplinaryForPrint.employeeId)?.name}</p>
+                    <p><strong>بتاريخ:</strong> {new Date(selectedDisciplinaryForPrint.warningDate).toLocaleDateString('ar-SA')}</p>
+                    <p className="mt-4"><strong>الموضوع: {selectedDisciplinaryForPrint.warningType} بخصوص مخالفة لوائح الشركة.</strong></p>
+                    <p className="mt-2"><strong>تفاصيل المخالفة:</strong></p>
+                    <p className="border p-2 min-h-[100px]">{selectedDisciplinaryForPrint.violationDetails}</p>
+                    <p className="mt-4"><strong>الإجراء المتخذ:</strong></p>
+                    <p className="border p-2 min-h-[50px]">{selectedDisciplinaryForPrint.actionTaken || 'لا يوجد'}</p>
+                    <p className="mt-4 text-sm text-destructive">نلفت انتباهكم إلى أن تكرار مثل هذه المخالفات قد يؤدي إلى اتخاذ إجراءات أشد وفقاً للوائح الداخلية للشركة ونظام العمل.</p>
+                    <div className="mt-10 grid grid-cols-2 gap-4 text-center">
+                        <div><p>توقيع المدير المسؤول</p><p className="mt-10">...................</p><p>{selectedDisciplinaryForPrint.issuingManager}</p></div>
+                        <div><p>استلام الموظف بالعلم</p><p className="mt-10">...................</p></div>
+                    </div>
+                </div>)}
+                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+            </DialogContent>
+        </Dialog>
+
     </div>
   );
 }
+
 
 
