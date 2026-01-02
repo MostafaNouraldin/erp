@@ -3,7 +3,7 @@
 
 import { connectToTenantDb } from '@/db';
 import { chartOfAccounts, journalEntries, journalEntryLines } from '@/db/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, asc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -34,6 +34,15 @@ const journalEntrySchema = z.object({
   sourceDocumentId: z.string().optional(),
 });
 export type JournalEntry = z.infer<typeof journalEntrySchema>;
+
+export type AccountStatementEntry = {
+    date: Date;
+    description: string;
+    debit: number;
+    credit: number;
+    balance: number;
+};
+
 
 async function getDb(tenantId: string = 'T001') {
     const { db } = await connectToTenantDb(tenantId);
@@ -207,4 +216,35 @@ export async function updateJournalEntryStatus(entryId: string, status: 'مسو�
     });
 
     revalidatePath('/general-ledger');
+}
+
+export async function getAccountStatement(accountId: string): Promise<AccountStatementEntry[]> {
+    const db = await getDb();
+    const lines = await db.select({
+        date: journalEntries.date,
+        description: journalEntryLines.description,
+        debit: journalEntryLines.debit,
+        credit: journalEntryLines.credit,
+    })
+    .from(journalEntryLines)
+    .innerJoin(journalEntries, eq(journalEntryLines.journalEntryId, journalEntries.id))
+    .where(and(
+        eq(journalEntryLines.accountId, accountId),
+        eq(journalEntries.status, "مرحل")
+    ))
+    .orderBy(asc(journalEntries.date));
+
+    let runningBalance = 0;
+    return lines.map(line => {
+        const debit = parseFloat(line.debit);
+        const credit = parseFloat(line.credit);
+        runningBalance += (debit - credit);
+        return {
+            date: line.date,
+            description: line.description || "N/A",
+            debit,
+            credit,
+            balance: runningBalance,
+        };
+    });
 }

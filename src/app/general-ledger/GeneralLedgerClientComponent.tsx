@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, FileText, Download, Search, BookUser, FilePlus, BookOpen, BarChart3, MinusCircle, CheckCircle, Undo } from "lucide-react";
+import { PlusCircle, Edit, Trash2, FileText, Download, Search, BookUser, FilePlus, BookOpen, BarChart3, MinusCircle, CheckCircle, Undo, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -24,8 +24,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCurrency } from '@/hooks/use-currency';
 import { useToast } from "@/hooks/use-toast";
-import { addAccount, updateAccount, deleteAccount, addJournalEntry, updateJournalEntry, deleteJournalEntry, updateJournalEntryStatus } from './actions';
-import type { JournalEntry } from './actions'; // Import the type
+import { addAccount, updateAccount, deleteAccount, addJournalEntry, updateJournalEntry, deleteJournalEntry, updateJournalEntryStatus, getAccountStatement } from './actions';
+import type { JournalEntry, AccountStatementEntry } from './actions'; 
 
 const NO_PARENT_ID_VALUE = "__no_parent__";
 
@@ -82,29 +82,6 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
     setJournalEntries(initialData.journalEntries);
   }, [initialData]);
   
-  useEffect(() => {
-    const handleAddJournalEntry = (event: Event) => {
-        const customEvent = event as CustomEvent<JournalEntry>;
-        const newEntry = customEvent.detail;
-        setJournalEntries(prev => [newEntry, ...prev]);
-        toast({
-            title: `قيد جديد من ${newEntry.sourceModule}`,
-            description: `تم استلام القيد رقم ${newEntry.id}.`,
-        });
-    };
-
-    if (typeof window !== 'undefined') {
-        window.addEventListener('addExternalJournalEntry', handleAddJournalEntry);
-    }
-
-    return () => {
-        if (typeof window !== 'undefined') {
-            window.removeEventListener('addExternalJournalEntry', handleAddJournalEntry);
-        }
-    };
-}, [toast]);
-
-
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const [accountToEdit, setAccountToEdit] = useState<AccountFormValues | null>(null);
   
@@ -116,6 +93,12 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
   
   const [showFinancialReportDialog, setShowFinancialReportDialog] = useState(false);
   const [selectedFinancialReport, setSelectedFinancialReport] = useState<string | null>(null);
+
+  const [showAccountStatementDialog, setShowAccountStatementDialog] = useState(false);
+  const [selectedAccountForStatement, setSelectedAccountForStatement] = useState<any | null>(null);
+  const [accountStatementData, setAccountStatementData] = useState<AccountStatementEntry[]>([]);
+  const [isLoadingStatement, setIsLoadingStatement] = useState(false);
+
 
   const accountForm = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
@@ -206,6 +189,20 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
   const handleViewJournalEntry = (entry: JournalEntry) => {
     setSelectedJournalEntry(entry);
     setShowViewJournalEntryDialog(true);
+  };
+
+  const handleViewAccountStatement = async (account: any) => {
+    setSelectedAccountForStatement(account);
+    setShowAccountStatementDialog(true);
+    setIsLoadingStatement(true);
+    try {
+      const statement = await getAccountStatement(account.id);
+      setAccountStatementData(statement);
+    } catch (error) {
+      toast({ title: "خطأ", description: "لم يتم تحميل كشف الحساب.", variant: "destructive" });
+    } finally {
+      setIsLoadingStatement(false);
+    }
   };
   
   const handlePostJournalEntry = async (entryId: string) => {
@@ -390,6 +387,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                         <TableCell><Badge variant={account.type === "رئيسي" ? "default" : account.type === "فرعي" ? "secondary" : "outline"}>{account.type}</Badge></TableCell>
                         <TableCell>{chartOfAccounts.find(a => a.id === account.parentId)?.name || "-"}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(account.balance) }}></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض كشف الحساب" onClick={() => handleViewAccountStatement(account)}><Eye className="h-4 w-4" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setAccountToEdit(account); setShowAddAccountDialog(true); }}><Edit className="h-4 w-4" /></Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
@@ -494,6 +492,34 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
         </DialogContent>
       </Dialog>
       
+      <Dialog open={showAccountStatementDialog} onOpenChange={setShowAccountStatementDialog}>
+        <DialogContent className="sm:max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>كشف حساب: {selectedAccountForStatement?.name}</DialogTitle>
+            <DialogDescription>عرض جميع الحركات المالية التي تمت على هذا الحساب.</DialogDescription>
+          </DialogHeader>
+          {isLoadingStatement ? (<p>جارِ تحميل كشف الحساب...</p>) :
+          accountStatementData.length > 0 ? (
+            <ScrollArea className="h-[60vh]">
+              <Table>
+                <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>مدين</TableHead><TableHead>دائن</TableHead><TableHead>الرصيد</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {accountStatementData.map((entry, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{new Date(entry.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
+                      <TableCell>{entry.description}</TableCell>
+                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.debit) }}></TableCell>
+                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.credit) }}></TableCell>
+                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.balance) }}></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          ) : (<p className="text-muted-foreground text-center py-10">لا توجد حركات لعرضها على هذا الحساب.</p>)}
+           <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
