@@ -124,7 +124,7 @@ export default function DashboardClient({
           <CardContent className="pe-2">
             <ChartContainer config={salesChartConfig} className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart accessibilityLayer data={salesChartData}>
+                <BarChart accessibilityLayer data={salesChartData}>
                   <CartesianGrid vertical={false} />
                   <XAxis
                     dataKey="month"
@@ -132,11 +132,11 @@ export default function DashboardClient({
                     tickMargin={10}
                     axisLine={false}
                   />
-                  <YAxis tickFormatter={(value) => formatCurrency(value).replace(/<[^>]*>/g, '')} />
+                  <YAxis tickFormatter={(value) => formatCurrency(value as number).replace(/<[^>]*>/g, '')} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <ChartLegend content={<ChartLegendContent />} />
                   <Bar dataKey="total" fill="var(--color-total)" radius={4} />
-                </RechartsBarChart>
+                </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
@@ -269,3 +269,5 @@ export default function DashboardClient({
     </div>
   );
 }
+
+    
