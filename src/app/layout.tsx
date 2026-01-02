@@ -9,7 +9,7 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail, GanttChartSquare } from "lucide-react"; // Added FolderOpen and Mail, aliased CreditCardIcon
+import { Globe, UserCircle, Settings, LogOut, LayoutDashboard, FileText, Users, ShoppingCart, Package, DollarSign, Briefcase, Building, Printer, BarChart2, Cog, BookUser, BookOpen, Landmark, FileArchive, ArrowDownCircle, ArrowDownSquare, ArrowUpCircle, UserCheck, BookCopy, Settings2, Building2, SlidersHorizontal, CreditCardIcon, CircleHelp as CircleHelpIcon, Truck, PackagePlus, PackageMinus, ArchiveRestore, ClipboardList, FileCog, Palette, Shield, Workflow, FolderOpen, Mail, GanttChartSquare, Banknote } from "lucide-react"; // Added FolderOpen and Mail, aliased CreditCardIcon
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/currency-context";
@@ -66,15 +66,25 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
     icon: BookUser,
     module: "Accounting",
     subItems: [
-      { href: "/general-ledger", label: "الحسابات العامة", icon: BookOpen, permissionKey: "accounting.view" },
-      { href: "/bank-receipts", label: "المقبوضات البنكية", icon: ArrowUpCircle, permissionKey: "accounting.create" },
-      { href: "/bank-expenses", label: "المصروفات البنكية", icon: ArrowDownCircle, permissionKey: "accounting.create" },
-      { href: "/cash-expenses", label: "المصروفات النقدية", icon: ArrowDownSquare, permissionKey: "accounting.create" },
-      { href: "/checkbook-register", label: "دفتر الشيكات", icon: BookCopy, permissionKey: "accounting.view" },
-      { href: "/accounts-payable-receivable", label: "الحسابات المدينة والدائنة", icon: Users, permissionKey: "accounting.view" },
-      { href: "/banks", label: "البنوك", icon: Landmark, permissionKey: "accounting.view" },
-      { href: "/opening-balances", label: "الأرصدة الافتتاحية", icon: FileArchive, permissionKey: "accounting.create" },
-      { href: "/employee-settlements", label: "تسوية حسابات الموظفين", icon: UserCheck, permissionKey: "hr.view" },
+        { 
+            label: "دفتر الأستاذ", icon: BookOpen, permissionKey: "accounting.view",
+            subItems: [
+                { href: "/general-ledger", label: "الحسابات العامة والقيود", icon: BookOpen },
+                { href: "/opening-balances", label: "الأرصدة الافتتاحية", icon: FileArchive },
+                { href: "/employee-settlements", label: "تسويات الموظفين", icon: UserCheck },
+            ]
+        },
+        { 
+            label: "الخزينة والبنوك", icon: Landmark, permissionKey: "accounting.view",
+            subItems: [
+                { href: "/bank-receipts", label: "المقبوضات البنكية", icon: ArrowUpCircle },
+                { href: "/bank-expenses", label: "المصروفات البنكية", icon: ArrowDownCircle },
+                { href: "/cash-expenses", label: "المصروفات النقدية", icon: ArrowDownSquare },
+                { href: "/checkbook-register", label: "دفتر الشيكات", icon: BookCopy },
+                { href: "/banks", label: "إدارة الحسابات البنكية", icon: Landmark },
+            ]
+        },
+        { href: "/accounts-payable-receivable", label: "الذمم المدينة والدائنة", icon: Users, permissionKey: "accounting.view" },
     ],
   },
   {
@@ -87,8 +97,24 @@ const allNavItems: SidebarMenuItemProps['item'][] = [ // Use the imported type
       { href: "/inventory-adjustments", label: "تسويات جردية", icon: SlidersHorizontal, permissionKey: "inventory.adjust_stock" },
     ],
   },
-  { href: "/sales", label: "المبيعات", icon: ShoppingCart, module: "Sales" },
-  { href: "/purchases", label: "المشتريات", icon: Briefcase, module: "Purchases" },
+    {
+    label: "المبيعات",
+    icon: ShoppingCart,
+    module: "Sales",
+    subItems: [
+      { href: "/sales", label: "لوحة المبيعات", icon: ShoppingCart, permissionKey: "sales.view" },
+      // Sub-items for Quotations, Sales Orders, Invoices, Customers are now inside the SalesClientComponent
+    ],
+  },
+  {
+    label: "المشتريات",
+    icon: Briefcase,
+    module: "Purchases",
+    subItems: [
+        { href: "/purchases", label: "لوحة المشتريات", icon: Briefcase, permissionKey: "purchases.view" },
+        // Sub-items for Suppliers, POs, Invoices, GRNs, Returns are inside PurchasesClientComponent
+    ]
+  },
   { href: "/hr-payroll", label: "الموارد البشرية والرواتب", icon: Users, module: "HR" },
   { href: "/production", label: "الإنتاج", icon: Cog, module: "Production" },
   { href: "/projects", label: "المشاريع", icon: GanttChartSquare, module: "Projects" },
