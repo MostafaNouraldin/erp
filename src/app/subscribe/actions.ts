@@ -43,7 +43,6 @@ export async function submitSubscriptionRequest(values: SubscriptionRequestFormV
     status: 'pending',
   });
 
-  // No revalidation needed as this doesn't directly affect a visible page for the user submitting
-  // The admin page will fetch this data on its own.
+  revalidatePath('/system-administration/subscription-requests');
   return { success: true, message: "تم إرسال طلب الاشتراك بنجاح." };
 }

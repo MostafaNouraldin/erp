@@ -107,11 +107,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
     const navItems = allNavItems
       .filter(item => {
-        const moduleKey = item.module.toLowerCase();
+        const moduleKey = item.module;
         // Super admin should not see tenant-specific settings like 'Subscription'
-        if (auth.isSuperAdmin && (item.module === 'Settings' || item.module === 'Dashboard')) {
-             if(item.href === '/subscription') return false;
-             if(item.href === '/') return false;
+        if (auth.isSuperAdmin && item.href === '/subscription') {
+             return false;
         }
 
         // Regular users should not see 'System Administration'
@@ -119,7 +118,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             return false;
         }
         
-        const mainPermission = `${moduleKey}.view`;
+        const mainPermission = `${moduleKey.toLowerCase()}.view`;
         return currentTenantSubscription.modules[item.module] && (auth.hasPermission(mainPermission) || item.subItems?.some(sub => auth.hasPermission(sub.permissionKey)));
       })
       .map(item => {
@@ -159,11 +158,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                             <p className="font-semibold text-primary">{currentTenant.name}</p>
                                             <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
                                         </div>
-                                        <Button variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden">
+                                        <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden">
+                                          <Link href="/subscription">
                                             إدارة الاشتراك
+                                          </Link>
                                         </Button>
                                         <div className="flex justify-center items-center group-data-[collapsible=icon]:block hidden">
+                                           <Link href="/subscription">
                                             <CreditCardIcon className="h-5 w-5 text-muted-foreground" />
+                                           </Link>
                                         </div>
                                     </CardContent>
                                 </Card>
