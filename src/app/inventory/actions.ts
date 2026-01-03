@@ -3,8 +3,8 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, stocktakes, goodsReceivedNotes, goodsReceivedNoteItems, sql, inventoryMovementLog } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { products, categories, warehouses, stockRequisitions, stockRequisitionItems, stockIssueVouchers, stockIssueVoucherItems, stocktakes, goodsReceivedNotes, goodsReceivedNoteItems, inventoryMovementLog } from '@/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from "zod";
 
@@ -294,4 +294,3 @@ export async function addStockRequisition(values: StockRequisitionFormValues) {
     });
     revalidatePath('/inventory');
 }
-

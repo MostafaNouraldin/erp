@@ -122,7 +122,7 @@ export default async function DashboardPage() {
                     <h2 className="text-xl font-semibold text-primary">الحل المطلوب:</h2>
                     <ol className="list-decimal list-inside space-y-3 text-card-foreground">
                         <li>
-                            افتح ملف <code className="font-mono bg-secondary p-1 rounded-md text-sm">db_schema.sql</code> الموجود في جذر المشروع.
+                            افتح ملف <code className="font-mono bg-muted p-1 rounded-md text-sm">db_schema.sql</code> الموجود في جذر المشروع.
                         </li>
                         <li>
                             انسخ **جميع** محتويات هذا الملف.
