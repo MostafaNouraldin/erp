@@ -52,7 +52,7 @@ async function getReportsData() {
                 salesByProduct: Object.values(salesByProductData).sort((a, b) => b.total - a.total),
                 salesByCustomer: Object.values(salesByCustomerData).sort((a, b) => b.total - a.total),
                 inventoryValuation: inventoryValuationData,
-                payrolls: payrollsData.map(p => ({...p, basicSalary: parseFloat(p.basicSalary), netSalary: p.netSalary ? parseFloat(p.netSalary) : 0 })),
+                payrolls: payrollsData.map(p => ({...p, netSalary: p.netSalary ? parseFloat(p.netSalary) : 0 })),
                 attendances: attendanceData.map(a => ({...a, date: new Date(a.date)})),
                 products: productsData,
                 customers: customersData,
@@ -82,7 +82,5 @@ export default async function ReportsPage() {
         );
     }
   
-    return <ReportsClient initialData={result.data} />;
+    return <ReportsClient initialData={result.data as any} />;
 }
-
-    

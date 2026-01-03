@@ -118,10 +118,10 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
     const equity = initialData.accounts.filter(acc => acc.id.startsWith('3'));
     const totalAssets = assets.reduce((sum, acc) => sum + acc.balance, 0);
     const totalLiabilities = liabilities.reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
-    const totalEquity = equity.reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
+    const totalEquity = equity.reduce((sum, acc) => sum + Math.abs(acc.balance), 0) + incomeStatementData.netIncome; // Add net income to equity
     const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
-    return { assets, liabilities, equity, totalAssets, totalLiabilities, totalEquity, totalLiabilitiesAndEquity };
-  }, [initialData.accounts]);
+    return { assets, liabilities, equity, totalAssets, totalLiabilities, totalEquity, totalLiabilitiesAndEquity, netIncome: incomeStatementData.netIncome };
+  }, [initialData.accounts, incomeStatementData.netIncome]);
   
   const cashFlowData = useMemo(() => {
     // Simplified version: operating activities are revenues and expenses
@@ -238,6 +238,7 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                                 {balanceSheetData.equity.map(acc => (
                                     <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(Math.abs(acc.balance)) }}></TableCell></TableRow>
                                 ))}
+                                <TableRow className="bg-muted/30"><TableCell>أرباح (خسائر) الفترة</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.netIncome) }}></TableCell></TableRow>
                                 <TableRow className="font-semibold bg-muted/30"><TableCell>إجمالي حقوق الملكية</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalEquity) }}></TableCell></TableRow>
                             </TableBody>
                             <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الخصوم وحقوق الملكية</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalLiabilitiesAndEquity) }}></TableCell></TableRow>
@@ -391,5 +392,3 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
     </div>
   );
 }
-
-    
