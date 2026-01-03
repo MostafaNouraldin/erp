@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفعيل الاشتراك - نظام المستقبل ERP</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f4f4f7;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            direction: rtl;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            background-color: #0d1a2e;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .content h2 {
+            color: #0d1a2e;
+        }
+        .credentials {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .credentials p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        .credentials strong {
+            display: inline-block;
+            width: 120px;
+            color: #4a5568;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: #ffffff;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .footer {
+            background-color: #f8fafc;
+            text-align: center;
+            padding: 15px;
+            font-size: 12px;
+            color: #718096;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>المستقبل ERP</h1>
+        </div>
+        <div class="content">
+            <h2>مرحباً بك، {{companyName}}!</h2>
+            <p>يسعدنا إعلامك بأنه قد تم تفعيل اشتراكك في نظام المستقبل ERP بنجاح. تم إنشاء حساب المدير الرئيسي لشركتكم ويمكنكم الآن بدء استخدام النظام.</p>
+            
+            <p>نوصي بشدة بتسجيل الدخول وتغيير كلمة المرور فوراً من إعدادات حسابك.</p>
+            
+            <div class="credentials">
+                <p><strong>اسم المستخدم:</strong> {{name}}</p>
+                <p><strong>البريد الإلكتروني:</strong> {{email}}</p>
+                <p><strong>كلمة المرور المؤقتة:</strong> <code>{{password}}</code></p>
+            </div>
+            
+            <a href="{{loginUrl}}" class="button">تسجيل الدخول إلى النظام</a>
+            
+            <p>إذا واجهت أي صعوبات، يرجى عدم التردد في التواصل مع فريق الدعم الفني.</p>
+            
+            <p>مع خالص تحياتنا،<br>فريق نظام المستقبل ERP</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2024 شركة المستقبل لتقنية المعلومات. جميع الحقوق محفوظة.</p>
+        </div>
+    </div>
+</body>
+</html>

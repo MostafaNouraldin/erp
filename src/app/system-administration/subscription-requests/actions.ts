@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { randomBytes } from 'crypto';
 import { createNotification } from '@/lib/notifications';
+import { sendActivationEmail } from '@/lib/email';
 
 async function getMainDb() {
   const { db } = await connectToTenantDb();
@@ -28,9 +29,8 @@ export async function approveSubscriptionRequest(requestId: number) {
 
   const newTenantId = `T${String(Date.now()).slice(-4)}${String(Math.floor(Math.random() * 90) + 10)}`;
   const adminPassword = randomBytes(8).toString('hex');
-  // In a real app, use bcrypt: const passwordHash = await bcrypt.hash(adminPassword, 10);
   const passwordHash = `hashed_${adminPassword}`; 
-  const TENANT_ADMIN_ROLE_ID = "ROLE001"; // Assuming this is the standard ID for a tenant admin
+  const TENANT_ADMIN_ROLE_ID = "ROLE001";
 
   let subscriptionEndDate = new Date();
   if (request.billingCycle === 'monthly') {
@@ -39,6 +39,7 @@ export async function approveSubscriptionRequest(requestId: number) {
     subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
   }
   const newUserId = `USER-${newTenantId}-${Date.now()}`;
+  const adminUserName = `مدير ${request.companyName}`;
 
   await db.transaction(async (tx) => {
     // 1. Create the tenant
@@ -56,7 +57,7 @@ export async function approveSubscriptionRequest(requestId: number) {
     // 2. Create the primary admin user for the tenant
     await tx.insert(users).values({
       id: newUserId,
-      name: `مدير ${request.companyName}`,
+      name: adminUserName,
       email: request.email,
       roleId: TENANT_ADMIN_ROLE_ID,
       status: 'نشط',
@@ -70,7 +71,6 @@ export async function approveSubscriptionRequest(requestId: number) {
       moduleKey: moduleKey,
       subscribed: true,
     }));
-     // Also subscribe to non-rentable core modules
     subscriptions.push({ tenantId: newTenantId, moduleKey: 'Dashboard', subscribed: true });
     subscriptions.push({ tenantId: newTenantId, moduleKey: 'Settings', subscribed: true });
     subscriptions.push({ tenantId: newTenantId, moduleKey: 'Help', subscribed: true });
@@ -83,22 +83,34 @@ export async function approveSubscriptionRequest(requestId: number) {
     await tx.update(subscriptionRequests).set({ status: 'approved' }).where(eq(subscriptionRequests.id, requestId));
   });
 
-  // 5. Send notification to the new user (in a real scenario this would be an email)
-  await createNotification(
-      newUserId,
-      `مرحباً بك في نظام المستقبل ERP! تم تفعيل حساب شركتك بنجاح.`,
-      '/settings'
-  );
-
+  // 5. Send activation email to the new user
+  try {
+    await sendActivationEmail({
+        companyName: request.companyName,
+        name: adminUserName,
+        email: request.email,
+        password: adminPassword,
+    });
+  } catch (error) {
+    console.error("CRITICAL: Failed to send activation email:", error);
+    // In a real app, you might want to have a retry mechanism or log this failure for manual intervention.
+    // For now, we will still return success for the user creation part.
+    return {
+        success: true,
+        message: `تم إنشاء الشركة والمستخدم، لكن فشل إرسال بريد التفعيل. يرجى إرسال البيانات يدوياً.`,
+        adminEmail: request.email,
+        generatedPassword: adminPassword, // Provide password manually since email failed
+    };
+  }
 
   revalidatePath('/system-administration/subscription-requests');
   revalidatePath('/system-administration/tenants');
 
   return {
     success: true,
-    message: `تم إنشاء الشركة والمستخدم بنجاح.`,
-    generatedPassword: adminPassword, // Return the temporary password
+    message: `تم إنشاء الشركة وتفعيلها بنجاح. تم إرسال بريد إلكتروني للعميل يحتوي على بيانات الدخول.`,
     adminEmail: request.email,
+    generatedPassword: null, // Don't return password if email is successful
   };
 }
 
