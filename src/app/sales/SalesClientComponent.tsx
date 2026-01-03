@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle, Tag, Eye, RefreshCw } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -853,16 +853,12 @@ useEffect(() => {
                                 <TableCell>{formatDate(sr.date)}</TableCell>
                                 <TableCell>{sr.numericTotalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
                                 <TableCell><Badge variant={sr.status === 'معتمد' ? 'default' : 'outline'}>{sr.status}</Badge></TableCell>
-                                <TableCell className="text-center">
-                                    {sr.status === 'مسودة' && (
-                                        <>
-                                            <Button variant="ghost" size="icon" onClick={() => handleApproveSalesReturn(sr.id)} className="text-green-600"><CheckCircle className="h-4 w-4" /></Button>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
-                                                <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف مرتجع المبيعات "{sr.id}"؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSalesReturn(sr.id)}>حذف</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-                                            </AlertDialog>
-                                        </>
-                                    )}
+                                <TableCell>
+                                    <Button variant="ghost" size="icon" onClick={() => handleApproveSalesReturn(sr.id)} className="text-green-600"><CheckCircle className="h-4 w-4" /></Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                        <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف مرتجع المبيعات "{sr.id}"؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSalesReturn(sr.id)}>حذف</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                                    </AlertDialog>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -890,4 +886,5 @@ useEffect(() => {
     </div>
   );
 }
+
 

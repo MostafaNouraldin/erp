@@ -118,7 +118,7 @@ const TableCell = React.forwardRef<
   const effectiveSize = size || parentTable.size || "default";
 
   const childrenArray = React.Children.toArray(children);
-  const isActionCell = childrenArray.every(child => React.isValidElement(child) && child.type === Button);
+  const isActionCell = childrenArray.length > 1 && childrenArray.every(child => React.isValidElement(child) && child.type === Button);
 
   return (
     <td
