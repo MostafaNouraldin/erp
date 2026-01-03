@@ -210,7 +210,7 @@ export default function SubscribePage() {
                                                     <div className="space-y-0.5">
                                                         <FormLabel className="text-sm font-medium">{module.name}</FormLabel>
                                                         <p className="text-xs text-muted-foreground">{module.description}</p>
-                                                        <p className="text-xs font-semibold text-primary">{formatCurrency(billingCycle === 'monthly' ? module.priceMonthly : module.priceYearly)}/{billingCycle === 'monthly' ? 'شهر' : 'سنة'}</p>
+                                                        <p className="text-xs font-semibold text-primary" dangerouslySetInnerHTML={{ __html: `${formatCurrency(billingCycle === 'monthly' ? module.priceMonthly : module.priceYearly)}/${billingCycle === 'monthly' ? 'شهر' : 'سنة'}` }}></p>
                                                     </div>
                                                     <FormControl><Checkbox checked={field.value?.includes(module.key)} onCheckedChange={(checked) => { return checked ? field.onChange([...field.value, module.key]) : field.onChange(field.value?.filter((value) => value !== module.key)); }} /></FormControl>
                                                 </FormItem>
