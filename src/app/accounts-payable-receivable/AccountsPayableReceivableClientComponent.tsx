@@ -344,7 +344,7 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
                         <TableCell>{customers.find((c:any) => c.id === invoice.customerId)?.name}</TableCell>
                         <TableCell>{new Date(invoice.date).toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell>{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</TableCell>
-                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.numericTotalAmount) }}></TableCell>
+                        <TableCell>{formatCurrency(invoice.numericTotalAmount)}</TableCell>
                         <TableCell><Badge variant={invoice.status === 'مدفوع' ? 'default' : 'destructive'}>{invoice.status}</Badge></TableCell>
                         <TableCell className="text-center">
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => alert(`Printing ${invoice.id}`)}><Printer className="h-4 w-4" /></Button>
@@ -460,8 +460,8 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
                         <TableCell>{suppliers.find((s:any) => s.id === invoice.supplierId)?.name}</TableCell>
                         <TableCell>{new Date(invoice.invoiceDate).toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell>{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</TableCell>
-                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.totalAmount) }}></TableCell>
-                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.paidAmount) }}></TableCell>
+                        <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
+                        <TableCell>{formatCurrency(invoice.paidAmount)}</TableCell>
                         <TableCell><Badge variant={invoice.status === 'مدفوع' ? 'default' : 'destructive'}>{invoice.status}</Badge></TableCell>
                         <TableCell className="text-center">
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => alert(`Printing ${invoice.id}`)}><Printer className="h-4 w-4" /></Button>

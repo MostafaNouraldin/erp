@@ -2,17 +2,17 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
-import { useAuth } from '@/hooks/use-auth'; // Import useAuth
-import { getCompanySettings } from '@/app/settings/actions'; // Import server action
+import { useAuth } from '@/hooks/use-auth'; 
+import { getCompanySettings } from '@/app/settings/actions'; 
 
 export interface Currency {
-  code: string; // e.g., "SAR", "USD", "EUR", "EGP"
-  name: string; // e.g., "ريال سعودي", "دولار أمريكي"
-  symbol: string; // e.g., "⃁", "$", "€", "E£" 
+  code: string; 
+  name: string; 
+  symbol: string; 
 }
 
 export const availableCurrencies: Currency[] = [
-  { code: "SAR", name: "ريال سعودي", symbol: "ر.س" },
+  { code: "SAR", name: "ريال سعودي", symbol: "⃁" },
   { code: "USD", name: "دولار أمريكي", symbol: "$" },
   { code: "EUR", name: "يورو", symbol: "€" },
   { code: "EGP", name: "جنيه مصري", symbol: "E£" },
@@ -24,7 +24,7 @@ interface CurrencyContextProps {
   formatCurrency: (amount: number) => string;
 }
 
-const defaultCurrency = availableCurrencies[0]; // Default to SAR
+const defaultCurrency = availableCurrencies[0]; 
 
 export const CurrencyContext = createContext<CurrencyContextProps>({
   selectedCurrency: defaultCurrency,
@@ -35,9 +35,6 @@ export const CurrencyContext = createContext<CurrencyContextProps>({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
-    if (defaultCurrency.code === 'SAR') {
-        return `${formatted} <span class="font-sans">${symbol}</span>`;
-    }
     return `${formatted} ${symbol}`;
   },
 });
@@ -60,10 +57,10 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
           setSelectedCurrency(userCurrency);
         } catch (error) {
           console.error("Failed to fetch company settings for currency:", error);
-          setSelectedCurrency(defaultCurrency); // Fallback to default
+          setSelectedCurrency(defaultCurrency);
         }
       } else {
-        setSelectedCurrency(defaultCurrency); // Fallback for users without tenantId
+        setSelectedCurrency(defaultCurrency);
       }
     }
     loadCurrencyPreference();
@@ -76,9 +73,6 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
       maximumFractionDigits: 2,
     }).format(amount);
     
-    if (selectedCurrency.code === 'SAR') {
-        return `${formatted} <span class="font-sans text-sm">${symbol}</span>`;
-    }
     return `${formatted} ${symbol}`;
   };
 
