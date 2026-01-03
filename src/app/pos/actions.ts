@@ -48,7 +48,7 @@ export async function startPosSession(values: PosSessionStartValues) {
     });
 
     revalidatePath('/pos');
-    const newSession = await db.query.posSessions.findFirst({ where: eq(posSessions.id, newSessionId) });
+    const newSession = await db.query.posSessions.findFirst({ where: eq(posSessions.id, newSessionId), with: { user: true } });
     return newSession;
 }
 
@@ -102,6 +102,9 @@ export async function getActiveSession() {
     const db = await getDb();
     const activeSession = await db.query.posSessions.findFirst({
         where: eq(posSessions.status, "open"),
+        with: {
+            user: true,
+        }
     });
     return activeSession;
 }
@@ -127,12 +130,12 @@ async function settlePosSession(sessionId: string, data: {
   const newEntryId = `JV-POSS-${sessionId}`;
 
   // Account IDs - These should be configurable
-  const POS_CASH_ACCOUNT = '1011'; // حساب صندوق نقاط البيع
-  const BANK_ACCOUNT = '1012'; // حساب البنك (لمبيعات البطاقات)
+  const POS_CASH_ACCOUNT = '1111'; // حساب صندوق نقاط البيع (Corrected)
+  const BANK_ACCOUNT = '1121'; // حساب البنك (Corrected)
   const ACCOUNTS_RECEIVABLE = '1200'; // الذمم المدينة
   const SALES_REVENUE = '4000'; // إيرادات المبيعات
   const VAT_PAYABLE = '2200'; // ضريبة القيمة المضافة المستحقة
-  const CASH_OVER_SHORT = '5500'; // حساب العجز والزيادة في الصندوق
+  const CASH_OVER_SHORT = '5303'; // حساب العجز والزيادة في الصندوق (Corrected)
 
   await db.transaction(async (tx) => {
     await tx.insert(journalEntries).values({
@@ -183,3 +186,4 @@ async function settlePosSession(sessionId: string, data: {
   revalidatePath('/general-ledger');
 }
 
+    

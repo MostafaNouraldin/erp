@@ -181,3 +181,5 @@ export async function updateBudgetItemSpent(id: string, newSpentAmount: number) 
     }).where(eq(projectBudgetItems.id, id));
     revalidatePath('/projects');
 }
+
+    
