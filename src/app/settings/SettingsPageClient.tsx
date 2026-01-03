@@ -23,6 +23,7 @@ import type { Role } from '@/types/saas';
 import { addRole, updateRole, deleteRole, addUser, updateUser, saveCompanySettings, addDepartment, updateDepartment, deleteDepartment, addJobTitle, updateJobTitle, deleteJobTitle, addLeaveType, updateLeaveType, deleteLeaveType, addAllowanceType, updateAllowanceType, deleteAllowanceType, addDeductionType, updateDeductionType, deleteDeductionType } from './actions';
 import type { UserFormValues, RoleFormValues, SettingsFormValues, Department, JobTitle, LeaveType, AllowanceType, DeductionType, Account } from './actions';
 import { availableCurrencies } from '@/contexts/currency-context';
+import { Textarea } from '@/components/ui/textarea';
 
 
 const permissionGroups = {
