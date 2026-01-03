@@ -72,7 +72,7 @@ export default function DashboardClient({
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
+            <div className="text-2xl font-bold" dangerouslySetInnerHTML={{ __html: formatCurrency(totalRevenue) }}></div>
             <p className="text-xs text-muted-foreground">
               من الفواتير المدفوعة
             </p>
@@ -132,7 +132,7 @@ export default function DashboardClient({
                     tickMargin={10}
                     axisLine={false}
                   />
-                  <YAxis tickFormatter={(value) => formatCurrency(value as number)} />
+                  <YAxis tickFormatter={(value) => formatCurrency(value as number).replace(/<[^>]*>/g, '')} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <ChartLegend content={<ChartLegendContent />} />
                   <Bar dataKey="total" fill="var(--color-total)" radius={4} />
@@ -191,7 +191,7 @@ export default function DashboardClient({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">قيمة المخزون (بالتكلفة)</span>
-              <span className="font-semibold">{formatCurrency(inventorySummary.totalValue)}</span>
+              <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(inventorySummary.totalValue) }}></span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">أصناف قاربت على النفاد</span>

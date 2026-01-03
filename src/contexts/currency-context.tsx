@@ -73,7 +73,8 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
       maximumFractionDigits: 2,
     }).format(amount);
     
-    return `${formatted} ${symbol}`;
+    // Using a span to apply the font specifically to the symbol
+    return `${formatted} <span class="font-saudi-riyal">${symbol}</span>`;
   };
 
   return (
@@ -82,3 +83,5 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
     </CurrencyContext.Provider>
   );
 };
+
+    

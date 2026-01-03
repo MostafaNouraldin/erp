@@ -9,7 +9,8 @@ export default {
   ],
   theme: {
     fontFamily: { 
-      sans: ["var(--font-cairo)", "@emran-alhaddad/saudi-riyal-font", "sans-serif"],
+      sans: ["var(--font-cairo)", "sans-serif"],
+      "saudi-riyal": ["@emran-alhaddad/saudi-riyal-font", "sans-serif"],
     },
   	extend: {
       
@@ -96,3 +97,5 @@ export default {
   },
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;
+
+    
