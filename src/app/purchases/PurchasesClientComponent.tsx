@@ -843,7 +843,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                     <TableCell>{pr.originalInvoiceId || "-"}</TableCell>
                                     <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(pr.totalAmount) }}></TableCell>
                                     <TableCell><Badge variant={pr.status === 'معتمد' ? 'default' : 'outline'}>{pr.status}</Badge></TableCell>
-                                    <TableCell className="text-center">
+                                    <TableCell>
                                         <Button variant="ghost" size="icon" onClick={() => handleViewPurchaseReturn(pr)}><Eye className="h-4 w-4" /></Button>
                                         <Button variant="ghost" size="icon" onClick={() => handlePrintReturn(pr)}><Printer className="h-4 w-4" /></Button>
                                         {pr.status === 'مسودة' && (
@@ -851,9 +851,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                                 <Button variant="ghost" size="icon" onClick={() => { setPurchaseReturnToEdit(pr); setShowCreatePurchaseReturnDialog(true); }}><Edit className="h-4 w-4" /></Button>
                                                 <Button variant="ghost" size="icon" onClick={() => handleApprovePurchaseReturn(pr.id!)} className="text-green-600"><CheckCircle className="h-4 w-4" /></Button>
                                                 <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                                    </AlertDialogTrigger>
+                                                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                                     <AlertDialogContent dir="rtl">
                                                         <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف المرتجع رقم "{pr.id}"؟</AlertDialogDescription></AlertDialogHeader>
                                                         <AlertDialogFooter>
