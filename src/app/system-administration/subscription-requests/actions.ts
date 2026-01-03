@@ -6,6 +6,7 @@ import { subscriptionRequests, tenants, users, tenantModuleSubscriptions } from 
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { randomBytes } from 'crypto';
+import { createNotification } from '@/lib/notifications';
 
 async function getMainDb() {
   const { db } = await connectToTenantDb();
@@ -37,6 +38,7 @@ export async function approveSubscriptionRequest(requestId: number) {
   } else {
     subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
   }
+  const newUserId = `USER-${newTenantId}-${Date.now()}`;
 
   await db.transaction(async (tx) => {
     // 1. Create the tenant
@@ -53,7 +55,7 @@ export async function approveSubscriptionRequest(requestId: number) {
 
     // 2. Create the primary admin user for the tenant
     await tx.insert(users).values({
-      id: `USER-${newTenantId}-${Date.now()}`,
+      id: newUserId,
       name: `مدير ${request.companyName}`,
       email: request.email,
       roleId: TENANT_ADMIN_ROLE_ID,
@@ -80,6 +82,14 @@ export async function approveSubscriptionRequest(requestId: number) {
     // 4. Update the request status
     await tx.update(subscriptionRequests).set({ status: 'approved' }).where(eq(subscriptionRequests.id, requestId));
   });
+
+  // 5. Send notification to the new user (in a real scenario this would be an email)
+  await createNotification(
+      newUserId,
+      `مرحباً بك في نظام المستقبل ERP! تم تفعيل حساب شركتك بنجاح.`,
+      '/settings'
+  );
+
 
   revalidatePath('/system-administration/subscription-requests');
   revalidatePath('/system-administration/tenants');

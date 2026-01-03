@@ -7,6 +7,7 @@ import { eq, and, sql, gte, lte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { Department, JobTitle, LeaveType } from '../settings/actions';
+import { createNotification } from '@/lib/notifications';
 
 const employeeAllowanceSchema = z.object({
   id: z.string().optional(),
@@ -390,6 +391,15 @@ export async function addLeaveRequest(values: LeaveRequestFormValues) {
     const db = await getDb();
     const newId = `LR${Date.now()}`;
     await db.insert(leaveRequests).values({ ...values, id: newId });
+
+    const employee = await db.query.employees.findFirst({ where: eq(employees.id, values.employeeId) });
+    if(employee?.managerId) {
+      await createNotification(
+        employee.managerId, 
+        `طلب إجازة جديد من ${employee.name} بحاجة لموافقتك.`,
+        '/hr-payroll?tab=leaveRequests'
+      );
+    }
     revalidatePath('/hr-payroll');
 }
 

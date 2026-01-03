@@ -25,6 +25,7 @@ import LoginPage from './login/page';
 import { usePathname } from "next/navigation";
 import { allNavItems } from "@/lib/nav-links";
 import NotificationsPopover from "@/components/notifications-popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const cairo = Cairo({
