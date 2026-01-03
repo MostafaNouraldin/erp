@@ -12,7 +12,7 @@ export interface Currency {
 }
 
 export const availableCurrencies: Currency[] = [
-  { code: "SAR", name: "ريال سعودي", symbol: "⃁" },
+  { code: "SAR", name: "ريال سعودي", symbol: "ر.س" },
   { code: "USD", name: "دولار أمريكي", symbol: "$" },
   { code: "EUR", name: "يورو", symbol: "€" },
   { code: "EGP", name: "جنيه مصري", symbol: "E£" },
@@ -36,7 +36,7 @@ export const CurrencyContext = createContext<CurrencyContextProps>({
       maximumFractionDigits: 2,
     }).format(amount);
     if (defaultCurrency.code === 'SAR') {
-        return `${formatted} <span class="srs">${symbol}</span>`;
+        return `${formatted} <span class="font-sans">${symbol}</span>`;
     }
     return `${formatted} ${symbol}`;
   },
@@ -77,7 +77,7 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
     }).format(amount);
     
     if (selectedCurrency.code === 'SAR') {
-        return `${formatted} <span class="srs">${symbol}</span>`;
+        return `${formatted} <span class="font-sans text-sm">${symbol}</span>`;
     }
     return `${formatted} ${symbol}`;
   };
