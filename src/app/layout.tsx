@@ -78,12 +78,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
     // If loading auth state from localStorage, don't render anything yet
     if (!mounted || auth.isLoading) {
-        return (
-             <html lang="ar" dir="rtl" suppressHydrationWarning>
-                <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
-                </body>
-            </html>
-        );
+        return null;
     }
     
     // Allow access to login and subscribe pages without authentication
@@ -290,3 +285,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    
