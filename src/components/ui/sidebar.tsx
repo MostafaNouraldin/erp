@@ -625,25 +625,19 @@ const SidebarMenuItem = React.forwardRef<
     );
   } else if (item.href) {
     const isActive = pathname === item.href;
-    const buttonContent = (
-      <span className="flex items-center gap-2">
-        <item.icon />
-        <span className="truncate">{item.label}</span>
-      </span>
-    );
     return (
-      <li ref={ref} data-sidebar="menu-item" className={cn("group/menu-item relative", className)} {...props}>
-        <Link href={item.href} passHref legacyBehavior>
-            <SidebarMenuButton
-              tooltip={{ children: item.label, side: tooltipSide, align: 'center' }}
-              className="w-full justify-start"
-              isActive={isActive}
-              asChild
-            >
-              <a>{buttonContent}</a>
-            </SidebarMenuButton>
-        </Link>
-      </li>
+        <li ref={ref} data-sidebar="menu-item" className={cn("group/menu-item relative", className)} {...props}>
+            <Link href={item.href} passHref>
+                <SidebarMenuButton
+                    tooltip={{ children: item.label, side: tooltipSide, align: 'center' }}
+                    className="w-full justify-start"
+                    isActive={isActive}
+                >
+                    <item.icon />
+                    <span className="truncate">{item.label}</span>
+                </SidebarMenuButton>
+            </Link>
+        </li>
     );
   }
   return null;
