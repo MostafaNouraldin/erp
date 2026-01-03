@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { connectToTenantDb } from '@/db';
-import { employees, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, employeeAllowances, employeeDeductions, departments, jobTitles, leaveTypes } from '@/db/schema';
+import { employees, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, employeeAllowances, employeeDeductions, departments, jobTitles, leaveTypes, allowanceTypes, deductionTypes, overtime } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import HRClientComponent from './HRClientComponent';
 
@@ -20,6 +20,9 @@ export default async function HRPayrollPage() {
         const departmentsResult = await db.select().from(departments);
         const jobTitlesResult = await db.select().from(jobTitles);
         const leaveTypesResult = await db.select().from(leaveTypes);
+        const allowanceTypesResult = await db.select().from(allowanceTypes);
+        const deductionTypesResult = await db.select().from(deductionTypes);
+        const overtimeResult = await db.select().from(overtime);
 
         const employeesWithDetails = await Promise.all(
             employeesResult.map(async (emp) => {
@@ -75,6 +78,9 @@ export default async function HRPayrollPage() {
             departments: departmentsResult,
             jobTitles: jobTitlesResult,
             leaveTypes: leaveTypesResult,
+            allowanceTypes: allowanceTypesResult,
+            deductionTypes: deductionTypesResult,
+            overtime: overtimeResult.map(o => ({...o, date: new Date(o.date), hours: parseFloat(o.hours), rate: parseFloat(o.rate), amount: o.amount ? parseFloat(o.amount) : undefined})),
         };
 
         return <HRClientComponent initialData={initialData} />;
@@ -96,5 +102,3 @@ export default async function HRPayrollPage() {
         );
     }
 }
-
-

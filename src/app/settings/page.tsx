@@ -35,7 +35,7 @@ async function getSettingsData(tenantId: string) {
                 leaveTypes: leaveTypesData,
                 allowanceTypes: allowanceTypesData,
                 deductionTypes: deductionTypesData,
-                accounts: accountsData,
+                accounts: accountsData.map(acc => ({...acc, balance: parseFloat(acc.balance || '0')})),
             }
         };
     } catch (error) {

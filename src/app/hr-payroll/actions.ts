@@ -1,9 +1,8 @@
 
-
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, journalEntries, journalEntryLines, overtime } from '@/db/schema';
+import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, journalEntries, journalEntryLines, overtime, allowanceTypes, deductionTypes } from '@/db/schema';
 import { eq, and, sql, gte, lte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -275,60 +274,69 @@ export async function postPayrollToGL(payrollId: string) {
 
     const employee = await db.query.employees.findFirst({ where: eq(employees.id, payroll.employeeId) });
 
-    const salaryExpenseAccount = '5000'; // حساب مصروف الرواتب
-    const allowancesExpenseAccount = '5010'; // حساب مصروف البدلات
     const salariesPayableAccount = '2100'; // حساب الرواتب المستحقة
-
-    const totalAllowances = (payroll.allowances as any[] || []).reduce((sum, item) => sum + Number(item.amount), 0);
-    const totalDeductions = (payroll.deductions as any[] || []).reduce((sum, item) => sum + Number(item.amount), 0);
-    
-    // Total expense is basic salary + allowances
-    const totalExpense = Number(payroll.basicSalary) + totalAllowances;
+    const salaryExpenseAccount = '5000'; // حساب مصروف الرواتب
     
     const newEntryId = `JV-PAY-${payrollId}`;
 
     await db.transaction(async (tx) => {
+        let entryLines = [];
+
+        // 1. Debit Basic Salary Expense
+        entryLines.push({
+            journalEntryId: newEntryId, accountId: salaryExpenseAccount, debit: String(payroll.basicSalary), credit: '0', description: `راتب أساسي - ${employee?.name}`
+        });
+
+        // 2. Debit each allowance to its mapped expense account
+        const allowanceItems: { description: string, amount: number, typeId?: string }[] = (payroll.allowances as any) || [];
+        for (const allowance of allowanceItems) {
+            const allowanceType = await tx.query.allowanceTypes.findFirst({
+                where: eq(allowanceTypes.name, allowance.description), // Fallback to name if typeId isn't there
+            });
+            const accountId = allowanceType?.expenseAccountId || '5010'; // Default allowances expense account
+            entryLines.push({
+                journalEntryId: newEntryId, accountId: accountId, debit: String(allowance.amount), credit: '0', description: `${allowance.description} - ${employee?.name}`
+            });
+        }
+        
+        // 3. Credit each deduction to its mapped liability account
+        const deductionItems: { description: string, amount: number, typeId?: string }[] = (payroll.deductions as any) || [];
+        for (const deduction of deductionItems) {
+             const deductionType = await tx.query.deductionTypes.findFirst({
+                where: eq(deductionTypes.name, deduction.description),
+            });
+            const accountId = deductionType?.liabilityAccountId || '2110'; // Default deductions liability account
+            entryLines.push({
+                journalEntryId: newEntryId, accountId: accountId, debit: '0', credit: String(deduction.amount), description: `خصم ${deduction.description} - ${employee?.name}`
+            });
+        }
+        
+        // 4. Credit Salaries Payable with the Net Salary
+        const netSalary = payroll.netSalary || 0;
+        if (netSalary > 0) {
+             entryLines.push({
+                journalEntryId: newEntryId, accountId: salariesPayableAccount, debit: '0', credit: String(netSalary), description: `صافي الراتب المستحق - ${employee?.name}`
+            });
+        }
+
+        const totalDebits = entryLines.reduce((sum, line) => sum + parseFloat(line.debit), 0);
+        const totalCredits = entryLines.reduce((sum, line) => sum + parseFloat(line.credit), 0);
+
+        if (Math.abs(totalDebits - totalCredits) > 0.01) {
+            throw new Error(`القيد المحاسبي لمسير الرواتب غير متوازن. المدين: ${totalDebits}, الدائن: ${totalCredits}`);
+        }
+
         // Create Journal Entry
         await tx.insert(journalEntries).values({
             id: newEntryId,
-            date: new Date(), // Or use payroll month/year to create a date
+            date: new Date(),
             description: `ترحيل مسير رواتب ${payroll.monthYear} للموظف ${employee?.name}`,
-            totalAmount: String(totalExpense),
+            totalAmount: String(totalDebits),
             status: "مرحل",
             sourceModule: "Payroll",
             sourceDocumentId: payroll.id,
         });
 
-        const entryLines = [];
-
-        // Debit Salary Expense
-        entryLines.push({
-            journalEntryId: newEntryId, accountId: salaryExpenseAccount, debit: String(payroll.basicSalary), credit: '0', description: `راتب أساسي - ${employee?.name}`
-        });
-
-        // Debit Allowances Expense
-        if (totalAllowances > 0) {
-            entryLines.push({
-                journalEntryId: newEntryId, accountId: allowancesExpenseAccount, debit: String(totalAllowances), credit: '0', description: `إجمالي البدلات - ${employee?.name}`
-            });
-        }
-        
-        // Credit Salaries Payable (Net Salary)
-        if (payroll.netSalary && payroll.netSalary > 0) {
-             entryLines.push({
-                journalEntryId: newEntryId, accountId: salariesPayableAccount, debit: '0', credit: String(payroll.netSalary), description: `صافي الراتب المستحق - ${employee?.name}`
-            });
-        }
-       
-        // Credit each deduction to its respective liability/asset account
-        // This part needs more detailed logic based on deduction types (e.g., loan, advance)
-        // For now, we'll credit a generic deductions account '2110' for simplicity
-        if (totalDeductions > 0) {
-             entryLines.push({
-                journalEntryId: newEntryId, accountId: '2110', debit: '0', credit: String(totalDeductions), description: `إجمالي الخصومات - ${employee?.name}`
-            });
-        }
-        
         await tx.insert(journalEntryLines).values(entryLines);
 
         // Update payroll status
@@ -446,16 +454,36 @@ export async function deleteWarningNotice(id: string) {
 
 // --- Administrative Decision Actions ---
 export async function addAdministrativeDecision(values: AdministrativeDecisionFormValues) {
-  const db = await getDb();
-  const newId = `ADEC${Date.now()}`;
-  await db.insert(administrativeDecisions).values({ ...values, id: newId });
-  revalidatePath('/hr-payroll');
+    const db = await getDb();
+    const newId = `ADEC${Date.now()}`;
+    
+    await db.transaction(async (tx) => {
+        await tx.insert(administrativeDecisions).values({ ...values, id: newId });
+
+        // If the decision is to terminate service, update employee status
+        if (values.decisionType === 'إنهاء خدمات' && (values.status === 'معتمد' || values.status === 'منفذ')) {
+            await tx.update(employees)
+                .set({ status: 'منتهية خدمته' })
+                .where(eq(employees.id, values.employeeId));
+        }
+    });
+
+    revalidatePath('/hr-payroll');
 }
 export async function updateAdministrativeDecision(values: AdministrativeDecisionFormValues) {
-  const db = await getDb();
-  if (!values.id) throw new Error("ID is required");
-  await db.update(administrativeDecisions).set(values).where(eq(administrativeDecisions.id, values.id));
-  revalidatePath('/hr-payroll');
+    const db = await getDb();
+    if (!values.id) throw new Error("ID is required");
+
+    await db.transaction(async (tx) => {
+        await tx.update(administrativeDecisions).set(values).where(eq(administrativeDecisions.id, values.id));
+
+        if (values.decisionType === 'إنهاء خدمات' && (values.status === 'معتمد' || values.status === 'منفذ')) {
+            await tx.update(employees)
+                .set({ status: 'منتهية خدمته' })
+                .where(eq(employees.id, values.employeeId));
+        }
+    });
+    revalidatePath('/hr-payroll');
 }
 export async function deleteAdministrativeDecision(id: string) {
   const db = await getDb();
@@ -471,10 +499,21 @@ export async function addResignation(values: ResignationFormValues) {
   revalidatePath('/hr-payroll');
 }
 export async function updateResignation(values: ResignationFormValues) {
-  const db = await getDb();
-  if (!values.id) throw new Error("ID is required");
-  await db.update(resignations).set(values).where(eq(resignations.id, values.id));
-  revalidatePath('/hr-payroll');
+    const db = await getDb();
+    if (!values.id) throw new Error("ID is required");
+    
+    await db.transaction(async (tx) => {
+        await tx.update(resignations).set(values).where(eq(resignations.id, values.id!));
+        
+        // If resignation is accepted, update employee status
+        if (values.status === 'مقبولة') {
+            await tx.update(employees)
+                .set({ status: 'منتهية خدمته' })
+                .where(eq(employees.id, values.employeeId));
+        }
+    });
+    
+    revalidatePath('/hr-payroll');
 }
 export async function deleteResignation(id: string) {
   const db = await getDb();
