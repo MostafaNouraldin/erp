@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { connectToTenantDb } from '@/db';
-import { customers, salesInvoices, salesInvoiceItems, suppliers, supplierInvoices, supplierInvoiceItems as dbSupplierInvoiceItems } from '@/db/schema';
+import { customers, salesInvoices, salesInvoiceItems, suppliers, supplierInvoices, supplierInvoiceItems as dbSupplierInvoiceItems, products } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import AccountsPayableReceivableClientComponent from './AccountsPayableReceivableClientComponent';
 
@@ -13,6 +13,7 @@ export default async function AccountsPayableReceivablePage() {
     const suppliersResult = await db.select().from(suppliers);
     const customerInvoicesResult = await db.select().from(salesInvoices);
     const supplierInvoicesResult = await db.select().from(supplierInvoices);
+    const productsResult = await db.select().from(products);
 
     const customerInvoicesWithItems = await Promise.all(
         customerInvoicesResult.map(async (invoice) => {
@@ -57,9 +58,8 @@ export default async function AccountsPayableReceivablePage() {
         supplierInvoices: supplierInvoicesWithItems,
         customers: customersResult,
         suppliers: suppliersResult,
+        products: productsResult.map(p => ({...p, costPrice: parseFloat(p.costPrice), sellingPrice: parseFloat(p.sellingPrice)})),
     };
 
     return <AccountsPayableReceivableClientComponent initialData={initialData} />;
 }
-
-    

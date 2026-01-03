@@ -72,18 +72,12 @@ const paymentSchema = z.object({
 });
 type PaymentFormValues = z.infer<typeof paymentSchema>;
 
-const mockItems = [
-    {id: "ITEM001", name: "لابتوب Dell XPS 15", price: 6500},
-    {id: "ITEM002", name: "طابعة HP LaserJet", price: 1200},
-    {id: "SERV001", name: "خدمة استشارية A", price: 15000},
-];
-
-
 export default function AccountsPayableReceivableClientComponent({ initialData }: { initialData: any }) {
   const [customerInvoices, setCustomerInvoices] = useState(initialData.customerInvoices);
   const [supplierInvoices, setSupplierInvoices] = useState(initialData.supplierInvoices);
   const [customers, setCustomers] = useState(initialData.customers);
   const [suppliers, setSuppliers] = useState(initialData.suppliers);
+  const [products, setProducts] = useState(initialData.products);
 
   const [showManageCustomerInvoiceDialog, setShowManageCustomerInvoiceDialog] = useState(false);
   const [customerInvoiceToEdit, setCustomerInvoiceToEdit] = useState<CustomerInvoiceFormValues | null>(null);
@@ -120,6 +114,7 @@ export default function AccountsPayableReceivableClientComponent({ initialData }
     setSupplierInvoices(initialData.supplierInvoices);
     setCustomers(initialData.customers);
     setSuppliers(initialData.suppliers);
+    setProducts(initialData.products);
   }, [initialData]);
 
   const calculateItemTotalForForm = (form: any, index: number) => {
@@ -297,9 +292,9 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
                                     <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                                         <FormField control={customerInvoiceForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                             <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                            <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { customerInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); customerInvoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(customerInvoiceForm, index); }} value={field.value} dir="rtl">
+                                            <Select onValueChange={(value) => { field.onChange(value); const selectedItem = products.find(i => i.id === value); if (selectedItem) { customerInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.sellingPrice); customerInvoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(customerInvoiceForm, index); }} value={field.value} dir="rtl">
                                                 <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
-                                                <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                                <SelectContent>{products.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                             </Select><FormMessage className="text-xs"/></FormItem> )} />
                                         <FormField control={customerInvoiceForm.control} name={`items.${index}.quantity`} render={({ field }) => (
                                             <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
@@ -412,9 +407,9 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
                                     <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                                         <FormField control={supplierInvoiceForm.control} name={`items.${index}.itemId`} render={({ field }) => (
                                             <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
-                                            <Select onValueChange={(value) => { field.onChange(value); const selectedItem = mockItems.find(i => i.id === value); if (selectedItem) { supplierInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.price); supplierInvoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(supplierInvoiceForm, index); }} value={field.value} dir="rtl">
+                                            <Select onValueChange={(value) => { field.onChange(value); const selectedItem = products.find(i => i.id === value); if (selectedItem) { supplierInvoiceForm.setValue(`items.${index}.unitPrice`, selectedItem.costPrice); supplierInvoiceForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(supplierInvoiceForm, index); }} value={field.value} dir="rtl">
                                                 <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
-                                                <SelectContent>{mockItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
+                                                <SelectContent>{products.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                                             </Select><FormMessage className="text-xs"/></FormItem> )} />
                                         <FormField control={supplierInvoiceForm.control} name={`items.${index}.quantity`} render={({ field }) => (
                                             <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الكمية</FormLabel>
@@ -520,5 +515,3 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
     </div>
   );
 }
-
-    

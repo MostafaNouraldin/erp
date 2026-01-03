@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,11 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { LogIn, UserShield } from "lucide-react";
+import { LogIn, Shield } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { useToast } from "@/hooks/use-toast";
 import { login } from './actions';
-import { useAuth } from '@/hooks/auth-context';
+import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
@@ -105,7 +104,7 @@ export default function LoginPage() {
                                 <Switch id="superadmin-switch" checked={field.value} onCheckedChange={field.onChange} />
                             </FormControl>
                             <FormLabel htmlFor="superadmin-switch" className="flex items-center gap-2 cursor-pointer">
-                                <UserShield className="h-5 w-5 text-primary"/>
+                                <Shield className="h-5 w-5 text-primary"/>
                                 <span>تسجيل دخول كمدير نظام</span>
                             </FormLabel>
                         </FormItem>
