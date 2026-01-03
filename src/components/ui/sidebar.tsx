@@ -621,19 +621,17 @@ const SidebarMenuItem = React.forwardRef<
     const isActive = pathname === item.href;
     return (
       <li ref={ref} data-sidebar="menu-item" className={cn("group/menu-item relative", className)} {...props}>
-        <Link href={item.href} passHref legacyBehavior>
-          <SidebarMenuButton
-            tooltip={{ children: item.label, side: tooltipSide, align: 'center' }}
-            className="w-full justify-start"
-            isActive={isActive}
-            asChild
-          >
-            <span className="flex items-center gap-2">
-                <item.icon />
-                <span className="truncate">{item.label}</span>
-            </span>
-          </SidebarMenuButton>
-        </Link>
+        <SidebarMenuButton
+          tooltip={{ children: item.label, side: tooltipSide, align: 'center' }}
+          className="w-full justify-start"
+          isActive={isActive}
+          asChild
+        >
+          <Link href={item.href}>
+            <item.icon />
+            <span className="truncate">{item.label}</span>
+          </Link>
+        </SidebarMenuButton>
       </li>
     );
   }
