@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
-import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle, Shield, Banknote, CalendarPlus, CalendarCheck2, UserCog, Award, Plane, UploadCloud, Printer, FileWarning, FileEdit, UserX, ClipboardSignature, FolderOpen, UserMinus, HeartPulse } from "lucide-react";
+import { Users, Briefcase, CalendarDays, LogOut, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Eye, DollarSign, FileClock, Send, MinusCircle, Shield, Banknote, CalendarPlus, CalendarCheck2, UserCog, Award, Plane, UploadCloud, Printer, FileWarning, FileEdit, UserX, ClipboardSignature, FolderOpen, UserMinus, HeartPulse, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -291,6 +291,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   const [disciplinaryToEdit, setDisciplinaryToEdit] = useState<DisciplinaryWarningFormValues | null>(null);
   const [showPrintDisciplinaryDialog, setShowPrintDisciplinaryDialog] = useState(false);
   const [selectedDisciplinaryForPrint, setSelectedDisciplinaryForPrint] = useState<DisciplinaryWarningFormValues | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
@@ -402,6 +403,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
 
 
   const handleEmployeeSubmit = async (values: EmployeeFormValues) => {
+    setIsSubmitting(true);
     try {
       if (employeeToEdit) {
         await updateEmployee({ ...values, id: employeeToEdit.id! });
@@ -414,6 +416,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
       setEmployeeToEdit(null);
     } catch (error) {
       toast({ title: "خطأ", description: "لم يتم حفظ بيانات الموظف.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -439,6 +443,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   };
 
   const handlePayrollSubmit = async (values: PayrollFormValues) => {
+    setIsSubmitting(true);
     const totalAllowances = values.allowances?.reduce((sum, item) => sum + item.amount, 0) || 0;
     const totalDeductions = values.deductions?.reduce((sum, item) => sum + item.amount, 0) || 0;
     const netSalary = (values.basicSalary || 0) + totalAllowances - totalDeductions;
@@ -458,6 +463,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
       setPayrollToEdit(null);
     } catch (error) {
        toast({ title: "خطأ", description: "لم يتم حفظ مسير الرواتب.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -477,6 +484,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   }
 
   const handleAttendanceSubmit = async (values: AttendanceFormValues) => {
+      setIsSubmitting(true);
       let hours = "0";
       if (values.checkIn && values.checkOut) {
         try {
@@ -504,10 +512,13 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
         setAttendanceToEdit(null);
       } catch (error) {
         toast({ title: "خطأ", description: "لم يتم حفظ سجل الحضور.", variant: "destructive" });
+      } finally {
+        setIsSubmitting(false);
       }
   };
 
   const handleLeaveRequestSubmit = async (values: LeaveRequestFormValues) => {
+    setIsSubmitting(true);
     const startDate = new Date(values.startDate);
     const endDate = new Date(values.endDate);
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
@@ -526,6 +537,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
       setLeaveRequestToEdit(null);
     } catch(e) {
        toast({ title: "خطأ", description: "لم يتم إرسال طلب الإجازة.", variant: "destructive" });
+    } finally {
+       setIsSubmitting(false);
     }
   };
 
@@ -545,6 +558,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   };
 
   const handleWarningNoticeSubmit = async (values: WarningNoticeFormValues) => {
+    setIsSubmitting(true);
     try {
       if (warningNoticeToEdit) {
           await updateWarningNotice({ ...values, id: warningNoticeToEdit.id! });
@@ -557,6 +571,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
       setWarningNoticeToEdit(null);
     } catch(e) {
        toast({ title: "خطأ", description: "لم يتم حفظ لفت النظر.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -575,6 +591,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   };
 
   const handleAdministrativeDecisionSubmit = async (values: AdministrativeDecisionFormValues) => {
+    setIsSubmitting(true);
     try {
       if (adminDecisionToEdit) {
           await updateAdministrativeDecision({ ...values, id: adminDecisionToEdit.id! });
@@ -587,6 +604,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
       setAdminDecisionToEdit(null);
     } catch (e) {
       toast({ title: "خطأ", description: "لم يتم حفظ القرار الإداري.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const handleDeleteAdministrativeDecision = async (decisionId: string) => {
@@ -603,6 +622,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   };
   
   const handleResignationSubmit = async (values: ResignationFormValues) => {
+    setIsSubmitting(true);
     try {
       if (resignationToEdit) {
           await updateResignation({ ...values, id: resignationToEdit.id! });
@@ -615,6 +635,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
       setResignationToEdit(null);
     } catch(e) {
        toast({ title: "خطأ", description: "لم يتم حفظ طلب الاستقالة.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const handleDeleteResignation = async (resignationId: string) => {
@@ -631,6 +653,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   };
 
   const handleDisciplinaryWarningSubmit = async (values: DisciplinaryWarningFormValues) => {
+    setIsSubmitting(true);
     try {
       if (disciplinaryToEdit) {
           await updateDisciplinaryWarning({ ...values, id: disciplinaryToEdit.id! });
@@ -643,6 +666,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
       setDisciplinaryToEdit(null);
     } catch(e) {
        toast({ title: "خطأ", description: "لم يتم حفظ الإنذار.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const handleDeleteDisciplinaryWarning = async (warningId: string) => {
@@ -817,7 +842,10 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                     </Form>
                 </div>
                 <DialogFooter className="flex-shrink-0 border-t pt-4">
-                    <Button type="submit" form="employeeDialogForm">{employeeToEdit ? "حفظ التعديلات" : "إضافة الموظف"}</Button>
+                    <Button type="submit" form="employeeDialogForm" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                        {employeeToEdit ? "حفظ التعديلات" : "إضافة الموظف"}
+                    </Button>
                     <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
@@ -1317,5 +1345,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
 }
 
 
+
+    
 
     
