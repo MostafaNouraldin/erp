@@ -6,7 +6,6 @@ import { eq } from 'drizzle-orm';
 import AccountsPayableReceivableClientComponent from './AccountsPayableReceivableClientComponent';
 
 
-// This is now a true Server Component that fetches data and passes it to the client component.
 export default async function AccountsPayableReceivablePage() {
     const { db } = await connectToTenantDb();
     
@@ -62,3 +61,5 @@ export default async function AccountsPayableReceivablePage() {
 
     return <AccountsPayableReceivableClientComponent initialData={initialData} />;
 }
+
+    

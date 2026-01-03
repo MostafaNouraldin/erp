@@ -241,3 +241,5 @@ export default function BanksPageClient({ initialBankAccounts }: ClientComponent
     </div>
   );
 }
+
+    

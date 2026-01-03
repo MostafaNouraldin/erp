@@ -33,3 +33,5 @@ export default async function BankReceiptsPage() {
     return <div>Error loading data: {errorMessage}</div>;
   }
 }
+
+    
