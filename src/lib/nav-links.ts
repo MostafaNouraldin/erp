@@ -1,6 +1,6 @@
 
 
-import { LayoutDashboard, BookUser, BookOpen, FileArchive, UserCheck, Landmark, ArrowUpCircle, ArrowDownCircle, ArrowDownSquare, BookCopy, Package, Truck, SlidersHorizontal, ShoppingCart, Briefcase, Users, Cog, GanttChartSquare, CreditCardIcon, BarChart2, Settings, Shield, Settings2, Building2, Mail, CircleHelpIcon, FolderOpen, FileWarning, FileEdit, UserX, ClipboardSignature } from 'lucide-react';
+import { LayoutDashboard, BookUser, BookOpen, FileArchive, UserCheck, Landmark, ArrowUpCircle, ArrowDownCircle, ArrowDownSquare, BookCopy, Package, Truck, SlidersHorizontal, ShoppingCart, Briefcase, Users, Cog, GanttChartSquare, CreditCardIcon, BarChart2, Settings, Shield, Settings2, Building2, Mail, CircleHelpIcon, FolderOpen, FileWarning, FileEdit, UserX, ClipboardSignature, FileText } from 'lucide-react';
 import type { SidebarMenuItemProps } from '@/components/ui/sidebar';
 
 export const allNavItems: SidebarMenuItemProps['item'][] = [ 
