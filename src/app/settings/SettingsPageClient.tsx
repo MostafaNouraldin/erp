@@ -258,7 +258,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
             </Card>
 
             <Tabs defaultValue="company" className="w-full mt-6">
-                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto justify-start">
+                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto">
                     <TabsTrigger value="company" className="flex-shrink-0"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
                     <TabsTrigger value="financial" className="flex-shrink-0"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
                     <TabsTrigger value="hr" className="flex-shrink-0"><Briefcase className="inline-block me-2 h-4 w-4" /> الموارد البشرية</TabsTrigger>
@@ -564,5 +564,3 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         </div>
     );
 }
-
-    
