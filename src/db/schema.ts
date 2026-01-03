@@ -1,4 +1,5 @@
 
+
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -253,6 +254,27 @@ export const salesInvoiceItems = pgTable('sales_invoice_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
+export const salesReturns = pgTable('sales_returns', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    customerId: varchar('customer_id', { length: 256 }).notNull().references(() => customers.id),
+    invoiceId: varchar('invoice_id', { length: 256 }).references(() => salesInvoices.id),
+    date: timestamp('date').notNull(),
+    numericTotalAmount: numeric('numeric_total_amount', { precision: 10, scale: 2 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+    notes: text('notes'),
+});
+
+export const salesReturnItems = pgTable('sales_return_items', {
+    id: serial('id').primaryKey(),
+    returnId: varchar('return_id', { length: 256 }).notNull().references(() => salesReturns.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
+    description: text('description').notNull(),
+    quantity: integer('quantity').notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+    reason: text('reason'),
+});
+
 export const purchaseOrders = pgTable('purchase_orders', {
   id: varchar('id', { length: 256 }).primaryKey(),
   supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
@@ -328,6 +350,7 @@ export const deductionTypes = pgTable('deduction_types', {
 export const employeeAllowances = pgTable('employee_allowances', {
     id: serial('id').primaryKey(),
     employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    typeId: varchar('type_id', { length: 256 }).notNull().references(() => allowanceTypes.id),
     description: varchar('description', { length: 256 }).notNull(),
     amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
     type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
@@ -336,6 +359,7 @@ export const employeeAllowances = pgTable('employee_allowances', {
 export const employeeDeductions = pgTable('employee_deductions', {
     id: serial('id').primaryKey(),
     employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    typeId: varchar('type_id', { length: 256 }).notNull().references(() => deductionTypes.id),
     description: varchar('description', { length: 256 }).notNull(),
     amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
     type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
@@ -803,6 +827,21 @@ export const purchaseReturnItemsRelations = relations(purchaseReturnItems, ({ on
     purchaseReturn: one(purchaseReturns, {
         fields: [purchaseReturnItems.returnId],
         references: [purchaseReturns.id],
+    }),
+}));
+
+export const salesReturnsRelations = relations(salesReturns, ({ one, many }) => ({
+    customer: one(customers, {
+        fields: [salesReturns.customerId],
+        references: [customers.id],
+    }),
+    items: many(salesReturnItems),
+}));
+
+export const salesReturnItemsRelations = relations(salesReturnItems, ({ one }) => ({
+    salesReturn: one(salesReturns, {
+        fields: [salesReturnItems.returnId],
+        references: [salesReturns.id],
     }),
 }));
 

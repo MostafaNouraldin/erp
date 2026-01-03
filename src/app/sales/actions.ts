@@ -1,10 +1,11 @@
 
+
 // src/app/sales/actions.ts
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { customers, salesInvoices, salesInvoiceItems, quotations, quotationItems, salesOrders, salesOrderItems, products, journalEntries, journalEntryLines } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { customers, salesInvoices, salesInvoiceItems, quotations, quotationItems, salesOrders, salesOrderItems, products, journalEntries, journalEntryLines, salesReturns, salesReturnItems, sql, inventoryMovementLog } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -84,6 +85,28 @@ const salesOrderSchema = z.object({
 });
 type SalesOrderFormValues = z.infer<typeof salesOrderSchema>;
 
+const salesReturnItemSchema = z.object({
+  itemId: z.string().min(1, "الصنف مطلوب"),
+  description: z.string().optional(),
+  quantity: z.coerce.number().min(1, "الكمية يجب أن تكون 1 على الأقل"),
+  unitPrice: z.coerce.number().min(0, "سعر الوحدة إيجابي"),
+  total: z.coerce.number(),
+  reason: z.string().optional(),
+});
+
+const salesReturnSchema = z.object({
+  id: z.string().optional(),
+  customerId: z.string().min(1, "العميل مطلوب"),
+  invoiceId: z.string().optional(),
+  date: z.date({ required_error: "تاريخ المرتجع مطلوب" }),
+  items: z.array(salesReturnItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
+  notes: z.string().optional(),
+  numericTotalAmount: z.coerce.number().default(0),
+  status: z.enum(["مسودة", "معتمد", "ملغي"]).default("مسودة"),
+});
+type SalesReturnFormValues = z.infer<typeof salesReturnSchema>;
+
+
 async function getDb() {
   const tenantId = 'T001';
   const { db } = await connectToTenantDb(tenantId);
@@ -136,11 +159,18 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
           total: String(item.total),
         }))
       );
-      // 4. Update inventory
+      // 4. Update inventory and log movement
       for (const item of invoiceData.items) {
           await tx.update(products)
               .set({ quantity: sql`${products.quantity} - ${item.quantity}` })
               .where(eq(products.id, item.itemId));
+          await tx.insert(inventoryMovementLog).values({
+              productId: item.itemId,
+              quantity: item.quantity,
+              type: 'OUT',
+              sourceType: 'فاتورة مبيعات',
+              sourceId: newInvoiceId,
+          });
       }
     }
 
@@ -291,4 +321,107 @@ export async function deleteSalesOrder(id: string) {
     await tx.delete(salesOrders).where(eq(salesOrders.id, id));
   });
   revalidatePath('/sales');
+}
+
+// Sales Return Actions
+export async function addSalesReturn(values: SalesReturnFormValues) {
+  const db = await getDb();
+  const newId = `SR${Date.now()}`;
+  await db.transaction(async (tx) => {
+    await tx.insert(salesReturns).values({ ...values, id: newId, numericTotalAmount: String(values.numericTotalAmount) });
+    if (values.items.length > 0) {
+      await tx.insert(salesReturnItems).values(
+        values.items.map(item => ({
+          returnId: newId,
+          itemId: item.itemId,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: String(item.unitPrice),
+          total: String(item.total),
+          reason: item.reason,
+        }))
+      );
+    }
+  });
+  revalidatePath('/sales');
+}
+
+export async function approveSalesReturn(returnId: string) {
+    const db = await getDb();
+    const salesReturn = await db.query.salesReturns.findFirst({
+        where: eq(salesReturns.id, returnId),
+        with: { items: true },
+    });
+
+    if (!salesReturn) throw new Error("لم يتم العثور على مرتجع المبيعات.");
+    if (salesReturn.status === 'معتمد') throw new Error("هذا المرتجع معتمد بالفعل.");
+
+    const totalAmount = salesReturn.numericTotalAmount;
+    const VAT_RATE = 0.15;
+    const totalBeforeTax = totalAmount / (1 + VAT_RATE);
+    const vatAmount = totalAmount - totalBeforeTax;
+
+    // Account IDs
+    const salesReturnAccount = "4100"; // حساب مردودات المبيعات
+    const vatPayableAccount = "2200"; // حساب ضريبة القيمة المضافة
+    const accountsReceivableAccount = "1200"; // حساب الذمم المدينة
+
+    await db.transaction(async (tx) => {
+        // 1. Update inventory
+        for (const item of salesReturn.items) {
+            await tx.update(products)
+                .set({ quantity: sql`${products.quantity} + ${item.quantity}` })
+                .where(eq(products.id, item.itemId));
+            await tx.insert(inventoryMovementLog).values({
+                productId: item.itemId,
+                quantity: item.quantity,
+                type: 'IN',
+                sourceType: 'مرتجع مبيعات',
+                sourceId: returnId,
+            });
+        }
+        
+        // 2. Create reversing journal entry
+        const newEntryId = `JV-SR-${returnId}`;
+        const customer = await tx.query.customers.findFirst({ where: eq(customers.id, salesReturn.customerId) });
+
+        await tx.insert(journalEntries).values({
+            id: newEntryId,
+            date: salesReturn.date,
+            description: `إشعار دائن لمرتجع مبيعات رقم ${returnId} من العميل ${customer?.name || salesReturn.customerId}`,
+            totalAmount: String(totalAmount),
+            status: "مرحل",
+            sourceModule: "SalesReturn",
+            sourceDocumentId: returnId,
+        });
+
+        await tx.insert(journalEntryLines).values([
+            // Debit Sales Returns (a contra-revenue account)
+            { journalEntryId: newEntryId, accountId: salesReturnAccount, debit: String(totalBeforeTax), credit: '0', description: `مرتجع مبيعات من ${customer?.name}` },
+            // Debit VAT Payable (to reduce liability)
+            { journalEntryId: newEntryId, accountId: vatPayableAccount, debit: String(vatAmount), credit: '0', description: `عكس ضريبة القيمة المضافة لمرتجع` },
+            // Credit Accounts Receivable (to reduce what the customer owes)
+            { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: '0', credit: String(totalAmount), description: `تخفيض رصيد العميل ${customer?.name}` },
+        ]);
+
+        // 3. Update the sales return status
+        await tx.update(salesReturns).set({ status: 'معتمد' }).where(eq(salesReturns.id, returnId));
+    });
+
+    revalidatePath('/sales');
+    revalidatePath('/inventory');
+    revalidatePath('/general-ledger');
+}
+
+export async function deleteSalesReturn(id: string) {
+    const db = await getDb();
+    const salesReturn = await db.query.salesReturns.findFirst({ where: eq(salesReturns.id, id) });
+    if (salesReturn?.status === 'معتمد') {
+        throw new Error("لا يمكن حذف مرتجع معتمد.");
+    }
+    await db.transaction(async (tx) => {
+        await tx.delete(salesReturnItems).where(eq(salesReturnItems.returnId, id));
+        await tx.delete(salesReturns).where(eq(salesReturns.id, id));
+    });
+    revalidatePath('/sales');
 }

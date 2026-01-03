@@ -1,8 +1,9 @@
 
+
 // This is now a true Server Component that fetches data and passes it to the client.
 import React from 'react';
 import { connectToTenantDb } from '@/db';
-import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema, products, quotations, quotationItems, salesOrders, salesOrderItems } from '@/db/schema';
+import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema, products, quotations, quotationItems, salesOrders, salesOrderItems, salesReturns, salesReturnItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import SalesClientComponent from './SalesClientComponent'; // We will create this component
 
@@ -14,6 +15,7 @@ export default async function SalesPage() {
         const invoicesResult = await db.select().from(salesInvoicesSchema);
         const quotationsResult = await db.select().from(quotations);
         const salesOrdersResult = await db.select().from(salesOrders);
+        const salesReturnsResult = await db.select().from(salesReturns);
         const productsResult = await db.select({
             id: products.id,
             name: products.name,
@@ -83,6 +85,21 @@ export default async function SalesPage() {
                 })),
             };
         }));
+        
+        const salesReturnsWithItems = await Promise.all(salesReturnsResult.map(async (sr) => {
+            const items = await db.select().from(salesReturnItems).where(eq(salesReturnItems.returnId, sr.id));
+            return {
+                ...sr,
+                date: new Date(sr.date),
+                numericTotalAmount: parseFloat(sr.numericTotalAmount),
+                status: sr.status as "مسودة" | "معتمد" | "ملغي",
+                items: items.map(item => ({
+                    ...item,
+                    unitPrice: parseFloat(item.unitPrice),
+                    total: parseFloat(item.total),
+                })),
+            };
+        }));
 
         const initialData = {
             customers: customersResult.map(c => ({
@@ -92,7 +109,8 @@ export default async function SalesPage() {
             invoices: invoicesWithItems,
             quotations: quotationsWithItems,
             salesOrders: salesOrdersWithItems,
-            products: productsResult.map(p => ({...p, sellingPrice: parseFloat(p.sellingPrice)})),
+            salesReturns: salesReturnsWithItems,
+            products: productsResult.map(p => ({...p, sellingPrice: parseFloat(p.sellingPrice), costPrice: parseFloat(p.costPrice) })),
         };
 
         return <SalesClientComponent initialData={initialData} />;
