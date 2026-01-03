@@ -402,6 +402,17 @@ export const attendanceRecords = pgTable('attendance_records', {
     hours: varchar('hours', { length: 10 }),
 });
 
+export const overtime = pgTable('overtime', {
+    id: serial('id').primaryKey(),
+    employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    date: timestamp('date').notNull(),
+    hours: numeric('hours', { precision: 5, scale: 2 }).notNull(),
+    rate: numeric('rate', { precision: 4, scale: 2 }).notNull().default('1.5'),
+    amount: numeric('amount', { precision: 10, scale: 2 }),
+    notes: text('notes'),
+    status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, approved, rejected, paid
+});
+
 export const leaveRequests = pgTable('leave_requests', {
     id: varchar('id', { length: 256 }).primaryKey(),
     employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),

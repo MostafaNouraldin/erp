@@ -3,13 +3,14 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, journalEntries, journalEntryLines } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, journalEntries, journalEntryLines, overtime } from '@/db/schema';
+import { eq, and, sql, gte, lte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const employeeAllowanceSchema = z.object({
   id: z.string().optional(),
+  typeId: z.string().min(1, "نوع البدل مطلوب"),
   description: z.string().min(1, "وصف البدل مطلوب"),
   amount: z.coerce.number().min(0, "المبلغ يجب أن يكون إيجابياً"),
   type: z.enum(["ثابت", "متغير", "مرة واحدة"]).default("ثابت"),
@@ -17,6 +18,7 @@ const employeeAllowanceSchema = z.object({
 
 const employeeDeductionSchema = z.object({
   id: z.string().optional(),
+  typeId: z.string().min(1, "نوع الخصم مطلوب"),
   description: z.string().min(1, "وصف الخصم مطلوب"),
   amount: z.coerce.number().min(0, "المبلغ يجب أن يكون إيجابياً"),
   type: z.enum(["ثابت", "متغير", "مرة واحدة"]).default("ثابت"),
@@ -145,6 +147,18 @@ const disciplinaryWarningSchema = z.object({
 });
 export type DisciplinaryWarningFormValues = z.infer<typeof disciplinaryWarningSchema>;
 
+const overtimeSchema = z.object({
+  id: z.number().optional(),
+  employeeId: z.string().min(1, "الموظف مطلوب"),
+  date: z.date({ required_error: "التاريخ مطلوب" }),
+  hours: z.coerce.number().min(0.1, "يجب أن تكون الساعات أكبر من صفر"),
+  rate: z.coerce.number().default(1.5),
+  amount: z.coerce.number().optional(),
+  notes: z.string().optional(),
+  status: z.enum(["pending", "approved", "rejected", "paid"]).default("pending"),
+});
+export type OvertimeFormValues = z.infer<typeof overtimeSchema>;
+
 
 async function getDb() {
   const { db } = await connectToTenantDb('T001');
@@ -195,7 +209,43 @@ export async function deleteEmployee(id: string) {
 export async function addPayroll(values: PayrollFormValues) {
     const db = await getDb();
     const newId = `PAY${Date.now()}`;
-    await db.insert(payrolls).values({ ...values, id: newId, basicSalary: String(values.basicSalary), netSalary: String(values.netSalary) });
+
+    // Get month and year from monthYear string
+    const [monthName, year] = values.monthYear.split(' ');
+    const month = new Date(Date.parse(monthName +" 1, 2012")).getMonth();
+    const startDate = new Date(parseInt(year), month, 1);
+    const endDate = new Date(parseInt(year), month + 1, 0);
+
+    const approvedOvertime = await db.select().from(overtime).where(
+        and(
+            eq(overtime.employeeId, values.employeeId),
+            eq(overtime.status, 'approved'),
+            gte(overtime.date, startDate),
+            lte(overtime.date, endDate)
+        )
+    );
+    
+    const overtimeAmount = approvedOvertime.reduce((sum, ot) => sum + (ot.amount ? parseFloat(ot.amount) : 0), 0);
+    
+    let finalAllowances = values.allowances || [];
+    if (overtimeAmount > 0) {
+        finalAllowances.push({ description: 'عمل إضافي', amount: overtimeAmount });
+    }
+
+    await db.insert(payrolls).values({ ...values, id: newId, basicSalary: String(values.basicSalary), netSalary: String(values.netSalary), allowances: finalAllowances });
+    
+    // Mark overtime as paid
+    if (approvedOvertime.length > 0) {
+        await db.update(overtime).set({ status: 'paid' }).where(
+            and(
+                eq(overtime.employeeId, values.employeeId),
+                eq(overtime.status, 'approved'),
+                gte(overtime.date, startDate),
+                lte(overtime.date, endDate)
+            )
+        );
+    }
+    
     revalidatePath('/hr-payroll');
 }
 
@@ -344,6 +394,37 @@ export async function updateLeaveRequestStatus(id: string, status: LeaveRequestF
     revalidatePath('/hr-payroll');
 }
 
+// --- Overtime Actions ---
+export async function addOvertime(values: OvertimeFormValues) {
+    const db = await getDb();
+    await db.insert(overtime).values({ ...values, rate: String(values.rate), hours: String(values.hours) });
+    revalidatePath('/hr-payroll');
+}
+
+export async function approveOvertime(id: number) {
+    const db = await getDb();
+    const otRecord = await db.query.overtime.findFirst({ where: eq(overtime.id, id) });
+    if (!otRecord) throw new Error("سجل العمل الإضافي غير موجود.");
+
+    const employee = await db.query.employees.findFirst({ where: eq(employees.id, otRecord.employeeId) });
+    if (!employee) throw new Error("الموظف المرتبط غير موجود.");
+    
+    // Calculation: (Salary / 30 days / 8 hours) * hours * rate
+    const hourlyRate = parseFloat(employee.basicSalary) / 30 / 8;
+    const amount = hourlyRate * parseFloat(otRecord.hours) * parseFloat(otRecord.rate);
+
+    await db.update(overtime)
+        .set({ status: 'approved', amount: String(amount) })
+        .where(eq(overtime.id, id));
+    revalidatePath('/hr-payroll');
+}
+
+export async function rejectOvertime(id: number) {
+    const db = await getDb();
+    await db.update(overtime).set({ status: 'rejected' }).where(eq(overtime.id, id));
+    revalidatePath('/hr-payroll');
+}
+
 // --- Warning Notice Actions ---
 export async function addWarningNotice(values: WarningNoticeFormValues) {
   const db = await getDb();
@@ -421,5 +502,4 @@ export async function deleteDisciplinaryWarning(id: string) {
 }
 
 // HR Settings Actions (Department, JobTitle, LeaveType)
-export { addDepartment, updateDepartment, deleteDepartment, addJobTitle, updateJobTitle, deleteJobTitle, addLeaveType, updateLeaveType, deleteLeaveType } from '../settings/actions';
-
+export { addDepartment, updateDepartment, deleteDepartment, addJobTitle, updateJobTitle, deleteJobTitle, addLeaveType, updateLeaveType, deleteLeaveType, addAllowanceType, updateAllowanceType, deleteAllowanceType, addDeductionType, updateDeductionType, deleteDeductionType } from '../settings/actions';
