@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { journalEntries, journalEntryLines, posSessions } from '@/db/schema';
+import { journalEntries, journalEntryLines, posSessions, companySettings } from '@/db/schema';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { eq } from 'drizzle-orm';
@@ -122,27 +122,33 @@ async function settlePosSession(sessionId: string, data: {
 }) {
   const db = await getDb();
   
+  const settingsResult = await db.query.companySettings.findFirst({
+    where: eq(companySettings.id, 'T001'), // Assuming single tenant for now
+  });
+  const settings = settingsResult?.settings as any || {};
+  const accountMappings = settings.accountMappings || {};
+
   const totalSales = data.cashSales + data.cardSales + data.deferredSales;
-  const VAT_RATE = 0.15;
+  const VAT_RATE = (settings.vatRate || 15) / 100;
   const totalBeforeTax = totalSales / (1 + VAT_RATE);
   const vatAmount = totalSales - totalBeforeTax;
 
   const newEntryId = `JV-POSS-${sessionId}`;
 
-  // Account IDs - These should be configurable
-  const POS_CASH_ACCOUNT = '1111'; // حساب صندوق نقاط البيع (Corrected)
-  const BANK_ACCOUNT = '1121'; // حساب البنك (Corrected)
-  const ACCOUNTS_RECEIVABLE = '1200'; // الذمم المدينة
-  const SALES_REVENUE = '4000'; // إيرادات المبيعات
-  const VAT_PAYABLE = '2200'; // ضريبة القيمة المضافة المستحقة
-  const CASH_OVER_SHORT = '5303'; // حساب العجز والزيادة في الصندوق (Corrected)
+  // Account IDs from settings, with fallbacks
+  const POS_CASH_ACCOUNT = accountMappings.posCashAccount || '1111';
+  const BANK_ACCOUNT = accountMappings.bankAccount || '1121'; 
+  const ACCOUNTS_RECEIVABLE = accountMappings.accountsReceivable || '1200';
+  const SALES_REVENUE = accountMappings.salesRevenue || '4000';
+  const VAT_PAYABLE = accountMappings.vatPayable || '2200';
+  const CASH_OVER_SHORT = accountMappings.cashOverShort || '5303'; 
 
   await db.transaction(async (tx) => {
     await tx.insert(journalEntries).values({
       id: newEntryId,
       date: new Date(),
       description: `ترحيل جلسة نقاط البيع رقم ${sessionId} للموظف ${data.userId}`,
-      totalAmount: String(totalSales + data.openingBalance), // Total debits
+      totalAmount: String(totalSales + data.openingBalance), // Total debits might not be this simple
       status: "مرحل",
       sourceModule: "POSSession",
       sourceDocumentId: sessionId,
