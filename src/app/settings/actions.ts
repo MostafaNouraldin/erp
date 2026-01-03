@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { connectToTenantDb } from '@/db';
@@ -42,6 +41,11 @@ const settingsSchema = z.object({
   defaultCurrency: z.string().optional(),
   vatRate: z.coerce.number().min(0).max(100).optional(),
   themePrimaryColor: z.string().optional(),
+  smtpHost: z.string().optional(),
+  smtpPort: z.coerce.number().optional(),
+  smtpUser: z.string().optional(),
+  smtpPass: z.string().optional(),
+  smtpSecure: z.boolean().optional(),
 });
 export type SettingsFormValues = z.infer<typeof settingsSchema>;
 
@@ -280,3 +284,5 @@ export async function deleteDeductionType(id: string) {
     await db.delete(deductionTypes).where(eq(deductionTypes.id, id));
     revalidatePath('/settings');
 }
+
+    

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -9,7 +8,7 @@ import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save, Briefcase, CalendarDays, HeartPulse, User } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save, Briefcase, CalendarDays, HeartPulse, User, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -72,7 +71,13 @@ const settingsSchema = z.object({
   defaultCurrency: z.string().optional(),
   vatRate: z.coerce.number().min(0).max(100).optional(),
   themePrimaryColor: z.string().optional(),
+  smtpHost: z.string().optional(),
+  smtpPort: z.coerce.number().optional(),
+  smtpUser: z.string().optional(),
+  smtpPass: z.string().optional(),
+  smtpSecure: z.boolean().optional(),
 });
+export type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 const departmentSchema = z.object({ id: z.string().optional(), name: z.string().min(1, "اسم القسم مطلوب") });
 const jobTitleSchema = z.object({ id: z.string().optional(), name: z.string().min(1, "اسم المسمى الوظيفي مطلوب") });
@@ -256,6 +261,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                     <TabsTrigger value="company" className="flex-shrink-0"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
                     <TabsTrigger value="financial" className="flex-shrink-0"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
                     <TabsTrigger value="hr" className="flex-shrink-0"><Briefcase className="inline-block me-2 h-4 w-4" /> الموارد البشرية</TabsTrigger>
+                    <TabsTrigger value="email" className="flex-shrink-0"><Mail className="inline-block me-2 h-4 w-4" /> البريد الإلكتروني</TabsTrigger>
                     <TabsTrigger value="users" className="flex-shrink-0"><Users className="inline-block me-2 h-4 w-4" /> المستخدمين</TabsTrigger>
                     <TabsTrigger value="roles" className="flex-shrink-0"><Shield className="inline-block me-2 h-4 w-4" /> الأدوار والصلاحيات</TabsTrigger>
                     <TabsTrigger value="appearance" className="flex-shrink-0"><Palette className="inline-block me-2 h-4 w-4" /> المظهر</TabsTrigger>
@@ -291,6 +297,30 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                                     <SelectContent>{availableCurrencies.map(c => <SelectItem key={c.code} value={c.code}>{c.name} ({c.symbol})</SelectItem>)}</SelectContent>
                                                 </Select><FormMessage /></FormItem> )} />
                                         <FormField control={settingsForm.control} name="vatRate" render={({ field }) => ( <FormItem><FormLabel>نسبة ضريبة القيمة المضافة (%)</FormLabel><FormControl><Input type="number" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                     </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        <TabsContent value="email">
+                            <Card className="shadow-md">
+                                <CardHeader><CardTitle>إعدادات خادم البريد الإلكتروني (SMTP)</CardTitle><CardDescription>تستخدم هذه الإعدادات لإرسال رسائل البريد الإلكتروني من النظام، مثل إشعارات تفعيل الحسابات.</CardDescription></CardHeader>
+                                <CardContent className="space-y-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={settingsForm.control} name="smtpHost" render={({ field }) => ( <FormItem><FormLabel>خادم SMTP</FormLabel><FormControl><Input placeholder="smtp.example.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={settingsForm.control} name="smtpPort" render={({ field }) => ( <FormItem><FormLabel>المنفذ (Port)</FormLabel><FormControl><Input type="number" placeholder="587" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={settingsForm.control} name="smtpUser" render={({ field }) => ( <FormItem><FormLabel>اسم المستخدم</FormLabel><FormControl><Input placeholder="user@example.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={settingsForm.control} name="smtpPass" render={({ field }) => ( <FormItem><FormLabel>كلمة المرور</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={settingsForm.control} name="smtpSecure" render={({ field }) => (
+                                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
+                                            <div className="space-y-0.5">
+                                              <FormLabel>استخدام اتصال آمن (TLS/SSL)</FormLabel>
+                                              <DialogDescriptionComponent className="text-xs">
+                                                موصى به. قم بتعطيله فقط إذا كان خادم SMTP لا يدعم الاتصال المشفر.
+                                              </DialogDescriptionComponent>
+                                            </div>
+                                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                          </FormItem>
+                                        )}/>
                                      </div>
                                 </CardContent>
                             </Card>
@@ -534,3 +564,4 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
     );
 }
 
+    
