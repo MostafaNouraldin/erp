@@ -621,19 +621,19 @@ const SidebarMenuItem = React.forwardRef<
     const isActive = pathname === item.href;
     return (
       <li ref={ref} data-sidebar="menu-item" className={cn("group/menu-item relative", className)} {...props}>
-        <SidebarMenuButton
-          tooltip={{ children: item.label, side: tooltipSide, align: 'center' }}
-          className="w-full justify-start"
-          isActive={isActive}
-          asChild
-        >
-          <Link href={item.href}>
+        <Link href={item.href} passHref legacyBehavior>
+          <SidebarMenuButton
+            tooltip={{ children: item.label, side: tooltipSide, align: 'center' }}
+            className="w-full justify-start"
+            isActive={isActive}
+            asChild
+          >
             <span className="flex items-center gap-2">
                 <item.icon />
                 <span className="truncate">{item.label}</span>
             </span>
-          </Link>
-        </SidebarMenuButton>
+          </SidebarMenuButton>
+        </Link>
       </li>
     );
   }
@@ -755,14 +755,14 @@ const SidebarMenuAction = React.forwardRef<
       ref={ref}
       data-sidebar="menu-action"
       className={cn(
-        "absolute right-1 top-1.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-1 top-1.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground md:opacity-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "peer-data-[size=sm]/menu-button:top-1",
         "peer-data-[size=default]/menu-button:top-1.5",
         "peer-data-[size=lg]/menu-button:top-2.5",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&
-          "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground md:opacity-0",
+          "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground",
         className
       )}
       {...props}
@@ -911,5 +911,3 @@ export {
   useSidebar,
   type SidebarMenuItemProps
 }
-
-    
