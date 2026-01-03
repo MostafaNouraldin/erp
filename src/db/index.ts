@@ -6,12 +6,17 @@ import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
 
+// Fallback DATABASE_URL for development environments where .env.local might be missing.
+// This should be replaced with a proper environment variable in production.
+const databaseUrl = process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/db';
+
 if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set in .env.local. This should be your MAIN database URL from Supabase.');
+  console.warn("WARNING: DATABASE_URL is not set. Using a placeholder value. Please create a .env.local file with your actual database connection string.");
 }
 
+
 // A single, global connection client for the entire application.
-const connection = postgres(process.env.DATABASE_URL);
+const connection = postgres(databaseUrl);
 
 // A single, global Drizzle instance.
 const db = drizzle(connection, { schema });

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
-import { useAuth } from '@/hooks/auth-context'; // Import useAuth
+import { useAuth } from '@/hooks/use-auth'; // Import useAuth
 import { getCompanySettings } from '@/app/settings/actions'; // Import server action
 
 export interface Currency {

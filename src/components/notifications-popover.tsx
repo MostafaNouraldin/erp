@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Bell, CheckCheck } from "lucide-react";
-import { useAuth } from '@/hooks/auth-context';
+import { useAuth } from '@/hooks/use-auth';
 import { getNotificationsForUser, markNotificationAsRead } from '@/lib/notifications';
 
 interface Notification {
