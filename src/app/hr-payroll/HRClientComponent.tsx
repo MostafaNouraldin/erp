@@ -27,7 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
-import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, LeaveRequestFormValues, WarningNoticeFormValues, AdministrativeDecisionFormValues, ResignationFormValues, DisciplinaryWarningFormValues, Department, JobTitle, LeaveType } from './actions';
+import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, LeaveRequestFormValues, WarningNoticeFormValues, AdministrativeDecisionFormValues, ResignationFormValues, DisciplinaryWarningFormValues, Department, JobTitle, LeaveType, AllowanceType, DeductionType } from './actions';
 import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, updatePayrollStatus, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning, postPayrollToGL } from './actions';
 import placeholderImages from '@/app/lib/placeholder-images.json';
 
@@ -35,6 +35,7 @@ import placeholderImages from '@/app/lib/placeholder-images.json';
 // Schemas (as they are not exported from actions.ts)
 const employeeAllowanceSchema = z.object({
   id: z.string().optional(),
+  typeId: z.string().min(1, "نوع البدل مطلوب"),
   description: z.string().min(1, "وصف البدل مطلوب"),
   amount: z.coerce.number().min(0, "المبلغ يجب أن يكون إيجابياً"),
   type: z.enum(["ثابت", "متغير", "مرة واحدة"]).default("ثابت"),
@@ -42,6 +43,7 @@ const employeeAllowanceSchema = z.object({
 
 const employeeDeductionSchema = z.object({
   id: z.string().optional(),
+  typeId: z.string().min(1, "نوع الخصم مطلوب"),
   description: z.string().min(1, "وصف الخصم مطلوب"),
   amount: z.coerce.number().min(0, "المبلغ يجب أن يكون إيجابياً"),
   type: z.enum(["ثابت", "متغير", "مرة واحدة"]).default("ثابت"),
@@ -211,6 +213,8 @@ interface HRClientComponentProps {
         departments: Department[];
         jobTitles: JobTitle[];
         leaveTypes: LeaveType[];
+        allowanceTypes: AllowanceType[];
+        deductionTypes: DeductionType[];
     }
 }
 
@@ -239,6 +243,9 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   const [departments, setDepartments] = useState(initialData.departments);
   const [jobTitles, setJobTitles] = useState(initialData.jobTitles);
   const [leaveTypes, setLeaveTypes] = useState(initialData.leaveTypes);
+  const [allowanceTypes, setAllowanceTypes] = useState(initialData.allowanceTypes);
+  const [deductionTypes, setDeductionTypes] = useState(initialData.deductionTypes);
+
 
   const [activeTab, setActiveTab] = useState("employeeManagement");
   const [activeSubTab, setActiveSubTab] = useState("warningNotice");
@@ -317,6 +324,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     setDepartments(initialData.departments);
     setJobTitles(initialData.jobTitles);
     setLeaveTypes(initialData.leaveTypes);
+    setAllowanceTypes(initialData.allowanceTypes);
+    setDeductionTypes(initialData.deductionTypes);
   }, [initialData]);
 
   useEffect(() => {
@@ -353,8 +362,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
               const fixedAllowances = employee.allowances?.filter(a => a.type === 'ثابت') || [];
               const fixedDeductions = employee.deductions?.filter(d => d.type === 'ثابت') || [];
               payrollForm.setValue('basicSalary', employee.basicSalary);
-              replacePayrollAllowances(fixedAllowances);
-              replacePayrollDeductions(fixedDeductions);
+              replacePayrollAllowances(fixedAllowances.map(a => ({ description: a.description, amount: a.amount })));
+              replacePayrollDeductions(fixedDeductions.map(d => ({ description: d.description, amount: d.amount })));
           }
       }
   }, [selectedEmployeeIdForPayroll, employees, payrollForm, payrollToEdit, replacePayrollAllowances, replacePayrollDeductions]);
@@ -745,28 +754,38 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                                         <FormLabel>البدلات</FormLabel>
                                         {allowanceFormFields.map((item, index) => (
                                             <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
-                                                <FormField control={employeeForm.control} name={`allowances.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف البدل</FormLabel><FormControl><Input placeholder="وصف البدل" {...field} className="bg-background h-8 text-xs" /></FormControl><FormMessage className="text-xs"/></FormItem>)} />
+                                                <FormField control={employeeForm.control} name={`allowances.${index}.typeId`} render={({ field }) => (
+                                                    <FormItem><FormLabel className="text-xs">نوع البدل</FormLabel>
+                                                        <Select onValueChange={(value) => { field.onChange(value); const selectedType = allowanceTypes.find(t => t.id === value); if(selectedType) { employeeForm.setValue(`allowances.${index}.description`, selectedType.name); } }} value={field.value} dir="rtl">
+                                                            <FormControl><SelectTrigger className="bg-background h-8 text-xs"><SelectValue placeholder="اختر نوع البدل" /></SelectTrigger></FormControl>
+                                                            <SelectContent>{allowanceTypes.map(t => <SelectItem key={t.id} value={t.id!}>{t.name}</SelectItem>)}</SelectContent>
+                                                        </Select><FormMessage className="text-xs"/></FormItem>)} />
                                                 <FormField control={employeeForm.control} name={`allowances.${index}.amount`} render={({ field }) => (<FormItem><FormLabel className="text-xs">المبلغ (SAR)</FormLabel><FormControl><Input type="number" placeholder="المبلغ" {...field} className="bg-background h-8 text-xs" /></FormControl><FormMessage className="text-xs"/></FormItem>)} />
-                                                <FormField control={employeeForm.control} name={`allowances.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">نوع البدل</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background h-8 text-xs"><SelectValue placeholder="اختر نوع البدل" /></SelectTrigger></FormControl>
+                                                <FormField control={employeeForm.control} name={`allowances.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">طبيعة البدل</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background h-8 text-xs"><SelectValue placeholder="اختر طبيعة البدل" /></SelectTrigger></FormControl>
                                                     <SelectContent>{["ثابت", "متغير", "مرة واحدة"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage className="text-xs"/></FormItem>)} />
                                                 <Button type="button" variant="ghost" size="sm" onClick={() => removeAllowanceField(index)} className="text-destructive w-full justify-start p-1 text-xs h-auto"><MinusCircle className="me-1 h-3 w-3" /> إزالة البدل</Button>
                                             </Card>
                                         ))}
-                                        <Button type="button" variant="outline" size="sm" onClick={() => appendAllowanceField({description: '', amount: 0, type: "ثابت"})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة بدل</Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendAllowanceField({typeId: '', description: '', amount: 0, type: "ثابت"})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة بدل</Button>
                                         <Separator className="my-3"/>
                                         <FormLabel>الخصومات</FormLabel>
                                         {deductionFormFields.map((item, index) => (
                                             <Card key={item.id} className="p-3 space-y-2 bg-muted/30">
-                                                <FormField control={employeeForm.control} name={`deductions.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="text-xs">وصف الخصم</FormLabel><FormControl><Input placeholder="وصف الخصم" {...field} className="bg-background h-8 text-xs" /></FormControl><FormMessage className="text-xs"/></FormItem>)} />
+                                                 <FormField control={employeeForm.control} name={`deductions.${index}.typeId`} render={({ field }) => (
+                                                    <FormItem><FormLabel className="text-xs">نوع الخصم</FormLabel>
+                                                        <Select onValueChange={(value) => { field.onChange(value); const selectedType = deductionTypes.find(t => t.id === value); if(selectedType) { employeeForm.setValue(`deductions.${index}.description`, selectedType.name); } }} value={field.value} dir="rtl">
+                                                            <FormControl><SelectTrigger className="bg-background h-8 text-xs"><SelectValue placeholder="اختر نوع الخصم" /></SelectTrigger></FormControl>
+                                                            <SelectContent>{deductionTypes.map(t => <SelectItem key={t.id} value={t.id!}>{t.name}</SelectItem>)}</SelectContent>
+                                                        </Select><FormMessage className="text-xs"/></FormItem>)} />
                                                 <FormField control={employeeForm.control} name={`deductions.${index}.amount`} render={({ field }) => (<FormItem><FormLabel className="text-xs">المبلغ (SAR)</FormLabel><FormControl><Input type="number" placeholder="المبلغ" {...field} className="bg-background h-8 text-xs" /></FormControl><FormMessage className="text-xs"/></FormItem>)} />
-                                                <FormField control={employeeForm.control} name={`deductions.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">نوع الخصم</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background h-8 text-xs"><SelectValue placeholder="اختر نوع الخصم" /></SelectTrigger></FormControl>
+                                                <FormField control={employeeForm.control} name={`deductions.${index}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">طبيعة الخصم</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger className="bg-background h-8 text-xs"><SelectValue placeholder="اختر طبيعة الخصم" /></SelectTrigger></FormControl>
                                                     <SelectContent>{["ثابت", "متغير", "مرة واحدة"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage className="text-xs"/></FormItem>)} />
                                                 <Button type="button" variant="ghost" size="sm" onClick={() => removeDeductionField(index)} className="text-destructive w-full justify-start p-1 text-xs h-auto"><MinusCircle className="me-1 h-3 w-3" /> إزالة الخصم</Button>
                                             </Card>
                                         ))}
-                                        <Button type="button" variant="outline" size="sm" onClick={() => appendDeductionField({description: '', amount: 0, type: "ثابت"})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة خصم</Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendDeductionField({typeId: '', description: '', amount: 0, type: "ثابت"})} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة خصم</Button>
                                     </TabsContent>
                                     <TabsContent value="insurance" className="space-y-4 mt-0">
                                         <Card>
@@ -1289,13 +1308,11 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                         <div><p>استلام الموظف بالعلم</p><p className="mt-10">...................</p></div>
                     </div>
                 </div>)}
-                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
             </DialogContent>
         </Dialog>
 
     </div>
   );
 }
-
-
 

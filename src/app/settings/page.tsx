@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { connectToTenantDb } from '@/db';
-import { users, roles, companySettings, departments, jobTitles, leaveTypes } from '@/db/schema';
+import { users, roles, companySettings, departments, jobTitles, leaveTypes, allowanceTypes, deductionTypes, chartOfAccounts } from '@/db/schema';
 import SettingsPage from './SettingsPageClient';
 import type { Role } from '@/types/saas';
-import type { UserFormValues, SettingsFormValues, Department, JobTitle, LeaveType } from './actions';
-import { eq } from 'drizzle-orm';
+import type { UserFormValues, SettingsFormValues, Department, JobTitle, LeaveType, AllowanceType, DeductionType, Account } from './actions';
+import { eq, or, like } from 'drizzle-orm';
 
 async function getSettingsData(tenantId: string) {
     const { db } = await connectToTenantDb();
@@ -19,7 +19,11 @@ async function getSettingsData(tenantId: string) {
         const departmentsData = await db.select().from(departments);
         const jobTitlesData = await db.select().from(jobTitles);
         const leaveTypesData = await db.select().from(leaveTypes);
-        
+        const allowanceTypesData = await db.select().from(allowanceTypes);
+        const deductionTypesData = await db.select().from(deductionTypes);
+        // Fetch accounts for expense and liability mapping
+        const accountsData = await db.select().from(chartOfAccounts).where(or(like(chartOfAccounts.id, '5%'), like(chartOfAccounts.id, '2%'), like(chartOfAccounts.id, '12%')));
+
         return {
             success: true,
             data: {
@@ -29,6 +33,9 @@ async function getSettingsData(tenantId: string) {
                 departments: departmentsData,
                 jobTitles: jobTitlesData,
                 leaveTypes: leaveTypesData,
+                allowanceTypes: allowanceTypesData,
+                deductionTypes: deductionTypesData,
+                accounts: accountsData,
             }
         };
     } catch (error) {
@@ -53,5 +60,5 @@ export default async function SettingsServerPage() {
         );
     }
 
-    return <SettingsPage initialData={result.data as { users: UserFormValues[], roles: Role[], settings: SettingsFormValues, departments: Department[], jobTitles: JobTitle[], leaveTypes: LeaveType[] }} />;
+    return <SettingsPage initialData={result.data as { users: UserFormValues[], roles: Role[], settings: SettingsFormValues, departments: Department[], jobTitles: JobTitle[], leaveTypes: LeaveType[], allowanceTypes: AllowanceType[], deductionTypes: DeductionType[], accounts: Account[] }} />;
 }

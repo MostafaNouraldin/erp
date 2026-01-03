@@ -1,5 +1,4 @@
 
-
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -312,6 +311,19 @@ export const leaveTypes = pgTable('leave_types', {
     id: varchar('id', { length: 256 }).primaryKey(),
     name: varchar('name', { length: 256 }).notNull().unique(),
 });
+
+export const allowanceTypes = pgTable('allowance_types', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull().unique(),
+    expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+});
+
+export const deductionTypes = pgTable('deduction_types', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    name: varchar('name', { length: 256 }).notNull().unique(),
+    liabilityAccountId: varchar('liability_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+});
+
 
 export const employeeAllowances = pgTable('employee_allowances', {
     id: serial('id').primaryKey(),
@@ -723,6 +735,16 @@ export const posSessions = pgTable('pos_sessions', {
     cardSales: numeric('card_sales', { precision: 10, scale: 2 }),
     difference: numeric('difference', { precision: 10, scale: 2 }),
     status: varchar('status', { length: 50 }).notNull(), // 'open', 'closed'
+});
+
+export const inventoryMovementLog = pgTable('inventory_movement_log', {
+    id: serial('id').primaryKey(),
+    productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
+    quantity: integer('quantity').notNull(),
+    type: varchar('type', { length: 10 }).notNull(), // 'IN' or 'OUT'
+    date: timestamp('date').defaultNow().notNull(),
+    sourceType: varchar('source_type', { length: 50 }), // 'Sales', 'Purchase', 'Adjustment'
+    sourceId: varchar('source_id', { length: 256 }),
 });
 
 
