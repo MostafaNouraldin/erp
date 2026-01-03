@@ -349,7 +349,6 @@ export const deductionTypes = pgTable('deduction_types', {
     liabilityAccountId: varchar('liability_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
 });
 
-
 export const employeeAllowances = pgTable('employee_allowances', {
     id: serial('id').primaryKey(),
     employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
@@ -865,3 +864,5 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+```

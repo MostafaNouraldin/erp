@@ -9,7 +9,7 @@ import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save, Briefcase, CalendarDays, HeartPulse } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save, Briefcase, CalendarDays, HeartPulse, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -534,5 +534,3 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
     );
 }
 
-
-    

@@ -1,6 +1,6 @@
 
 
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from "react-hook-form";
@@ -1293,7 +1293,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                         <p>التوقيع</p>
                     </div>
                 </div>)}
-                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
             </DialogContent>
         </Dialog>
 
@@ -1314,7 +1314,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
                         <p className="mt-6"><strong>التوقيع:</strong> ...................</p>
                     </div>
                 </div>)}
-                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose></DialogFooter>
+                <DialogFooter><Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4"/>طباعة</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
             </DialogContent>
         </Dialog>
 

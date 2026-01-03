@@ -62,3 +62,4 @@ export default async function SettingsServerPage() {
 
     return <SettingsPage initialData={result.data as { users: UserFormValues[], roles: Role[], settings: SettingsFormValues, departments: Department[], jobTitles: JobTitle[], leaveTypes: LeaveType[], allowanceTypes: AllowanceType[], deductionTypes: DeductionType[], accounts: Account[] }} />;
 }
+
