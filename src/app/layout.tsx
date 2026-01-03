@@ -139,8 +139,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <>
             <SidebarProvider>
                 <div className="flex min-h-screen w-full">
-                    <Sidebar collapsible="icon" side="right" className="shadow-sm">
-                        <SidebarHeader className="p-4 flex items-center justify-between">
+                    <Sidebar collapsible="icon" side="right" className="shadow-lg">
+                        <SidebarHeader>
                             <AppLogo />
                             <div className="hidden group-data-[collapsible=icon]:hidden">
                             </div>
@@ -154,13 +154,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                         </SidebarContent>
                         <SidebarFooter>
                         {!auth.isSuperAdmin && (
-                            <Card className="bg-muted/50 border-dashed">
+                            <Card className="bg-transparent border-0 shadow-none">
                                 <CardContent className="p-2 text-xs">
                                     <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
-                                        <p className="font-semibold text-primary">{currentTenant.name}</p>
-                                        <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
+                                        <p className="font-semibold text-sidebar-primary">{currentTenant.name}</p>
+                                        <p className="text-sidebar-foreground/70">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
                                     </div>
-                                    <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden">
+                                    <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-border hover:bg-sidebar-primary/10">
                                       <Link href="/subscription">
                                         إدارة الاشتراك
                                       </Link>
@@ -171,7 +171,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                           <div className="flex justify-center items-center group-data-[collapsible=icon]:block hidden">
                                             <Link href="/subscription">
                                               <Button variant="ghost" size="icon">
-                                                  <CreditCardIcon className="h-5 w-5 text-muted-foreground" />
+                                                  <CreditCardIcon className="h-5 w-5 text-sidebar-foreground/70" />
                                               </Button>
                                             </Link>
                                           </div>
