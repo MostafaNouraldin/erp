@@ -6,6 +6,7 @@ import { employees, employeeAllowances, employeeDeductions, payrolls, attendance
 import { eq, and, sql, gte, lte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import type { Department, JobTitle, LeaveType } from '../settings/actions';
 
 const employeeAllowanceSchema = z.object({
   id: z.string().optional(),
@@ -539,6 +540,3 @@ export async function deleteDisciplinaryWarning(id: string) {
   await db.delete(disciplinaryWarnings).where(eq(disciplinaryWarnings.id, id));
   revalidatePath('/hr-payroll');
 }
-
-// HR Settings Actions (Department, JobTitle, LeaveType)
-export { addDepartment, updateDepartment, deleteDepartment, addJobTitle, updateJobTitle, deleteJobTitle, addLeaveType, updateLeaveType, deleteLeaveType, addAllowanceType, updateAllowanceType, deleteAllowanceType, addDeductionType, updateDeductionType, deleteDeductionType } from '../settings/actions';

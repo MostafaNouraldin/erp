@@ -1,9 +1,8 @@
 
-
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { users, roles, companySettings, departments, jobTitles, leaveTypes } from '@/db/schema';
+import { users, roles, companySettings, departments, jobTitles, leaveTypes, allowanceTypes, deductionTypes, chartOfAccounts } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -63,6 +62,27 @@ const leaveTypeSchema = z.object({
 });
 export type LeaveType = z.infer<typeof leaveTypeSchema>;
 
+const allowanceTypeSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم البدل مطلوب"),
+    expenseAccountId: z.string().min(1, "حساب المصروف مطلوب"),
+});
+export type AllowanceType = z.infer<typeof allowanceTypeSchema>;
+
+const deductionTypeSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "اسم الخصم مطلوب"),
+    liabilityAccountId: z.string().min(1, "حساب الالتزام مطلوب"),
+});
+export type DeductionType = z.infer<typeof deductionTypeSchema>;
+
+export type Account = {
+    id: string;
+    name: string;
+    type: string;
+    balance: number;
+    parentId: string | null;
+};
 
 
 async function getDb() {
@@ -223,5 +243,39 @@ export async function updateLeaveType(values: LeaveType) {
 export async function deleteLeaveType(id: string) {
     const db = await getDb();
     await db.delete(leaveTypes).where(eq(leaveTypes.id, id));
+    revalidatePath('/settings');
+}
+
+export async function addAllowanceType(values: AllowanceType) {
+    const db = await getDb();
+    await db.insert(allowanceTypes).values({ ...values, id: `ALW${Date.now()}` });
+    revalidatePath('/settings');
+}
+export async function updateAllowanceType(values: AllowanceType) {
+    const db = await getDb();
+    if (!values.id) throw new Error("ID is required.");
+    await db.update(allowanceTypes).set({ name: values.name, expenseAccountId: values.expenseAccountId }).where(eq(allowanceTypes.id, values.id));
+    revalidatePath('/settings');
+}
+export async function deleteAllowanceType(id: string) {
+    const db = await getDb();
+    await db.delete(allowanceTypes).where(eq(allowanceTypes.id, id));
+    revalidatePath('/settings');
+}
+
+export async function addDeductionType(values: DeductionType) {
+    const db = await getDb();
+    await db.insert(deductionTypes).values({ ...values, id: `DED${Date.now()}` });
+    revalidatePath('/settings');
+}
+export async function updateDeductionType(values: DeductionType) {
+    const db = await getDb();
+    if (!values.id) throw new Error("ID is required.");
+    await db.update(deductionTypes).set({ name: values.name, liabilityAccountId: values.liabilityAccountId }).where(eq(deductionTypes.id, values.id));
+    revalidatePath('/settings');
+}
+export async function deleteDeductionType(id: string) {
+    const db = await getDb();
+    await db.delete(deductionTypes).where(eq(deductionTypes.id, id));
     revalidatePath('/settings');
 }
