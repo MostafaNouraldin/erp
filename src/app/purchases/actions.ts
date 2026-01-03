@@ -221,6 +221,7 @@ export async function updatePurchaseOrderStatus(poId: string, status: PurchaseOr
 
 
 // --- Supplier Invoice Actions ---
+// These are duplicated in accounts-payable/actions.ts for logical separation, but point to the same tables
 export async function addSupplierInvoice(invoiceData: SupplierInvoiceFormValues) {
   const db = await getDb();
   const newInvoiceId = `INV-S${Date.now()}`;

@@ -64,4 +64,3 @@ export async function deleteCustomer(customerId: string) {
   revalidatePath('/pos');
   revalidatePath('/customers');
 }
-

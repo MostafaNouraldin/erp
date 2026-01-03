@@ -1,5 +1,4 @@
 
-
 // src/app/sales/actions.ts
 'use server';
 
@@ -8,18 +7,6 @@ import { customers, salesInvoices, salesInvoiceItems, quotations, quotationItems
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-
-const customerSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1, "اسم العميل مطلوب"),
-  email: z.string().email("بريد إلكتروني غير صالح").optional().or(z.literal('')),
-  phone: z.string().optional(),
-  type: z.string().optional(),
-  address: z.string().optional(),
-  vatNumber: z.string().optional(),
-  balance: z.coerce.number().default(0),
-});
-type CustomerFormValues = z.infer<typeof customerSchema>;
 
 const invoiceItemSchema = z.object({
   itemId: z.string().min(1, "الصنف مطلوب"),
