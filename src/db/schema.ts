@@ -4,6 +4,9 @@ import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, j
 import { relations } from 'drizzle-orm';
 
 // --- System Administration & Settings Tables (MAIN SCHEMA) ---
+// Default Super Admin credentials (from src/app/login/page.tsx):
+// Email: super@admin.com
+// Password: superadmin_password
 export const tenants = pgTable('tenants', {
     id: varchar('id', { length: 256 }).primaryKey(),
     name: varchar('name', { length: 256 }).notNull(),
@@ -862,3 +865,5 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+    
