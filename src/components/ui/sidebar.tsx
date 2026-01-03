@@ -585,6 +585,13 @@ const SidebarMenuItem = React.forwardRef<
 
   if (item.subItems && item.subItems.length > 0) {
     const isActive = item.subItems.some(sub => sub.href === pathname || (sub.subItems && sub.subItems.some(grandchild => grandchild.href === pathname)));
+    const buttonContent = (
+        <>
+            <item.icon />
+            <span className="truncate">{item.label}</span>
+        </>
+    );
+
     return (
       <li ref={ref} data-sidebar="menu-item" className={cn("group/menu-item relative flex flex-col", className)} {...props}>
         <SidebarMenuButton
@@ -595,8 +602,7 @@ const SidebarMenuItem = React.forwardRef<
           isExpanded={isExpanded}
           isActive={isActive}
         >
-          <item.icon />
-          <span className="truncate">{item.label}</span>
+          {buttonContent}
         </SidebarMenuButton>
         <div
           className={cn(
@@ -619,6 +625,12 @@ const SidebarMenuItem = React.forwardRef<
     );
   } else if (item.href) {
     const isActive = pathname === item.href;
+    const buttonContent = (
+      <>
+        <item.icon />
+        <span className="truncate">{item.label}</span>
+      </>
+    );
     return (
       <li ref={ref} data-sidebar="menu-item" className={cn("group/menu-item relative", className)} {...props}>
         <SidebarMenuButton
@@ -627,10 +639,7 @@ const SidebarMenuItem = React.forwardRef<
           isActive={isActive}
           asChild
         >
-          <Link href={item.href}>
-            <item.icon />
-            <span className="truncate">{item.label}</span>
-          </Link>
+          <Link href={item.href}>{buttonContent}</Link>
         </SidebarMenuButton>
       </li>
     );
@@ -909,3 +918,5 @@ export {
   useSidebar,
   type SidebarMenuItemProps
 }
+
+    
