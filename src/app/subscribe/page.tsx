@@ -22,6 +22,7 @@ import type { Module } from '@/types/saas';
 import { useCurrency } from '@/hooks/use-currency';
 import { submitSubscriptionRequest } from './actions';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 // This data would be fetched from the backend in a real app
 const allAvailableModules: Module[] = [
