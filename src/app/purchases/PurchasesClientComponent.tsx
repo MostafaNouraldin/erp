@@ -757,12 +757,10 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-2xl" dir="rtl">
-                            <DialogHeader>
-                                <DialogTitle>{purchaseReturnToEdit ? 'تعديل مرتجع مشتريات' : 'إنشاء مرتجع مشتريات جديد'}</DialogTitle>
-                            </DialogHeader>
-                            <Form {...purchaseReturnForm}>
+                             <DialogHeader><DialogTitle>{purchaseReturnToEdit ? "تعديل مرتجع مشتريات" : "إنشاء مرتجع مشتريات جديد"}</DialogTitle></DialogHeader>
+                             <Form {...purchaseReturnForm}>
                                 <form onSubmit={purchaseReturnForm.handleSubmit(handlePurchaseReturnSubmit)} className="space-y-4">
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                          <FormField control={purchaseReturnForm.control} name="supplierId" render={({ field }) => (
                                             <FormItem><FormLabel>المورد</FormLabel>
                                                 <Select onValueChange={field.onChange} value={field.value} dir="rtl">
@@ -880,3 +878,6 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     );
 }
 
+
+
+    
