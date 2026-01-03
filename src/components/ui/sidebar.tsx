@@ -275,7 +275,7 @@ const Sidebar = React.forwardRef<
         <div
           className={cn(
             "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
-            "group-data-[collapsible=offcanvas]:w-0",
+            "group-data-[collapsible=icon]:w-0",
             variant === "floating" || variant === "inset"
               ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
@@ -622,14 +622,16 @@ const SidebarMenuItem = React.forwardRef<
     return (
       <li ref={ref} data-sidebar="menu-item" className={cn("group/menu-item relative", className)} {...props}>
         <SidebarMenuButton
-          asChild
           tooltip={{ children: item.label, side: tooltipSide, align: 'center' }}
           className="w-full justify-start"
           isActive={isActive}
+          asChild
         >
           <Link href={item.href}>
-            <item.icon />
-            <span className="truncate">{item.label}</span>
+            <span className="flex items-center gap-2">
+                <item.icon />
+                <span className="truncate">{item.label}</span>
+            </span>
           </Link>
         </SidebarMenuButton>
       </li>
@@ -909,3 +911,5 @@ export {
   useSidebar,
   type SidebarMenuItemProps
 }
+
+    
