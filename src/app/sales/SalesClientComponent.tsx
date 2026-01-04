@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, addQuotation, updateQuotation, deleteQuotation, addSalesOrder, updateSalesOrder, deleteSalesOrder, addSalesReturn, approveSalesReturn, deleteSalesReturn } from './actions';
 import { addCustomer, updateCustomer, deleteCustomer } from '../customers/actions';
 import type { Product } from '@/db/schema';
+import { useCurrency } from '@/hooks/use-currency';
 
 
 export interface SalesOrderItem {
@@ -266,6 +267,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   const [customerToEdit, setCustomerToEdit] = useState<CustomerFormValues | null>(null);
 
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
 
   useEffect(() => {
     setCustomers(initialData.customers);
@@ -851,7 +853,7 @@ useEffect(() => {
                                 <TableCell>{sr.id}</TableCell>
                                 <TableCell>{customers.find(c => c.id === sr.customerId)?.name || sr.customerId}</TableCell>
                                 <TableCell>{formatDate(sr.date)}</TableCell>
-                                <TableCell>{sr.numericTotalAmount.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR' })}</TableCell>
+                                <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(sr.numericTotalAmount) }}></TableCell>
                                 <TableCell><Badge variant={sr.status === 'معتمد' ? 'default' : 'outline'}>{sr.status}</Badge></TableCell>
                                 <TableCell>
                                     <Button variant="ghost" size="icon" onClick={() => handleApproveSalesReturn(sr.id)} className="text-green-600"><CheckCircle className="h-4 w-4" /></Button>
@@ -886,6 +888,7 @@ useEffect(() => {
     </div>
   );
 }
+
 
 
 

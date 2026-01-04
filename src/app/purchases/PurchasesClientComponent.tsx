@@ -789,7 +789,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                         {returnItemsFields.map((item, index) => (
                                         <div key={item.id} className="grid grid-cols-12 gap-2 items-start mb-2 p-1 border-b">
                                             <FormField control={purchaseReturnForm.control} name={`items.${index}.itemId`} render={({ field }) => (
-                                                <FormItem className="col-span-12 sm:col-span-4"><FormLabel className="text-xs">الصنف</FormLabel>
+                                                <FormItem className="col-span-12 sm:col-span-3"><FormLabel className="text-xs">الصنف</FormLabel>
                                                 <Select onValueChange={(value) => { field.onChange(value); const selectedItem = products.find(i => i.id === value); if (selectedItem) { purchaseReturnForm.setValue(`items.${index}.unitPrice`, selectedItem.costPrice); purchaseReturnForm.setValue(`items.${index}.description`, selectedItem.name); } calculateItemTotalForForm(purchaseReturnForm, index); }} value={field.value} dir="rtl">
                                                     <FormControl><SelectTrigger className="bg-background h-9 text-xs"><SelectValue placeholder="اختر الصنف" /></SelectTrigger></FormControl>
                                                     <SelectContent>{products.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
@@ -802,8 +802,12 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                                 <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">السعر</FormLabel>
                                                 <FormControl><Input type="number" {...field} onChange={e => {field.onChange(e); calculateItemTotalForForm(purchaseReturnForm, index);}} className="bg-background h-9 text-xs" /></FormControl>
                                                 <FormMessage className="text-xs"/></FormItem> )} />
+                                            <FormField control={purchaseReturnForm.control} name={`items.${index}.reason`} render={({ field }) => (
+                                                <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">السبب</FormLabel>
+                                                <FormControl><Input {...field} className="bg-background h-9 text-xs" /></FormControl>
+                                                <FormMessage className="text-xs"/></FormItem> )} />
                                             <FormField control={purchaseReturnForm.control} name={`items.${index}.total`} render={({ field }) => (
-                                                <FormItem className="col-span-4 sm:col-span-3"><FormLabel className="text-xs">الإجمالي</FormLabel>
+                                                <FormItem className="col-span-4 sm:col-span-2"><FormLabel className="text-xs">الإجمالي</FormLabel>
                                                 <FormControl><Input type="number" {...field} readOnly className="bg-muted h-9 text-xs" /></FormControl>
                                                 <FormMessage className="text-xs"/></FormItem> )} />
                                             <Button type="button" variant="ghost" size="icon" onClick={() => removeReturnItem(index)} className="col-span-2 sm:col-span-1 self-end h-9 w-9 text-destructive hover:bg-destructive/10"><MinusCircle className="h-4 w-4" /></Button>
@@ -875,6 +879,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
+
 
 
 

@@ -8,7 +8,7 @@ import { DollarSign, Users, ShoppingCart, Activity, Package, FilePlus, FileCheck
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, ResponsiveContainer } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
-import { availableCurrencies, Currency } from "@/contexts/currency-context";
+import { useCurrency } from '@/hooks/use-currency';
 
 
 interface ActivityItem {
@@ -39,7 +39,6 @@ interface DashboardData {
 
 interface DashboardClientProps {
   initialData: DashboardData;
-  defaultCurrency: string;
 }
 
 const iconMap: { [key: string]: React.ElementType } = {
@@ -49,23 +48,10 @@ const iconMap: { [key: string]: React.ElementType } = {
 };
 
 
-const DashboardClient: FC<DashboardClientProps> = ({ initialData, defaultCurrency }) => {
+const DashboardClient: FC<DashboardClientProps> = ({ initialData }) => {
   const [data] = useState<DashboardData>(initialData);
+  const { formatCurrency } = useCurrency();
   
-  const selectedCurrency = useMemo(() => {
-    return availableCurrencies.find(c => c.code === defaultCurrency) || availableCurrencies[0];
-  }, [defaultCurrency]);
-
-  const formatCurrency = (amount: number): string => {
-    const { symbol } = selectedCurrency;
-    const formatted = new Intl.NumberFormat('ar-SA', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-    
-    return `${formatted} <span class="font-saudi-riyal">${symbol}</span>`;
-  };
-
   const salesChartConfig = {
     total: {
       label: "المبيعات",

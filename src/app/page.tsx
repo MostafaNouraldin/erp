@@ -8,10 +8,9 @@ import { getCompanySettingsForLayout } from './actions';
 
 export default async function DashboardPage() {
     const dashboardDataPromise = getDashboardData();
-    const companySettingsPromise = getCompanySettingsForLayout('T001'); // Assuming tenant 'T001'
 
     // We can use Promise.all to fetch in parallel, though Next.js does this automatically.
-    const [dashboardResult, companySettings] = await Promise.all([dashboardDataPromise, companySettingsPromise]);
+    const [dashboardResult] = await Promise.all([dashboardDataPromise]);
 
     if (!dashboardResult.success || !dashboardResult.data) {
         return (
@@ -25,7 +24,6 @@ export default async function DashboardPage() {
     return (
         <DashboardClient 
             initialData={dashboardResult.data} 
-            defaultCurrency={companySettings?.defaultCurrency || 'SAR'}
         />
     );
 }
