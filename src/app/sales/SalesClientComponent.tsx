@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -772,7 +771,7 @@ useEffect(() => {
             <UsersIcon className="inline-block me-2 h-4 w-4" /> العملاء
           </TabsTrigger>
         </TabsList>
-        
+
         {/* Sales Returns Tab */}
         <TabsContent value="salesReturns">
             <Card className="shadow-lg">
@@ -790,15 +789,15 @@ useEffect(() => {
                              <Form {...salesReturnForm}>
                                 <form onSubmit={salesReturnForm.handleSubmit(handleSalesReturnSubmit)} className="space-y-4">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={salesReturnForm.control} name="customerId" render={({ field }) => (
-                                        <FormItem><FormLabel>العميل</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                                                <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
-                                                <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                                            </Select><FormMessage /></FormItem> )} />
-                                    <FormField control={salesReturnForm.control} name="date" render={({ field }) => (
-                                        <FormItem className="flex flex-col"><FormLabel>تاريخ المرتجع</FormLabel>
-                                            <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
+                                         <FormField control={salesReturnForm.control} name="customerId" render={({ field }) => (
+                                            <FormItem><FormLabel>العميل</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                                    <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر العميل" /></SelectTrigger></FormControl>
+                                                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                                </Select><FormMessage /></FormItem> )} />
+                                        <FormField control={salesReturnForm.control} name="date" render={({ field }) => (
+                                            <FormItem className="flex flex-col"><FormLabel>تاريخ المرتجع</FormLabel>
+                                                <DatePickerWithPresets mode="single" onDateChange={field.onChange} selectedDate={field.value} /><FormMessage /></FormItem>)} />
                                   </div>
                                    <FormField control={salesReturnForm.control} name="invoiceId" render={({ field }) => (
                                         <FormItem><FormLabel>الفاتورة الأصلية (اختياري)</FormLabel>
@@ -1012,3 +1011,5 @@ useEffect(() => {
     </div>
   );
 }
+
+    

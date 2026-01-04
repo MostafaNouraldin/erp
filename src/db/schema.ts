@@ -230,7 +230,7 @@ export const quotationItems = pgTable('quotation_items', {
 
 export const salesOrders = pgTable('sales_orders', {
   id: varchar('id', { length: 256 }).primaryKey(),
-  quoteId: varchar('quote_id', { length: 256 }),
+  quoteId: varchar('quote_id', { length: 256 }).references(() => quotations.id),
   customerId: varchar('customer_id', { length: 256 }).notNull().references(() => customers.id),
   date: timestamp('date').notNull(),
   deliveryDate: timestamp('delivery_date').notNull(),
@@ -251,7 +251,7 @@ export const salesOrderItems = pgTable('sales_order_items', {
 
 export const salesInvoices = pgTable('sales_invoices', {
   id: varchar('id', { length: 256 }).primaryKey(),
-  orderId: varchar('order_id', { length: 256 }),
+  orderId: varchar('order_id', { length: 256 }).references(() => salesOrders.id),
   customerId: varchar('customer_id', { length: 256 }).notNull(),
   date: timestamp('date').notNull(),
   dueDate: timestamp('due_date').notNull(),
@@ -881,6 +881,3 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
 }));
 
     
-
-
-
