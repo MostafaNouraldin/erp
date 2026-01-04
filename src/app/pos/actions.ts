@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { connectToTenantDb } from '@/db';
@@ -96,17 +97,6 @@ export async function closePosSession(sessionId: string, values: PosCloseSession
 
 
     revalidatePath('/pos');
-}
-
-export async function getActiveSession() {
-    const db = await getDb();
-    const activeSession = await db.query.posSessions.findFirst({
-        where: eq(posSessions.status, "open"),
-        with: {
-            user: true,
-        }
-    });
-    return activeSession;
 }
 
 

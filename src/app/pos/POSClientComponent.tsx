@@ -22,10 +22,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCurrency } from '@/hooks/use-currency';
 import { useAuth } from '@/hooks/use-auth';
 import { addSalesInvoice } from '@/app/sales/actions';
-import { startPosSession, closePosSession, getActiveSession } from './actions';
+import { startPosSession, closePosSession } from './actions';
 import type { PosSessionStartValues, PosCloseSessionValues } from './actions';
 import placeholderImages from '@/app/lib/placeholder-images.json';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useRouter } from 'next/navigation';
 
 
 const CASH_CUSTOMER_ID = "__cash_customer__";
@@ -118,6 +119,8 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
   const { formatCurrency } = useCurrency();
   const { user } = useAuth();
+  const router = useRouter();
+
 
   const startSessionForm = useForm<z.infer<typeof sessionStartSchema>>({
     resolver: zodResolver(sessionStartSchema),
@@ -274,7 +277,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
   if (!activeSession) {
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]" dir="rtl">
-            <Dialog open={true}>
+            <Dialog open={true} onOpenChange={(open) => { if(!open) router.push('/'); }}>
                  <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-xl">بدء جلسة نقاط بيع جديدة</DialogTitle>
@@ -291,7 +294,10 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                                     <FormMessage />
                                 </FormItem>
                             )}/>
-                            <DialogFooter>
+                            <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+                                <DialogClose asChild>
+                                  <Button type="button" variant="outline" className="w-full">العودة لتسجيل الدخول</Button>
+                                </DialogClose>
                                 <Button type="submit" className="w-full">
                                     <PlayCircle className="me-2 h-4 w-4" /> بدء الجلسة
                                 </Button>
