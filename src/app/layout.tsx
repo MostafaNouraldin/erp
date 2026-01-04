@@ -131,7 +131,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 
     return (
-        <>
+        <CurrencyProvider>
             <SidebarProvider>
                 <div className="flex min-h-screen w-full">
                     <Sidebar collapsible="icon" side="right" className="shadow-lg">
@@ -251,7 +251,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
                 <Toaster />
             </SidebarProvider>
-        </>
+        </CurrencyProvider>
     );
 }
 
@@ -270,7 +270,6 @@ export default function RootLayout({
       </head>
       <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
         <AuthProvider>
-          <CurrencyProvider>
             <ThemeProvider
               attribute="class"
               defaultTheme="system"
@@ -279,11 +278,8 @@ export default function RootLayout({
             >
                 <AppLayout>{children}</AppLayout>
             </ThemeProvider>
-          </CurrencyProvider>
         </AuthProvider>
       </body>
     </html>
   );
 }
-
-    
