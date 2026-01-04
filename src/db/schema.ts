@@ -546,6 +546,7 @@ export const checks = pgTable('checks', {
     status: varchar('status', { length: 50 }).notNull().default('صادر'),
 });
 
+
 export const bankExpenses = pgTable('bank_expenses', {
     id: varchar('id', { length: 256 }).primaryKey(),
     date: timestamp('date').notNull(),
@@ -906,4 +907,5 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
     
 
     
+
 
