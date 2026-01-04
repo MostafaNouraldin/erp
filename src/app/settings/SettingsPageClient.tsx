@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -133,7 +134,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
     const roleForm = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema), defaultValues: { name: "", description: "", permissions: []}, });
     const settingsForm = useForm<SettingsFormValues>({
       resolver: zodResolver(settingsSchema),
-      defaultValues: {
+       defaultValues: {
         companyName: initialData.settings.companyName || '',
         companyAddress: initialData.settings.companyAddress || '',
         companyEmail: initialData.settings.companyEmail || '',
@@ -282,7 +283,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
             </Card>
 
             <Tabs defaultValue="company" className="w-full mt-6">
-                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md justify-start overflow-x-auto">
+                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto">
                     <TabsTrigger value="company" className="flex-shrink-0"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
                     <TabsTrigger value="financial" className="flex-shrink-0"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
                     <TabsTrigger value="hr" className="flex-shrink-0"><Briefcase className="inline-block me-2 h-4 w-4" /> الموارد البشرية</TabsTrigger>
@@ -588,3 +589,4 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         </div>
     );
 }
+    
