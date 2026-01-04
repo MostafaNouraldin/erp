@@ -23,6 +23,7 @@ import type { Role } from '@/types/saas';
 import { addRole, updateRole, deleteRole, addUser, updateUser, saveCompanySettings, addDepartment, updateDepartment, deleteDepartment, addJobTitle, updateJobTitle, deleteJobTitle, addLeaveType, updateLeaveType, deleteLeaveType, addAllowanceType, updateAllowanceType, deleteAllowanceType, addDeductionType, updateDeductionType, deleteDeductionType } from './actions';
 import type { UserFormValues, RoleFormValues, SettingsFormValues, Department, JobTitle, LeaveType, AllowanceType, DeductionType, Account } from './actions';
 import { availableCurrencies } from '@/contexts/currency-context';
+import { useCurrency } from '@/hooks/use-currency';
 import { Textarea } from '@/components/ui/textarea';
 
 
@@ -127,6 +128,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
     const [deductionTypeToEdit, setDeductionTypeToEdit] = useState<DeductionType | null>(null);
 
     const { toast } = useToast();
+    const { updateCurrency } = useCurrency();
 
     const userForm = useForm<UserFormValues>({ resolver: zodResolver(userSchema), defaultValues: { name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""}, });
     const roleForm = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema), defaultValues: { name: "", description: "", permissions: []}, });
@@ -199,8 +201,11 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
     const handleSettingsSubmit = async (values: SettingsFormValues) => {
         try {
-            await saveCompanySettings('T001', values); // Assuming a single tenant for now
+            await saveCompanySettings('T001', values); 
             toast({ title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح." });
+            if (values.defaultCurrency) {
+              updateCurrency(values.defaultCurrency);
+            }
             if (values.themePrimaryColor) { const [h, s, l] = values.themePrimaryColor.split(' ').map(Number); document.documentElement.style.setProperty('--primary', `${h} ${s}% ${l}%`); }
         } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
     }
@@ -277,8 +282,8 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                 </CardHeader>
             </Card>
 
-            <Tabs defaultValue="company" className="w-full mt-6" dir="rtl">
-                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto justify-start">
+            <Tabs defaultValue="company" className="w-full mt-6">
+                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md justify-start overflow-x-auto">
                     <TabsTrigger value="company" className="flex-shrink-0"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
                     <TabsTrigger value="financial" className="flex-shrink-0"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
                     <TabsTrigger value="hr" className="flex-shrink-0"><Briefcase className="inline-block me-2 h-4 w-4" /> الموارد البشرية</TabsTrigger>

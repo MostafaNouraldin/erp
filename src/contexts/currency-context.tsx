@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth'; 
 import { getCompanySettings } from '@/app/settings/actions'; 
 
@@ -20,7 +20,7 @@ export const availableCurrencies: Currency[] = [
 
 interface CurrencyContextProps {
   selectedCurrency: Currency;
-  setSelectedCurrency: Dispatch<SetStateAction<Currency>>;
+  updateCurrency: (currencyCode: string) => void;
   formatCurrency: (amount: number) => string;
 }
 
@@ -28,7 +28,7 @@ const defaultCurrency = availableCurrencies[0];
 
 export const CurrencyContext = createContext<CurrencyContextProps>({
   selectedCurrency: defaultCurrency,
-  setSelectedCurrency: () => {},
+  updateCurrency: () => {},
   formatCurrency: (amount: number) => {
     const { symbol } = defaultCurrency;
     const formatted = new Intl.NumberFormat('ar-SA', {
@@ -47,14 +47,21 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
   const { user } = useAuth();
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(defaultCurrency);
 
+  const updateCurrency = useCallback((currencyCode: string) => {
+    const newCurrency = availableCurrencies.find(c => c.code === currencyCode) || defaultCurrency;
+    setSelectedCurrency(newCurrency);
+  }, []);
+
   useEffect(() => {
     async function loadCurrencyPreference() {
       if (user?.tenantId) {
         try {
           const settings = await getCompanySettings(user.tenantId);
-          const currencyCode = settings?.defaultCurrency;
-          const userCurrency = availableCurrencies.find(c => c.code === currencyCode) || defaultCurrency;
-          setSelectedCurrency(userCurrency);
+          if (settings?.defaultCurrency) {
+            updateCurrency(settings.defaultCurrency);
+          } else {
+            setSelectedCurrency(defaultCurrency);
+          }
         } catch (error) {
           console.error("Failed to fetch company settings for currency:", error);
           setSelectedCurrency(defaultCurrency);
@@ -64,7 +71,7 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
       }
     }
     loadCurrencyPreference();
-  }, [user]);
+  }, [user, updateCurrency]);
 
   const formatCurrency = (amount: number): string => {
     const { symbol } = selectedCurrency;
@@ -73,15 +80,12 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
       maximumFractionDigits: 2,
     }).format(amount);
     
-    // Using a span to apply the font specifically to the symbol
     return `${formatted} <span class="font-saudi-riyal">${symbol}</span>`;
   };
 
   return (
-    <CurrencyContext.Provider value={{ selectedCurrency, setSelectedCurrency, formatCurrency }}>
+    <CurrencyContext.Provider value={{ selectedCurrency, updateCurrency, formatCurrency }}>
       {children}
     </CurrencyContext.Provider>
   );
 };
-
-    
