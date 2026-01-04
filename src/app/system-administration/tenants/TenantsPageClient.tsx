@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -66,19 +66,10 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
       phone: "",
       address: "",
       vatNumber: "",
-      subscribedModules: allAvailableModules.map(mod => ({
-        key: mod.key,
-        moduleId: mod.key,
-        subscribed: !mod.isRentable,
-      })),
+      subscribedModules: [],
       billingCycle: "yearly",
       subscriptionEndDate: undefined,
     }
-  });
-
-  const { fields: subscribedModulesFields, replace } = useFieldArray({
-    control: form.control,
-    name: "subscribedModules",
   });
 
   useEffect(() => {
@@ -86,39 +77,42 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     setTenantModuleSubscriptions(initialData.tenantModuleSubscriptions);
   }, [initialData]);
 
+  const openAddDialog = () => {
+    setTenantToEdit(null);
+    const initialFormModules = allAvailableModules.map(mod => ({
+      key: mod.key,
+      moduleId: mod.key,
+      subscribed: !mod.isRentable, // Default non-rentable modules to subscribed
+    }));
+    form.reset({
+      name: "",
+      email: "",
+      isActive: true,
+      phone: "",
+      address: "",
+      vatNumber: "",
+      subscribedModules: initialFormModules,
+      billingCycle: "yearly",
+      subscriptionEndDate: undefined,
+    });
+    setShowManageTenantDialog(true);
+  };
+  
+  const openEditDialog = (tenant: Tenant) => {
+    const currentTenantSubs = tenantModuleSubscriptions[tenant.id] || [];
+    const initialFormModules = allAvailableModules.map(mod => {
+        const sub = currentTenantSubs.find(s => s.moduleId === mod.key);
+        return { key: mod.key, moduleId: mod.key, subscribed: sub ? sub.subscribed : !mod.isRentable };
+    });
 
-  useEffect(() => {
-    if (showManageTenantDialog) {
-      if (tenantToEdit && tenantToEdit.id) {
-        const currentTenantSubs = tenantModuleSubscriptions[tenantToEdit.id] || [];
-        const initialFormModules = allAvailableModules.map(mod => {
-          const sub = currentTenantSubs.find(s => s.moduleId === mod.key);
-          return { key: mod.key, moduleId: mod.key, subscribed: sub ? sub.subscribed : false };
-        });
-        form.reset({
-          ...tenantToEdit,
-          subscribedModules: initialFormModules,
-        });
-      } else {
-         const initialFormModules = allAvailableModules.map(mod => ({
-          key: mod.key,
-          moduleId: mod.key,
-          subscribed: !mod.isRentable, // Default non-rentable modules to subscribed
-        }));
-        form.reset({
-          name: "",
-          email: "",
-          isActive: true,
-          phone: "",
-          address: "",
-          vatNumber: "",
-          subscribedModules: initialFormModules,
-          billingCycle: "yearly",
-          subscriptionEndDate: undefined,
-        });
-      }
-    }
-  }, [tenantToEdit, showManageTenantDialog, tenantModuleSubscriptions, form, allAvailableModules]);
+    setTenantToEdit(tenant as TenantFormValues);
+    form.reset({
+      ...tenant,
+      subscriptionEndDate: tenant.subscriptionEndDate ? new Date(tenant.subscriptionEndDate) : undefined,
+      subscribedModules: initialFormModules,
+    });
+    setShowManageTenantDialog(true);
+  };
 
 
   const handleTenantSubmit = async (values: TenantFormValues) => {
@@ -166,7 +160,7 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
         <h2 className="text-xl font-semibold">قائمة الشركات</h2>
         <Dialog open={showManageTenantDialog} onOpenChange={(isOpen) => { setShowManageTenantDialog(isOpen); if (!isOpen) setTenantToEdit(null); }}>
           <DialogTrigger asChild>
-            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => { setTenantToEdit(null); setShowManageTenantDialog(true); }}>
+            <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={openAddDialog}>
               <PlusCircle className="me-2 h-4 w-4" /> إضافة شركة جديدة
             </Button>
           </DialogTrigger>
@@ -223,7 +217,7 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                                 
                                 return (
                                     <FormField
-                                        key={formFieldItem.key}
+                                        key={formFieldItem.key || index}
                                         control={form.control}
                                         name={`subscribedModules.${index}.subscribed`}
                                         render={({ field }) => (
@@ -297,7 +291,7 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                       {tenantModuleSubscriptions[tenant.id!]?.filter(s => s.subscribed).map(s => allAvailableModules.find(m=>m.key === s.moduleId)?.name).join(', ') || 'لا يوجد'}
                     </TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setTenantToEdit(tenant as TenantFormValues); setShowManageTenantDialog(true); }}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => openEditDialog(tenant)}>
                         <Edit className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
@@ -322,3 +316,5 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     </div>
   );
 }
+
+    
