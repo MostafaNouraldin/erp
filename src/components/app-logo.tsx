@@ -15,9 +15,9 @@ export default function AppLogo({ className, logoUrl, companyName }: AppLogoProp
   return (
     <div className={cn("flex flex-col items-center justify-center gap-2 text-center", className)}>
       {logoUrl ? (
-        <Image src={logoUrl} alt={nameToShow} width={40} height={40} className="h-10 w-10 object-contain transition-transform duration-300 ease-in-out group-hover/sidebar-wrapper:rotate-[15deg]" />
+        <Image src={logoUrl} alt={nameToShow} width={48} height={48} className="h-12 w-12 object-contain" />
       ) : (
-        <Building className="h-10 w-10 text-primary transition-transform duration-300 ease-in-out group-hover/sidebar-wrapper:rotate-[15deg]" />
+        <Building className="h-12 w-12 text-primary" />
       )}
       <span className="text-sm font-semibold text-sidebar-foreground truncate block w-full">
         {nameToShow}
