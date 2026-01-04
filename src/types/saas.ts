@@ -11,8 +11,6 @@ export interface Module {
       yearly: number;
     }
   };
-  priceMonthly?: number; // Kept for backward compatibility if needed, but prices should be used
-  priceYearly?: number; // Kept for backward compatibility if needed, but prices should be used
 }
 
 export interface Tenant {
