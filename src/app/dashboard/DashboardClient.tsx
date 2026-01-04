@@ -7,7 +7,7 @@ import { DollarSign, Users, ShoppingCart, Activity, Package, FilePlus, FileCheck
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, ResponsiveContainer } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
-import { useCurrency } from "@/hooks/use-currency"; // Import useCurrency
+import { useCurrency } from "@/hooks/use-currency"; 
 import { useEffect, useMemo } from "react";
 
 interface DashboardClientProps {
@@ -269,5 +269,3 @@ export default function DashboardClient({
     </div>
   );
 }
-
-    

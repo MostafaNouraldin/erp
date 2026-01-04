@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ShoppingBag, Upload, AlertTriangle } from 'lucide-react';
 import type { Module } from '@/types/saas';
-import { submitSubscriptionRequest } from '../subscribe/actions';
+import { submitSubscriptionRequest } from './actions';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { availableCurrencies } from '@/contexts/currency-context';
@@ -62,7 +62,7 @@ export default function SubscribePage() {
   const router = useRouter();
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [companySettings, setCompanySettings] = useState<CompanySettings>({});
-  const { formatCurrency, updateCurrency, selectedCurrency } = useCurrency();
+  const { formatCurrency, updateCurrency } = useCurrency();
 
   useEffect(() => {
     async function fetchSettings() {
@@ -163,7 +163,7 @@ export default function SubscribePage() {
         </div>
       <Card className="w-full max-w-4xl shadow-2xl">
         <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl">طلب اشتراك جديد في نظام {companySettings.companyName || 'المستقبل ERP'}</CardTitle>
+           <CardTitle className="text-2xl">طلب اشتراك جديد في نظام {companySettings.companyName || 'المستقبل ERP'}</CardTitle>
           <CardDescription>املأ النموذج أدناه لبدء استخدام النظام وتخصيص اشتراكك.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -285,4 +285,3 @@ export default function SubscribePage() {
     </div>
   );
 }
-
