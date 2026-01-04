@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -70,6 +70,12 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
       billingCycle: "yearly",
       subscriptionEndDate: undefined,
     }
+  });
+
+  const { fields, replace } = useFieldArray({
+    control: form.control,
+    name: "subscribedModules",
+    keyName: "fieldId",
   });
 
   useEffect(() => {
@@ -140,8 +146,6 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     }
   };
 
-  const watchedSubscribedModules = form.watch("subscribedModules");
-
   return (
     <div className="container mx-auto py-6" dir="rtl">
       <Card className="shadow-lg">
@@ -211,13 +215,13 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                    <Card>
                         <CardHeader><CardTitle className="text-base">الوحدات المشترك بها</CardTitle></CardHeader>
                         <CardContent className="space-y-2 p-4">
-                            {watchedSubscribedModules && watchedSubscribedModules.map((formFieldItem, index) => {
+                            {fields.map((formFieldItem, index) => {
                                 const moduleDetails = allAvailableModules.find(m => m.key === formFieldItem.moduleId);
                                 if (!moduleDetails) return null;
                                 
                                 return (
                                     <FormField
-                                        key={formFieldItem.key || index}
+                                        key={formFieldItem.fieldId}
                                         control={form.control}
                                         name={`subscribedModules.${index}.subscribed`}
                                         render={({ field }) => (
@@ -317,4 +321,3 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
   );
 }
 
-    
