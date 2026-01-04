@@ -1,6 +1,7 @@
 
 "use client";
 
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Users, ShoppingCart, Activity, Package, FilePlus, FileCheck, FileClock } from "lucide-react";
@@ -8,8 +9,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, ResponsiveContainer } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
 import { useCurrency } from "@/hooks/use-currency";
-import { useMemo } from "react";
-import React from "react";
+import { Skeleton } from '@/components/ui/skeleton';
+import { getDashboardData } from './actions'; // We'll create this action
 
 interface ActivityItem {
   description: string;
@@ -17,7 +18,7 @@ interface ActivityItem {
   icon: string;
 }
 
-interface DashboardClientProps {
+interface DashboardData {
   totalRevenue: number;
   totalCustomers: number;
   totalSales: number;
@@ -44,18 +45,26 @@ const iconMap: { [key: string]: React.ElementType } = {
 };
 
 
-export default function DashboardClient({
-  totalRevenue,
-  totalCustomers,
-  totalSales,
-  totalActivity,
-  inventorySummary,
-  salesChartData,
-  expenseChartData,
-  hrSummary,
-  latestActivities,
-}: DashboardClientProps) {
+export default function DashboardClient() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { formatCurrency } = useCurrency();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const result = await getDashboardData();
+        if (result.success) {
+          setData(result.data);
+        } else {
+          setError(result.error || "An unknown error occurred");
+        }
+      } catch (e: any) {
+        setError(e.message);
+      }
+    };
+    fetchData();
+  }, []);
 
   const salesChartConfig = {
     total: {
@@ -71,18 +80,53 @@ export default function DashboardClient({
     "hsl(var(--chart-4))",
   ];
   
-  const expensePieChartData = expenseChartData.map((item, index) => ({
-      ...item,
-      fill: pieChartColors[index % pieChartColors.length]
-  }));
+  const expensePieChartData = useMemo(() => {
+    if (!data) return [];
+    return data.expenseChartData.map((item, index) => ({
+        ...item,
+        fill: pieChartColors[index % pieChartColors.length]
+    }));
+  }, [data]);
   
   const pieChartConfig = useMemo(() => {
+    if (!expensePieChartData) return {};
     const config: ChartConfig = {};
     expensePieChartData.forEach(item => {
         config[item.name] = { label: item.name };
     });
     return config;
   }, [expensePieChartData]);
+
+  if (error) {
+    return (
+        <div className="container mx-auto py-10 px-4 text-center" dir="rtl">
+            <h1 className="text-2xl font-bold mb-4 text-destructive">خطأ في تحميل لوحة التحكم</h1>
+            <p>{error}</p>
+        </div>
+    );
+  }
+
+  if (!data) {
+    return (
+        <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                 <Skeleton className="col-span-4 h-96" />
+                 <Skeleton className="col-span-4 lg:col-span-3 h-96" />
+            </div>
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-64" />
+                <Skeleton className="h-64" />
+                <Skeleton className="h-64" />
+            </div>
+        </div>
+    );
+  }
 
 
   return (
@@ -94,7 +138,7 @@ export default function DashboardClient({
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" dangerouslySetInnerHTML={{ __html: formatCurrency(totalRevenue) }}></div>
+            <div className="text-2xl font-bold" dangerouslySetInnerHTML={{ __html: formatCurrency(data.totalRevenue) }}></div>
             <p className="text-xs text-muted-foreground">
               من الفواتير المدفوعة
             </p>
@@ -106,7 +150,7 @@ export default function DashboardClient({
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{totalCustomers}</div>
+            <div className="text-2xl font-bold">+{data.totalCustomers}</div>
             <p className="text-xs text-muted-foreground">
               إجمالي العملاء في النظام
             </p>
@@ -118,7 +162,7 @@ export default function DashboardClient({
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{totalSales}</div>
+            <div className="text-2xl font-bold">+{data.totalSales}</div>
             <p className="text-xs text-muted-foreground">
               فاتورة مبيعات مسجلة
             </p>
@@ -130,7 +174,7 @@ export default function DashboardClient({
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{totalActivity}</div>
+            <div className="text-2xl font-bold">+{data.totalActivity}</div>
             <p className="text-xs text-muted-foreground">
               قيد يومية مسجل
             </p>
@@ -146,7 +190,7 @@ export default function DashboardClient({
           <CardContent className="pe-2">
             <ChartContainer config={salesChartConfig} className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart accessibilityLayer data={salesChartData}>
+                <BarChart accessibilityLayer data={data.salesChartData}>
                   <CartesianGrid vertical={false} />
                   <XAxis
                     dataKey="month"
@@ -209,15 +253,15 @@ export default function DashboardClient({
           <CardContent className="grid gap-4">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">إجمالي الأصناف</span>
-              <span className="font-semibold">{inventorySummary.totalItems}</span>
+              <span className="font-semibold">{data.inventorySummary.totalItems}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">قيمة المخزون (بالتكلفة)</span>
-              <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(inventorySummary.totalValue) }}></span>
+              <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(data.inventorySummary.totalValue) }}></span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">أصناف قاربت على النفاد</span>
-              <span className="font-semibold text-destructive">{inventorySummary.lowStockCount}</span>
+              <span className="font-semibold text-destructive">{data.inventorySummary.lowStockCount}</span>
             </div>
             <Button variant="outline" className="w-full">
               عرض تفاصيل المخزون
@@ -234,15 +278,15 @@ export default function DashboardClient({
           <CardContent className="grid gap-4">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">إجمالي الموظفين</span>
-              <span className="font-semibold">{hrSummary.totalEmployees}</span>
+              <span className="font-semibold">{data.hrSummary.totalEmployees}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">نسبة الحضور</span>
-              <span className="font-semibold">{hrSummary.attendancePercentage}%</span>
+              <span className="font-semibold">{data.hrSummary.attendancePercentage}%</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">طلبات إجازة معلقة</span>
-              <span className="font-semibold">{hrSummary.pendingLeaves}</span>
+              <span className="font-semibold">{data.hrSummary.pendingLeaves}</span>
             </div>
             <Button variant="outline" className="w-full">
               إدارة الموظفين
@@ -255,7 +299,7 @@ export default function DashboardClient({
              <CardDescription>تتبع آخر الإجراءات في النظام.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-             {latestActivities.map((activity, index) => {
+             {data.latestActivities.map((activity, index) => {
               const Icon = iconMap[activity.icon] || FileClock;
               return (
                 <div key={index} className="flex items-start gap-3">

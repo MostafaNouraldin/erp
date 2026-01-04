@@ -3,7 +3,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { customers, salesInvoices, salesInvoiceItems, quotations, quotationItems, salesOrders, salesOrderItems, products, journalEntries, journalEntryLines, salesReturns, salesReturnItems, inventoryMovementLog } from '@/db/schema';
+import { customers, salesInvoices, salesInvoiceItems, quotations, quotationItems, salesOrders, salesOrderItems, products, journalEntries, journalEntryLines, salesReturns, salesReturnItems, inventoryMovementLog, companySettings } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -100,14 +100,23 @@ async function getDb() {
   return db;
 }
 
+// Helper to get dynamic settings
+async function getCompanySettings(db: any) {
+    const settingsResult = await db.query.companySettings.findFirst({
+        where: eq(companySettings.id, 'T001'), // Assuming single tenant for now
+    });
+    return (settingsResult?.settings as any) || {};
+}
+
 
 export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
   const db = await getDb();
+  const settings = await getCompanySettings(db);
   const newInvoiceId = `INV-C${Date.now()}`;
   const totalAmount = invoiceData.items.reduce((sum, item) => sum + item.total, 0);
 
   // Constants for accounting
-  const VAT_RATE = 0.15;
+  const VAT_RATE = (settings.vatRate ?? 15) / 100;
   const accountsReceivableAccount = "1200";
   const salesRevenueAccount = "4000";
   const vatPayableAccount = "2200";
@@ -335,6 +344,7 @@ export async function addSalesReturn(values: SalesReturnFormValues) {
 
 export async function approveSalesReturn(returnId: string) {
     const db = await getDb();
+    const settings = await getCompanySettings(db);
     const salesReturn = await db.query.salesReturns.findFirst({
         where: eq(salesReturns.id, returnId),
         with: { items: true },
@@ -344,7 +354,7 @@ export async function approveSalesReturn(returnId: string) {
     if (salesReturn.status === 'معتمد') throw new Error("هذا المرتجع معتمد بالفعل.");
 
     const totalAmount = salesReturn.numericTotalAmount;
-    const VAT_RATE = 0.15;
+    const VAT_RATE = (settings.vatRate ?? 15) / 100;
     const totalBeforeTax = totalAmount / (1 + VAT_RATE);
     const vatAmount = totalAmount - totalBeforeTax;
 
