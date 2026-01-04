@@ -394,7 +394,7 @@ export default function CheckbookRegisterClientComponent({ initialData }: Client
                 {/* Header Section */}
                 <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
                     <div className='flex items-center gap-2'>
-                    <AppLogo />
+                    
                     <div>
                         <h2 className="text-lg font-bold">{bankAccounts.find(b => b.id === selectedCheckForPrint.bankAccountId)?.name || 'اسم البنك'}</h2>
                         <p className="text-xs">فرع: [اسم الفرع هنا]</p> 

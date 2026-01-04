@@ -309,7 +309,7 @@ export default function BankReceiptsClient({ initialData }: ClientComponentProps
             <div className="printable-area bg-background text-foreground font-cairo text-sm p-4" data-ai-hint="receipt voucher">
               <div className="flex justify-between items-start pb-4 mb-6 border-b border-gray-300">
                 <div className='flex items-center gap-2'>
-                  <AppLogo />
+                  
                   <div>
                     <h2 className="text-lg font-bold">شركة المستقبل لتقنية المعلومات</h2>
                     <p className="text-xs">Al-Mustaqbal IT Co.</p>
