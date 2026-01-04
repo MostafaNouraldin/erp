@@ -338,6 +338,28 @@ export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
+export const purchaseReturns = pgTable('purchase_returns', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+    date: timestamp('date').notNull(),
+    originalInvoiceId: varchar('original_invoice_id', { length: 256 }),
+    notes: text('notes'),
+    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
+export const purchaseReturnItems = pgTable('purchase_return_items', {
+    id: serial('id').primaryKey(),
+    returnId: varchar('return_id', { length: 256 }).notNull().references(() => purchaseReturns.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
+    description: text('description'),
+    quantity: integer('quantity').notNull(),
+    reason: text('reason'),
+    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+});
+
+
 // --- HR & Payroll ---
 
 export const departments = pgTable('departments', {
@@ -755,27 +777,6 @@ export const stockRequisitionItems = pgTable('stock_requisition_items', {
     productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
     quantityRequested: integer('quantity_requested').notNull(),
     justification: text('justification'),
-});
-
-export const purchaseReturns = pgTable('purchase_returns', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
-    date: timestamp('date').notNull(),
-    originalInvoiceId: varchar('original_invoice_id', { length: 256 }),
-    notes: text('notes'),
-    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
-});
-
-export const purchaseReturnItems = pgTable('purchase_return_items', {
-    id: serial('id').primaryKey(),
-    returnId: varchar('return_id', { length: 256 }).notNull().references(() => purchaseReturns.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
-    description: text('description'),
-    quantity: integer('quantity').notNull(),
-    reason: text('reason'),
-    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
-    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
 });
 
 // --- POS ---
