@@ -9,7 +9,7 @@ export default {
   ],
   theme: {
     fontFamily: { 
-      sans: ["var(--font-cairo)", "sans-serif"],
+      sans: ["var(--font-cairo)", "sans-serif", "@emran-alhaddad/saudi-riyal-font"],
       "saudi-riyal": ["@emran-alhaddad/saudi-riyal-font", "sans-serif"],
     },
   	extend: {
