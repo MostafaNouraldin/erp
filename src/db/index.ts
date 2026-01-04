@@ -6,20 +6,25 @@ import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
 
-// Fallback DATABASE_URL for development environments where .env.local might be missing.
-// This should be replaced with a proper environment variable in production.
 const databaseUrl = process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/db';
 
 if (!process.env.DATABASE_URL) {
   console.warn("WARNING: DATABASE_URL is not set. Using a placeholder value. Please create a .env.local file with your actual database connection string.");
 }
 
+// --- Singleton Pattern for Database Connection ---
+// This ensures that in a development environment with hot-reloading,
+// we don't create new connections on every reload.
+const globalForDb = globalThis as unknown as {
+  conn: postgres.Sql | undefined;
+};
 
-// A single, global connection client for the entire application.
-const connection = postgres(databaseUrl);
+const conn = globalForDb.conn ?? postgres(databaseUrl);
+if (process.env.NODE_ENV !== 'production') globalForDb.conn = conn;
 
-// A single, global Drizzle instance.
-const db = drizzle(connection, { schema });
+const db = drizzle(conn, { schema });
+// --- End Singleton Pattern ---
+
 
 /**
  * Provides a unified database connection.
