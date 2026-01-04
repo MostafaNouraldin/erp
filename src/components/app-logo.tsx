@@ -18,7 +18,7 @@ export default function AppLogo({ className, logoUrl, companyName }: AppLogoProp
       ) : (
         <Building className="h-10 w-10 text-primary" />
       )}
-      <span className="text-xl font-semibold text-foreground truncate">
+      <span className="text-lg font-semibold text-foreground truncate">
         {nameToShow}
       </span>
     </div>
