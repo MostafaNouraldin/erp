@@ -695,6 +695,7 @@ export const inventoryTransfers = pgTable('inventory_transfers', {
     notes: text('notes'),
 });
 
+
 export const stockIssueVouchers = pgTable('stock_issue_vouchers', {
     id: varchar('id', { length: 256 }).primaryKey(),
     date: timestamp('date').notNull(),
