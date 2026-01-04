@@ -17,12 +17,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import AppLogo from '@/components/app-logo';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, ShoppingBag, Upload, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, ShoppingBag, Upload, AlertTriangle, Building, Package, CreditCard } from 'lucide-react';
 import type { Module } from '@/types/saas';
 import { submitSubscriptionRequest } from '../subscribe/actions';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { availableCurrencies } from '@/contexts/currency-context';
 import { getCompanySettingsForLayout } from '../actions';
 import { useCurrency } from '@/hooks/use-currency';
 
@@ -64,7 +63,6 @@ export default function SubscribePage() {
   const [companySettings, setCompanySettings] = useState<CompanySettings>({});
   const { updateCurrency, formatCurrency } = useCurrency();
 
-
   useEffect(() => {
     async function fetchSettings() {
         const settings = await getCompanySettingsForLayout('T001'); // Using main tenant for public page
@@ -100,7 +98,6 @@ export default function SubscribePage() {
   useEffect(() => {
     updateCurrency(currencyCode);
   }, [currencyCode, updateCurrency]);
-
 
   useEffect(() => {
     const total = selectedModules.reduce((acc, moduleKey) => {
@@ -157,138 +154,157 @@ export default function SubscribePage() {
     }
   };
 
-  return (
-    <div className="flex flex-col items-center min-h-screen bg-muted/5 p-4" dir="rtl">
-        <div className="my-8">
-            <AppLogo logoUrl={companySettings.companyLogo} companyName={companySettings.companyName}/>
+  const SectionTitle = ({ number, title }: { number: number, title: string }) => (
+    <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-bold text-lg">
+            {number}
         </div>
-      <Card className="w-full max-w-4xl shadow-2xl">
-        <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl">طلب اشتراك جديد في نظام {companySettings.companyName || 'المستقبل ERP'}</CardTitle>
-          <CardDescription>املأ النموذج أدناه لبدء استخدام النظام وتخصيص اشتراكك.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubscriptionSubmit)} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Left Side - Company Info & Payment */}
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader><CardTitle className="text-lg">1. معلومات الشركة</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                             <FormField control={form.control} name="country" render={({ field }) => ( <FormItem><FormLabel>الدولة</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
-                                    <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الدولة"/></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="SA">المملكة العربية السعودية</SelectItem>
-                                        <SelectItem value="EG">مصر</SelectItem>
-                                        <SelectItem value="Other">دولة أخرى (بالدولار الأمريكي)</SelectItem>
-                                    </SelectContent>
-                                </Select><FormMessage/></FormItem> )}/>
-                             <FormField control={form.control} name="companyName" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                             <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني للتواصل</FormLabel><FormControl><Input type="email" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                             <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                             <FormField control={form.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي (اختياري)</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                             <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان (اختياري)</FormLabel><FormControl><Textarea {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader><CardTitle className="text-lg">3. الدفع</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <FormField control={form.control} name="paymentMethod" render={({ field }) => (
-                                <FormItem><FormLabel>طريقة الدفع</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
-                                        <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر طريقة الدفع"/></SelectTrigger></FormControl>
-                                        <SelectContent><SelectItem value="Bank Transfer">تحويل بنكي</SelectItem></SelectContent>
-                                    </Select><FormMessage/>
-                                </FormItem>
-                            )}/>
-                            <div className="p-4 border rounded-md bg-muted/50 text-sm">
-                                <p className="font-semibold">بيانات التحويل البنكي:</p>
-                                <p>اسم البنك: بنك المستقبل</p>
-                                <p>صاحب الحساب: شركة المستقبل لتقنية المعلومات</p>
-                                <p>رقم الحساب: 1234567890</p>
-                                <p>الآيبان: SA03 8000 0000 6080 1016 7519</p>
-                            </div>
-                            <FormField control={form.control} name="paymentProof" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="flex items-center gap-2">إثبات الدفع <Upload className="h-4 w-4 text-muted-foreground"/></FormLabel>
-                                    <FormControl><Input type="file" accept="image/*" onChange={handlePaymentProofUpload} className="bg-background"/></FormControl>
-                                    {paymentProofPreview && <img src={paymentProofPreview} alt="معاينة إثبات الدفع" className="mt-2 rounded-md border object-contain max-h-40"/>}
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                        </CardContent>
-                    </Card>
-                </div>
-                {/* Right Side - Modules & Summary */}
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader><CardTitle className="text-lg">2. اختر الوحدات ودورة الفوترة</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                             <FormField control={form.control} name="billingCycle" render={({ field }) => (
-                                <FormItem className="space-y-3"><FormLabel>دورة الفوترة</FormLabel>
-                                <FormControl>
-                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.defaultValue} className="flex gap-4">
-                                        <FormItem className="flex-1"><FormControl><RadioGroupItem value="monthly" id="monthly" className="peer sr-only" /></FormControl><Label htmlFor="monthly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">شهري</Label></FormItem>
-                                        <FormItem className="flex-1"><FormControl><RadioGroupItem value="yearly" id="yearly" className="peer sr-only"/></FormControl><Label htmlFor="yearly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">سنوي <Badge variant="secondary" className="mt-1">خصم</Badge></Label></FormItem>
-                                    </RadioGroup>
-                                </FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="selectedModules" render={() => (
-                                <FormItem><FormLabel>الوحدات المتاحة</FormLabel>
-                                    <div className="space-y-2 max-h-80 overflow-y-auto p-1">
-                                        {allAvailableModules.filter(m=>m.isRentable).map((module) => (
-                                            <FormField key={module.id} control={form.control} name="selectedModules" render={({ field }) => (
-                                                <FormItem key={module.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm bg-background">
-                                                    <div className="space-y-0.5">
-                                                        <FormLabel className="text-sm font-medium">{module.name}</FormLabel>
-                                                        <p className="text-xs text-muted-foreground">{module.description}</p>
-                                                        <p className="text-xs font-semibold text-primary">
-                                                          {formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly).amount}
-                                                          <span className="font-saudi-riyal text-sm ms-1">{formatCurrency(0).symbol}</span>
-                                                        </p>
-                                                    </div>
-                                                    <FormControl><Checkbox checked={field.value?.includes(module.key)} onCheckedChange={(checked) => { return checked ? field.onChange([...field.value, module.key]) : field.onChange(field.value?.filter((value) => value !== module.key)); }} /></FormControl>
+        <h2 className="text-xl font-bold">{title}</h2>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-muted/30 p-4 sm:p-6 lg:p-8" dir="rtl">
+        <div className="max-w-6xl mx-auto">
+            <div className="my-8 text-center">
+                <AppLogo logoUrl={companySettings.companyLogo} companyName={companySettings.companyName}/>
+                <h1 className="text-3xl font-bold mt-4">طلب اشتراك جديد في نظام {companySettings.companyName || 'المستقبل ERP'}</h1>
+                <p className="text-muted-foreground mt-2">املأ النموذج أدناه لبدء استخدام النظام وتخصيص اشتراكك.</p>
+            </div>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubscriptionSubmit)} className="space-y-8">
+                    <Card className="shadow-lg overflow-hidden">
+                    <div className="grid grid-cols-1 lg:grid-cols-2">
+                        {/* Right Section */}
+                        <div className="p-8 space-y-8 border-l border-border">
+                            <section>
+                                <SectionTitle number={1} title="معلومات الشركة" />
+                                <div className="space-y-4">
+                                    <FormField control={form.control} name="country" render={({ field }) => ( <FormItem><FormLabel>الدولة</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                            <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الدولة"/></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="SA">المملكة العربية السعودية</SelectItem>
+                                                <SelectItem value="EG">مصر</SelectItem>
+                                                <SelectItem value="Other">دولة أخرى (بالدولار الأمريكي)</SelectItem>
+                                            </SelectContent>
+                                        </Select><FormMessage/></FormItem> )}/>
+                                    <FormField control={form.control} name="companyName" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                    <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني للتواصل</FormLabel><FormControl><Input type="email" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                    <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                    <FormField control={form.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي (اختياري)</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                    <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان (اختياري)</FormLabel><FormControl><Textarea {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                </div>
+                            </section>
+                            
+                            <section>
+                                <SectionTitle number={2} title="اختر الوحدات ودورة الفوترة" />
+                                <div className="space-y-4">
+                                    <FormField control={form.control} name="billingCycle" render={({ field }) => (
+                                        <FormItem className="space-y-3"><FormLabel>دورة الفوترة</FormLabel>
+                                        <FormControl>
+                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.defaultValue} className="flex gap-4">
+                                                <FormItem className="flex-1"><FormControl><RadioGroupItem value="monthly" id="monthly" className="peer sr-only" /></FormControl><Label htmlFor="monthly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">شهري</Label></FormItem>
+                                                <FormItem className="flex-1"><FormControl><RadioGroupItem value="yearly" id="yearly" className="peer sr-only"/></FormControl><Label htmlFor="yearly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">سنوي <Badge variant="secondary" className="mt-1">خصم</Badge></Label></FormItem>
+                                            </RadioGroup>
+                                        </FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="selectedModules" render={() => (
+                                        <FormItem><FormLabel>الوحدات المتاحة</FormLabel>
+                                            <div className="space-y-2 max-h-80 overflow-y-auto p-1">
+                                                {allAvailableModules.filter(m=>m.isRentable).map((module) => (
+                                                    <FormField key={module.id} control={form.control} name="selectedModules" render={({ field }) => (
+                                                        <FormItem key={module.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm bg-background hover:border-primary/50 transition-colors">
+                                                            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                                                                <FormControl><Checkbox checked={field.value?.includes(module.key)} onCheckedChange={(checked) => { return checked ? field.onChange([...field.value, module.key]) : field.onChange(field.value?.filter((value) => value !== module.key)); }} /></FormControl>
+                                                                <div className="space-y-0.5">
+                                                                    <FormLabel className="text-sm font-medium">{module.name}</FormLabel>
+                                                                    <p className="text-xs text-muted-foreground">{module.description}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-sm font-semibold text-primary text-left">
+                                                              <span dangerouslySetInnerHTML={{ __html: formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly).amount }} />
+                                                              <span className="font-saudi-riyal text-xs ms-1">{formatCurrency(0).symbol}</span>
+                                                            </div>
+                                                        </FormItem>
+                                                    )} />
+                                                ))}
+                                            </div>
+                                        <FormMessage /></FormItem>
+                                    )} />
+                                </div>
+                            </section>
+                        </div>
+                        
+                        {/* Left Section */}
+                        <div className="p-8 bg-muted/40 lg:sticky lg:top-0 lg:h-screen flex flex-col gap-8">
+                             <section>
+                                <SectionTitle number={3} title="الدفع والملخص" />
+                                <div className="space-y-6">
+                                    <Card className="bg-primary/5 border-primary/20">
+                                        <CardHeader><CardTitle className="text-lg">ملخص الطلب</CardTitle></CardHeader>
+                                        <CardContent>
+                                            <div className="text-4xl font-bold text-primary text-center">
+                                                <span dangerouslySetInnerHTML={{ __html: formatCurrency(form.getValues("totalAmount")).amount }} />
+                                                <span className="font-saudi-riyal text-2xl ms-2">{formatCurrency(0).symbol}</span>
+                                            </div>
+                                            <p className="text-center text-muted-foreground mt-1">/{billingCycle === "monthly" ? "شهرياً" : "سنوياً"}</p>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                        <CardHeader><CardTitle className="text-base">معلومات الدفع</CardTitle></CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <FormField control={form.control} name="paymentMethod" render={({ field }) => (
+                                                <FormItem><FormLabel>طريقة الدفع</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                                        <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر طريقة الدفع"/></SelectTrigger></FormControl>
+                                                        <SelectContent><SelectItem value="Bank Transfer">تحويل بنكي</SelectItem></SelectContent>
+                                                    </Select><FormMessage/>
                                                 </FormItem>
-                                            )} />
-                                        ))}
-                                    </div>
-                                <FormMessage /></FormItem>
-                            )} />
-                        </CardContent>
+                                            )}/>
+                                            <div className="p-4 border rounded-md bg-background text-sm">
+                                                <p className="font-semibold mb-2">بيانات التحويل البنكي:</p>
+                                                <p><strong>اسم البنك:</strong> بنك المستقبل</p>
+                                                <p><strong>صاحب الحساب:</strong> شركة المستقبل لتقنية المعلومات</p>
+                                                <p><strong>رقم الحساب:</strong> 1234567890</p>
+                                                <p><strong>الآيبان:</strong> SA03 8000 0000 6080 1016 7519</p>
+                                            </div>
+                                            <FormField control={form.control} name="paymentProof" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">إثبات الدفع <Upload className="h-4 w-4 text-muted-foreground"/></FormLabel>
+                                                    <FormControl><Input type="file" accept="image/*" onChange={handlePaymentProofUpload} className="bg-background"/></FormControl>
+                                                    {paymentProofPreview && <img src={paymentProofPreview} alt="معاينة إثبات الدفع" className="mt-2 rounded-md border object-contain max-h-40"/>}
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className="border-destructive/50 bg-destructive/5">
+                                        <CardContent className="p-4 flex items-start gap-3">
+                                            <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-1"/>
+                                            <p className="text-xs text-destructive">بعد تقديم الطلب، سيقوم فريقنا بمراجعة إثبات الدفع وتفعيل حسابك خلال 24 ساعة عمل. ستصلك رسالة على بريدك الإلكتروني تحتوي على تفاصيل الدخول.</p>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                     <CardFooter className="flex-col gap-4 pt-8 border-t">
+                        <Button type="submit" size="lg" className="w-full max-w-md shadow-lg" disabled={isLoading}>
+                        <ShieldCheck className="me-2 h-5 w-5" />
+                        {isLoading ? 'جارِ إرسال الطلب...' : 'إرسال طلب الاشتراك'}
+                        </Button>
+                        <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
+                            لديك حساب بالفعل؟ تسجيل الدخول
+                        </Link>
+                    </CardFooter>
                     </Card>
-                     <Card className="bg-primary/5 border-primary/20 sticky top-4">
-                        <CardHeader><CardTitle className="text-lg">ملخص الطلب</CardTitle></CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-primary text-center">
-                                {formatCurrency(form.getValues("totalAmount")).amount}
-                                <span className="font-saudi-riyal text-2xl ms-2">{formatCurrency(0).symbol}</span>
-                            </div>
-                            <p className="text-center text-muted-foreground">/{billingCycle === "monthly" ? "شهرياً" : "سنوياً"}</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-destructive/50 bg-destructive/5">
-                        <CardContent className="p-4 flex items-start gap-3">
-                             <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-1"/>
-                             <p className="text-xs text-destructive">بعد تقديم الطلب، سيقوم فريقنا بمراجعة إثبات الدفع وتفعيل حسابك خلال 24 ساعة عمل. ستصلك رسالة على بريدك الإلكتروني تحتوي على تفاصيل الدخول.</p>
-                        </CardContent>
-                    </Card>
-                </div>
-              </div>
-              <CardFooter className="flex-col gap-4 pt-6">
-                <Button type="submit" size="lg" className="w-full max-w-md shadow-lg" disabled={isLoading}>
-                  <ShieldCheck className="me-2 h-5 w-5" />
-                  {isLoading ? 'جارِ إرسال الطلب...' : 'إرسال طلب الاشتراك'}
-                </Button>
-                <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
-                    لديك حساب بالفعل؟ تسجيل الدخول
-                </Link>
-              </CardFooter>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                </form>
+            </Form>
+        </div>
     </div>
   );
 }
+
+    
