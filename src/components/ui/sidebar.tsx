@@ -403,8 +403,8 @@ SidebarInput.displayName = "SidebarInput"
 
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div">
->(({ className, ...props }, ref) => {
+  React.ComponentProps<"div"> & { logoUrl?: string | null; companyName?: string | null; }
+>(({ className, logoUrl, companyName, ...props }, ref) => {
   return (
     <div
       ref={ref}
@@ -415,10 +415,7 @@ const SidebarHeader = React.forwardRef<
       )}
       {...props}
     >
-      <AppLogo />
-      <span className="hidden w-full text-center text-sm font-semibold text-foreground group-data-[collapsible=expanded]:block">
-        نسيج للحلول المتكاملة
-      </span>
+      <AppLogo logoUrl={logoUrl} companyName={companyName} />
     </div>
   );
 });

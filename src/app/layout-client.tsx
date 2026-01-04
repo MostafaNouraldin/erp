@@ -10,7 +10,6 @@ import { UserCircle, Settings, LogOut, CreditCardIcon } from "lucide-react";
 import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
-import AppLogo from "@/components/app-logo";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search } from "lucide-react";
@@ -103,9 +102,7 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
         <SidebarProvider>
             <div className="flex min-h-screen w-full">
                 <Sidebar collapsible="icon" side="right" className="shadow-lg">
-                    <SidebarHeader>
-                        <AppLogo logoUrl={companySettings?.logo} companyName={companySettings?.name} />
-                    </SidebarHeader>
+                    <SidebarHeader logoUrl={companySettings?.logo} companyName={companySettings?.name} />
                     <SidebarContent>
                         <SidebarMenu>
                             {navItems.map((item) => (
@@ -217,4 +214,3 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
         </SidebarProvider>
     );
 }
-

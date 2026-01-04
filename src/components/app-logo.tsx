@@ -19,7 +19,7 @@ export default function AppLogo({ className, logoUrl, companyName }: AppLogoProp
       ) : (
         <Building className="h-10 w-10 text-primary transition-transform duration-300 ease-in-out group-hover/sidebar-wrapper:rotate-[15deg]" />
       )}
-      <span className="text-sm font-semibold text-foreground truncate block w-full">
+      <span className="text-sm font-semibold text-sidebar-foreground truncate block w-full">
         {nameToShow}
       </span>
     </div>
