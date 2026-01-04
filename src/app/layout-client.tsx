@@ -75,35 +75,28 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
 
     const navItems = allNavItems
       .filter(item => {
-        // Hide subscription link for super admins
-        if (auth.isSuperAdmin && item.href === '/subscription') {
-            return false;
-        }
-        // Hide system administration for non-super admins
-        if (!auth.isSuperAdmin && item.module === 'SystemAdministration') {
-            return false;
-        }
-        
-        // If the item itself doesn't have a permission key, it might be a parent with sub-items.
-        // If it has no sub-items, it's a direct link that should be checked for permission.
-        const mainPermission = item.permissionKey;
-        
         // A user can see a parent item if they have permission for AT LEAST ONE of its children.
         const canSeeAnySubItem = item.subItems?.some(sub => auth.hasPermission(sub.permissionKey));
-        
-        // An item is visible if it's not a parent OR if it's a parent and the user can see at least one child.
-        // Also check direct permission if it exists.
-        return !mainPermission ? (canSeeAnySubItem || !item.subItems) : (auth.hasPermission(mainPermission) || canSeeAnySubItem);
+
+        // An item is visible if it doesn't have a permission key, or it's a parent with visible children, or the user has direct permission.
+        return !item.permissionKey || auth.hasPermission(item.permissionKey) || canSeeAnySubItem;
       })
       .map(item => {
         if (item.subItems) {
             return {
                 ...item,
-                subItems: item.subItems.filter(sub => auth.hasPermission(sub.permissionKey))
+                subItems: item.subItems.filter(sub => {
+                    // Hide subscription link for super admins
+                    if (auth.isSuperAdmin && sub.href === '/subscription') {
+                        return false;
+                    }
+                    return auth.hasPermission(sub.permissionKey);
+                })
             };
         }
         return item;
       })
+      // Finally, filter out any parent items that now have no visible sub-items (unless they are a direct link themselves)
       .filter(item => item.href || (item.subItems && item.subItems.length > 0));
 
 
