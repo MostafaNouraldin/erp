@@ -1,106 +1,100 @@
 
-"use client";
-
-import React, { useState, useEffect } from 'react';
-import { CurrencyProvider } from "@/contexts/currency-context";
+import React from 'react';
 import DashboardClient from "./DashboardClient";
 import { Skeleton } from '@/components/ui/skeleton';
-
+import { connectToTenantDb } from '@/db';
+import { salesInvoices, customers, journalEntries, products, employees, leaveRequests, purchaseOrders } from '@/db/schema';
+import { sql, and, eq }from 'drizzle-orm';
 
 async function getDashboardData() {
-  // This is a placeholder for a real API call
-  // In a real scenario, this would be an API endpoint that fetches data securely.
-  // For now, we simulate fetching data that was previously done on the server.
-  
-  // This is a simplified fetch, in a real app you'd have a proper API route
-  const res = await fetch('/api/dashboard');
-  if (!res.ok) {
-    throw new Error('Failed to fetch dashboard data');
-  }
-  const data = await res.json();
-  return data;
+    const { db } = await connectToTenantDb();
+
+    try {
+        const totalRevenueResult = await db.select({ total: sql`sum(cast(numeric_total_amount as numeric))` }).from(salesInvoices).where(eq(salesInvoices.status, 'مدفوع'));
+        const totalCustomersResult = await db.select({ count: sql`count(*)` }).from(customers);
+        const totalSalesResult = await db.select({ count: sql`count(*)` }).from(salesInvoices);
+        const totalActivityResult = await db.select({ count: sql`count(*)` }).from(journalEntries);
+        const totalItemsResult = await db.select({ count: sql`count(*)` }).from(products);
+        const totalValueResult = await db.select({ total: sql`sum(cast(cost_price as numeric) * quantity)` }).from(products);
+        const lowStockCountResult = await db.select({ count: sql`count(*)` }).from(products).where(sql`quantity <= reorder_level AND reorder_level > 0`);
+        const totalEmployeesResult = await db.select({ count: sql`count(*)` }).from(employees);
+        const pendingLeavesResult = await db.select({ count: sql`count(*)` }).from(leaveRequests).where(eq(leaveRequests.status, 'مقدمة'));
+
+        const salesByMonth = await db.execute(sql`
+            SELECT
+                to_char(date, 'YYYY-MM') as month,
+                sum(cast(numeric_total_amount as numeric)) as total
+            FROM sales_invoices
+            WHERE date > current_date - interval '6 months'
+            GROUP BY 1
+            ORDER BY 1;
+        `);
+        
+        const expenseByCategory = await db.execute(sql`
+            SELECT
+                ca.name,
+                sum(cast(jel.debit as numeric)) as value
+            FROM journal_entry_lines jel
+            JOIN chart_of_accounts ca ON ca.id = jel.account_id
+            WHERE jel.account_id LIKE '5%'
+            GROUP BY ca.name
+            ORDER BY value DESC
+            LIMIT 4;
+        `);
+
+        const latestActivitiesResult = await db.execute(sql`
+            (SELECT 'فاتورة مبيعات جديدة', id, created_at FROM sales_invoices ORDER BY created_at DESC LIMIT 1)
+            UNION ALL
+            (SELECT 'أمر شراء جديد', id, created_at FROM purchase_orders ORDER BY created_at DESC LIMIT 1)
+            UNION ALL
+            (SELECT 'طلب إجازة جديد', id, created_at FROM leave_requests ORDER BY created_at DESC LIMIT 1)
+            ORDER BY created_at DESC;
+        `);
+
+        const iconMap: { [key: string]: string } = {
+            'فاتورة مبيعات جديدة': 'FilePlus',
+            'أمر شراء جديد': 'FileCheck',
+            'طلب إجازة جديد': 'FileClock',
+        };
+
+        const latestActivities = (latestActivitiesResult as any[]).map(act => ({
+            description: `${act.description} #${act.id}`,
+            time: act.created_at.toISOString(),
+            icon: iconMap[act.description] || 'FileClock'
+        }));
+
+
+        const data = {
+            totalRevenue: Number(totalRevenueResult[0]?.total) || 0,
+            totalCustomers: Number(totalCustomersResult[0]?.count) || 0,
+            totalSales: Number(totalSalesResult[0]?.count) || 0,
+            totalActivity: Number(totalActivityResult[0]?.count) || 0,
+            inventorySummary: {
+                totalItems: Number(totalItemsResult[0]?.count) || 0,
+                totalValue: Number(totalValueResult[0]?.total) || 0,
+                lowStockCount: Number(lowStockCountResult[0]?.count) || 0,
+            },
+            salesChartData: (salesByMonth as any[]).map(row => ({ month: row.month, total: Number(row.total) })),
+            expenseChartData: (expenseByCategory as any[]).map(row => ({ name: row.name, value: Number(row.value) })),
+            hrSummary: {
+                totalEmployees: Number(totalEmployeesResult[0]?.count) || 0,
+                attendancePercentage: 98.5, // This remains static as we don't have attendance data model yet
+                pendingLeaves: Number(pendingLeavesResult[0]?.count) || 0,
+            },
+            latestActivities: latestActivities,
+        };
+        return { success: true, data };
+    } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+        return { success: false, error: (error as Error).message };
+    }
 }
 
 
-export default function DashboardPage() {
-    const [data, setData] = useState<any>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+export default async function DashboardPage() {
+    const { success, data, error } = await getDashboardData();
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // To properly implement this, we'd need an API route.
-                // Since we can't create one, we'll simulate a loading state
-                // and then show an informational message.
-                // For demonstration, let's assume the component will eventually load data.
-                
-                // Simulating a delay for fetching data
-                setTimeout(() => {
-                     setData({
-                        totalRevenue: 125430.50,
-                        totalCustomers: 73,
-                        totalSales: 852,
-                        totalActivity: 1204,
-                        inventorySummary: {
-                            totalItems: 450,
-                            totalValue: 890345.00,
-                            lowStockCount: 25,
-                        },
-                        salesChartData: [
-                            { month: 'يناير', total: 15000 },
-                            { month: 'فبراير', total: 22000 },
-                            { month: 'مارس', total: 18000 },
-                            { month: 'أبريل', total: 27000 },
-                            { month: 'مايو', total: 32000 },
-                            { month: 'يونيو', total: 45000 },
-                        ],
-                        expenseChartData: [
-                            { name: 'رواتب', value: 45000 },
-                            { name: 'إيجار', value: 12000 },
-                            { name: 'تسويق', value: 8000 },
-                            { name: 'مشتريات', value: 25000 },
-                        ],
-                        hrSummary: {
-                            totalEmployees: 152,
-                            attendancePercentage: 98.5,
-                            pendingLeaves: 5,
-                        },
-                        latestActivities: [
-                            { description: "تم إنشاء فاتورة مبيعات جديدة #INV-C1722359489568", time: "2024-07-30T17:11:29.568Z", icon: "FilePlus" },
-                            { description: "تم إنشاء أمر شراء جديد #PO1722358826629", time: "2024-07-30T17:00:26.629Z", icon: "FileCheck" },
-                            { description: "طلب إجازة جديد برقم #LR1722358784346", time: "2024-07-30T16:59:44.346Z", icon: "FileClock" }
-                        ]
-                    });
-                    setLoading(false);
-                }, 1000);
-
-            } catch (err) {
-                setError((err as Error).message);
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
-
-    if (loading) {
-        return (
-            <div className="space-y-6" dir="rtl">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Skeleton className="h-32" />
-                    <Skeleton className="h-32" />
-                    <Skeleton className="h-32" />
-                    <Skeleton className="h-32" />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                    <Skeleton className="col-span-4 h-80" />
-                    <Skeleton className="col-span-3 h-80" />
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
+    if (!success) {
         return (
             <div className="container mx-auto py-10 px-4 text-center" dir="rtl">
                 <h1 className="text-2xl font-bold mb-4 text-destructive">خطأ في تحميل لوحة التحكم</h1>
@@ -110,7 +104,7 @@ export default function DashboardPage() {
     }
     
     if (!data) {
-        return null; // or some other placeholder
+        return <Skeleton className="h-[500px] w-full" />;
     }
 
   return (

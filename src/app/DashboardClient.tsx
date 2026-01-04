@@ -264,7 +264,7 @@ export default function DashboardClient({
                   </div>
                   <div>
                     <p className="text-sm font-medium">{activity.description}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(activity.time).toLocaleString('ar-SA')}</p>
                   </div>
                 </div>
               );
