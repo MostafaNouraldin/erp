@@ -23,21 +23,23 @@ import { useCurrency } from '@/hooks/use-currency';
 import { submitSubscriptionRequest } from './actions';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { availableCurrencies } from '@/contexts/currency-context';
 
 // This data would be fetched from the backend in a real app
 const allAvailableModules: Module[] = [
-  { id: "MOD002", key: "Accounting", name: "الحسابات", description: "إدارة الحسابات العامة والقيود", isRentable: true, priceMonthly: 100, priceYearly: 1000 },
-  { id: "MOD003", key: "Inventory", name: "المخزون", description: "إدارة المنتجات والمستودعات", isRentable: true, priceMonthly: 80, priceYearly: 800 },
-  { id: "MOD004", key: "Sales", name: "المبيعات", description: "إدارة عروض الأسعار والفواتير", isRentable: true, priceMonthly: 90, priceYearly: 900 },
-  { id: "MOD005", key: "Purchases", name: "المشتريات", description: "إدارة أوامر الشراء والموردين", isRentable: true, priceMonthly: 70, priceYearly: 700 },
-  { id: "MOD006", key: "HR", name: "الموارد البشرية", description: "إدارة الموظفين والرواتب", isRentable: true, priceMonthly: 120, priceYearly: 1200 },
-  { id: "MOD007", key: "Production", name: "الإنتاج", description: "إدارة عمليات التصنيع", isRentable: true, priceMonthly: 150, priceYearly: 1500 },
-  { id: "MOD008", key: "Projects", name: "المشاريع", description: "إدارة المشاريع والمهام", isRentable: true, priceMonthly: 110, priceYearly: 1100 },
-  { id: "MOD009", key: "POS", name: "نقاط البيع", description: "نظام نقاط البيع بالتجزئة", isRentable: true, priceMonthly: 50, priceYearly: 500 },
-  { id: "MOD010", key: "BI", name: "التقارير والتحليل", description: "تقارير مجمعة وتحليلات", isRentable: true, priceMonthly: 60, priceYearly: 600 },
+    { id: "MOD002", key: "Accounting", name: "الحسابات", description: "إدارة الحسابات العامة والقيود", isRentable: true, prices: { SAR: { monthly: 100, yearly: 1000 }, EGP: { monthly: 800, yearly: 8000 }, USD: { monthly: 27, yearly: 270 } } },
+    { id: "MOD003", key: "Inventory", name: "المخزون", description: "إدارة المنتجات والمستودعات", isRentable: true, prices: { SAR: { monthly: 80, yearly: 800 }, EGP: { monthly: 650, yearly: 6500 }, USD: { monthly: 22, yearly: 220 } } },
+    { id: "MOD004", key: "Sales", name: "المبيعات", description: "إدارة عروض الأسعار والفواتير", isRentable: true, prices: { SAR: { monthly: 90, yearly: 900 }, EGP: { monthly: 720, yearly: 7200 }, USD: { monthly: 24, yearly: 240 } } },
+    { id: "MOD005", key: "Purchases", name: "المشتريات", description: "إدارة أوامر الشراء والموردين", isRentable: true, prices: { SAR: { monthly: 70, yearly: 700 }, EGP: { monthly: 560, yearly: 5600 }, USD: { monthly: 19, yearly: 190 } } },
+    { id: "MOD006", key: "HR", name: "الموارد البشرية", description: "إدارة الموظفين والرواتب", isRentable: true, prices: { SAR: { monthly: 120, yearly: 1200 }, EGP: { monthly: 960, yearly: 9600 }, USD: { monthly: 32, yearly: 320 } } },
+    { id: "MOD007", key: "Production", name: "الإنتاج", description: "إدارة عمليات التصنيع", isRentable: true, prices: { SAR: { monthly: 150, yearly: 1500 }, EGP: { monthly: 1200, yearly: 12000 }, USD: { monthly: 40, yearly: 400 } } },
+    { id: "MOD008", key: "Projects", name: "المشاريع", description: "إدارة المشاريع والمهام", isRentable: true, prices: { SAR: { monthly: 110, yearly: 1100 }, EGP: { monthly: 880, yearly: 8800 }, USD: { monthly: 29, yearly: 290 } } },
+    { id: "MOD009", key: "POS", name: "نقاط البيع", description: "نظام نقاط البيع بالتجزئة", isRentable: true, prices: { SAR: { monthly: 50, yearly: 500 }, EGP: { monthly: 400, yearly: 4000 }, USD: { monthly: 14, yearly: 140 } } },
+    { id: "MOD010", key: "BI", name: "التقارير والتحليل", description: "تقارير مجمعة وتحليلات", isRentable: true, prices: { SAR: { monthly: 60, yearly: 600 }, EGP: { monthly: 480, yearly: 4800 }, USD: { monthly: 16, yearly: 160 } } },
 ];
 
 const subscriptionRequestSchema = z.object({
+  country: z.string().min(1, "الدولة مطلوبة"),
   companyName: z.string().min(3, "اسم الشركة مطلوب"),
   email: z.string().email("بريد إلكتروني غير صالح"),
   phone: z.string().optional(),
@@ -56,13 +58,12 @@ export default function SubscribePage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const { formatCurrency } = useCurrency();
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
-
 
   const form = useForm<SubscriptionRequestFormValues>({
     resolver: zodResolver(subscriptionRequestSchema),
     defaultValues: {
+      country: "SA", // Default to Saudi Arabia
       companyName: "",
       email: "",
       phone: "",
@@ -77,15 +78,28 @@ export default function SubscribePage() {
 
   const selectedModules = form.watch("selectedModules");
   const billingCycle = form.watch("billingCycle");
+  const selectedCountry = form.watch("country");
+  
+  const currencyCode = selectedCountry === 'SA' ? 'SAR' : selectedCountry === 'EG' ? 'EGP' : 'USD';
+  const currency = availableCurrencies.find(c => c.code === currencyCode) || availableCurrencies[2];
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ar-SA', {
+        style: 'currency',
+        currency: currency.code,
+        minimumFractionDigits: 2,
+    }).format(amount);
+  }
 
   useEffect(() => {
     const total = selectedModules.reduce((acc, moduleKey) => {
       const module = allAvailableModules.find(m => m.key === moduleKey);
       if (!module) return acc;
-      return acc + (billingCycle === 'monthly' ? module.priceMonthly : module.priceYearly);
+      const prices = module.prices[currencyCode] || module.prices['USD'];
+      return acc + (billingCycle === 'monthly' ? prices.monthly : prices.yearly);
     }, 0);
     form.setValue("totalAmount", total);
-  }, [selectedModules, billingCycle, form]);
+  }, [selectedModules, billingCycle, currencyCode, form]);
 
   const handlePaymentProofUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -151,6 +165,15 @@ export default function SubscribePage() {
                     <Card>
                         <CardHeader><CardTitle className="text-lg">1. معلومات الشركة</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
+                             <FormField control={form.control} name="country" render={({ field }) => ( <FormItem><FormLabel>الدولة</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                    <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الدولة"/></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="SA">المملكة العربية السعودية</SelectItem>
+                                        <SelectItem value="EG">مصر</SelectItem>
+                                        <SelectItem value="Other">دولة أخرى (بالدولار الأمريكي)</SelectItem>
+                                    </SelectContent>
+                                </Select><FormMessage/></FormItem> )}/>
                              <FormField control={form.control} name="companyName" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                              <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني للتواصل</FormLabel><FormControl><Input type="email" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                              <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
@@ -197,20 +220,20 @@ export default function SubscribePage() {
                                 <FormControl>
                                     <RadioGroup onValueChange={field.onChange} defaultValue={field.defaultValue} className="flex gap-4">
                                         <FormItem className="flex-1"><FormControl><RadioGroupItem value="monthly" id="monthly" className="peer sr-only" /></FormControl><Label htmlFor="monthly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">شهري</Label></FormItem>
-                                        <FormItem className="flex-1"><FormControl><RadioGroupItem value="yearly" id="yearly" className="peer sr-only"/></FormControl><Label htmlFor="yearly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">سنوي <Badge variant="secondary" className="mt-1">خصم 15%</Badge></Label></FormItem>
+                                        <FormItem className="flex-1"><FormControl><RadioGroupItem value="yearly" id="yearly" className="peer sr-only"/></FormControl><Label htmlFor="yearly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">سنوي <Badge variant="secondary" className="mt-1">خصم</Badge></Label></FormItem>
                                     </RadioGroup>
                                 </FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="selectedModules" render={() => (
                                 <FormItem><FormLabel>الوحدات المتاحة</FormLabel>
                                     <div className="space-y-2 max-h-80 overflow-y-auto p-1">
-                                        {allAvailableModules.map((module) => (
+                                        {allAvailableModules.filter(m=>m.isRentable).map((module) => (
                                             <FormField key={module.id} control={form.control} name="selectedModules" render={({ field }) => (
                                                 <FormItem key={module.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                                                     <div className="space-y-0.5">
                                                         <FormLabel className="text-sm font-medium">{module.name}</FormLabel>
                                                         <p className="text-xs text-muted-foreground">{module.description}</p>
-                                                        <p className="text-xs font-semibold text-primary" dangerouslySetInnerHTML={{ __html: `${formatCurrency(billingCycle === 'monthly' ? module.priceMonthly : module.priceYearly)}/${billingCycle === 'monthly' ? 'شهر' : 'سنة'}` }}></p>
+                                                        <p className="text-xs font-semibold text-primary">{formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode] || module.prices['USD']).monthly : (module.prices[currencyCode] || module.prices['USD']).yearly)}/{billingCycle === 'monthly' ? 'شهر' : 'سنة'}</p>
                                                     </div>
                                                     <FormControl><Checkbox checked={field.value?.includes(module.key)} onCheckedChange={(checked) => { return checked ? field.onChange([...field.value, module.key]) : field.onChange(field.value?.filter((value) => value !== module.key)); }} /></FormControl>
                                                 </FormItem>
@@ -224,7 +247,7 @@ export default function SubscribePage() {
                      <Card className="bg-muted/30">
                         <CardHeader><CardTitle className="text-lg">ملخص الطلب</CardTitle></CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-primary text-center" dangerouslySetInnerHTML={{ __html: formatCurrency(form.getValues("totalAmount")) }}></div>
+                            <div className="text-3xl font-bold text-primary text-center">{formatCurrency(form.getValues("totalAmount"))}</div>
                             <p className="text-center text-muted-foreground">/{billingCycle === "monthly" ? "شهرياً" : "سنوياً"}</p>
                         </CardContent>
                     </Card>

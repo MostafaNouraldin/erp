@@ -5,8 +5,14 @@ export interface Module {
   key: string; // Unique key, e.g., 'Accounting', 'Inventory'
   description?: string;
   isRentable: boolean;
-  priceMonthly: number;
-  priceYearly: number;
+  prices: {
+    [key: string]: { // Currency code like 'SAR', 'EGP', 'USD'
+      monthly: number;
+      yearly: number;
+    }
+  };
+  priceMonthly?: number; // Kept for backward compatibility if needed, but prices should be used
+  priceYearly?: number; // Kept for backward compatibility if needed, but prices should be used
 }
 
 export interface Tenant {

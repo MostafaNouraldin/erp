@@ -16,22 +16,26 @@ import { useToast } from "@/hooks/use-toast";
 import type { Module } from '@/types/saas';
 import { useCurrency } from '@/hooks/use-currency';
 
-// Initial module data (could be derived from navItems or a central config)
 const initialModulesData: Module[] = [
-  { id: "MOD001", key: "Dashboard", name: "لوحة التحكم", description: "عرض ملخصات وأداء النظام", isRentable: false, priceMonthly: 0, priceYearly: 0 },
-  { id: "MOD002", key: "Accounting", name: "الحسابات", description: "إدارة الحسابات العامة والقيود", isRentable: true, priceMonthly: 100, priceYearly: 1000 },
-  { id: "MOD003", key: "Inventory", name: "المخزون", description: "إدارة المنتجات والمستودعات", isRentable: true, priceMonthly: 80, priceYearly: 800 },
-  { id: "MOD004", key: "Sales", name: "المبيعات", description: "إدارة عروض الأسعار والفواتير", isRentable: true, priceMonthly: 90, priceYearly: 900 },
-  { id: "MOD005", key: "Purchases", name: "المشتريات", description: "إدارة أوامر الشراء والموردين", isRentable: true, priceMonthly: 70, priceYearly: 700 },
-  { id: "MOD006", key: "HR", name: "الموارد البشرية", description: "إدارة الموظفين والرواتب", isRentable: true, priceMonthly: 120, priceYearly: 1200 },
-  { id: "MOD007", key: "Production", name: "الإنتاج", description: "إدارة عمليات التصنيع", isRentable: true, priceMonthly: 150, priceYearly: 1500 },
-  { id: "MOD008", key: "Projects", name: "المشاريع", description: "إدارة المشاريع والمهام", isRentable: true, priceMonthly: 110, priceYearly: 1100 },
-  { id: "MOD009", key: "POS", name: "نقاط البيع", description: "نظام نقاط البيع بالتجزئة", isRentable: true, priceMonthly: 50, priceYearly: 500 },
-  { id: "MOD010", key: "BI", name: "التقارير والتحليل", description: "تقارير مجمعة وتحليلات", isRentable: true, priceMonthly: 60, priceYearly: 600 },
-  { id: "MOD011", key: "Settings", name: "الإعدادات العامة", description: "إعدادات النظام الأساسية", isRentable: false, priceMonthly: 0, priceYearly: 0 },
-  { id: "MOD012", key: "Help", name: "المساعدة", description: "مركز المساعدة والدعم", isRentable: false, priceMonthly: 0, priceYearly: 0 },
-  { id: "MOD013", key: "SystemAdministration", name: "إدارة النظام", description: "إدارة الشركات والاشتراكات", isRentable: false, priceMonthly: 0, priceYearly: 0 },
+    { id: "MOD002", key: "Accounting", name: "الحسابات", description: "إدارة الحسابات العامة والقيود", isRentable: true, prices: { SAR: { monthly: 100, yearly: 1000 }, EGP: { monthly: 800, yearly: 8000 }, USD: { monthly: 27, yearly: 270 } } },
+    { id: "MOD003", key: "Inventory", name: "المخزون", description: "إدارة المنتجات والمستودعات", isRentable: true, prices: { SAR: { monthly: 80, yearly: 800 }, EGP: { monthly: 650, yearly: 6500 }, USD: { monthly: 22, yearly: 220 } } },
+    { id: "MOD004", key: "Sales", name: "المبيعات", description: "إدارة عروض الأسعار والفواتير", isRentable: true, prices: { SAR: { monthly: 90, yearly: 900 }, EGP: { monthly: 720, yearly: 7200 }, USD: { monthly: 24, yearly: 240 } } },
+    { id: "MOD005", key: "Purchases", name: "المشتريات", description: "إدارة أوامر الشراء والموردين", isRentable: true, prices: { SAR: { monthly: 70, yearly: 700 }, EGP: { monthly: 560, yearly: 5600 }, USD: { monthly: 19, yearly: 190 } } },
+    { id: "MOD006", key: "HR", name: "الموارد البشرية", description: "إدارة الموظفين والرواتب", isRentable: true, prices: { SAR: { monthly: 120, yearly: 1200 }, EGP: { monthly: 960, yearly: 9600 }, USD: { monthly: 32, yearly: 320 } } },
+    { id: "MOD007", key: "Production", name: "الإنتاج", description: "إدارة عمليات التصنيع", isRentable: true, prices: { SAR: { monthly: 150, yearly: 1500 }, EGP: { monthly: 1200, yearly: 12000 }, USD: { monthly: 40, yearly: 400 } } },
+    { id: "MOD008", key: "Projects", name: "المشاريع", description: "إدارة المشاريع والمهام", isRentable: true, prices: { SAR: { monthly: 110, yearly: 1100 }, EGP: { monthly: 880, yearly: 8800 }, USD: { monthly: 29, yearly: 290 } } },
+    { id: "MOD009", key: "POS", name: "نقاط البيع", description: "نظام نقاط البيع بالتجزئة", isRentable: true, prices: { SAR: { monthly: 50, yearly: 500 }, EGP: { monthly: 400, yearly: 4000 }, USD: { monthly: 14, yearly: 140 } } },
+    { id: "MOD010", key: "BI", name: "التقارير والتحليل", description: "تقارير مجمعة وتحليلات", isRentable: true, prices: { SAR: { monthly: 60, yearly: 600 }, EGP: { monthly: 480, yearly: 4800 }, USD: { monthly: 16, yearly: 160 } } },
+    { id: "MOD001", key: "Dashboard", name: "لوحة التحكم", description: "عرض ملخصات وأداء النظام", isRentable: false, prices: { SAR: { monthly: 0, yearly: 0 }, EGP: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
+    { id: "MOD011", key: "Settings", name: "الإعدادات العامة", description: "إعدادات النظام الأساسية", isRentable: false, prices: { SAR: { monthly: 0, yearly: 0 }, EGP: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
+    { id: "MOD012", key: "Help", name: "المساعدة", description: "مركز المساعدة والدعم", isRentable: false, prices: { SAR: { monthly: 0, yearly: 0 }, EGP: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
+    { id: "MOD013", key: "SystemAdministration", name: "إدارة النظام", description: "إدارة الشركات والاشتراكات", isRentable: false, prices: { SAR: { monthly: 0, yearly: 0 }, EGP: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
 ];
+
+const pricesSchema = z.object({
+  monthly: z.coerce.number().min(0),
+  yearly: z.coerce.number().min(0),
+});
 
 const moduleConfigSchema = z.object({
   id: z.string(),
@@ -39,8 +43,11 @@ const moduleConfigSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   isRentable: z.boolean(),
-  priceMonthly: z.coerce.number().min(0, "السعر يجب أن يكون إيجابياً"),
-  priceYearly: z.coerce.number().min(0, "السعر يجب أن يكون إيجابياً"),
+  prices: z.object({
+    SAR: pricesSchema,
+    EGP: pricesSchema,
+    USD: pricesSchema,
+  }),
 });
 
 const modulesFormSchema = z.object({
@@ -52,14 +59,13 @@ type ModulesFormValues = z.infer<typeof modulesFormSchema>;
 export default function ModulesConfigPage() {
   const [modulesConfig, setModulesConfig] = useState<Module[]>(initialModulesData);
   const { toast } = useToast();
-  const { formatCurrency } = useCurrency();
 
   const form = useForm<ModulesFormValues>({
     resolver: zodResolver(modulesFormSchema),
     defaultValues: { modules: modulesConfig },
   });
 
-  const { fields, update } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: "modules",
   });
@@ -84,7 +90,7 @@ export default function ModulesConfigPage() {
             إعدادات الوحدات (Modules) والاشتراكات
           </CardTitle>
           <CardDescription>
-            تحديد الوحدات المتاحة للتأجير، أسعارها الشهرية والسنوية، وإدارة إعدادات الاشتراك.
+            تحديد الوحدات المتاحة للتأجير، أسعارها الشهرية والسنوية لمختلف العملات.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -100,26 +106,23 @@ export default function ModulesConfigPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[200px]">اسم الوحدة (Module)</TableHead>
-                      <TableHead>الوصف</TableHead>
-                      <TableHead className="w-[120px] text-center">متاحة للتأجير؟</TableHead>
-                      <TableHead className="w-[150px]">السعر الشهري</TableHead>
-                      <TableHead className="w-[150px]">السعر السنوي</TableHead>
+                      <TableHead className="w-[180px]">اسم الوحدة</TableHead>
+                      <TableHead className="w-[100px] text-center">متاحة للتأجير؟</TableHead>
+                      <TableHead className="w-[150px]">السعر (SAR)</TableHead>
+                      <TableHead className="w-[150px]">السعر (EGP)</TableHead>
+                      <TableHead className="w-[150px]">السعر (USD)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {fields.map((field, index) => (
                       <TableRow key={field.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">
-                            {/* Display module name, not editable here but shown for context */}
-                            {form.getValues(`modules.${index}.name`)}
+                            <p>{form.getValues(`modules.${index}.name`)}</p>
+                            <p className="text-xs text-muted-foreground">{form.getValues(`modules.${index}.description`)}</p>
                              <input type="hidden" {...form.register(`modules.${index}.id`)} />
                              <input type="hidden" {...form.register(`modules.${index}.key`)} />
                              <input type="hidden" {...form.register(`modules.${index}.name`)} />
                              <input type="hidden" {...form.register(`modules.${index}.description`)} />
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                             {form.getValues(`modules.${index}.description`)}
                         </TableCell>
                         <TableCell className="text-center">
                           <FormField
@@ -138,34 +141,38 @@ export default function ModulesConfigPage() {
                             )}
                           />
                         </TableCell>
-                        <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`modules.${index}.priceMonthly`}
-                            render={({ field: inputField }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input type="number" {...inputField} className="bg-background h-9" disabled={!form.watch(`modules.${index}.isRentable`)} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`modules.${index}.priceYearly`}
-                            render={({ field: inputField }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input type="number" {...inputField} className="bg-background h-9" disabled={!form.watch(`modules.${index}.isRentable`)} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </TableCell>
+                        {(['SAR', 'EGP', 'USD'] as const).map(currency => (
+                            <TableCell key={currency}>
+                                <div className="space-y-2">
+                                     <FormField
+                                        control={form.control}
+                                        name={`modules.${index}.prices.${currency}.monthly`}
+                                        render={({ field: inputField }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs">شهري</FormLabel>
+                                            <FormControl>
+                                            <Input type="number" {...inputField} className="bg-background h-8" disabled={!form.watch(`modules.${index}.isRentable`)} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name={`modules.${index}.prices.${currency}.yearly`}
+                                        render={({ field: inputField }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs">سنوي</FormLabel>
+                                            <FormControl>
+                                            <Input type="number" {...inputField} className="bg-background h-8" disabled={!form.watch(`modules.${index}.isRentable`)} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            </TableCell>
+                        ))}
                       </TableRow>
                     ))}
                   </TableBody>
