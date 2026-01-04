@@ -1,6 +1,5 @@
 
 
-
 // src/app/sales/actions.ts
 'use server';
 
@@ -117,14 +116,13 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
   const db = await getDb();
   const settings = await getCompanySettings(db);
   const newInvoiceId = `INV-C${Date.now()}`;
-  const totalAmount = invoiceData.numericTotalAmount; // Total after discount
 
   // Constants for accounting
   const VAT_RATE = (settings.vatRate ?? 15) / 100;
   const accountsReceivableAccount = "1200";
   const salesRevenueAccount = "4000";
   const vatPayableAccount = "2200";
-  const salesDiscountAccount = "4200";
+  const salesDiscountAccount = "4200"; // Contra-Revenue account for discounts
 
   const subtotal = invoiceData.items.reduce((sum, item) => sum + item.total, 0);
   let discountAmount = 0;
@@ -138,7 +136,6 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
   const vatAmount = totalAfterDiscount * VAT_RATE;
   const finalTotal = totalAfterDiscount + vatAmount;
   
-
   await db.transaction(async (tx) => {
     // 1. Check stock availability
     for (const item of invoiceData.items) {
@@ -151,11 +148,11 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
       }
     }
     
-    // 2. Insert sales invoice
+    // 2. Insert sales invoice with the final calculated total
     await tx.insert(salesInvoices).values({
       id: newInvoiceId,
       ...invoiceData,
-      numericTotalAmount: String(finalTotal), // Save the final total
+      numericTotalAmount: String(finalTotal),
       discountType: invoiceData.discountType || 'amount',
       discountValue: String(invoiceData.discountValue || 0),
     });
@@ -187,15 +184,15 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
       }
     }
 
-    // 5. Create Journal Entry if not from POS (POS settles in batch)
+    // 5. Create Journal Entry if not from POS
     if (invoiceData.source !== 'POS') {
         const newEntryId = `JV-SI-${newInvoiceId}`;
         const customer = await tx.query.customers.findFirst({ where: eq(customers.id, invoiceData.customerId) });
         
-        const journalLines = [
+        let journalLines = [
             // Debit Accounts Receivable for the final total amount
             { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: String(finalTotal), credit: '0', description: `فاتورة للعميل ${customer?.name}` },
-            // Credit Sales Revenue for the subtotal
+            // Credit Sales Revenue for the subtotal (before discount)
             { journalEntryId: newEntryId, accountId: salesRevenueAccount, debit: '0', credit: String(subtotal), description: `إيراد من فاتورة ${newInvoiceId}` },
             // Credit VAT Payable for the VAT amount
             { journalEntryId: newEntryId, accountId: vatPayableAccount, debit: '0', credit: String(vatAmount), description: `ضريبة القيمة المضافة لفاتورة ${newInvoiceId}` },
@@ -205,6 +202,9 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
         if (discountAmount > 0) {
             journalLines.push({ journalEntryId: newEntryId, accountId: salesDiscountAccount, debit: String(discountAmount), credit: '0', description: `خصم على فاتورة ${newInvoiceId}` });
         }
+        
+        // Filter out zero-value lines before inserting
+        journalLines = journalLines.filter(line => parseFloat(line.debit) > 0 || parseFloat(line.credit) > 0);
         
         await tx.insert(journalEntries).values({
             id: newEntryId,
@@ -384,7 +384,7 @@ export async function approveSalesReturn(returnId: string) {
     if (!salesReturn) throw new Error("لم يتم العثور على مرتجع المبيعات.");
     if (salesReturn.status === 'معتمد') throw new Error("هذا المرتجع معتمد بالفعل.");
 
-    const totalAmount = salesReturn.numericTotalAmount;
+    const totalAmount = parseFloat(salesReturn.numericTotalAmount);
     const VAT_RATE = (settings.vatRate ?? 15) / 100;
     const totalBeforeTax = totalAmount / (1 + VAT_RATE);
     const vatAmount = totalAmount - totalBeforeTax;
