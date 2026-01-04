@@ -231,7 +231,7 @@ export const quotationItems = pgTable('quotation_items', {
 
 export const salesOrders = pgTable('sales_orders', {
   id: varchar('id', { length: 256 }).primaryKey(),
-  quoteId: varchar('quote_id', { length: 256 }).references(() => quotations.id),
+  quoteId: varchar('quote_id', { length: 256 }).references(() => quotations.id, { onDelete: 'set null' }),
   customerId: varchar('customer_id', { length: 256 }).notNull().references(() => customers.id),
   date: timestamp('date').notNull(),
   deliveryDate: timestamp('delivery_date').notNull(),
@@ -252,7 +252,7 @@ export const salesOrderItems = pgTable('sales_order_items', {
 
 export const salesInvoices = pgTable('sales_invoices', {
   id: varchar('id', { length: 256 }).primaryKey(),
-  orderId: varchar('order_id', { length: 256 }).references(() => salesOrders.id),
+  orderId: varchar('order_id', { length: 256 }).references(() => salesOrders.id, { onDelete: 'set null' }),
   customerId: varchar('customer_id', { length: 256 }).notNull(),
   date: timestamp('date').notNull(),
   dueDate: timestamp('due_date').notNull(),
@@ -281,7 +281,7 @@ export const salesInvoiceItems = pgTable('sales_invoice_items', {
 export const salesReturns = pgTable('sales_returns', {
     id: varchar('id', { length: 256 }).primaryKey(),
     customerId: varchar('customer_id', { length: 256 }).notNull().references(() => customers.id),
-    invoiceId: varchar('invoice_id', { length: 256 }).references(() => salesInvoices.id),
+    invoiceId: varchar('invoice_id', { length: 256 }).references(() => salesInvoices.id, { onDelete: 'set null' }),
     date: timestamp('date').notNull(),
     numericTotalAmount: numeric('numeric_total_amount', { precision: 10, scale: 2 }).notNull(),
     status: varchar('status', { length: 50 }).notNull().default('مسودة'),
@@ -322,7 +322,7 @@ export const purchaseOrderItems = pgTable('purchase_order_items', {
 
 export const supplierInvoices = pgTable('supplier_invoices', {
     id: varchar('id', { length: 256 }).primaryKey(),
-    poId: varchar('po_id', { length: 256 }),
+    poId: varchar('po_id', { length: 256 }).references(() => purchaseOrders.id, { onDelete: 'set null' }),
     supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
     invoiceDate: timestamp('invoice_date').notNull(),
     dueDate: timestamp('due_date').notNull(),
@@ -342,6 +342,27 @@ export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
+
+export const purchaseReturns = pgTable('purchase_returns', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+    date: timestamp('date').notNull(),
+    originalInvoiceId: varchar('original_invoice_id', { length: 256 }).references(() => supplierInvoices.id, { onDelete: 'set null' }),
+    notes: text('notes'),
+    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
+export const purchaseReturnItems = pgTable('purchase_return_items', {
+    id: serial('id').primaryKey(),
+    returnId: varchar('return_id', { length: 256 }).notNull().references(() => purchaseReturns.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
+    description: text('description'),
+    quantity: integer('quantity').notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+    reason: text('reason'),
+    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+});
 
 // --- HR & Payroll ---
 
@@ -772,28 +793,7 @@ export const stockRequisitionItems = pgTable('stock_requisition_items', {
     justification: text('justification'),
 });
 
-export const purchaseReturns = pgTable('purchase_returns', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
-    date: timestamp('date').notNull(),
-    originalInvoiceId: varchar('original_invoice_id', { length: 256 }),
-    notes: text('notes'),
-    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
-});
-
-export const purchaseReturnItems = pgTable('purchase_return_items', {
-    id: serial('id').primaryKey(),
-    returnId: varchar('return_id', { length: 256 }).notNull().references(() => purchaseReturns.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
-    description: text('description'),
-    quantity: integer('quantity').notNull(),
-    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
-    reason: text('reason'),
-    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
-});
-
-// -- POS
+// -- POS --
 export const posSessions = pgTable('pos_sessions', {
     id: varchar('id', { length: 256 }).primaryKey(),
     userId: varchar('user_id', { length: 256 }).notNull().references(() => users.id),
@@ -899,3 +899,5 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+    
