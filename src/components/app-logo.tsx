@@ -1,4 +1,3 @@
-
 import { Building } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -13,13 +12,13 @@ export default function AppLogo({ className, logoUrl, companyName }: AppLogoProp
   const nameToShow = companyName || "نسيج للحلول المتكاملة";
 
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-2 text-center", className)}>
+    <div className={cn("flex flex-row items-center justify-start gap-3", className)}>
       {logoUrl ? (
-        <Image src={logoUrl} alt={nameToShow} width={128} height={128} className="h-32 w-32 object-contain" />
+        <Image src={logoUrl} alt={nameToShow} width={40} height={40} className="h-10 w-10 object-contain" />
       ) : (
-        <Building className="h-32 w-32 text-primary" />
+        <Building className="h-10 w-10 text-primary" />
       )}
-      <span className="text-xl font-semibold text-foreground truncate block w-full">
+      <span className="text-xl font-semibold text-foreground truncate">
         {nameToShow}
       </span>
     </div>

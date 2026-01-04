@@ -410,12 +410,12 @@ const SidebarHeader = React.forwardRef<
       ref={ref}
       data-sidebar="header"
       className={cn(
-        "flex h-auto flex-col items-center gap-3 p-3 group-data-[collapsible=icon]:h-16 group-data-[collapsible=icon]:py-2 border-b border-sidebar-border",
+        "flex h-16 items-center gap-3 p-3 group-data-[collapsible=icon]:h-16 group-data-[collapsible=icon]:justify-center border-b border-sidebar-border",
         className
       )}
       {...props}
     >
-      <AppLogo logoUrl={logoUrl} companyName={companyName} />
+      <AppLogo logoUrl={logoUrl} companyName={companyName} className="group-data-[collapsible=icon]:[&>span]:hidden" />
     </div>
   );
 });
