@@ -24,6 +24,7 @@ import { submitSubscriptionRequest } from './actions';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { availableCurrencies } from '@/contexts/currency-context';
+import { getCompanySettingsForLayout } from '../actions';
 
 // This data would be fetched from the backend in a real app
 const allAvailableModules: Module[] = [
@@ -53,12 +54,24 @@ const subscriptionRequestSchema = z.object({
 });
 
 type SubscriptionRequestFormValues = z.infer<typeof subscriptionRequestSchema>;
+type CompanySettings = { companyName?: string, companyLogo?: string };
 
 export default function SubscribePage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
+  const [companySettings, setCompanySettings] = useState<CompanySettings>({});
+
+  useEffect(() => {
+    async function fetchSettings() {
+        const settings = await getCompanySettingsForLayout('T001'); // Using main tenant for public page
+        if(settings) {
+            setCompanySettings(settings);
+        }
+    }
+    fetchSettings();
+  }, []);
 
   const form = useForm<SubscriptionRequestFormValues>({
     resolver: zodResolver(subscriptionRequestSchema),
@@ -149,7 +162,7 @@ export default function SubscribePage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/50 p-4" dir="rtl">
         <div className="mx-auto my-4">
-            <AppLogo />
+            <AppLogo logoUrl={companySettings.companyLogo} companyName={companySettings.companyName}/>
         </div>
       <Card className="w-full max-w-4xl shadow-2xl">
         <CardHeader className="text-center space-y-2">
