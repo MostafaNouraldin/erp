@@ -40,6 +40,7 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
 
@@ -49,12 +50,14 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
   
   const handleViewDetails = async (request: SubscriptionRequest) => {
     setSelectedRequest(request); // Show basic data immediately
+    setIsDetailsDialogOpen(true);
     setIsLoadingDetails(true);
     try {
         const fullRequestDetails = await getSubscriptionRequestDetails(request.id);
         setSelectedRequest(fullRequestDetails as SubscriptionRequest); // Update with full data including proof
     } catch (e: any) {
         toast({ title: "خطأ", description: "لم يتم العثور على تفاصيل الطلب.", variant: "destructive" });
+        setIsDetailsDialogOpen(false); // Close dialog on error
     } finally {
         setIsLoadingDetails(false);
     }
@@ -145,11 +148,9 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                       <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="عرض التفاصيل" onClick={() => handleViewDetails(req)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                       </DialogTrigger>
+                       <Button variant="ghost" size="icon" className="h-8 w-8" title="عرض التفاصيل" onClick={() => handleViewDetails(req)}>
+                         <Eye className="h-4 w-4" />
+                       </Button>
                       {req.status === 'pending' && (
                         <>
                           <AlertDialog>
@@ -197,7 +198,7 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
         </CardContent>
       </Card>
 
-      <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
         <DialogContent className="sm:max-w-lg" dir="rtl">
           <DialogHeader>
             <DialogTitle>تفاصيل طلب الاشتراك: {selectedRequest?.companyName}</DialogTitle>
