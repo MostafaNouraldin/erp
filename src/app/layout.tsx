@@ -26,6 +26,7 @@ import { usePathname } from "next/navigation";
 import { allNavItems } from "@/lib/nav-links";
 import NotificationsPopover from "@/components/notifications-popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getCompanySettingsForLayout } from "./actions"; // Import the new server action
 
 
 const cairo = Cairo({
@@ -33,38 +34,11 @@ const cairo = Cairo({
   variable: "--font-cairo",
 });
 
-// Mock current tenant and subscription data - this would come from the user's session
-const currentTenant = {
-  id: 'T001',
-  name: 'شركة المستقبل التجريبية',
-  subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-  isActive: true,
-};
-
-const currentTenantSubscription = {
-  tenantId: 'T001',
-  modules: {
-    'Dashboard': true,
-    'Accounting': true,
-    'Inventory': true,
-    'Sales': true,
-    'Purchases': true,
-    'HR': true,
-    'Production': true,
-    'Projects': true,
-    'POS': true,
-    'BI': true,
-    'Settings': true,
-    'Help': true,
-    'SystemAdministration': true,
-  } as Record<string, boolean>,
-  billingCycle: 'yearly' as 'monthly' | 'yearly',
-};
-
 
 function AppLayout({ children }: { children: React.ReactNode }) {
     const auth = useAuth();
     const pathname = usePathname();
+    const [companySettings, setCompanySettings] = useState({ name: "نسيج للحلول المتكاملة", logo: "" });
 
     const [mounted, setMounted] = useState(false);
 
@@ -74,7 +48,20 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             document.documentElement.lang = 'ar';
             document.documentElement.dir = 'rtl';
         }
-    }, []);
+        
+        async function fetchSettings() {
+            if(auth.user?.tenantId) {
+                const settings = await getCompanySettingsForLayout(auth.user.tenantId);
+                if(settings) {
+                    setCompanySettings({ name: settings.companyName || "نسيج للحلول المتكاملة", logo: settings.companyLogo || "" });
+                }
+            }
+        }
+        if(auth.isAuthenticated) {
+            fetchSettings();
+        }
+
+    }, [auth.isAuthenticated, auth.user?.tenantId]);
 
     // If loading auth state from localStorage, don't render anything yet
     if (!mounted || auth.isLoading) {
@@ -116,7 +103,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         }
         
         const mainPermission = `${moduleKey.toLowerCase()}.view`;
-        return currentTenantSubscription.modules[item.module] && (auth.hasPermission(mainPermission) || item.subItems?.some(sub => auth.hasPermission(sub.permissionKey)));
+        return auth.hasPermission(mainPermission) || item.subItems?.some(sub => auth.hasPermission(sub.permissionKey));
       })
       .map(item => {
         if (item.subItems) {
@@ -136,7 +123,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex min-h-screen w-full">
                     <Sidebar collapsible="icon" side="right" className="shadow-lg">
                         <SidebarHeader>
-                            <AppLogo />
+                            <AppLogo companyName={companySettings.name} logoUrl={companySettings.logo} />
                             <div className="hidden group-data-[collapsible=icon]:hidden">
                             </div>
                         </SidebarHeader>
@@ -152,8 +139,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                             <Card className="bg-transparent border-0 shadow-none">
                                 <CardContent className="p-2 text-xs">
                                     <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
-                                        <p className="font-semibold text-sidebar-primary">{currentTenant.name}</p>
-                                        <p className="text-sidebar-foreground/70">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
+                                        <p className="font-semibold text-sidebar-primary">{companySettings.name}</p>
+                                        {/* Subscription end date logic can be added back here if needed */}
                                     </div>
                                     <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-border hover:bg-sidebar-primary/10">
                                       <Link href="/subscription">
@@ -219,8 +206,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                                     <DropdownMenuItem disabled>
                                                         <div className="flex flex-col space-y-0.5 text-right text-xs w-full">
                                                             <p className="text-muted-foreground">الشركة الحالية:</p>
-                                                            <p className="font-medium">{currentTenant.name}</p>
-                                                            <p className="text-muted-foreground">الاشتراك ينتهي في: {currentTenant.subscriptionEndDate.toLocaleDateString('ar-SA')}</p>
+                                                            <p className="font-medium">{companySettings.name}</p>
+                                                            {/* Subscription end date logic can be added here if needed */}
                                                         </div>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
@@ -283,3 +270,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    

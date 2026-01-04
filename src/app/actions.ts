@@ -2,7 +2,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { salesInvoices, customers, journalEntries, products, employees, leaveRequests, purchaseOrders } from '@/db/schema';
+import { salesInvoices, customers, journalEntries, products, employees, leaveRequests, purchaseOrders, companySettings } from '@/db/schema';
 import { sql, and, eq }from 'drizzle-orm';
 
 export async function getDashboardData() {
@@ -46,7 +46,7 @@ export async function getDashboardData() {
             UNION ALL
             (SELECT 'أمر شراء جديد' as description, id, date as activity_date FROM purchase_orders ORDER BY date DESC LIMIT 1)
             UNION ALL
-            (SELECT 'طلب إجازة جديد' as description, id, start_date as activity_date FROM leave_requests ORDER BY start_date DESC LIMIT 1)
+            (SELECT 'طلب إجازة جديد' as description, start_date as activity_date, id FROM leave_requests ORDER BY start_date DESC LIMIT 1)
             ORDER BY activity_date DESC;
         `);
 
@@ -88,3 +88,13 @@ export async function getDashboardData() {
         return { success: false, error: (error as Error).message, data: null };
     }
 }
+
+export async function getCompanySettingsForLayout(tenantId: string) {
+  const { db } = await connectToTenantDb();
+  const result = await db.query.companySettings.findFirst({
+    where: eq(companySettings.id, tenantId),
+  });
+  return result?.settings as { companyName?: string; companyLogo?: string } | undefined;
+}
+
+    
