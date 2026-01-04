@@ -32,6 +32,7 @@ const tenantSchema = z.object({
   isActive: z.boolean().default(true),
   subscriptionEndDate: z.date().optional(),
   subscribedModules: z.array(z.object({
+    key: z.string().optional(),
     moduleId: z.string(),
     subscribed: z.boolean(),
   })).default([]),
@@ -59,10 +60,19 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
   const form = useForm<TenantFormValues>({
     resolver: zodResolver(tenantSchema),
     defaultValues: {
+      name: "",
+      email: "",
+      isActive: true,
+      phone: "",
+      address: "",
+      vatNumber: "",
       subscribedModules: allAvailableModules.map(mod => ({
+        key: mod.key,
         moduleId: mod.key,
-        subscribed: false,
-      }))
+        subscribed: !mod.isRentable,
+      })),
+      billingCycle: "yearly",
+      subscriptionEndDate: undefined,
     }
   });
 
@@ -83,28 +93,32 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
         const currentTenantSubs = tenantModuleSubscriptions[tenantToEdit.id] || [];
         const initialFormModules = allAvailableModules.map(mod => {
           const sub = currentTenantSubs.find(s => s.moduleId === mod.key);
-          return { moduleId: mod.key, subscribed: sub ? sub.subscribed : false };
+          return { key: mod.key, moduleId: mod.key, subscribed: sub ? sub.subscribed : false };
         });
         form.reset({
           ...tenantToEdit,
           subscribedModules: initialFormModules,
         });
-        replace(initialFormModules);
       } else {
          const initialFormModules = allAvailableModules.map(mod => ({
+          key: mod.key,
           moduleId: mod.key,
           subscribed: !mod.isRentable, // Default non-rentable modules to subscribed
         }));
         form.reset({
-          name: "", email: "", isActive: true, phone: "", address: "", vatNumber: "",
+          name: "",
+          email: "",
+          isActive: true,
+          phone: "",
+          address: "",
+          vatNumber: "",
           subscribedModules: initialFormModules,
           billingCycle: "yearly",
           subscriptionEndDate: undefined,
         });
-        replace(initialFormModules);
       }
     }
-  }, [tenantToEdit, showManageTenantDialog, tenantModuleSubscriptions, form, allAvailableModules, replace]);
+  }, [tenantToEdit, showManageTenantDialog, tenantModuleSubscriptions, form, allAvailableModules]);
 
 
   const handleTenantSubmit = async (values: TenantFormValues) => {
@@ -131,6 +145,8 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
        toast({ title: "خطأ", description: "لم يتم حذف الشركة.", variant: "destructive" });
     }
   };
+
+  const watchedSubscribedModules = form.watch("subscribedModules");
 
   return (
     <div className="container mx-auto py-6" dir="rtl">
@@ -201,13 +217,13 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                    <Card>
                         <CardHeader><CardTitle className="text-base">الوحدات المشترك بها</CardTitle></CardHeader>
                         <CardContent className="space-y-2 p-4">
-                            {subscribedModulesFields.map((formFieldItem, index) => {
-                                const moduleDetails = allAvailableModules.find(m => m.key === form.getValues(`subscribedModules.${index}.moduleId`));
+                            {watchedSubscribedModules && watchedSubscribedModules.map((formFieldItem, index) => {
+                                const moduleDetails = allAvailableModules.find(m => m.key === formFieldItem.moduleId);
                                 if (!moduleDetails) return null;
                                 
                                 return (
                                     <FormField
-                                        key={formFieldItem.id}
+                                        key={formFieldItem.key}
                                         control={form.control}
                                         name={`subscribedModules.${index}.subscribed`}
                                         render={({ field }) => (
@@ -306,5 +322,3 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     </div>
   );
 }
-
-    
