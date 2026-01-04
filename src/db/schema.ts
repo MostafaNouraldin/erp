@@ -1,5 +1,4 @@
 
-
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -17,7 +16,7 @@ export const tenants = pgTable('tenants', {
     phone: varchar('phone', { length: 50 }),
     address: text('address'),
     vatNumber: varchar('vat_number', { length: 50 }),
-    country: varchar('country', { length: 10 }), // Added country field
+    country: varchar('country', { length: 10 }),
 });
 
 export const tenantsRelations = relations(tenants, ({ many }) => ({
@@ -299,6 +298,7 @@ export const salesReturnItems = pgTable('sales_return_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
     reason: text('reason'),
 });
+
 
 export const purchaseOrders = pgTable('purchase_orders', {
   id: varchar('id', { length: 256 }).primaryKey(),
@@ -793,8 +793,7 @@ export const purchaseReturnItems = pgTable('purchase_return_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
-
--- POS
+// -- POS
 export const posSessions = pgTable('pos_sessions', {
     id: varchar('id', { length: 256 }).primaryKey(),
     userId: varchar('user_id', { length: 256 }).notNull().references(() => users.id),
@@ -900,20 +899,3 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
     references: [users.id],
   }),
 }));
-
-    
-
-    
-
-    
-
-
-
-
-
-    
-
-    
-
-
-
