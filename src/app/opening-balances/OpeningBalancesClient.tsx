@@ -206,15 +206,15 @@ export default function OpeningBalancesClient({ initialData }: ClientComponentPr
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-               <TableRow className="font-semibold bg-muted/50">
-                  <TableCell colSpan={2} className="text-center">الإجماليات</TableCell>
-                  <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(totalDebit) }}></TableCell>
-                  <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(totalCredit) }}></TableCell>
-                  <TableCell colSpan={2} className="text-center">
-                    {Math.abs(totalDebit - totalCredit) < 0.01 ? "متوازن" : <span className="text-destructive" dangerouslySetInnerHTML={{ __html: `الفرق: ${formatCurrency(totalDebit - totalCredit)}`}}></span>}
-                  </TableCell>
+                 <TableRow className="font-semibold bg-muted/50">
+                    <TableCell colSpan={2} className="text-center">الإجماليات</TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(totalDebit) }}></TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(totalCredit) }}></TableCell>
+                    <TableCell colSpan={2} className="text-center">
+                        {Math.abs(totalDebit - totalCredit) < 0.01 ? "متوازن" : <span className="text-destructive" dangerouslySetInnerHTML={{ __html: `الفرق: ${formatCurrency(totalDebit - totalCredit)}`}}></span>}
+                    </TableCell>
                 </TableRow>
+              </TableBody>
             </Table>
           </div>
            {Math.abs(totalDebit - totalCredit) >= 0.01 && (
