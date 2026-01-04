@@ -34,11 +34,11 @@ interface AuthProviderProps {
 // This should come from a central API in a real app
 // We now define a Super Admin role as well
 const mockRoles: Role[] = [
-  { id: "ROLE_SUPER_ADMIN", name: "Super Admin", description: "صلاحيات كاملة على النظام وإدارة الشركات.", permissions: ["admin.manage_tenants", "admin.manage_modules", "admin.manage_billing", "admin.manage_requests"] },
-  { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles", "projects.view", "projects.create", "projects.edit", "projects.delete", "production.view", "production.create", "production.edit", "production.delete", "pos.use"] },
-  { id: "ROLE002", name: "محاسب", description: "صلاحيات على وحدات الحسابات والمالية.", permissions: ["accounting.view", "accounting.create", "accounting.edit", "reports.view_financial"] },
-  { id: "ROLE003", name: "موظف مبيعات", description: "صلاحيات على وحدة المبيعات وعروض الأسعار.", permissions: ["sales.view", "sales.create", "reports.view_sales"] },
-  { id: "ROLE004", name: "مدير مخزون", description: "صلاحيات على وحدة المخزون والمستودعات.", permissions: ["inventory.view", "inventory.create", "inventory.edit", "reports.view_inventory", "inventory.adjust_stock"] },
+  { id: "ROLE_SUPER_ADMIN", name: "Super Admin", description: "صلاحيات كاملة على النظام وإدارة الشركات.", permissions: ["admin.manage_tenants", "admin.manage_modules", "admin.manage_billing", "admin.manage_requests", "settings.view", "help.view"] },
+  { id: "ROLE001", name: "مدير النظام", description: "صلاحيات كاملة على النظام.", permissions: ["dashboard.view", "accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles", "settings.manage_subscription", "projects.view", "projects.create", "projects.edit", "projects.delete", "production.view", "production.create", "production.edit", "production.delete", "pos.use", "help.view"] },
+  { id: "ROLE002", name: "محاسب", description: "صلاحيات على وحدات الحسابات والمالية.", permissions: ["dashboard.view", "accounting.view", "accounting.create", "accounting.edit", "reports.view_financial", "help.view"] },
+  { id: "ROLE003", name: "موظف مبيعات", description: "صلاحيات على وحدة المبيعات وعروض الأسعار.", permissions: ["dashboard.view", "sales.view", "sales.create", "reports.view_sales", "help.view"] },
+  { id: "ROLE004", name: "مدير مخزون", description: "صلاحيات على وحدة المخزون والمستودعات.", permissions: ["dashboard.view", "inventory.view", "inventory.create", "inventory.edit", "reports.view_inventory", "inventory.adjust_stock", "help.view"] },
 ];
 
 
@@ -97,6 +97,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     const hasPermission = (permissionKey: string): boolean => {
+        if (!permissionKey) return true; // Items without a specific permission are public
         if (isSuperAdmin) return true; // Super Admin has all permissions implicitly
         if(user?.roleId === "ROLE001") return true; // Tenant Admin also has all permissions for their tenant
         return permissions.includes(permissionKey);

@@ -75,16 +75,25 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
 
     const navItems = allNavItems
       .filter(item => {
-        const moduleKey = item.module;
+        // Hide subscription link for super admins
         if (auth.isSuperAdmin && item.href === '/subscription') {
-             return false;
+            return false;
         }
+        // Hide system administration for non-super admins
         if (!auth.isSuperAdmin && item.module === 'SystemAdministration') {
             return false;
         }
         
-        const mainPermission = `${moduleKey.toLowerCase()}.view`;
-        return auth.hasPermission(mainPermission) || item.subItems?.some(sub => auth.hasPermission(sub.permissionKey));
+        // If the item itself doesn't have a permission key, it might be a parent with sub-items.
+        // If it has no sub-items, it's a direct link that should be checked for permission.
+        const mainPermission = item.permissionKey;
+        
+        // A user can see a parent item if they have permission for AT LEAST ONE of its children.
+        const canSeeAnySubItem = item.subItems?.some(sub => auth.hasPermission(sub.permissionKey));
+        
+        // An item is visible if it's not a parent OR if it's a parent and the user can see at least one child.
+        // Also check direct permission if it exists.
+        return !mainPermission ? (canSeeAnySubItem || !item.subItems) : (auth.hasPermission(mainPermission) || canSeeAnySubItem);
       })
       .map(item => {
         if (item.subItems) {
