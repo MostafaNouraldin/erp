@@ -745,6 +745,73 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                 </CardContent>
             </Card>
         </TabsContent>
+         <TabsContent value="supplierInvoices">
+          <Card className="shadow-md">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>فواتير الموردين</CardTitle>
+                <Dialog open={showCreateSupplierInvoiceDialog} onOpenChange={(isOpen) => {setShowCreateSupplierInvoiceDialog(isOpen); if(!isOpen) setSupplierInvoiceToEdit(null);}}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="shadow-sm" onClick={() => { setSupplierInvoiceToEdit(null); supplierInvoiceForm.reset(); setShowCreateSupplierInvoiceDialog(true); }}>
+                           <PlusCircle className="me-2 h-4 w-4" /> فاتورة جديدة
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-2xl" dir="rtl">
+                       {/* ... Dialog Content ... */}
+                    </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+               <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>رقم الفاتورة</TableHead>
+                      <TableHead>المورد</TableHead>
+                      <TableHead>تاريخ الفاتورة</TableHead>
+                      <TableHead>تاريخ الاستحقاق</TableHead>
+                      <TableHead>المبلغ الإجمالي</TableHead>
+                      <TableHead>المبلغ المدفوع</TableHead>
+                      <TableHead>الحالة</TableHead>
+                      <TableHead className="text-center">إجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {supplierInvoices.map((invoice: any) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell>{invoice.id}</TableCell>
+                        <TableCell>{suppliersData.find((s:any) => s.id === invoice.supplierId)?.name}</TableCell>
+                        <TableCell>{formatDateForDisplay(invoice.invoiceDate)}</TableCell>
+                        <TableCell>{formatDateForDisplay(invoice.dueDate)}</TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.totalAmount) }}></TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.paidAmount) }}></TableCell>
+                        <TableCell><Badge variant={invoice.status === 'مدفوع' ? 'default' : 'destructive'}>{invoice.status}</Badge></TableCell>
+                        <TableCell className="text-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewSupplierInvoice(invoice)}><Eye className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {setSupplierInvoiceToEdit(invoice); setShowCreateSupplierInvoiceDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openRecordPaymentDialogForSupplier(invoice)}><DollarSign className="h-4 w-4 text-green-600" /></Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                </AlertDialogTrigger>
+                                 <AlertDialogContent dir="rtl">
+                                  <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الفاتورة رقم "{invoice.id}"؟</AlertDialogDescription></AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteSupplierInvoice(invoice.id)}>تأكيد الحذف</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
        <TabsContent value="purchaseReturns">
         <Card className="shadow-lg">
             <CardHeader>
@@ -879,5 +946,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
+
+    
 
     

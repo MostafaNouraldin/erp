@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { connectToTenantDb } from '@/db';
@@ -227,7 +228,7 @@ export async function addSupplierInvoice(invoiceData: SupplierInvoiceFormValues)
   await db.transaction(async (tx) => {
     await tx.insert(supplierInvoices).values({
       id: newInvoiceId,
-      poId: invoiceData.poId,
+      poId: invoiceData.poId || null,
       supplierId: invoiceData.supplierId,
       invoiceDate: invoiceData.invoiceDate,
       dueDate: invoiceData.dueDate,
@@ -261,7 +262,7 @@ export async function updateSupplierInvoice(invoiceData: SupplierInvoiceFormValu
   }
   await db.transaction(async (tx) => {
     await tx.update(supplierInvoices).set({
-      poId: invoiceData.poId,
+      poId: invoiceData.poId || null,
       supplierId: invoiceData.supplierId,
       invoiceDate: invoiceData.invoiceDate,
       dueDate: invoiceData.dueDate,
@@ -536,5 +537,7 @@ export async function approvePurchaseReturn(returnId: string) {
     revalidatePath('/inventory');
     revalidatePath('/general-ledger');
 }
+
+    
 
     
