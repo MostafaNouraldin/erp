@@ -15,7 +15,9 @@ const customerSchema = z.object({
   type: z.string().optional(),
   address: z.string().optional(),
   vatNumber: z.string().optional(),
+  openingBalance: z.coerce.number().default(0),
   balance: z.coerce.number().default(0),
+  creditLimit: z.coerce.number().default(0),
 });
 
 type CustomerFormValues = z.infer<typeof customerSchema>;
@@ -33,7 +35,9 @@ export async function addCustomer(customerData: CustomerFormValues) {
   const newCustomer = {
     ...customerData,
     id: `CUST${Date.now()}`,
-    balance: String(customerData.balance),
+    balance: String(customerData.openingBalance), // Initial balance is the opening balance
+    openingBalance: String(customerData.openingBalance),
+    creditLimit: String(customerData.creditLimit),
   };
   await db.insert(customers).values(newCustomer);
   revalidatePath('/sales');
@@ -46,9 +50,11 @@ export async function updateCustomer(customerData: CustomerFormValues) {
     if (!customerData.id) {
         throw new Error("Customer ID is required for updating.");
     }
+    const { openingBalance, creditLimit, ...rest } = customerData;
     const updatedCustomer = {
-        ...customerData,
-        balance: String(customerData.balance),
+        ...rest,
+        openingBalance: String(openingBalance),
+        creditLimit: String(creditLimit),
     };
   await db.update(customers).set(updatedCustomer).where(eq(customers.id, customerData.id));
   revalidatePath('/sales');

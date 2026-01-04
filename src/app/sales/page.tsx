@@ -104,7 +104,9 @@ export default async function SalesPage() {
         const initialData = {
             customers: customersResult.map(c => ({
                 ...c,
+                openingBalance: parseFloat(c.openingBalance ?? '0'),
                 balance: parseFloat(c.balance ?? '0'),
+                creditLimit: parseFloat(c.creditLimit ?? '0'),
             })),
             invoices: invoicesWithItems,
             quotations: quotationsWithItems,

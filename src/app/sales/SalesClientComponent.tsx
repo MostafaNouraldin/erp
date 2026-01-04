@@ -15,7 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
-import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle, Tag, Eye, RefreshCw } from "lucide-react";
+import { ShoppingCart, FileSignature, FilePlus, UsersIcon, PlusCircle, Search, Filter, Edit, Trash2, FileText, CheckCircle, Send, Printer, MinusCircle, Tag, Eye, RefreshCw, Briefcase, CreditCard, DollarSign } from "lucide-react";
 import AppLogo from '@/components/app-logo';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -95,7 +95,9 @@ interface Customer {
   email: string | null;
   phone: string | null;
   type: string | null;
-  balance: number; // Changed from string to number
+  openingBalance: number;
+  balance: number; 
+  creditLimit: number;
   address?: string | null;
   vatNumber?: string | null;
 }
@@ -191,7 +193,9 @@ const customerSchema = z.object({
   type: z.string().optional(),
   address: z.string().optional(),
   vatNumber: z.string().optional(),
+  openingBalance: z.coerce.number().default(0),
   balance: z.coerce.number().default(0),
+  creditLimit: z.coerce.number().default(0),
 });
 type CustomerFormValues = z.infer<typeof customerSchema>;
 
@@ -312,7 +316,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
 
   const customerForm = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
-    defaultValues: { name: "", email: "", phone: "", type: "فرد", balance: 0, address: "", vatNumber: ""},
+    defaultValues: { name: "", email: "", phone: "", type: "فرد", balance: 0, openingBalance: 0, creditLimit: 0, address: "", vatNumber: ""},
   });
 
 
@@ -380,7 +384,7 @@ useEffect(() => {
     if (customerToEdit) {
       customerForm.reset(customerToEdit);
     } else {
-      customerForm.reset({ name: "", email: "", phone: "", type: "فرد", balance: 0, address: "", vatNumber: "" });
+      customerForm.reset({ name: "", email: "", phone: "", type: "فرد", balance: 0, openingBalance: 0, creditLimit: 0, address: "", vatNumber: "" });
     }
   }, [customerToEdit, customerForm, showManageCustomerDialog]);
 
@@ -537,11 +541,21 @@ useEffect(() => {
   
   const generateCustomerStatement = (customer: Customer, allInvoices: Invoice[]): StatementEntry[] => {
     const statement: StatementEntry[] = [];
-    let runningBalance = 0; // Start with a zero balance for the statement period
+    let runningBalance = customer.openingBalance;
+
+    const transactions: Array<{ date: Date, description: string, debit: number, credit: number }> = [];
+
+    // Add opening balance as the first transaction
+     if (customer.openingBalance !== 0) {
+        transactions.push({
+            date: new Date(0), // Push it to the very beginning
+            description: "رصيد أول المدة",
+            debit: customer.openingBalance > 0 ? customer.openingBalance : 0,
+            credit: customer.openingBalance < 0 ? Math.abs(customer.openingBalance) : 0,
+        });
+    }
   
     const customerInvoices = allInvoices.filter(inv => inv.customerId === customer.id);
-  
-    const transactions: Array<{ date: Date, description: string, debit: number, credit: number }> = [];
   
     customerInvoices.forEach(invoice => {
       transactions.push({
@@ -551,8 +565,9 @@ useEffect(() => {
         credit: 0,
       });
       if (invoice.status === "مدفوع") {
+        // Assume payment date is due date for simplicity
         transactions.push({
-          date: new Date(invoice.dueDate), // Or invoice.date, or a separate payment date if available
+          date: new Date(invoice.dueDate), 
           description: `سداد فاتورة رقم: ${invoice.id}`,
           debit: 0,
           credit: invoice.numericTotalAmount,
@@ -563,10 +578,12 @@ useEffect(() => {
     transactions.sort((a, b) => a.date.getTime() - b.date.getTime());
   
     transactions.forEach(transaction => {
-      runningBalance += transaction.debit;
-      runningBalance -= transaction.credit;
+        if (transaction.description !== "رصيد أول المدة") {
+          runningBalance += transaction.debit;
+          runningBalance -= transaction.credit;
+        }
       statement.push({
-        date: transaction.date.toLocaleDateString('ar-SA', { calendar: 'gregory' }),
+        date: transaction.date.getTime() === new Date(0).getTime() ? '-' : transaction.date.toLocaleDateString('ar-SA', { calendar: 'gregory' }),
         description: transaction.description,
         debit: transaction.debit,
         credit: transaction.credit,
@@ -587,15 +604,7 @@ useEffect(() => {
   };
 
   const handlePrintCustomerStatement = () => {
-    // Logic to trigger print for the customer statement
-    // This will likely involve using window.print() and CSS for print styling
-    // For now, we can simulate it with an alert or by opening the print dialog.
-    const printableContent = document.getElementById('printable-customer-statement');
-    if (printableContent) {
-        window.print();
-    } else {
-        toast({ title: "خطأ", description: "لا يمكن طباعة كشف الحساب حالياً.", variant: "destructive" });
-    }
+    window.print();
   };
 
   const handleDeleteCustomer = async (customerId: string) => {
@@ -746,7 +755,7 @@ useEffect(() => {
       </div>
 
       <Tabs defaultValue="customers" className="w-full" dir="rtl">
-        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md" dir="rtl">
+        <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
           <TabsTrigger value="quotations" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <FileSignature className="inline-block me-2 h-4 w-4" /> عروض الأسعار
           </TabsTrigger>
@@ -856,11 +865,15 @@ useEffect(() => {
                                 <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(sr.numericTotalAmount) }}></TableCell>
                                 <TableCell><Badge variant={sr.status === 'معتمد' ? 'default' : 'outline'}>{sr.status}</Badge></TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => handleApproveSalesReturn(sr.id)} className="text-green-600"><CheckCircle className="h-4 w-4" /></Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
-                                        <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف مرتجع المبيعات "{sr.id}"؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSalesReturn(sr.id)}>حذف</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-                                    </AlertDialog>
+                                    {sr.status === 'مسودة' && (
+                                        <>
+                                            <Button variant="ghost" size="icon" onClick={() => handleApproveSalesReturn(sr.id)} className="text-green-600"><CheckCircle className="h-4 w-4" /></Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                                <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف مرتجع المبيعات "{sr.id}"؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSalesReturn(sr.id)}>حذف</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                                            </AlertDialog>
+                                        </>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -894,6 +907,10 @@ useEffect(() => {
                                      </div>
                                       <FormField control={customerForm.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان العميل" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                                       <FormField control={customerForm.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للعميل" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={customerForm.control} name="openingBalance" render={({ field }) => ( <FormItem><FormLabel>رصيد أول المدة</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={customerForm.control} name="creditLimit" render={({ field }) => ( <FormItem><FormLabel>الحد الائتماني</FormLabel><FormControl><Input type="number" placeholder="0.00" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                      </div>
                                     <DialogFooter>
                                       <Button type="submit">{customerToEdit ? 'حفظ التعديلات' : 'إضافة العميل'}</Button>
                                       <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
@@ -937,7 +954,61 @@ useEffect(() => {
             </Card>
         </TabsContent>
       </Tabs>
+      <Dialog open={showCustomerDetailsDialog} onOpenChange={setShowCustomerDetailsDialog}>
+        <DialogContent className="max-w-4xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>ملف العميل: {selectedCustomerForDetails?.name}</DialogTitle>
+            <DialogDescription>عرض شامل لبيانات العميل المالية والتعاملات.</DialogDescription>
+          </DialogHeader>
+            {selectedCustomerForDetails && (
+              <div id="printable-customer-statement" className="space-y-4 printable-area">
+                <Card className="print-only:border-0 print-only:shadow-none">
+                    <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                      <div className="p-2 rounded-md bg-muted"><p className="text-xs text-muted-foreground">الرصيد الافتتاحي</p><p className="font-bold text-lg" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedCustomerForDetails.openingBalance) }}></p></div>
+                      <div className="p-2 rounded-md bg-muted"><p className="text-xs text-muted-foreground">إجمالي المبيعات</p><p className="font-bold text-lg" dangerouslySetInnerHTML={{ __html: formatCurrency(customerInvoicesForDetails.reduce((sum, inv) => sum + inv.numericTotalAmount, 0)) }}></p></div>
+                      <div className="p-2 rounded-md bg-muted"><p className="text-xs text-muted-foreground">الحد الائتماني</p><p className="font-bold text-lg" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedCustomerForDetails.creditLimit) }}></p></div>
+                      <div className="p-2 rounded-md bg-primary/10"><p className="text-xs text-primary">الرصيد الحالي</p><p className="font-bold text-lg text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedCustomerForDetails.balance) }}></p></div>
+                    </CardContent>
+                </Card>
+                <Tabs defaultValue="statement" className="w-full">
+                  <TabsList className="print-hidden">
+                    <TabsTrigger value="statement">كشف الحساب</TabsTrigger>
+                    <TabsTrigger value="invoices">الفواتير</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="statement">
+                    <Card className="print-only:border-0 print-only:shadow-none">
+                      <CardHeader><CardTitle className="text-base">كشف حساب العميل</CardTitle></CardHeader>
+                      <CardContent><Table><TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>مدين</TableHead><TableHead>دائن</TableHead><TableHead>الرصيد</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                          {customerStatement.map((entry, index) => (
+                            <TableRow key={index}><TableCell>{entry.date}</TableCell><TableCell>{entry.description}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.debit) }}></TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.credit) }}></TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.balance) }}></TableCell></TableRow>
+                          ))}
+                           {customerStatement.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">لا توجد حركات لعرضها</TableCell></TableRow>}
+                        </TableBody>
+                      </Table></CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="invoices">
+                    <Card>
+                      <CardHeader><CardTitle className="text-base">فواتير العميل</CardTitle></CardHeader>
+                      <CardContent><Table><TableHeader><TableRow><TableHead>رقم الفاتورة</TableHead><TableHead>التاريخ</TableHead><TableHead>تاريخ الاستحقاق</TableHead><TableHead>الإجمالي</TableHead><TableHead>الحالة</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                          {customerInvoicesForDetails.map(invoice => (
+                            <TableRow key={invoice.id}><TableCell>{invoice.id}</TableCell><TableCell>{formatDate(invoice.date)}</TableCell><TableCell>{formatDate(invoice.dueDate)}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(invoice.numericTotalAmount) }}></TableCell><TableCell><Badge variant={invoice.status === 'مدفوع' ? 'default' : 'destructive'}>{getInvoiceStatusText(invoice)}</Badge></TableCell></TableRow>
+                          ))}
+                        </TableBody>
+                      </Table></CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+          <DialogFooter className="print-hidden">
+            <Button variant="outline" onClick={handlePrintCustomerStatement}> <Printer className="me-2 h-4 w-4" /> طباعة كشف الحساب </Button>
+            <DialogClose asChild><Button>إغلاق</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

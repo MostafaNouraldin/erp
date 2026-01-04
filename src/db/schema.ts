@@ -113,7 +113,9 @@ export const customers = pgTable('customers', {
   email: varchar('email', { length: 256 }),
   phone: varchar('phone', { length: 256 }),
   type: varchar('type', { length: 256 }),
+  openingBalance: numeric('opening_balance', { precision: 10, scale: 2 }).notNull().default('0'),
   balance: numeric('balance', { precision: 10, scale: 2 }).notNull().default('0'),
+  creditLimit: numeric('credit_limit', { precision: 10, scale: 2 }).notNull().default('0'),
   address: text('address'),
   vatNumber: varchar('vat_number', { length: 256 }),
 });
@@ -879,5 +881,6 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
 }));
 
     
+
 
 
