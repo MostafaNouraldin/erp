@@ -32,7 +32,7 @@ const tenantSchema = z.object({
   isActive: z.boolean().default(true),
   subscriptionEndDate: z.date().optional(),
   subscribedModules: z.array(z.object({
-    moduleId: z.string(), // This will store the module.key
+    moduleId: z.string(),
     subscribed: z.boolean(),
   })).default([]),
   billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
