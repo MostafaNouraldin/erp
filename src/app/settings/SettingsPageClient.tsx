@@ -43,6 +43,9 @@ const permissionsList = [
     { key: "inventory.view", label: "عرض المخزون" }, { key: "inventory.create", label: "إنشاء في المخزون" }, { key: "inventory.edit", label: "تعديل في المخزون" }, { key: "inventory.delete", label: "حذف في المخزون" }, { key: "inventory.adjust_stock", label: "تسوية المخزون" },
     { key: "hr.view", label: "عرض الموارد البشرية" }, { key: "hr.create_employee", label: "إنشاء موظف" }, { key: "hr.edit_employee", label: "تعديل موظف" }, { key: "hr.run_payroll", label: "تشغيل مسير الرواتب" },
     { key: "settings.view", label: "عرض الإعدادات" }, { key: "settings.edit_general", label: "تعديل الإعدادات العامة" }, { key: "settings.manage_users", label: "إدارة المستخدمين" }, { key: "settings.manage_roles", label: "إدارة الأدوار" },
+    { key: "projects.view", label: "عرض المشاريع" }, { key: "projects.create", label: "إنشاء المشاريع" }, { key: "projects.edit", label: "تعديل المشاريع" }, { key: "projects.delete", label: "حذف المشاريع" },
+    { key: "production.view", label: "عرض الإنتاج" }, { key: "production.create", label: "إنشاء في الإنتاج" }, { key: "production.edit", label: "تعديل في الإنتاج" }, { key: "production.delete", label: "حذف في الإنتاج" },
+    { key: "pos.use", label: "استخدام نقاط البيع" }
 ];
 
 
@@ -257,7 +260,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                 </CardHeader>
             </Card>
 
-            <Tabs defaultValue="company" className="w-full mt-6">
+            <Tabs defaultValue="company" className="w-full mt-6" dir="rtl">
                 <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto">
                     <TabsTrigger value="company" className="flex-shrink-0"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
                     <TabsTrigger value="financial" className="flex-shrink-0"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
