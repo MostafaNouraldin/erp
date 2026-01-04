@@ -3,16 +3,37 @@ import React from 'react';
 import { connectToTenantDb } from '@/db';
 import { subscriptionRequests } from '@/db/schema';
 import { desc } from 'drizzle-orm';
-import SubscriptionRequestsPage from './page';
+import SubscriptionRequestsClient from './SubscriptionRequestsClient';
 
 async function getSubscriptionRequestsData() {
     const { db } = await connectToTenantDb();
     try {
-        const requests = await db.select().from(subscriptionRequests).orderBy(desc(subscriptionRequests.createdAt));
+        // Fetch requests without the large paymentProof field to improve performance
+        const requests = await db.select({
+            id: subscriptionRequests.id,
+            companyName: subscriptionRequests.companyName,
+            email: subscriptionRequests.email,
+            phone: subscriptionRequests.phone,
+            address: subscriptionRequests.address,
+            vatNumber: subscriptionRequests.vatNumber,
+            selectedModules: subscriptionRequests.selectedModules,
+            billingCycle: subscriptionRequests.billingCycle,
+            totalAmount: subscriptionRequests.totalAmount,
+            paymentMethod: subscriptionRequests.paymentMethod,
+            status: subscriptionRequests.status,
+            createdAt: subscriptionRequests.createdAt,
+        }).from(subscriptionRequests).orderBy(desc(subscriptionRequests.createdAt));
+        
+        // Fetch full data for a single request if needed, but not for the whole list.
+        const requestsWithLazyProof = requests.map(req => ({
+            ...req,
+            paymentProof: '', // Initially empty
+        }));
+        
         return {
             success: true,
             data: {
-                requests: requests.map(req => ({
+                requests: requestsWithLazyProof.map(req => ({
                     ...req,
                     createdAt: req.createdAt ? new Date(req.createdAt) : new Date(),
                 })),
@@ -40,5 +61,5 @@ export default async function SubscriptionRequestsServerPage() {
         );
     }
 
-    return <SubscriptionRequestsPage initialData={result.data} />;
+    return <SubscriptionRequestsClient initialData={result.data as any} />;
 }

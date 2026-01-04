@@ -3,7 +3,7 @@
 
 import { connectToTenantDb } from '@/db';
 import { subscriptionRequests } from '@/db/schema';
-import { revalidatePath } from 'next/cache';
+// import { revalidatePath } from 'next/cache'; // Removed to prevent blocking
 import { z } from 'zod';
 
 const subscriptionRequestSchema = z.object({
@@ -43,6 +43,10 @@ export async function submitSubscriptionRequest(values: SubscriptionRequestFormV
     status: 'pending',
   });
 
-  revalidatePath('/system-administration/subscription-requests');
+  // Revalidating the path here can be slow if the target page has heavy data fetching.
+  // The user expects an immediate response after form submission.
+  // The data will be fresh when the admin next visits the requests page anyway.
+  // revalidatePath('/system-administration/subscription-requests');
+
   return { success: true, message: "تم إرسال طلب الاشتراك بنجاح." };
 }
