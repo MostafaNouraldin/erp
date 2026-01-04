@@ -254,10 +254,7 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
-            <SheetHeader className="p-4 border-b border-sidebar-border">
-              <SheetTitle><AppLogo /></SheetTitle>
-            </SheetHeader>
-            <div className="flex h-full w-full flex-col">{children}</div>
+            {children}
           </SheetContent>
         </Sheet>
       )
@@ -406,13 +403,14 @@ SidebarInput.displayName = "SidebarInput"
 
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div">
->(({ className, ...props }, ref) => {
+  React.ComponentProps<"div"> & { asChild?: boolean; }
+>(({ className, asChild, ...props }, ref) => {
+  const Comp = asChild ? Slot : "div";
   return (
-    <div
+    <Comp
       ref={ref}
       data-sidebar="header"
-      className={cn("flex flex-col gap-2 p-2 border-b border-sidebar-border", className)}
+      className={cn("flex h-16 items-center gap-3 p-3 group-data-[collapsible=icon]:justify-center border-b border-sidebar-border", className)}
       {...props}
     />
   )

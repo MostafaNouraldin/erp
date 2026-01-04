@@ -104,7 +104,9 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
             <div className="flex min-h-screen w-full">
                 <Sidebar collapsible="icon" side="right" className="shadow-lg">
                     <SidebarHeader>
-                        <AppLogo companyName={companySettings?.name} logoUrl={companySettings?.logo} />
+                       <Link href="/" className="w-full">
+                            <AppLogo logoUrl={companySettings?.logo} />
+                        </Link>
                     </SidebarHeader>
                     <SidebarContent>
                         <SidebarMenu>
@@ -217,3 +219,4 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
         </SidebarProvider>
     );
 }
+
