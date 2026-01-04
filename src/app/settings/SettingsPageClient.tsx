@@ -130,7 +130,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
     const userForm = useForm<UserFormValues>({ resolver: zodResolver(userSchema), defaultValues: { name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""}, });
     const roleForm = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema), defaultValues: { name: "", description: "", permissions: []}, });
-    const settingsForm = useForm<SettingsFormValues>({ 
+    const settingsForm = useForm<SettingsFormValues>({
       resolver: zodResolver(settingsSchema),
       defaultValues: {
         companyName: initialData.settings.companyName || '',
@@ -139,10 +139,10 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         companyPhone: initialData.settings.companyPhone || '',
         companyVatNumber: initialData.settings.companyVatNumber || '',
         defaultCurrency: initialData.settings.defaultCurrency || 'SAR',
-        vatRate: initialData.settings.vatRate === null ? 0 : initialData.settings.vatRate || 15,
+        vatRate: initialData.settings.vatRate ?? 15,
         themePrimaryColor: initialData.settings.themePrimaryColor || '',
         smtpHost: initialData.settings.smtpHost || '',
-        smtpPort: initialData.settings.smtpPort === null ? undefined : initialData.settings.smtpPort || 587,
+        smtpPort: initialData.settings.smtpPort ?? 587,
         smtpUser: initialData.settings.smtpUser || '',
         smtpPass: initialData.settings.smtpPass || '',
         smtpSecure: initialData.settings.smtpSecure === undefined ? true : initialData.settings.smtpSecure,
@@ -278,7 +278,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
             </Card>
 
             <Tabs defaultValue="company" className="w-full mt-6" dir="rtl">
-                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto">
+                <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto justify-start">
                     <TabsTrigger value="company" className="flex-shrink-0"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
                     <TabsTrigger value="financial" className="flex-shrink-0"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
                     <TabsTrigger value="hr" className="flex-shrink-0"><Briefcase className="inline-block me-2 h-4 w-4" /> الموارد البشرية</TabsTrigger>
@@ -335,7 +335,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
                                             <div className="space-y-0.5">
                                               <FormLabel>استخدام اتصال آمن (TLS/SSL)</FormLabel>
-                                              <DialogDescriptionComponent className="text-xs">
+                                              <DialogDescriptionComponent className="text-xs text-muted-foreground">
                                                 موصى به. قم بتعطيله فقط إذا كان خادم SMTP لا يدعم الاتصال المشفر.
                                               </DialogDescriptionComponent>
                                             </div>
