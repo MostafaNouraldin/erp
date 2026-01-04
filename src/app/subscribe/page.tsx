@@ -17,11 +17,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import AppLogo from '@/components/app-logo';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, ShoppingBag, Upload, AlertTriangle, Building, Package, CreditCard } from 'lucide-react';
+import { ShieldCheck, ShoppingBag, Upload, AlertTriangle } from 'lucide-react';
 import type { Module } from '@/types/saas';
 import { submitSubscriptionRequest } from '../subscribe/actions';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { availableCurrencies } from '@/contexts/currency-context';
 import { getCompanySettingsForLayout } from '../actions';
 import { useCurrency } from '@/hooks/use-currency';
 
@@ -205,26 +206,26 @@ export default function SubscribePage() {
                                         <FormControl>
                                             <RadioGroup onValueChange={field.onChange} defaultValue={field.defaultValue} className="flex gap-4">
                                                 <FormItem className="flex-1"><FormControl><RadioGroupItem value="monthly" id="monthly" className="peer sr-only" /></FormControl><Label htmlFor="monthly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">شهري</Label></FormItem>
-                                                <FormItem className="flex-1"><FormControl><RadioGroupItem value="yearly" id="yearly" className="peer sr-only"/></FormControl><Label htmlFor="yearly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">سنوي <Badge variant="secondary" className="mt-1">خصم</Badge></Label></FormItem>
+                                                <FormItem className="flex-1"><FormControl><RadioGroupItem value="yearly" id="yearly" className="peer sr-only"/></FormControl><Label htmlFor="yearly" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">سنوي</Label></FormItem>
                                             </RadioGroup>
                                         </FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="selectedModules" render={() => (
                                         <FormItem><FormLabel>الوحدات المتاحة</FormLabel>
-                                            <div className="space-y-2 max-h-80 overflow-y-auto p-1">
+                                            <div className="grid grid-cols-2 gap-2">
                                                 {allAvailableModules.filter(m=>m.isRentable).map((module) => (
                                                     <FormField key={module.id} control={form.control} name="selectedModules" render={({ field }) => (
                                                         <FormItem key={module.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm bg-background hover:border-primary/50 transition-colors">
-                                                            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                                                            <div className="flex items-start space-x-3 rtl:space-x-reverse">
                                                                 <FormControl><Checkbox checked={field.value?.includes(module.key)} onCheckedChange={(checked) => { return checked ? field.onChange([...field.value, module.key]) : field.onChange(field.value?.filter((value) => value !== module.key)); }} /></FormControl>
                                                                 <div className="space-y-0.5">
                                                                     <FormLabel className="text-sm font-medium">{module.name}</FormLabel>
                                                                     <p className="text-xs text-muted-foreground">{module.description}</p>
+                                                                    <p className="text-xs font-semibold text-primary">
+                                                                      <span dangerouslySetInnerHTML={{ __html: formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly).amount }} />
+                                                                      <span className="font-saudi-riyal text-xs ms-1">{formatCurrency(0).symbol}</span>
+                                                                    </p>
                                                                 </div>
-                                                            </div>
-                                                            <div className="text-sm font-semibold text-primary text-left">
-                                                              <span dangerouslySetInnerHTML={{ __html: formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly).amount }} />
-                                                              <span className="font-saudi-riyal text-xs ms-1">{formatCurrency(0).symbol}</span>
                                                             </div>
                                                         </FormItem>
                                                     )} />
@@ -241,7 +242,7 @@ export default function SubscribePage() {
                              <section>
                                 <SectionTitle number={3} title="الدفع والملخص" />
                                 <div className="space-y-6">
-                                    <Card className="bg-primary/5 border-primary/20">
+                                    <Card className="bg-background border-primary/20">
                                         <CardHeader><CardTitle className="text-lg">ملخص الطلب</CardTitle></CardHeader>
                                         <CardContent>
                                             <div className="text-4xl font-bold text-primary text-center">
@@ -306,5 +307,3 @@ export default function SubscribePage() {
     </div>
   );
 }
-
-    
