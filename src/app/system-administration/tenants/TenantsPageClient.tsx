@@ -58,9 +58,15 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
 
   const form = useForm<TenantFormValues>({
     resolver: zodResolver(tenantSchema),
+    defaultValues: {
+      subscribedModules: allAvailableModules.map(mod => ({
+        moduleId: mod.key,
+        subscribed: false,
+      }))
+    }
   });
 
-  const { fields: subscribedModulesFields } = useFieldArray({
+  const { fields: subscribedModulesFields, replace } = useFieldArray({
     control: form.control,
     name: "subscribedModules",
   });
@@ -83,10 +89,11 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
           ...tenantToEdit,
           subscribedModules: initialFormModules,
         });
+        replace(initialFormModules);
       } else {
-        const initialFormModules = allAvailableModules.map(mod => ({
+         const initialFormModules = allAvailableModules.map(mod => ({
           moduleId: mod.key,
-          subscribed: false,
+          subscribed: !mod.isRentable, // Default non-rentable modules to subscribed
         }));
         form.reset({
           name: "", email: "", isActive: true, phone: "", address: "", vatNumber: "",
@@ -94,9 +101,10 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
           billingCycle: "yearly",
           subscriptionEndDate: undefined,
         });
+        replace(initialFormModules);
       }
     }
-  }, [tenantToEdit, showManageTenantDialog, tenantModuleSubscriptions, form, allAvailableModules]);
+  }, [tenantToEdit, showManageTenantDialog, tenantModuleSubscriptions, form, allAvailableModules, replace]);
 
 
   const handleTenantSubmit = async (values: TenantFormValues) => {
@@ -195,9 +203,8 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                         <CardContent className="space-y-2 p-4">
                             {subscribedModulesFields.map((formFieldItem, index) => {
                                 const moduleDetails = allAvailableModules.find(m => m.key === form.getValues(`subscribedModules.${index}.moduleId`));
-                                if (!moduleDetails || !moduleDetails.isRentable) {
-                                    return null;
-                                }
+                                if (!moduleDetails) return null;
+                                
                                 return (
                                     <FormField
                                         key={formFieldItem.id}
@@ -206,9 +213,12 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                                         render={({ field }) => (
                                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                                 <div className="space-y-0.5">
-                                                    <FormLabel htmlFor={`subscribedModules.${index}.subscribed`}>{moduleDetails.name}</FormLabel>
+                                                    <FormLabel htmlFor={`subscribedModules.${index}.subscribed`} className="cursor-pointer">{moduleDetails.name}</FormLabel>
                                                     <DialogDescriptionComponent className="text-xs">
-                                                        شهري: {moduleDetails.priceMonthly} SAR / سنوي: {moduleDetails.priceYearly} SAR
+                                                        {moduleDetails.isRentable 
+                                                            ? `شهري: ${moduleDetails.priceMonthly} SAR / سنوي: ${moduleDetails.priceYearly} SAR`
+                                                            : 'وحدة أساسية'
+                                                        }
                                                     </DialogDescriptionComponent>
                                                 </div>
                                                 <FormControl>
@@ -216,6 +226,7 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                                                         checked={field.value}
                                                         onCheckedChange={field.onChange}
                                                         id={`subscribedModules.${index}.subscribed`}
+                                                        disabled={!moduleDetails.isRentable}
                                                     />
                                                 </FormControl>
                                             </FormItem>
@@ -295,3 +306,5 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     </div>
   );
 }
+
+    
