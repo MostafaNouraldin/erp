@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -17,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { getCompanySettingsForLayout } from '../actions';
 
 const loginSchema = z.object({
   isSuperAdmin: z.boolean().default(false),
@@ -26,12 +28,14 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
+type CompanySettings = { companyName?: string, companyLogo?: string };
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
+  const [companySettings, setCompanySettings] = useState<CompanySettings>({});
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -39,6 +43,16 @@ export default function LoginPage() {
   });
 
   const isSuperAdminLogin = form.watch("isSuperAdmin");
+
+  useEffect(() => {
+    async function fetchSettings() {
+        const settings = await getCompanySettingsForLayout('T001'); // Using main tenant for public page
+        if(settings) {
+            setCompanySettings(settings);
+        }
+    }
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     if (isSuperAdminLogin) {
@@ -87,7 +101,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto">
-             <AppLogo />
+             <AppLogo logoUrl={companySettings.companyLogo} companyName={companySettings.companyName} />
           </div>
           <CardTitle className="text-2xl">تسجيل الدخول إلى النظام</CardTitle>
           <CardDescription>أدخل بيانات الاعتماد الخاصة بك للوصول إلى حسابك.</CardDescription>
