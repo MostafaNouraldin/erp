@@ -167,19 +167,19 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                         <TableHeader><TableRow><TableHead>الحسابات المدينة</TableHead><TableHead className="text-left">الرصيد</TableHead></TableRow></TableHeader>
                         <TableBody>
                             {trialBalanceData.debitAccounts.map(acc => (
-                                <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(acc.balance) }}></TableCell></TableRow>
+                                <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left">{formatCurrency(acc.balance).amount} {formatCurrency(acc.balance).symbol}</TableCell></TableRow>
                             ))}
                         </TableBody>
-                        <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي المدين</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(trialBalanceData.totalDebit) }}></TableCell></TableRow>
+                        <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي المدين</TableCell><TableCell className="text-left">{formatCurrency(trialBalanceData.totalDebit).amount} {formatCurrency(trialBalanceData.totalDebit).symbol}</TableCell></TableRow>
                     </Table>
                      <Table>
                         <TableHeader><TableRow><TableHead>الحسابات الدائنة</TableHead><TableHead className="text-left">الرصيد</TableHead></TableRow></TableHeader>
                         <TableBody>
                             {trialBalanceData.creditAccounts.map(acc => (
-                                <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(Math.abs(acc.balance)) }}></TableCell></TableRow>
+                                <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left">{formatCurrency(Math.abs(acc.balance)).amount} {formatCurrency(Math.abs(acc.balance)).symbol}</TableCell></TableRow>
                             ))}
                         </TableBody>
-                        <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الدائن</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(trialBalanceData.totalCredit) }}></TableCell></TableRow>
+                        <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الدائن</TableCell><TableCell className="text-left">{formatCurrency(trialBalanceData.totalCredit).amount} {formatCurrency(trialBalanceData.totalCredit).symbol}</TableCell></TableRow>
                     </Table>
                     {!trialBalanceData.isBalanced && <p className="text-destructive font-semibold col-span-2 text-center">تحذير: ميزان المراجعة غير متوازن!</p>}
                 </div>
@@ -191,24 +191,24 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                     <Table>
                         <TableBody>
                             {incomeStatementData.revenues.map(acc => (
-                                <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(Math.abs(acc.balance)) }}></TableCell></TableRow>
+                                <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left">{formatCurrency(Math.abs(acc.balance)).amount} {formatCurrency(Math.abs(acc.balance)).symbol}</TableCell></TableRow>
                             ))}
                         </TableBody>
-                        <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الإيرادات</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(incomeStatementData.totalRevenue) }}></TableCell></TableRow>
+                        <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الإيرادات</TableCell><TableCell className="text-left">{formatCurrency(incomeStatementData.totalRevenue).amount} {formatCurrency(incomeStatementData.totalRevenue).symbol}</TableCell></TableRow>
                     </Table>
                     <h3 className="font-bold text-xl mt-6 mb-2">المصروفات</h3>
                     <Table>
                         <TableBody>
                             {incomeStatementData.expenses.map(acc => (
-                                <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(acc.balance) }}></TableCell></TableRow>
+                                <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left">{formatCurrency(acc.balance).amount} {formatCurrency(acc.balance).symbol}</TableCell></TableRow>
                             ))}
                         </TableBody>
-                         <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي المصروفات</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(incomeStatementData.totalExpenses) }}></TableCell></TableRow>
+                         <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي المصروفات</TableCell><TableCell className="text-left">{formatCurrency(incomeStatementData.totalExpenses).amount} {formatCurrency(incomeStatementData.totalExpenses).symbol}</TableCell></TableRow>
                     </Table>
                     <CardFooter className="mt-6 p-4 bg-background border rounded-lg">
                         <div className="flex justify-between w-full text-lg font-bold">
                             <span>{incomeStatementData.netIncome >= 0 ? "صافي الربح" : "صافي الخسارة"}:</span>
-                            <span className={incomeStatementData.netIncome >= 0 ? "text-green-600" : "text-destructive"} dangerouslySetInnerHTML={{ __html: formatCurrency(incomeStatementData.netIncome) }}></span>
+                            <span className={incomeStatementData.netIncome >= 0 ? "text-green-600" : "text-destructive"}>{formatCurrency(incomeStatementData.netIncome).amount} {formatCurrency(incomeStatementData.netIncome).symbol}</span>
                         </div>
                     </CardFooter>
                 </div>
@@ -221,10 +221,10 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                         <Table>
                             <TableBody>
                                 {balanceSheetData.assets.map(acc => (
-                                    <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(acc.balance) }}></TableCell></TableRow>
+                                    <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left">{formatCurrency(acc.balance).amount} {formatCurrency(acc.balance).symbol}</TableCell></TableRow>
                                 ))}
                             </TableBody>
-                            <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الأصول</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalAssets) }}></TableCell></TableRow>
+                            <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الأصول</TableCell><TableCell className="text-left">{formatCurrency(balanceSheetData.totalAssets).amount} {formatCurrency(balanceSheetData.totalAssets).symbol}</TableCell></TableRow>
                         </Table>
                     </div>
                     <div>
@@ -232,16 +232,16 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                         <Table>
                             <TableBody>
                                 {balanceSheetData.liabilities.map(acc => (
-                                    <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(Math.abs(acc.balance)) }}></TableCell></TableRow>
+                                    <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left">{formatCurrency(Math.abs(acc.balance)).amount} {formatCurrency(Math.abs(acc.balance)).symbol}</TableCell></TableRow>
                                 ))}
-                                 <TableRow className="font-semibold bg-muted/30"><TableCell>إجمالي الخصوم</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalLiabilities) }}></TableCell></TableRow>
+                                 <TableRow className="font-semibold bg-muted/30"><TableCell>إجمالي الخصوم</TableCell><TableCell className="text-left">{formatCurrency(balanceSheetData.totalLiabilities).amount} {formatCurrency(balanceSheetData.totalLiabilities).symbol}</TableCell></TableRow>
                                 {balanceSheetData.equity.map(acc => (
-                                    <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(Math.abs(acc.balance)) }}></TableCell></TableRow>
+                                    <TableRow key={acc.id}><TableCell>{acc.name}</TableCell><TableCell className="text-left">{formatCurrency(Math.abs(acc.balance)).amount} {formatCurrency(Math.abs(acc.balance)).symbol}</TableCell></TableRow>
                                 ))}
-                                <TableRow className="bg-muted/30"><TableCell>أرباح (خسائر) الفترة</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.netIncome) }}></TableCell></TableRow>
-                                <TableRow className="font-semibold bg-muted/30"><TableCell>إجمالي حقوق الملكية</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalEquity) }}></TableCell></TableRow>
+                                <TableRow className="bg-muted/30"><TableCell>أرباح (خسائر) الفترة</TableCell><TableCell className="text-left">{formatCurrency(balanceSheetData.netIncome).amount} {formatCurrency(balanceSheetData.netIncome).symbol}</TableCell></TableRow>
+                                <TableRow className="font-semibold bg-muted/30"><TableCell>إجمالي حقوق الملكية</TableCell><TableCell className="text-left">{formatCurrency(balanceSheetData.totalEquity).amount} {formatCurrency(balanceSheetData.totalEquity).symbol}</TableCell></TableRow>
                             </TableBody>
-                            <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الخصوم وحقوق الملكية</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(balanceSheetData.totalLiabilitiesAndEquity) }}></TableCell></TableRow>
+                            <TableRow className="font-bold bg-muted/50"><TableCell>إجمالي الخصوم وحقوق الملكية</TableCell><TableCell className="text-left">{formatCurrency(balanceSheetData.totalLiabilitiesAndEquity).amount} {formatCurrency(balanceSheetData.totalLiabilitiesAndEquity).symbol}</TableCell></TableRow>
                         </Table>
                     </div>
                 </div>
@@ -252,10 +252,10 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                     <h3 className="font-bold text-xl mb-2">التدفقات النقدية من الأنشطة التشغيلية</h3>
                     <Table>
                         <TableBody>
-                            <TableRow><TableCell>المقبوضات من العملاء (الإيرادات)</TableCell><TableCell className="text-left text-green-600" dangerouslySetInnerHTML={{ __html: formatCurrency(cashFlowData.operatingInflow) }}></TableCell></TableRow>
-                             <TableRow><TableCell>المدفوعات للموردين والمصروفات</TableCell><TableCell className="text-left text-destructive" dangerouslySetInnerHTML={{ __html: formatCurrency(cashFlowData.operatingOutflow) }}></TableCell></TableRow>
+                            <TableRow><TableCell>المقبوضات من العملاء (الإيرادات)</TableCell><TableCell className="text-left text-green-600">{formatCurrency(cashFlowData.operatingInflow).amount} {formatCurrency(cashFlowData.operatingInflow).symbol}</TableCell></TableRow>
+                             <TableRow><TableCell>المدفوعات للموردين والمصروفات</TableCell><TableCell className="text-left text-destructive">{formatCurrency(cashFlowData.operatingOutflow).amount} {formatCurrency(cashFlowData.operatingOutflow).symbol}</TableCell></TableRow>
                         </TableBody>
-                        <TableRow className="font-bold bg-muted/50"><TableCell>صافي التدفق النقدي من الأنشطة التشغيلية</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(cashFlowData.netCashFlow) }}></TableCell></TableRow>
+                        <TableRow className="font-bold bg-muted/50"><TableCell>صافي التدفق النقدي من الأنشطة التشغيلية</TableCell><TableCell className="text-left">{formatCurrency(cashFlowData.netCashFlow).amount} {formatCurrency(cashFlowData.netCashFlow).symbol}</TableCell></TableRow>
                     </Table>
                     <p className="text-muted-foreground text-xs mt-2">ملاحظة: هذا عرض مبسط. قائمة التدفقات النقدية الكاملة تتضمن أنشطة استثمارية وتمويلية.</p>
                 </div>
@@ -266,7 +266,7 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                     <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead>الكمية المباعة</TableHead><TableHead className="text-left">إجمالي المبيعات</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {initialData.salesByProduct.map(p => (
-                             <TableRow key={p.name}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(p.total) }}></TableCell></TableRow>
+                             <TableRow key={p.name}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell className="text-left">{formatCurrency(p.total).amount} {formatCurrency(p.total).symbol}</TableCell></TableRow>
                         ))}
                     </TableBody>
                 </Table>
@@ -277,7 +277,7 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                     <TableHeader><TableRow><TableHead>العميل</TableHead><TableHead className="text-left">إجمالي المبيعات</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {initialData.salesByCustomer.map(c => (
-                            <TableRow key={c.name}><TableCell>{c.name}</TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(c.total) }}></TableCell></TableRow>
+                            <TableRow key={c.name}><TableCell>{c.name}</TableCell><TableCell className="text-left">{formatCurrency(c.total).amount} {formatCurrency(c.total).symbol}</TableCell></TableRow>
                         ))}
                     </TableBody>
                 </Table>
@@ -288,7 +288,7 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                     <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead>الكمية</TableHead><TableHead>تكلفة الوحدة</TableHead><TableHead className="text-left">القيمة الإجمالية</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {initialData.inventoryValuation.map(p => (
-                             <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.costPrice) }}></TableCell><TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(p.totalValue) }}></TableCell></TableRow>
+                             <TableRow key={p.id}><TableCell>{p.name}</TableCell><TableCell>{p.quantity}</TableCell><TableCell>{formatCurrency(p.costPrice).amount} {formatCurrency(p.costPrice).symbol}</TableCell><TableCell className="text-left">{formatCurrency(p.totalValue).amount} {formatCurrency(p.totalValue).symbol}</TableCell></TableRow>
                         ))}
                     </TableBody>
                 </Table>
@@ -299,7 +299,7 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                     <TableHeader><TableRow><TableHead>الشهر</TableHead><TableHead>معرف الموظف</TableHead><TableHead>صافي الراتب</TableHead><TableHead>الحالة</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {initialData.payrolls.map(p => (
-                             <TableRow key={p.id}><TableCell>{p.monthYear}</TableCell><TableCell>{p.employeeId}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(p.netSalary) }}></TableCell><TableCell>{p.status}</TableCell></TableRow>
+                             <TableRow key={p.id}><TableCell>{p.monthYear}</TableCell><TableCell>{p.employeeId}</TableCell><TableCell>{formatCurrency(p.netSalary).amount} {formatCurrency(p.netSalary).symbol}</TableCell><TableCell>{p.status}</TableCell></TableRow>
                         ))}
                     </TableBody>
                 </Table>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -305,8 +304,8 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                 </ScrollArea>
                 <Button type="button" variant="outline" onClick={() => appendJournalLine({ accountId: "", debit: 0, credit: 0, description: "" })} className="text-xs py-1 px-2 h-auto"><PlusCircle className="me-1 h-3 w-3" /> إضافة سطر جديد</Button>
                 <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t">
-                    <div className="font-semibold">إجمالي المدين: <span dangerouslySetInnerHTML={{ __html: formatCurrency(totalDebit) }}></span></div>
-                    <div className="font-semibold">إجمالي الدائن: <span dangerouslySetInnerHTML={{ __html: formatCurrency(totalCredit) }}></span></div>
+                    <div className="font-semibold">إجمالي المدين: <span dangerouslySetInnerHTML={{ __html: formatCurrency(totalDebit).amount + ' ' + formatCurrency(totalDebit).symbol }}></span></div>
+                    <div className="font-semibold">إجمالي الدائن: <span dangerouslySetInnerHTML={{ __html: formatCurrency(totalCredit).amount + ' ' + formatCurrency(totalCredit).symbol }}></span></div>
                 </div>
                 {journalEntryForm.formState.errors.lines && <FormMessage>{journalEntryForm.formState.errors.lines.message || journalEntryForm.formState.errors.lines.root?.message}</FormMessage>}
                 <DialogFooter>
@@ -385,7 +384,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                   <TableBody>{chartOfAccounts.map((account) => (<TableRow key={account.id} className="hover:bg-muted/50">
                         <TableCell>{account.id}</TableCell><TableCell className="font-medium">{account.name}</TableCell>
                         <TableCell><Badge variant={account.type === "رئيسي" ? "default" : account.type === "فرعي" ? "secondary" : "outline"}>{account.type}</Badge></TableCell>
-                        <TableCell>{chartOfAccounts.find(a => a.id === account.parentId)?.name || "-"}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(account.balance) }}></TableCell>
+                        <TableCell>{chartOfAccounts.find(a => a.id === account.parentId)?.name || "-"}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(account.balance).amount + ' ' + formatCurrency(account.balance).symbol }}></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض كشف الحساب" onClick={() => handleViewAccountStatement(account)}><Eye className="h-4 w-4" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => { setAccountToEdit(account); setShowAddAccountDialog(true); }}><Edit className="h-4 w-4" /></Button>
@@ -419,7 +418,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                 <Table>
                   <TableHeader><TableRow><TableHead>رقم القيد</TableHead><TableHead>التاريخ</TableHead><TableHead>الوصف</TableHead><TableHead>المبلغ</TableHead><TableHead>المصدر</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
                   <TableBody>{journalEntries.map((entry) => (<TableRow key={entry.id} className="hover:bg-muted/50">
-                        <TableCell>{entry.id}</TableCell><TableCell>{new Date(entry.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell>{entry.description}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.totalAmount || 0) }}></TableCell>
+                        <TableCell>{entry.id}</TableCell><TableCell>{new Date(entry.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell><TableCell>{entry.description}</TableCell><TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.totalAmount || 0).amount + ' ' + formatCurrency(entry.totalAmount || 0).symbol }}></TableCell>
                         <TableCell><Badge variant="outline" className="text-xs">{translateSourceModule(entry.sourceModule)}</Badge></TableCell>
                         <TableCell><Badge variant={entry.status === "مرحل" ? "default" : "outline"}>{entry.status}</Badge></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
@@ -467,7 +466,7 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
           {selectedJournalEntry && (<div className="py-4 space-y-3">
               <div><strong>التاريخ:</strong> {new Date(selectedJournalEntry.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</div>
               <div><strong>الوصف العام:</strong> {selectedJournalEntry.description}</div>
-              <div><strong>المبلغ الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedJournalEntry.totalAmount || 0) }}></span></div>
+              <div><strong>المبلغ الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedJournalEntry.totalAmount || 0).amount + ' ' + formatCurrency(selectedJournalEntry.totalAmount || 0).symbol }}></span></div>
               <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={selectedJournalEntry.status === "مرحل" ? "default" : "outline"}>{selectedJournalEntry.status}</Badge></div>
               <div><strong>المصدر:</strong> <Badge variant="outline" className="text-xs">{translateSourceModule(selectedJournalEntry.sourceModule)} {selectedJournalEntry.sourceDocumentId ? `(${selectedJournalEntry.sourceDocumentId})` : ''}</Badge></div>
 
@@ -476,8 +475,8 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                   <TableHeader><TableRow><TableHead>الحساب</TableHead><TableHead>مدين</TableHead><TableHead>دائن</TableHead><TableHead>الوصف</TableHead></TableRow></TableHeader>
                   <TableBody>{selectedJournalEntry.lines.map((line, idx) => (<TableRow key={idx}>
                         <TableCell>{chartOfAccounts.find(acc => acc.id === line.accountId)?.name || line.accountId}</TableCell>
-                        <TableCell><span dangerouslySetInnerHTML={{ __html: line.debit > 0 ? formatCurrency(line.debit) : '-' }}></span></TableCell>
-                        <TableCell><span dangerouslySetInnerHTML={{ __html: line.credit > 0 ? formatCurrency(line.credit) : '-' }}></span></TableCell>
+                        <TableCell><span dangerouslySetInnerHTML={{ __html: line.debit > 0 ? formatCurrency(line.debit).amount + ' ' + formatCurrency(line.debit).symbol : '-' }}></span></TableCell>
+                        <TableCell><span dangerouslySetInnerHTML={{ __html: line.credit > 0 ? formatCurrency(line.credit).amount + ' ' + formatCurrency(line.credit).symbol : '-' }}></span></TableCell>
                         <TableCell>{line.description || '-'}</TableCell></TableRow>))}
                   </TableBody></Table>) : <p className="text-muted-foreground">لا توجد تفاصيل حركات لهذا القيد.</p>}</div>)}
           <DialogFooter><DialogClose asChild><Button type="button">إغلاق</Button></DialogClose></DialogFooter>
@@ -508,9 +507,9 @@ export default function GeneralLedgerClientComponent({ initialData }: { initialD
                     <TableRow key={idx}>
                       <TableCell>{new Date(entry.date).toLocaleDateString('ar-SA', { calendar: 'gregory' })}</TableCell>
                       <TableCell>{entry.description}</TableCell>
-                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.debit) }}></TableCell>
-                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.credit) }}></TableCell>
-                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.balance) }}></TableCell>
+                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.debit).amount + ' ' + formatCurrency(entry.debit).symbol }}></TableCell>
+                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.credit).amount + ' ' + formatCurrency(entry.credit).symbol }}></TableCell>
+                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(entry.balance).amount + ' ' + formatCurrency(entry.balance).symbol }}></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

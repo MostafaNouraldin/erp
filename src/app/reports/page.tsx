@@ -84,3 +84,4 @@ export default async function ReportsPage() {
   
     return <ReportsClient initialData={result.data as any} />;
 }
+

@@ -18,7 +18,7 @@ export const availableCurrencies: Currency[] = [
   { code: "EGP", name: "جنيه مصري", symbol: "E£" },
 ];
 
-interface FormattedCurrency {
+export interface FormattedCurrency {
   amount: string;
   symbol: string;
 }
