@@ -27,8 +27,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
-import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, LeaveRequestFormValues, WarningNoticeFormValues, AdministrativeDecisionFormValues, ResignationFormValues, DisciplinaryWarningFormValues, Department, JobTitle, LeaveType, AllowanceType, DeductionType } from './actions';
-import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, updatePayrollStatus, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning, postPayrollToGL } from './actions';
+import type { EmployeeFormValues, PayrollFormValues, AttendanceFormValues, LeaveRequestFormValues, WarningNoticeFormValues, AdministrativeDecisionFormValues, ResignationFormValues, DisciplinaryWarningFormValues, OvertimeFormValues, Department, JobTitle, LeaveType, AllowanceType, DeductionType } from './actions';
+import { addEmployee, updateEmployee, deleteEmployee, addPayroll, updatePayroll, updatePayrollStatus, addAttendance, updateAttendance, addLeaveRequest, updateLeaveRequestStatus, addWarningNotice, updateWarningNotice, deleteWarningNotice, addAdministrativeDecision, updateAdministrativeDecision, deleteAdministrativeDecision, addResignation, updateResignation, deleteResignation, addDisciplinaryWarning, updateDisciplinaryWarning, deleteDisciplinaryWarning, postPayrollToGL, addOvertime, updateOvertime, deleteOvertime, approveOvertime, rejectOvertime } from './actions';
 import placeholderImages from '@/app/lib/placeholder-images.json';
 
 
@@ -181,6 +181,18 @@ const disciplinaryWarningSchema = z.object({
     status: z.enum(["مسودة", "تم التسليم", "معترض عليه", "منفذ"]).default("مسودة"),
 });
 
+const overtimeSchema = z.object({
+  id: z.number().optional(),
+  employeeId: z.string().min(1, "الموظف مطلوب"),
+  date: z.date({ required_error: "التاريخ مطلوب" }),
+  hours: z.coerce.number().min(0.1, "يجب أن تكون الساعات أكبر من صفر"),
+  rate: z.coerce.number().default(1.5),
+  amount: z.coerce.number().optional(),
+  notes: z.string().optional(),
+  status: z.enum(["pending", "approved", "rejected", "paid"]).default("pending"),
+});
+
+
 const mockEmploymentTypes = ["دوام كامل", "دوام جزئي", "عقد محدد", "مستقل"];
 const mockManagers = [{id: "EMP001", name: "أحمد محمود"}];
 const mockDecisionTypes = ["ترقية", "نقل", "تعديل راتب", "إنهاء خدمات", "أخرى"];
@@ -210,6 +222,7 @@ interface HRClientComponentProps {
         administrativeDecisions: AdministrativeDecisionFormValues[];
         resignations: ResignationFormValues[];
         disciplinaryWarnings: DisciplinaryWarningFormValues[];
+        overtime: OvertimeFormValues[];
         departments: Department[];
         jobTitles: JobTitle[];
         leaveTypes: LeaveType[];
@@ -240,6 +253,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   const [administrativeDecisionsData, setAdministrativeDecisionsData] = useState(initialData.administrativeDecisions);
   const [resignationsData, setResignationsData] = useState(initialData.resignations);
   const [disciplinaryWarningsData, setDisciplinaryWarningsData] = useState(initialData.disciplinaryWarnings);
+  const [overtimeData, setOvertimeData] = useState(initialData.overtime);
   const [departments, setDepartments] = useState(initialData.departments);
   const [jobTitles, setJobTitles] = useState(initialData.jobTitles);
   const [leaveTypes, setLeaveTypes] = useState(initialData.leaveTypes);
@@ -291,6 +305,10 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
   const [disciplinaryToEdit, setDisciplinaryToEdit] = useState<DisciplinaryWarningFormValues | null>(null);
   const [showPrintDisciplinaryDialog, setShowPrintDisciplinaryDialog] = useState(false);
   const [selectedDisciplinaryForPrint, setSelectedDisciplinaryForPrint] = useState<DisciplinaryWarningFormValues | null>(null);
+  
+  const [showManageOvertimeDialog, setShowManageOvertimeDialog] = useState(false);
+  const [overtimeToEdit, setOvertimeToEdit] = useState<OvertimeFormValues | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { toast } = useToast();
@@ -312,7 +330,8 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
 
   const attendanceForm = useForm<AttendanceFormValues>({ resolver: zodResolver(attendanceSchema) });
   const leaveRequestForm = useForm<LeaveRequestFormValues>({ resolver: zodResolver(leaveRequestSchema) });
-  
+  const overtimeForm = useForm<OvertimeFormValues>({ resolver: zodResolver(overtimeSchema) });
+
   useEffect(() => {
     setEmployeesData(initialData.employees);
     setPayrollData(initialData.payrolls);
@@ -322,6 +341,7 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     setAdministrativeDecisionsData(initialData.administrativeDecisions);
     setResignationsData(initialData.resignations);
     setDisciplinaryWarningsData(initialData.disciplinaryWarnings);
+    setOvertimeData(initialData.overtime);
     setDepartments(initialData.departments);
     setJobTitles(initialData.jobTitles);
     setLeaveTypes(initialData.leaveTypes);
@@ -400,6 +420,11 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     if (disciplinaryToEdit) disciplinaryWarningForm.reset({...disciplinaryToEdit, warningDate: new Date(disciplinaryToEdit.warningDate)});
     else disciplinaryWarningForm.reset({ employeeId: '', warningDate: new Date(), warningType: undefined, violationDetails: '', actionTaken: '', issuingManager: '', status: "مسودة" });
   }, [disciplinaryToEdit, disciplinaryWarningForm, showManageDisciplinaryDialog]);
+  
+  useEffect(() => {
+    if (overtimeToEdit) overtimeForm.reset({...overtimeToEdit, date: new Date(overtimeToEdit.date)});
+    else overtimeForm.reset({ employeeId: '', date: new Date(), hours: 0, notes: '', status: "pending" });
+  }, [overtimeToEdit, overtimeForm, showManageOvertimeDialog]);
 
 
   const handleEmployeeSubmit = async (values: EmployeeFormValues) => {
@@ -687,6 +712,48 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
     try {
         await postPayrollToGL(payrollId);
         toast({ title: "تم الترحيل", description: "تم ترحيل مسير الرواتب إلى الحسابات العامة." });
+    } catch (e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    }
+  };
+  
+  const handleOvertimeSubmit = async (values: OvertimeFormValues) => {
+    setIsSubmitting(true);
+    try {
+        const action = overtimeToEdit ? updateOvertime : addOvertime;
+        await action({ ...values, id: overtimeToEdit?.id });
+        toast({ title: overtimeToEdit ? "تم التعديل" : "تم التسجيل", description: "تم حفظ سجل العمل الإضافي." });
+        setShowManageOvertimeDialog(false);
+        setOvertimeToEdit(null);
+    } catch (e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleApproveOvertime = async (id: number) => {
+    try {
+        await approveOvertime(id);
+        toast({ title: "تمت الموافقة", description: "تمت الموافقة على العمل الإضافي واحتساب المبلغ." });
+    } catch (e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleRejectOvertime = async (id: number) => {
+    try {
+        await rejectOvertime(id);
+        toast({ title: "تم الرفض", description: "تم رفض طلب العمل الإضافي.", variant: "destructive" });
+    } catch (e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    }
+  };
+  
+  const handleDeleteOvertime = async (id: number) => {
+    try {
+        await deleteOvertime(id);
+        toast({ title: "تم الحذف", description: "تم حذف سجل العمل الإضافي.", variant: "destructive" });
     } catch (e: any) {
         toast({ title: "خطأ", description: e.message, variant: "destructive" });
     }
@@ -1105,11 +1172,47 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
         <TabsContent value="forms">
             <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full" dir="rtl">
                  <TabsList className="w-full mb-6 bg-muted p-1 rounded-md">
+                    <TabsTrigger value="overtime" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Clock className="inline-block me-2 h-4 w-4" /> العمل الإضافي</TabsTrigger>
                     <TabsTrigger value="warningNotice" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileWarning className="inline-block me-2 h-4 w-4" /> لفت النظر</TabsTrigger>
                     <TabsTrigger value="adminDecision" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><FileEdit className="inline-block me-2 h-4 w-4" /> القرارات الإدارية</TabsTrigger>
                     <TabsTrigger value="resignation" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><UserX className="inline-block me-2 h-4 w-4" /> الاستقالات</TabsTrigger>
                     <TabsTrigger value="disciplinaryWarning" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"><ClipboardSignature className="inline-block me-2 h-4 w-4" /> الإنذارات التأديبية</TabsTrigger>
                 </TabsList>
+                 <TabsContent value="overtime">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex justify-between items-center"><CardTitle>إدارة العمل الإضافي</CardTitle>
+                            <Button variant="outline" size="sm" onClick={() => { setOvertimeToEdit(null); overtimeForm.reset(); setShowManageOvertimeDialog(true); }}><PlusCircle className="me-2 h-4 w-4" /> تسجيل جديد</Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <Table><TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>الموظف</TableHead><TableHead>الساعات</TableHead><TableHead>المبلغ المستحق</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {overtimeData.map(ot => (
+                                        <TableRow key={ot.id}>
+                                            <TableCell>{new Date(ot.date).toLocaleDateString('ar-SA')}</TableCell>
+                                            <TableCell>{employees.find(e => e.id === ot.employeeId)?.name}</TableCell>
+                                            <TableCell>{ot.hours}</TableCell>
+                                            <TableCell>{ot.amount ? formatCurrency(ot.amount).amount : '-'}</TableCell>
+                                            <TableCell><Badge variant={ot.status === "approved" ? "default" : ot.status === 'rejected' ? 'destructive' : "outline"}>{ot.status}</Badge></TableCell>
+                                            <TableCell className="text-center">
+                                                {ot.status === 'pending' && <>
+                                                     <Button variant="ghost" size="icon" className="text-green-600" onClick={() => handleApproveOvertime(ot.id!)}><CheckCircle className="h-4 w-4"/></Button>
+                                                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleRejectOvertime(ot.id!)}><XCircle className="h-4 w-4"/></Button>
+                                                     <Button variant="ghost" size="icon" onClick={() => { setOvertimeToEdit(ot); setShowManageOvertimeDialog(true); }}><Edit className="h-4 w-4"/></Button>
+                                                     <AlertDialog>
+                                                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                                                        <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف سجل العمل الإضافي؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteOvertime(ot.id!)}>حذف</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                                                    </AlertDialog>
+                                                </>}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
                  <TabsContent value="warningNotice">
                     <Card>
                         <CardHeader>
@@ -1253,6 +1356,23 @@ export default function HRClientComponent({ initialData }: HRClientComponentProp
              <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إغلاق</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Overtime Dialog */}
+      <Dialog open={showManageOvertimeDialog} onOpenChange={(isOpen) => {setShowManageOvertimeDialog(isOpen); if(!isOpen) setOvertimeToEdit(null);}}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+            <DialogHeader><DialogTitle>{overtimeToEdit ? "تعديل سجل عمل إضافي" : "تسجيل عمل إضافي جديد"}</DialogTitle></DialogHeader>
+            <Form {...overtimeForm}>
+                <form onSubmit={overtimeForm.handleSubmit(handleOvertimeSubmit)} className="space-y-4 py-4">
+                    <FormField control={overtimeForm.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>الموظف</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر الموظف" /></SelectTrigger></FormControl><SelectContent>{employees.map(e => <SelectItem key={e.id} value={e.id!}>{e.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={overtimeForm.control} name="date" render={({ field }) => (<FormItem><FormLabel>التاريخ</FormLabel><DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange} /><FormMessage /></FormItem>)} />
+                    <FormField control={overtimeForm.control} name="hours" render={({ field }) => (<FormItem><FormLabel>عدد الساعات</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={overtimeForm.control} name="notes" render={({ field }) => (<FormItem><FormLabel>ملاحظات</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'جار الحفظ...' : 'حفظ'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                </form>
+            </Form>
+        </DialogContent>
+      </Dialog>
+
 
         {/* Print Dialogs */}
         <Dialog open={showPrintWarningNoticeDialog} onOpenChange={setShowPrintWarningNoticeDialog}>

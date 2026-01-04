@@ -415,6 +415,23 @@ export async function addOvertime(values: OvertimeFormValues) {
     revalidatePath('/hr-payroll');
 }
 
+export async function updateOvertime(values: OvertimeFormValues) {
+    const db = await getDb();
+    if (!values.id) throw new Error("ID is required for update.");
+    await db.update(overtime).set({ ...values, rate: String(values.rate), hours: String(values.hours) }).where(eq(overtime.id, values.id));
+    revalidatePath('/hr-payroll');
+}
+
+export async function deleteOvertime(id: number) {
+    const db = await getDb();
+    const ot = await db.query.overtime.findFirst({ where: eq(overtime.id, id) });
+    if (ot && ot.status !== 'pending') {
+        throw new Error('لا يمكن حذف سجل عمل إضافي تمت معالجته.');
+    }
+    await db.delete(overtime).where(eq(overtime.id, id));
+    revalidatePath('/hr-payroll');
+}
+
 export async function approveOvertime(id: number) {
     const db = await getDb();
     const otRecord = await db.query.overtime.findFirst({ where: eq(overtime.id, id) });
