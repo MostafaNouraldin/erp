@@ -75,24 +75,29 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
 
     const navItems = allNavItems
       .map(item => {
-        if (!auth.hasPermission(item.permissionKey)) {
+        // CRITICAL SECURITY FIX: Explicitly hide System Administration for non-super admins.
+        if (item.module === "SystemAdministration" && !auth.isSuperAdmin) {
+            return null;
+        }
+
+        if (!auth.hasPermission(item.permissionKey as string)) {
           return null;
         }
 
         if (item.subItems) {
             const visibleSubItems = item.subItems.filter(sub => {
-                const hasSubSubPermission = sub.subItems ? sub.subItems.some(grandchild => auth.hasPermission(grandchild.permissionKey)) : false;
+                const hasSubSubPermission = sub.subItems ? sub.subItems.some(grandchild => auth.hasPermission(grandchild.permissionKey as string)) : false;
                 if (sub.subItems && !hasSubSubPermission) return false;
 
                 if (auth.isSuperAdmin && sub.href === '/subscription') {
                     return false;
                 }
-                return auth.hasPermission(sub.permissionKey);
+                return auth.hasPermission(sub.permissionKey as string);
             }).map(sub => {
                 if (sub.subItems) {
                     return {
                         ...sub,
-                        subItems: sub.subItems.filter(grandchild => auth.hasPermission(grandchild.permissionKey))
+                        subItems: sub.subItems.filter(grandchild => auth.hasPermission(grandchild.permissionKey as string))
                     }
                 }
                 return sub;
