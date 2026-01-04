@@ -130,7 +130,24 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
     const userForm = useForm<UserFormValues>({ resolver: zodResolver(userSchema), defaultValues: { name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""}, });
     const roleForm = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema), defaultValues: { name: "", description: "", permissions: []}, });
-    const settingsForm = useForm<SettingsFormValues>({ resolver: zodResolver(settingsSchema), defaultValues: initialData.settings, });
+    const settingsForm = useForm<SettingsFormValues>({ 
+      resolver: zodResolver(settingsSchema),
+      defaultValues: {
+        companyName: initialData.settings.companyName || '',
+        companyAddress: initialData.settings.companyAddress || '',
+        companyEmail: initialData.settings.companyEmail || '',
+        companyPhone: initialData.settings.companyPhone || '',
+        companyVatNumber: initialData.settings.companyVatNumber || '',
+        defaultCurrency: initialData.settings.defaultCurrency || 'SAR',
+        vatRate: initialData.settings.vatRate || 15,
+        themePrimaryColor: initialData.settings.themePrimaryColor || '',
+        smtpHost: initialData.settings.smtpHost || '',
+        smtpPort: initialData.settings.smtpPort || 587,
+        smtpUser: initialData.settings.smtpUser || '',
+        smtpPass: initialData.settings.smtpPass || '',
+        smtpSecure: initialData.settings.smtpSecure === undefined ? true : initialData.settings.smtpSecure,
+      },
+    });
     const departmentForm = useForm<Department>({ resolver: zodResolver(departmentSchema), defaultValues: { name: "" } });
     const jobTitleForm = useForm<JobTitle>({ resolver: zodResolver(jobTitleSchema), defaultValues: { name: "" } });
     const leaveTypeForm = useForm<LeaveType>({ resolver: zodResolver(leaveTypeSchema), defaultValues: { name: "" } });
