@@ -52,7 +52,9 @@ export default function HelpPage() {
                             {item.title}
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="text-base text-right prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: item.content }} />
+                    <AccordionContent>
+                      <div className="text-base text-right prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: item.content }} />
+                    </AccordionContent>
                   </AccordionItem>
                 )
             })}
