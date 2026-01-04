@@ -12,9 +12,9 @@ import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Bui
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger, DialogDescription as DialogDescriptionComponent } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -340,9 +340,9 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
                                             <div className="space-y-0.5">
                                               <FormLabel>استخدام اتصال آمن (TLS/SSL)</FormLabel>
-                                              <DialogDescriptionComponent className="text-xs text-muted-foreground">
+                                              <FormDescription className="text-xs text-muted-foreground">
                                                 موصى به. قم بتعطيله فقط إذا كان خادم SMTP لا يدعم الاتصال المشفر.
-                                              </DialogDescriptionComponent>
+                                              </FormDescription>
                                             </div>
                                             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                           </FormItem>
@@ -457,7 +457,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                                 <FormControl><Input type="color" {...field} className="bg-background p-1 h-10 w-14" /></FormControl>
                                                 <Input value={field.value || ''} onChange={field.onChange} placeholder="e.g., 221 83 53" className="bg-background text-left" dir="ltr"/>
                                             </div>
-                                            <DialogDescriptionComponent className="text-xs text-muted-foreground">أدخل قيم HSL (Hue Saturation Lightness) بدون رموز. مثال: 221 83 53</DialogDescriptionComponent>
+                                            <FormDescription className="text-xs text-muted-foreground">أدخل قيم HSL (Hue Saturation Lightness) بدون رموز. مثال: 221 83 53</FormDescription>
                                         <FormMessage/></FormItem> )} />
                                 </CardContent>
                             </Card>
@@ -572,7 +572,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive" disabled={role.name === 'مدير النظام'}><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                                     <AlertDialogContent dir="rtl">
-                                                        <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف دور "{role.name}"؟</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescriptionComponent>هل أنت متأكد من حذف دور "{role.name}"؟</AlertDialogDescriptionComponent></AlertDialogHeader>
                                                         <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteRole(role.id)}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
@@ -589,4 +589,6 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         </div>
     );
 }
+    
+
     
