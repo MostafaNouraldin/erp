@@ -3,7 +3,7 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, journalEntries, journalEntryLines, overtime, allowanceTypes, deductionTypes } from '@/db/schema';
+import { employees, employeeAllowances, employeeDeductions, payrolls, attendanceRecords, leaveRequests, warningNotices, administrativeDecisions, resignations, disciplinaryWarnings, journalEntries, journalEntryLines, overtime, allowanceTypes, deductionTypes, companySettings } from '@/db/schema';
 import { eq, and, sql, gte, lte } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -162,9 +162,17 @@ const overtimeSchema = z.object({
 export type OvertimeFormValues = z.infer<typeof overtimeSchema>;
 
 
-async function getDb() {
-  const { db } = await connectToTenantDb('T001');
+async function getDb(tenantId: string = 'T001') {
+  const { db } = await connectToTenantDb(tenantId);
   return db;
+}
+
+// Helper to get dynamic settings
+async function getCompanySettings(db: any) {
+    const settingsResult = await db.query.companySettings.findFirst({
+        where: eq(companySettings.id, 'T001'), // Assuming single tenant for now
+    });
+    return (settingsResult?.settings as any) || {};
 }
 
 
@@ -260,6 +268,9 @@ export async function updatePayrollStatus(id: string, status: PayrollFormValues[
 
 export async function postPayrollToGL(payrollId: string) {
     const db = await getDb();
+    const settings = await getCompanySettings(db);
+    const accountMappings = settings.accountMappings || {};
+    
     const payroll = await db.query.payrolls.findFirst({ where: eq(payrolls.id, payrollId) });
 
     if (!payroll) {
@@ -271,8 +282,8 @@ export async function postPayrollToGL(payrollId: string) {
 
     const employee = await db.query.employees.findFirst({ where: eq(employees.id, payroll.employeeId) });
 
-    const salariesPayableAccount = '2100'; // حساب الرواتب المستحقة
-    const salaryExpenseAccount = '5000'; // حساب مصروف الرواتب
+    const salariesPayableAccount = accountMappings.salariesPayableAccount || '2100'; // حساب الرواتب المستحقة
+    const salaryExpenseAccount = accountMappings.salaryExpenseAccount || '5000'; // حساب مصروف الرواتب
     
     const newEntryId = `JV-PAY-${payrollId}`;
 
@@ -290,7 +301,7 @@ export async function postPayrollToGL(payrollId: string) {
             const allowanceType = await tx.query.allowanceTypes.findFirst({
                 where: eq(allowanceTypes.name, allowance.description), // Fallback to name if typeId isn't there
             });
-            const accountId = allowanceType?.expenseAccountId || '5010'; // Default allowances expense account
+            const accountId = allowanceType?.expenseAccountId || accountMappings.defaultAllowanceExpenseAccount || '5010'; // Default allowances expense account
             entryLines.push({
                 journalEntryId: newEntryId, accountId: accountId, debit: String(allowance.amount), credit: '0', description: `${allowance.description} - ${employee?.name}`
             });
@@ -302,7 +313,7 @@ export async function postPayrollToGL(payrollId: string) {
              const deductionType = await tx.query.deductionTypes.findFirst({
                 where: eq(deductionTypes.name, deduction.description),
             });
-            const accountId = deductionType?.liabilityAccountId || '2110'; // Default deductions liability account
+            const accountId = deductionType?.liabilityAccountId || accountMappings.defaultDeductionLiabilityAccount || '2110'; // Default deductions liability account
             entryLines.push({
                 journalEntryId: newEntryId, accountId: accountId, debit: '0', credit: String(deduction.amount), description: `خصم ${deduction.description} - ${employee?.name}`
             });

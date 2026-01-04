@@ -22,10 +22,17 @@ const posCloseSessionSchema = z.object({
 export type PosCloseSessionValues = z.infer<typeof posCloseSessionSchema>;
 
 
-async function getDb() {
-  const tenantId = 'T001'; 
+async function getDb(tenantId: string = 'T001') {
   const { db } = await connectToTenantDb(tenantId);
   return db;
+}
+
+// Helper to get dynamic settings
+async function getCompanySettings(db: any) {
+    const settingsResult = await db.query.companySettings.findFirst({
+        where: eq(companySettings.id, 'T001'), // Assuming single tenant for now
+    });
+    return (settingsResult?.settings as any) || {};
 }
 
 
@@ -120,10 +127,7 @@ async function settlePosSession(sessionId: string, data: {
 }) {
   const db = await getDb();
   
-  const settingsResult = await db.query.companySettings.findFirst({
-    where: eq(companySettings.id, 'T001'), // Assuming single tenant for now
-  });
-  const settings = settingsResult?.settings as any || {};
+  const settings = await getCompanySettings(db);
   const accountMappings = settings.accountMappings || {};
 
   const totalSales = data.cashSales + data.cardSales + data.deferredSales;
@@ -134,12 +138,12 @@ async function settlePosSession(sessionId: string, data: {
   const newEntryId = `JV-POSS-${sessionId}`;
 
   // Account IDs from settings, with fallbacks
-  const POS_CASH_ACCOUNT = accountMappings?.posCashAccount || '1111';
-  const BANK_ACCOUNT = accountMappings?.bankAccount || '1121'; 
-  const ACCOUNTS_RECEIVABLE = accountMappings?.accountsReceivable || '1200';
-  const SALES_REVENUE = accountMappings?.salesRevenue || '4000';
-  const VAT_PAYABLE = accountMappings?.vatPayable || '2200';
-  const CASH_OVER_SHORT = accountMappings?.cashOverShort || '5303'; 
+  const POS_CASH_ACCOUNT = accountMappings.posCashAccount || '1111';
+  const BANK_ACCOUNT = accountMappings.bankAccount || '1121'; 
+  const ACCOUNTS_RECEIVABLE = accountMappings.accountsReceivable || '1200';
+  const SALES_REVENUE = accountMappings.salesRevenue || '4000';
+  const VAT_PAYABLE = accountMappings.vatPayable || '2200';
+  const CASH_OVER_SHORT = accountMappings.cashOverShort || '5303'; 
 
   await db.transaction(async (tx) => {
     await tx.insert(journalEntries).values({

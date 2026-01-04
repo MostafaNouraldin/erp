@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { connectToTenantDb } from '@/db';
@@ -32,6 +33,21 @@ const roleSchema = z.object({
 
 export type RoleFormValues = z.infer<typeof roleSchema>;
 
+const accountMappingsSchema = z.object({
+    posCashAccount: z.string().optional(),
+    bankAccount: z.string().optional(),
+    accountsReceivable: z.string().optional(),
+    salesRevenue: z.string().optional(),
+    vatPayable: z.string().optional(),
+    cashOverShort: z.string().optional(),
+    salaryExpenseAccount: z.string().optional(),
+    salariesPayableAccount: z.string().optional(),
+    defaultAllowanceExpenseAccount: z.string().optional(),
+    defaultDeductionLiabilityAccount: z.string().optional(),
+    salesDiscountAccount: z.string().optional(),
+});
+
+
 const settingsSchema = z.object({
   companyName: z.string().optional().default(''),
   companyAddress: z.string().optional().default(''),
@@ -47,6 +63,7 @@ const settingsSchema = z.object({
   smtpUser: z.string().optional().default(''),
   smtpPass: z.string().optional().default(''),
   smtpSecure: z.boolean().optional().default(true),
+  accountMappings: accountMappingsSchema.optional(),
 });
 export type SettingsFormValues = z.infer<typeof settingsSchema>;
 

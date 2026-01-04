@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -68,6 +69,20 @@ const roleSchema = z.object({
     permissions: z.array(z.string()).default([]),
 });
 
+const accountMappingsSchema = z.object({
+    posCashAccount: z.string().optional(),
+    bankAccount: z.string().optional(),
+    accountsReceivable: z.string().optional(),
+    salesRevenue: z.string().optional(),
+    vatPayable: z.string().optional(),
+    cashOverShort: z.string().optional(),
+    salaryExpenseAccount: z.string().optional(),
+    salariesPayableAccount: z.string().optional(),
+    defaultAllowanceExpenseAccount: z.string().optional(),
+    defaultDeductionLiabilityAccount: z.string().optional(),
+    salesDiscountAccount: z.string().optional(),
+});
+
 const settingsSchema = z.object({
   companyName: z.string().optional(),
   companyAddress: z.string().optional(),
@@ -83,6 +98,7 @@ const settingsSchema = z.object({
   smtpUser: z.string().optional(),
   smtpPass: z.string().optional(),
   smtpSecure: z.boolean().optional(),
+  accountMappings: accountMappingsSchema.optional(),
 });
 export type SettingsFormValues = z.infer<typeof settingsSchema>;
 
@@ -152,6 +168,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         smtpUser: initialData.settings.smtpUser || '',
         smtpPass: initialData.settings.smtpPass || '',
         smtpSecure: initialData.settings.smtpSecure === undefined ? true : initialData.settings.smtpSecure,
+        accountMappings: initialData.settings.accountMappings || {},
       },
     });
     const departmentForm = useForm<Department>({ resolver: zodResolver(departmentSchema), defaultValues: { name: "" } });
@@ -362,6 +379,17 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                                 </Select><FormMessage /></FormItem> )} />
                                         <FormField control={settingsForm.control} name="vatRate" render={({ field }) => ( <FormItem><FormLabel>نسبة ضريبة القيمة المضافة (%)</FormLabel><FormControl><Input type="number" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                                      </div>
+                                     <Card className="pt-4">
+                                        <CardHeader className="p-4"><CardTitle className="text-base">ربط الحسابات الافتراضية</CardTitle><FormDescription className="text-xs">اختر الحسابات التي سيستخدمها النظام للقيود التلقائية.</FormDescription></CardHeader>
+                                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                                            <FormField control={settingsForm.control} name="accountMappings.posCashAccount" render={({ field }) => (<FormItem><FormLabel>حساب صندوق نقاط البيع</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر الحساب"/></SelectTrigger></FormControl><SelectContent>{accounts.filter(a => a.id.startsWith('101')).map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.id})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)}/>
+                                            <FormField control={settingsForm.control} name="accountMappings.bankAccount" render={({ field }) => (<FormItem><FormLabel>حساب البنك الافتراضي</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر الحساب"/></SelectTrigger></FormControl><SelectContent>{accounts.filter(a => a.type === 'بنك').map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.id})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)}/>
+                                            <FormField control={settingsForm.control} name="accountMappings.salariesPayableAccount" render={({ field }) => (<FormItem><FormLabel>حساب الرواتب المستحقة</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر الحساب"/></SelectTrigger></FormControl><SelectContent>{accounts.filter(a => a.id.startsWith('21')).map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.id})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)}/>
+                                            <FormField control={settingsForm.control} name="accountMappings.salaryExpenseAccount" render={({ field }) => (<FormItem><FormLabel>حساب مصروف الرواتب</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر الحساب"/></SelectTrigger></FormControl><SelectContent>{accounts.filter(a => a.id.startsWith('50')).map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.id})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)}/>
+                                            <FormField control={settingsForm.control} name="accountMappings.salesDiscountAccount" render={({ field }) => (<FormItem><FormLabel>حساب خصم المبيعات</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر الحساب"/></SelectTrigger></FormControl><SelectContent>{accounts.filter(a => a.id.startsWith('42')).map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.id})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)}/>
+                                            <FormField control={settingsForm.control} name="accountMappings.cashOverShort" render={({ field }) => (<FormItem><FormLabel>حساب عجز/زيادة الصندوق</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر الحساب"/></SelectTrigger></FormControl><SelectContent>{accounts.filter(a => a.id.startsWith('53')).map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.id})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)}/>
+                                        </CardContent>
+                                    </Card>
                                 </CardContent>
                             </Card>
                         </TabsContent>
