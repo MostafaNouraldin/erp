@@ -307,14 +307,43 @@ export async function updateSupplierInvoicePayment(
   newStatus: 'مدفوع' | 'مدفوع جزئياً'
 ) {
   const db = await getDb();
-  await db.update(supplierInvoices)
-    .set({
-      paidAmount: String(newPaidAmount),
-      status: newStatus,
-    })
-    .where(eq(supplierInvoices.id, invoiceId));
+  await db.transaction(async (tx) => {
+    const invoice = await tx.query.supplierInvoices.findFirst({ where: eq(supplierInvoices.id, invoiceId) });
+    if (!invoice) throw new Error("Invoice not found.");
+
+    const paymentAmount = newPaidAmount - parseFloat(invoice.paidAmount);
+
+    await tx.update(supplierInvoices)
+      .set({
+        paidAmount: String(newPaidAmount),
+        status: newStatus,
+      })
+      .where(eq(supplierInvoices.id, invoiceId));
+
+    if (paymentAmount > 0) {
+      const newEntryId = `JV-PAY-S-${invoiceId}`;
+      const accountsPayableAccount = "2010"; // حساب الذمم الدائنة
+      const cashAccount = "1011"; // حساب النقدية
+
+      await tx.insert(journalEntries).values({
+        id: newEntryId,
+        date: new Date(),
+        description: `سداد فاتورة مورد رقم ${invoiceId}`,
+        totalAmount: String(paymentAmount),
+        status: "مرحل",
+        sourceModule: "SupplierPayment",
+        sourceDocumentId: invoiceId,
+      });
+
+      await tx.insert(journalEntryLines).values([
+        { journalEntryId: newEntryId, accountId: accountsPayableAccount, debit: String(paymentAmount), credit: '0', description: `تخفيض رصيد المورد لفاتورة ${invoiceId}` },
+        { journalEntryId: newEntryId, accountId: cashAccount, debit: '0', credit: String(paymentAmount), description: `دفع نقدي لفاتورة ${invoiceId}` },
+      ]);
+    }
+  });
   revalidatePath('/purchases');
   revalidatePath('/accounts-payable-receivable');
+  revalidatePath('/general-ledger');
 }
 
 // --- Goods Received Note (GRN) Actions ---

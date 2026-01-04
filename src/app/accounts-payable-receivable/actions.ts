@@ -117,6 +117,11 @@ export async function updateCustomerInvoicePayment(
 ) {
   const db = await getDb();
   await db.transaction(async (tx) => {
+    const invoice = await tx.query.salesInvoices.findFirst({ where: eq(salesInvoices.id, invoiceId) });
+    if (!invoice) throw new Error("Invoice not found.");
+
+    const paymentAmount = newPaidAmount - parseFloat(invoice.paidAmount ?? '0');
+
     await tx.update(salesInvoices)
       .set({
         paidAmount: String(newPaidAmount),
@@ -124,8 +129,7 @@ export async function updateCustomerInvoicePayment(
       })
       .where(eq(salesInvoices.id, invoiceId));
 
-    const invoice = await tx.query.salesInvoices.findFirst({ where: eq(salesInvoices.id, invoiceId) });
-    if (invoice) {
+    if (paymentAmount > 0) {
         const newEntryId = `JV-PAY-C-${invoiceId}`;
         const accountsReceivableAccount = "1200"; // حساب الذمم المدينة
         const cashAccount = "1011"; // حساب النقدية
@@ -134,15 +138,15 @@ export async function updateCustomerInvoicePayment(
             id: newEntryId,
             date: new Date(),
             description: `سداد فاتورة عميل رقم ${invoiceId}`,
-            totalAmount: String(newPaidAmount - parseFloat(invoice.paidAmount)),
+            totalAmount: String(paymentAmount),
             status: "مرحل",
             sourceModule: "CustomerPayment",
             sourceDocumentId: invoiceId,
         });
 
         await tx.insert(journalEntryLines).values([
-            { journalEntryId: newEntryId, accountId: cashAccount, debit: String(newPaidAmount - parseFloat(invoice.paidAmount)), credit: '0', description: `تحصيل نقدي لفاتورة ${invoiceId}` },
-            { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: '0', credit: String(newPaidAmount - parseFloat(invoice.paidAmount)), description: `تخفيض رصيد العميل لفاتورة ${invoiceId}` },
+            { journalEntryId: newEntryId, accountId: cashAccount, debit: String(paymentAmount), credit: '0', description: `تحصيل نقدي لفاتورة ${invoiceId}` },
+            { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: '0', credit: String(paymentAmount), description: `تخفيض رصيد العميل لفاتورة ${invoiceId}` },
         ]);
     }
   });
@@ -246,12 +250,43 @@ export async function updateSupplierInvoicePayment(
   newStatus: 'مدفوع' | 'مدفوع جزئياً'
 ) {
   const db = await getDb();
-  await db.update(supplierInvoices)
-    .set({
-      paidAmount: String(newPaidAmount),
-      status: newStatus,
-    })
-    .where(eq(supplierInvoices.id, invoiceId));
+  
+  await db.transaction(async (tx) => {
+    const invoice = await tx.query.supplierInvoices.findFirst({ where: eq(supplierInvoices.id, invoiceId) });
+    if (!invoice) throw new Error("Invoice not found.");
+    
+    const paymentAmount = newPaidAmount - parseFloat(invoice.paidAmount);
+
+    await tx.update(supplierInvoices)
+      .set({
+        paidAmount: String(newPaidAmount),
+        status: newStatus,
+      })
+      .where(eq(supplierInvoices.id, invoiceId));
+
+    if (paymentAmount > 0) {
+        const newEntryId = `JV-PAY-S-${invoiceId}`;
+        const accountsPayableAccount = "2010"; // حساب الذمم الدائنة
+        const cashAccount = "1011"; // حساب النقدية
+
+        await tx.insert(journalEntries).values({
+            id: newEntryId,
+            date: new Date(),
+            description: `سداد فاتورة مورد رقم ${invoiceId}`,
+            totalAmount: String(paymentAmount),
+            status: "مرحل",
+            sourceModule: "SupplierPayment",
+            sourceDocumentId: invoiceId,
+        });
+
+        await tx.insert(journalEntryLines).values([
+            { journalEntryId: newEntryId, accountId: accountsPayableAccount, debit: String(paymentAmount), credit: '0', description: `تخفيض رصيد المورد لفاتورة ${invoiceId}` },
+            { journalEntryId: newEntryId, accountId: cashAccount, debit: '0', credit: String(paymentAmount), description: `دفع نقدي لفاتورة ${invoiceId}` },
+        ]);
+    }
+  });
+
   revalidatePath('/accounts-payable-receivable');
   revalidatePath('/purchases');
+  revalidatePath('/general-ledger');
 }
