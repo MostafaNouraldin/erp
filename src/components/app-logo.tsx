@@ -25,3 +25,4 @@ export default function AppLogo({ className, logoUrl, companyName }: AppLogoProp
     </div>
   );
 }
+

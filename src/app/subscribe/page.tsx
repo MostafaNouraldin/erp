@@ -19,11 +19,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ShoppingBag, Upload, AlertTriangle } from 'lucide-react';
 import type { Module } from '@/types/saas';
-import { submitSubscriptionRequest } from './actions';
+import { submitSubscriptionRequest } from '../subscribe/actions';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { availableCurrencies } from '@/contexts/currency-context';
 import { getCompanySettingsForLayout } from '../actions';
+import { useCurrency } from '@/hooks/use-currency';
 
 // This data would be fetched from the backend in a real app
 const allAvailableModules: Module[] = [
@@ -61,6 +62,7 @@ export default function SubscribePage() {
   const router = useRouter();
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [companySettings, setCompanySettings] = useState<CompanySettings>({});
+  const { formatCurrency, updateCurrency, selectedCurrency } = useCurrency();
 
   useEffect(() => {
     async function fetchSettings() {
@@ -93,25 +95,11 @@ export default function SubscribePage() {
   const selectedCountry = form.watch("country");
   
   const currencyCode = selectedCountry === 'SA' ? 'SAR' : selectedCountry === 'EG' ? 'EGP' : 'USD';
-  const currency = availableCurrencies.find(c => c.code === currencyCode) || availableCurrencies[2];
-
-  const formatCurrencyLocal = (amount: number) => {
-    const { symbol } = currency;
-    const formatted = new Intl.NumberFormat('ar-SA', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-    return `${formatted} <span class="font-saudi-riyal text-sm">${symbol}</span>`;
-  }
   
-  const formatCurrencyForCard = (amount: number) => {
-    const { symbol } = currency;
-    const formatted = new Intl.NumberFormat('ar-SA', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-    return `${formatted} <span class="font-saudi-riyal">${symbol}</span>`;
-  }
+  useEffect(() => {
+    updateCurrency(currencyCode);
+  }, [currencyCode, updateCurrency]);
+
 
   useEffect(() => {
     const total = selectedModules.reduce((acc, moduleKey) => {
@@ -255,7 +243,7 @@ export default function SubscribePage() {
                                                     <div className="space-y-0.5">
                                                         <FormLabel className="text-sm font-medium">{module.name}</FormLabel>
                                                         <p className="text-xs text-muted-foreground">{module.description}</p>
-                                                        <p className="text-xs font-semibold text-primary" dangerouslySetInnerHTML={{ __html: formatCurrencyLocal(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly) }}></p>
+                                                        <p className="text-xs font-semibold text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly) }}></p>
                                                     </div>
                                                     <FormControl><Checkbox checked={field.value?.includes(module.key)} onCheckedChange={(checked) => { return checked ? field.onChange([...field.value, module.key]) : field.onChange(field.value?.filter((value) => value !== module.key)); }} /></FormControl>
                                                 </FormItem>
@@ -269,7 +257,7 @@ export default function SubscribePage() {
                      <Card className="bg-primary/5 border-primary/20 sticky top-4">
                         <CardHeader><CardTitle className="text-lg">ملخص الطلب</CardTitle></CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-primary text-center" dangerouslySetInnerHTML={{ __html: formatCurrencyForCard(form.getValues("totalAmount")) }}></div>
+                            <div className="text-3xl font-bold text-primary text-center" dangerouslySetInnerHTML={{ __html: formatCurrency(form.getValues("totalAmount")) }}></div>
                             <p className="text-center text-muted-foreground">/{billingCycle === "monthly" ? "شهرياً" : "سنوياً"}</p>
                         </CardContent>
                     </Card>
@@ -297,3 +285,4 @@ export default function SubscribePage() {
     </div>
   );
 }
+

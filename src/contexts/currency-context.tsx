@@ -99,3 +99,4 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
     </CurrencyContext.Provider>
   );
 };
+
