@@ -37,7 +37,21 @@ const tenantSchema = z.object({
     subscribed: z.boolean(),
   })).default([]),
   billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
+  // New fields for admin user creation
+  adminName: z.string().optional(),
+  adminEmail: z.string().email("بريد إلكتروني غير صالح للمدير").optional().or(z.literal('')),
+  adminPassword: z.string().optional(),
+}).refine(data => {
+    // Make admin fields required only when creating a new tenant (id is not present)
+    if (!data.id) {
+        return !!data.adminName && !!data.adminEmail && !!data.adminPassword;
+    }
+    return true;
+}, {
+    message: "بيانات المدير (الاسم، البريد الإلكتروني، كلمة المرور) مطلوبة عند إنشاء شركة جديدة.",
+    path: ["adminName"], // Show error message under one of the fields
 });
+
 type TenantFormValues = z.infer<typeof tenantSchema>;
 
 interface ClientProps {
@@ -69,6 +83,9 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
       subscribedModules: [],
       billingCycle: "yearly",
       subscriptionEndDate: undefined,
+      adminName: "",
+      adminEmail: "",
+      adminPassword: "",
     }
   });
 
@@ -100,6 +117,9 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
       subscribedModules: initialFormModules,
       billingCycle: "yearly",
       subscriptionEndDate: undefined,
+      adminName: "",
+      adminEmail: "",
+      adminPassword: "",
     });
     setShowManageTenantDialog(true);
   };
@@ -116,6 +136,10 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
       ...tenant,
       subscriptionEndDate: tenant.subscriptionEndDate ? new Date(tenant.subscriptionEndDate) : undefined,
       subscribedModules: initialFormModules,
+      // Admin fields are not for editing, so clear them
+      adminName: "",
+      adminEmail: "",
+      adminPassword: "",
     });
     setShowManageTenantDialog(true);
   };
@@ -132,8 +156,8 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
       }
       setShowManageTenantDialog(false);
       setTenantToEdit(null);
-    } catch (e) {
-      toast({ title: "خطأ", description: "لم يتم حفظ بيانات الشركة.", variant: "destructive" });
+    } catch (e: any) {
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
     }
   };
 
@@ -175,13 +199,37 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleTenantSubmit)} className="space-y-4 py-4">
                 <ScrollArea className="max-h-[70vh] p-1">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-2">
-                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input placeholder="اسم الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                    <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني (للإدارة)</FormLabel><FormControl><Input type="email" placeholder="admin@company.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                    <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                    <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                     <FormField control={form.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                  </div>
+                  <Card className="mb-4">
+                    <CardHeader><CardTitle className="text-base">معلومات الشركة</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="id" render={({ field }) => ( <FormItem><FormLabel>معرف الشركة (Tenant ID)</FormLabel><FormControl><Input placeholder="مثال: T002" {...field} className="bg-background" disabled={!!tenantToEdit}/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input placeholder="اسم الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني (للفواتير)</FormLabel><FormControl><Input type="email" placeholder="billing@company.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                             <FormField control={form.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <div className="md:col-span-2">
+                                <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            </div>
+                        </div>
+                    </CardContent>
+                  </Card>
+
+                  {!tenantToEdit && (
+                    <Card className="mb-4">
+                        <CardHeader><CardTitle className="text-base">حساب المدير الأساسي</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="adminName" render={({ field }) => ( <FormItem><FormLabel>اسم المدير</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={form.control} name="adminEmail" render={({ field }) => ( <FormItem><FormLabel>بريد المدير الإلكتروني</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                <div className="md:col-span-2">
+                                <FormField control={form.control} name="adminPassword" render={({ field }) => ( <FormItem><FormLabel>كلمة المرور</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                </div>
+                             </div>
+                        </CardContent>
+                    </Card>
+                  )}
+
                   <Card className="mb-4">
                     <CardHeader><CardTitle className="text-base">إعدادات الاشتراك</CardTitle></CardHeader>
                     <CardContent className="space-y-3 p-4">
@@ -230,7 +278,7 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                                                     <FormLabel htmlFor={`subscribedModules.${index}.subscribed`} className="cursor-pointer">{moduleDetails.name}</FormLabel>
                                                     <DialogDescriptionComponent className="text-xs">
                                                         {moduleDetails.isRentable 
-                                                            ? `شهري: ${moduleDetails.priceMonthly} SAR / سنوي: ${moduleDetails.priceYearly} SAR`
+                                                            ? `(وحدة اختيارية)`
                                                             : 'وحدة أساسية'
                                                         }
                                                     </DialogDescriptionComponent>
@@ -320,4 +368,3 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     </div>
   );
 }
-
