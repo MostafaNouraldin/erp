@@ -258,7 +258,7 @@ export default function BankReceiptsClient({ initialData }: ClientComponentProps
                     <TableCell>{revenueAccounts.find(e => e.id === receipt.revenueAccountId)?.name}</TableCell>
                     <TableCell>{receipt.payerName}</TableCell>
                     <TableCell>{receipt.description}</TableCell>
-                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(receipt.amount) }}></TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(receipt.amount).amount + " " + formatCurrency(receipt.amount).symbol }}></TableCell>
                     <TableCell>{receipt.referenceNumber || "-"}</TableCell>
                     <TableCell><Badge variant={receipt.status === "مرحل" ? "default" : "outline"}>{receipt.status}</Badge></TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
@@ -334,7 +334,7 @@ export default function BankReceiptsClient({ initialData }: ClientComponentProps
                 <p><strong>الوصف (البيان):</strong> {selectedReceiptForPrint.description}</p>
               </div>
               <div className="mb-8 p-3 border border-gray-300 rounded-md bg-muted/30 text-xs">
-                  <p><strong>المبلغ:</strong> <span className="font-bold text-base" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedReceiptForPrint.amount) }}></span></p>
+                  <p><strong>المبلغ:</strong> <span className="font-bold text-base" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedReceiptForPrint.amount).amount + " " + formatCurrency(selectedReceiptForPrint.amount).symbol }}></span></p>
                   <p data-ai-hint="amount words"><strong>المبلغ كتابة:</strong> {convertAmountToWords(selectedReceiptForPrint.amount)}</p>
               </div>
               <div className="grid grid-cols-3 gap-4 mt-16 pt-6 border-t border-gray-300 text-xs">
@@ -366,5 +366,3 @@ export default function BankReceiptsClient({ initialData }: ClientComponentProps
     </div>
   );
 }
-
-    

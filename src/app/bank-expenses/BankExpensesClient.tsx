@@ -248,7 +248,7 @@ export default function BankExpensesClient({ initialData }: ClientComponentProps
                     <TableCell>{expenseAccounts.find(e => e.id === expense.expenseAccountId)?.name}</TableCell>
                     <TableCell>{expense.beneficiary}</TableCell>
                     <TableCell>{expense.description}</TableCell>
-                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(expense.amount) }}></TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(expense.amount).amount + " " + formatCurrency(expense.amount).symbol }}></TableCell>
                     <TableCell>{expense.referenceNumber || "-"}</TableCell>
                     <TableCell><Badge variant={expense.status === "مرحل" ? "default" : "outline"}>{expense.status}</Badge></TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
@@ -323,7 +323,7 @@ export default function BankExpensesClient({ initialData }: ClientComponentProps
                 <p><strong>الوصف (البيان):</strong> {selectedExpenseForPrint.description}</p>
               </div>
               <div className="mb-8 p-3 border border-gray-300 rounded-md bg-muted/30 text-xs">
-                  <p><strong>المبلغ:</strong> <span className="font-bold text-base" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedExpenseForPrint.amount) }}></span></p>
+                  <p><strong>المبلغ:</strong> <span className="font-bold text-base" dangerouslySetInnerHTML={{ __html: formatCurrency(selectedExpenseForPrint.amount).amount + " " + formatCurrency(selectedExpenseForPrint.amount).symbol }}></span></p>
                   <p data-ai-hint="amount to words function"><strong>المبلغ كتابة:</strong> {convertAmountToWords(selectedExpenseForPrint.amount)}</p>
               </div>
               <div className="grid grid-cols-3 gap-4 mt-16 pt-6 border-t border-gray-300 text-xs">
@@ -355,5 +355,3 @@ export default function BankExpensesClient({ initialData }: ClientComponentProps
     </div>
   );
 }
-
-    
