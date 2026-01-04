@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import AppLogo from '@/components/app-logo';
 import { useCurrency } from '@/hooks/use-currency';
-import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice } from '@/app/sales/actions';
+import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, updateCustomerInvoicePayment } from '@/app/accounts-payable-receivable/actions';
 import { addSupplierInvoice, updateSupplierInvoice, deleteSupplierInvoice, updateSupplierInvoicePayment } from '@/app/purchases/actions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -40,9 +40,10 @@ const customerInvoiceSchema = z.object({
   date: z.date({ required_error: "تاريخ الفاتورة مطلوب" }),
   dueDate: z.date({ required_error: "تاريخ الاستحقاق مطلوب" }),
   items: z.array(customerInvoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
-  status: z.enum(["مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
+  status: z.enum(["مدفوع", "غير مدفوع", "متأخر", "مدفوع جزئياً"]).default("غير مدفوع"),
   isDeferredPayment: z.boolean().default(false),
   numericTotalAmount: z.number().optional(), // Added for calculation
+  paidAmount: z.coerce.number().optional(),
   source: z.enum(["POS", "Manual"]).optional().default("Manual"),
 });
 type CustomerInvoiceFormValues = z.infer<typeof customerInvoiceSchema>;
@@ -81,6 +82,10 @@ export default function AccountsPayableReceivableClientComponent({ initialData }
 
   const [showManageCustomerInvoiceDialog, setShowManageCustomerInvoiceDialog] = useState(false);
   const [customerInvoiceToEdit, setCustomerInvoiceToEdit] = useState<CustomerInvoiceFormValues | null>(null);
+  
+  const [showRecordCustomerPaymentDialog, setShowRecordCustomerPaymentDialog] = useState(false);
+  const [customerInvoiceToPay, setCustomerInvoiceToPay] = useState<any | null>(null);
+
 
   const [showManageSupplierInvoiceDialog, setShowManageSupplierInvoiceDialog] = useState(false);
   const [supplierInvoiceToEdit, setSupplierInvoiceToEdit] = useState<SupplierInvoiceFormValues | null>(null);
@@ -98,6 +103,8 @@ export default function AccountsPayableReceivableClientComponent({ initialData }
   const { fields: customerItemsFields, append: appendCustomerItem, remove: removeCustomerItem } = useFieldArray({
     control: customerInvoiceForm.control, name: "items",
   });
+  
+  const customerPaymentForm = useForm<PaymentFormValues>({ resolver: zodResolver(paymentSchema) });
 
   const supplierInvoiceForm = useForm<SupplierInvoiceFormValues>({
     resolver: zodResolver(supplierInvoiceSchema),
@@ -135,7 +142,7 @@ useEffect(() => {
                 dueDate: new Date(customerInvoiceToEdit.dueDate),
             });
         } else {
-            customerInvoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", isDeferredPayment: false });
+            customerInvoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", isDeferredPayment: false, paidAmount: 0 });
         }
     }
 }, [customerInvoiceToEdit, customerInvoiceForm, showManageCustomerInvoiceDialog]);
@@ -161,6 +168,12 @@ useEffect(() => {
     }
 }, [invoiceToPay, paymentForm]);
 
+useEffect(() => {
+    if (customerInvoiceToPay) {
+      customerPaymentForm.reset({ paymentAmount: customerInvoiceToPay.numericTotalAmount - (customerInvoiceToPay.paidAmount || 0) });
+    }
+}, [customerInvoiceToPay, customerPaymentForm]);
+
 
 const handleCustomerInvoiceSubmit = async (values: any) => {
     const totalAmount = calculateTotalAmount(values.items);
@@ -179,6 +192,21 @@ const handleCustomerInvoiceSubmit = async (values: any) => {
         toast({ title: "خطأ", description: "لم يتم حفظ الفاتورة.", variant: "destructive" });
     }
 };
+
+const handleCustomerPaymentSubmit = async (paymentValues: PaymentFormValues) => {
+    if (!customerInvoiceToPay) return;
+    try {
+        const newPaidAmount = (customerInvoiceToPay.paidAmount || 0) + paymentValues.paymentAmount;
+        const newStatus = newPaidAmount >= customerInvoiceToPay.numericTotalAmount ? "مدفوع" as const : "مدفوع جزئياً" as const;
+        await updateCustomerInvoicePayment(customerInvoiceToPay.id, newPaidAmount, newStatus);
+        toast({ title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة العميل بنجاح." });
+        setShowRecordCustomerPaymentDialog(false);
+        setCustomerInvoiceToPay(null);
+    } catch(error) {
+        toast({ title: "خطأ", description: "لم يتم تسجيل الدفعة.", variant: "destructive" });
+    }
+  };
+
 
 const handleSupplierInvoiceSubmit = async (values: any) => {
     const totalAmount = calculateTotalAmount(values.items);
@@ -330,9 +358,10 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
                     <TableRow>
                       <TableHead>رقم الفاتورة</TableHead>
                       <TableHead>العميل</TableHead>
-                      <TableHead>تاريخ الفاتورة</TableHead>
                       <TableHead>تاريخ الاستحقاق</TableHead>
                       <TableHead>المبلغ الإجمالي</TableHead>
+                      <TableHead>المدفوع</TableHead>
+                      <TableHead>المتبقي</TableHead>
                       <TableHead>الحالة</TableHead>
                       <TableHead className="text-center">إجراءات</TableHead>
                     </TableRow>
@@ -342,13 +371,15 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
                       <TableRow key={invoice.id}>
                         <TableCell>{invoice.id}</TableCell>
                         <TableCell>{customers.find((c:any) => c.id === invoice.customerId)?.name}</TableCell>
-                        <TableCell>{new Date(invoice.date).toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell>{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</TableCell>
-                        <TableCell>{formatCurrency(invoice.numericTotalAmount)}</TableCell>
+                        <TableCell>{formatCurrency(invoice.numericTotalAmount).amount}</TableCell>
+                        <TableCell>{formatCurrency(invoice.paidAmount || 0).amount}</TableCell>
+                        <TableCell>{formatCurrency(invoice.numericTotalAmount - (invoice.paidAmount || 0)).amount}</TableCell>
                         <TableCell><Badge variant={invoice.status === 'مدفوع' ? 'default' : 'destructive'}>{invoice.status}</Badge></TableCell>
                         <TableCell className="text-center">
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => alert(`Printing ${invoice.id}`)}><Printer className="h-4 w-4" /></Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {setCustomerInvoiceToEdit(invoice); setShowManageCustomerInvoiceDialog(true);}}><Edit className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCustomerInvoiceToPay(invoice); setShowRecordCustomerPaymentDialog(true); }}><DollarSign className="h-4 w-4 text-green-600" /></Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
@@ -460,8 +491,8 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
                         <TableCell>{suppliers.find((s:any) => s.id === invoice.supplierId)?.name}</TableCell>
                         <TableCell>{new Date(invoice.invoiceDate).toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell>{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</TableCell>
-                        <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
-                        <TableCell>{formatCurrency(invoice.paidAmount)}</TableCell>
+                        <TableCell>{formatCurrency(invoice.totalAmount).amount}</TableCell>
+                        <TableCell>{formatCurrency(invoice.paidAmount).amount}</TableCell>
                         <TableCell><Badge variant={invoice.status === 'مدفوع' ? 'default' : 'destructive'}>{invoice.status}</Badge></TableCell>
                         <TableCell className="text-center">
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => alert(`Printing ${invoice.id}`)}><Printer className="h-4 w-4" /></Button>
@@ -494,12 +525,35 @@ const handleDeleteInvoice = async (type: 'customer' | 'supplier', invoiceId: str
               <DialogHeader>
                   <DialogTitle>تسجيل دفعة لفاتورة مورد</DialogTitle>
                   <DialogDescriptionComponent>
-                      فاتورة رقم: {invoiceToPay?.id} | المبلغ الإجمالي: {formatCurrency(invoiceToPay?.totalAmount || 0)} | المدفوع: {formatCurrency(invoiceToPay?.paidAmount || 0)}
+                      فاتورة رقم: {invoiceToPay?.id} | المبلغ الإجمالي: {formatCurrency(invoiceToPay?.totalAmount || 0).amount} | المدفوع: {formatCurrency(invoiceToPay?.paidAmount || 0).amount}
                   </DialogDescriptionComponent>
               </DialogHeader>
               <Form {...paymentForm}>
                   <form onSubmit={paymentForm.handleSubmit(handleRecordPaymentSubmit)} className="space-y-4 py-4">
                       <FormField control={paymentForm.control} name="paymentAmount" render={({ field }) => (
+                          <FormItem><FormLabel>مبلغ الدفعة</FormLabel>
+                          <FormControl><Input type="number" {...field} className="bg-background" /></FormControl>
+                          <FormMessage /></FormItem>
+                      )} />
+                      <DialogFooter>
+                          <Button type="submit">تسجيل الدفعة</Button>
+                          <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                      </DialogFooter>
+                  </form>
+              </Form>
+          </DialogContent>
+      </Dialog>
+      <Dialog open={showRecordCustomerPaymentDialog} onOpenChange={setShowRecordCustomerPaymentDialog}>
+          <DialogContent className="sm:max-w-md" dir="rtl">
+              <DialogHeader>
+                  <DialogTitle>تسجيل دفعة من عميل</DialogTitle>
+                  <DialogDescriptionComponent>
+                      فاتورة رقم: {customerInvoiceToPay?.id} | المبلغ الإجمالي: {formatCurrency(customerInvoiceToPay?.numericTotalAmount || 0).amount} | المدفوع: {formatCurrency(customerInvoiceToPay?.paidAmount || 0).amount}
+                  </DialogDescriptionComponent>
+              </DialogHeader>
+              <Form {...customerPaymentForm}>
+                  <form onSubmit={customerPaymentForm.handleSubmit(handleCustomerPaymentSubmit)} className="space-y-4 py-4">
+                      <FormField control={customerPaymentForm.control} name="paymentAmount" render={({ field }) => (
                           <FormItem><FormLabel>مبلغ الدفعة</FormLabel>
                           <FormControl><Input type="number" {...field} className="bg-background" /></FormControl>
                           <FormMessage /></FormItem>

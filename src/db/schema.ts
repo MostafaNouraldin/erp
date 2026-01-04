@@ -256,7 +256,8 @@ export const salesInvoices = pgTable('sales_invoices', {
   date: timestamp('date').notNull(),
   dueDate: timestamp('due_date').notNull(),
   numericTotalAmount: numeric('numeric_total_amount', { precision: 10, scale: 2 }).notNull(),
-  status: varchar('status', { length: 50 }).notNull(), // 'مدفوع', 'غير مدفوع', 'متأخر'
+  paidAmount: numeric('paid_amount', { precision: 10, scale: 2 }).default('0'),
+  status: varchar('status', { length: 50 }).notNull(), // 'مدفوع', 'غير مدفوع', 'متأخر', 'مدفوع جزئياً'
   isDeferredPayment: boolean('is_deferred_payment').default(false),
   source: varchar('source', { length: 50 }),
   notes: text('notes'),

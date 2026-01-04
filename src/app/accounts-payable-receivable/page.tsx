@@ -23,7 +23,8 @@ export default async function AccountsPayableReceivablePage() {
                 date: new Date(invoice.date),
                 dueDate: new Date(invoice.dueDate),
                 numericTotalAmount: parseFloat(invoice.numericTotalAmount),
-                status: invoice.status as "مدفوع" | "غير مدفوع" | "متأخر",
+                paidAmount: parseFloat(invoice.paidAmount ?? '0'),
+                status: invoice.status as "مدفوع" | "غير مدفوع" | "متأخر" | "مدفوع جزئياً",
                 isDeferredPayment: invoice.isDeferredPayment,
                 items: items.map(item => ({
                     ...item,

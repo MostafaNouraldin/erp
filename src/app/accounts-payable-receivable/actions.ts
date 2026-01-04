@@ -21,9 +21,10 @@ const salesInvoiceSchema = z.object({
     unitPrice: z.coerce.number().min(0, "سعر الوحدة إيجابي"),
     total: z.coerce.number(),
   })).min(1, "يجب إضافة صنف واحد على الأقل"),
-  status: z.enum(["مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
+  status: z.enum(["مدفوع", "غير مدفوع", "متأخر", "مدفوع جزئياً"]).default("غير مدفوع"),
   isDeferredPayment: z.boolean().default(false),
   numericTotalAmount: z.number().optional(), 
+  paidAmount: z.coerce.number().optional(),
   source: z.enum(["POS", "Manual"]).optional().default("Manual"),
 });
 type SalesInvoiceFormValues = z.infer<typeof salesInvoiceSchema>;
@@ -65,6 +66,7 @@ export async function addSalesInvoice(invoiceData: SalesInvoiceFormValues) {
       id: newInvoiceId,
       ...invoiceData,
       numericTotalAmount: String(invoiceData.numericTotalAmount),
+       paidAmount: String(invoiceData.paidAmount || 0),
     });
     if (invoiceData.items.length > 0) {
       await tx.insert(salesInvoiceItems).values(
@@ -90,6 +92,7 @@ export async function updateSalesInvoice(invoiceData: SalesInvoiceFormValues) {
         await tx.update(salesInvoices).set({
             ...invoiceData,
             numericTotalAmount: String(invoiceData.numericTotalAmount),
+            paidAmount: String(invoiceData.paidAmount || 0),
         }).where(eq(salesInvoices.id, invoiceData.id));
         await tx.delete(salesInvoiceItems).where(eq(salesInvoiceItems.invoiceId, invoiceData.id));
         if (invoiceData.items.length > 0) {
@@ -105,6 +108,48 @@ export async function updateSalesInvoice(invoiceData: SalesInvoiceFormValues) {
     });
     revalidatePath('/accounts-payable-receivable');
     revalidatePath('/sales');
+}
+
+export async function updateCustomerInvoicePayment(
+  invoiceId: string,
+  newPaidAmount: number,
+  newStatus: 'مدفوع' | 'مدفوع جزئياً'
+) {
+  const db = await getDb();
+  await db.transaction(async (tx) => {
+    await tx.update(salesInvoices)
+      .set({
+        paidAmount: String(newPaidAmount),
+        status: newStatus,
+      })
+      .where(eq(salesInvoices.id, invoiceId));
+
+    const invoice = await tx.query.salesInvoices.findFirst({ where: eq(salesInvoices.id, invoiceId) });
+    if (invoice) {
+        const newEntryId = `JV-PAY-C-${invoiceId}`;
+        const accountsReceivableAccount = "1200"; // حساب الذمم المدينة
+        const cashAccount = "1011"; // حساب النقدية
+
+        await tx.insert(journalEntries).values({
+            id: newEntryId,
+            date: new Date(),
+            description: `سداد فاتورة عميل رقم ${invoiceId}`,
+            totalAmount: String(newPaidAmount - parseFloat(invoice.paidAmount)),
+            status: "مرحل",
+            sourceModule: "CustomerPayment",
+            sourceDocumentId: invoiceId,
+        });
+
+        await tx.insert(journalEntryLines).values([
+            { journalEntryId: newEntryId, accountId: cashAccount, debit: String(newPaidAmount - parseFloat(invoice.paidAmount)), credit: '0', description: `تحصيل نقدي لفاتورة ${invoiceId}` },
+            { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: '0', credit: String(newPaidAmount - parseFloat(invoice.paidAmount)), description: `تخفيض رصيد العميل لفاتورة ${invoiceId}` },
+        ]);
+    }
+  });
+
+  revalidatePath('/accounts-payable-receivable');
+  revalidatePath('/sales');
+  revalidatePath('/general-ledger');
 }
 
 
