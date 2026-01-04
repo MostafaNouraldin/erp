@@ -733,8 +733,8 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                         )}
                                         {po.status === "معتمد" && (
                                             <>
-                                                <Button variant="ghost" size="icon" onClick={() => openCreateGrnDialogFromPo(po)} className="text-blue-600"><Truck className="h-4 w-4"/></Button>
-                                                <Button variant="ghost" size="icon" onClick={() => openCreateInvoiceFromPo(po)} className="text-purple-600"><FileText className="h-4 w-4"/></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => openCreateGrnDialogFromPo(po)} className="text-blue-600" title="استلام بضاعة"><Truck className="h-4 w-4"/></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => openCreateInvoiceFromPo(po)} className="text-purple-600" title="إنشاء فاتورة"><FileText className="h-4 w-4"/></Button>
                                             </>
                                         )}
                                     </TableCell>
@@ -857,7 +857,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                                     <AlertDialogContent dir="rtl">
-                                                        <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف المرتجع رقم "{pr.id}"؟</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف مرتجع المشتريات "{pr.id}"؟</AlertDialogDescription></AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>إلغاء</AlertDialogCancel>
                                                             <AlertDialogAction onClick={() => handleDeletePurchaseReturn(pr.id!)}>حذف</AlertDialogAction>
@@ -880,9 +880,4 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
     );
 }
 
-
-
-
-
-
-
+    
