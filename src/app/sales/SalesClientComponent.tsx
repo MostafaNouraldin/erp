@@ -745,7 +745,7 @@ useEffect(() => {
         </div>
       </div>
 
-      <Tabs defaultValue="invoices" className="w-full" dir="rtl">
+      <Tabs defaultValue="customers" className="w-full" dir="rtl">
         <TabsList className="w-full mb-6 bg-muted p-1 rounded-md" dir="rtl">
           <TabsTrigger value="quotations" className="flex-1 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <FileSignature className="inline-block me-2 h-4 w-4" /> عروض الأسعار
@@ -940,10 +940,4 @@ useEffect(() => {
     </div>
   );
 }
-
-
-
-
-
-
 
