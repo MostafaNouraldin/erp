@@ -61,6 +61,14 @@ export const tenantModuleSubscriptions = pgTable('tenant_module_subscriptions', 
   };
 });
 
+export const tenantModuleSubscriptionsRelations = relations(tenantModuleSubscriptions, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [tenantModuleSubscriptions.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+
 export const subscriptionRequests = pgTable('subscription_requests', {
     id: serial('id').primaryKey(),
     companyName: varchar('company_name', { length: 256 }).notNull(),
@@ -871,4 +879,5 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
 }));
 
     
+
 
