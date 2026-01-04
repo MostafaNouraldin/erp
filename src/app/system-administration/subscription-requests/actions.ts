@@ -14,6 +14,18 @@ async function getMainDb() {
   return db;
 }
 
+export async function getSubscriptionRequestDetails(requestId: number) {
+    const db = await getMainDb();
+    const request = await db.query.subscriptionRequests.findFirst({
+        where: eq(subscriptionRequests.id, requestId),
+    });
+    if (!request) {
+        throw new Error("لم يتم العثور على طلب الاشتراك.");
+    }
+    return request;
+}
+
+
 export async function approveSubscriptionRequest(requestId: number) {
   const db = await getMainDb();
   const request = await db.query.subscriptionRequests.findFirst({

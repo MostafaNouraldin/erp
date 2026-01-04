@@ -5,14 +5,14 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mail, Search, Filter, CheckCircle, XCircle, Eye, RefreshCw } from "lucide-react";
+import { Mail, Search, Filter, CheckCircle, XCircle, Eye, RefreshCw, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { approveSubscriptionRequest, rejectSubscriptionRequest } from './actions';
+import { approveSubscriptionRequest, rejectSubscriptionRequest, getSubscriptionRequestDetails } from './actions';
 import { useCurrency } from '@/hooks/use-currency';
 
 interface SubscriptionRequest {
@@ -39,12 +39,26 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
   const [selectedRequest, setSelectedRequest] = useState<SubscriptionRequest | null>(null);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
 
   useEffect(() => {
     setRequests(initialData.requests);
   }, [initialData]);
+  
+  const handleViewDetails = async (request: SubscriptionRequest) => {
+    setSelectedRequest(request); // Show basic data immediately
+    setIsLoadingDetails(true);
+    try {
+        const fullRequestDetails = await getSubscriptionRequestDetails(request.id);
+        setSelectedRequest(fullRequestDetails as SubscriptionRequest); // Update with full data including proof
+    } catch (e: any) {
+        toast({ title: "خطأ", description: "لم يتم العثور على تفاصيل الطلب.", variant: "destructive" });
+    } finally {
+        setIsLoadingDetails(false);
+    }
+  };
 
   const handleApprove = async (requestId: number) => {
     setIsApproving(true);
@@ -131,9 +145,11 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="عرض التفاصيل" onClick={() => setSelectedRequest(req)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                       <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="عرض التفاصيل" onClick={() => handleViewDetails(req)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                       </DialogTrigger>
                       {req.status === 'pending' && (
                         <>
                           <AlertDialog>
@@ -191,13 +207,17 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
                 <div><strong>اسم الشركة:</strong> {selectedRequest.companyName}</div>
                 <div><strong>البريد الإلكتروني:</strong> {selectedRequest.email}</div>
                 <div><strong>الهاتف:</strong> {selectedRequest.phone || "-"}</div>
-                <div><strong>الوحدات المطلوبة:</strong> {selectedRequest.selectedModules.join(', ')}</div>
+                <div><strong>الوحدات المطلوبة:</strong> {Array.isArray(selectedRequest.selectedModules) ? selectedRequest.selectedModules.join(', ') : ''}</div>
                 <div><strong>دورة الفوترة:</strong> {selectedRequest.billingCycle === 'monthly' ? 'شهري' : 'سنوي'}</div>
                 <div className="font-semibold"><strong>المبلغ الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(parseFloat(selectedRequest.totalAmount)) }}></span></div>
                 <div><strong>طريقة الدفع:</strong> {selectedRequest.paymentMethod}</div>
                 <div>
                     <p className="font-semibold">إثبات الدفع:</p>
-                    {selectedRequest.paymentProof ? (
+                    {isLoadingDetails ? (
+                       <div className="flex items-center justify-center h-40 border rounded-md bg-muted/50">
+                           <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+                       </div>
+                    ) : selectedRequest.paymentProof ? (
                         <a href={selectedRequest.paymentProof} target="_blank" rel="noopener noreferrer">
                             <img src={selectedRequest.paymentProof} alt="إثبات الدفع" className="mt-1 border rounded-md max-h-60 object-contain"/>
                         </a>
@@ -217,5 +237,3 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
     </div>
   );
 }
-
-    
