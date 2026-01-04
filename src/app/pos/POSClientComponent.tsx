@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -152,7 +151,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
     try {
         const newSession = await startPosSession({ userId: user.id, openingBalance: values.openingBalance });
         setActiveSession(newSession as ActiveSession);
-        toast({ title: "تم بدء الجلسة", description: `مرحباً ${user.name}! تم بدء الجلسة برصيد افتتاحي ${formatCurrency(values.openingBalance)}.` });
+        toast({ title: "تم بدء الجلسة", description: `مرحباً ${user.name}! تم بدء الجلسة برصيد افتتاحي ${formatCurrency(values.openingBalance).amount}.` });
     } catch(e: any) {
         toast({ title: "خطأ في بدء الجلسة", description: e.message, variant: "destructive" });
     }
@@ -179,7 +178,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prevCart, { ...product, quantity: 1 }];
+      return [...prevCart, { ...product, price: product.sellingPrice, quantity: 1 }];
     });
   };
 
@@ -242,10 +241,12 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
         isDeferredPayment: isDeferred,
         notes: `فاتورة من نقطة البيع للعميل: ${customerNameForInvoice} - طريقة الدفع: ${paymentMethod}`,
         source: "POS" as const,
+        sessionId: activeSession?.id,
+        paymentMethod: paymentMethod,
     };
 
     try {
-        await addSalesInvoice(invoiceData);
+        await addSalesInvoice(invoiceData as any);
 
         toast({
             title: isDeferred ? "تم تسجيل البيع الآجل بنجاح!" : "تمت عملية الدفع بنجاح!",
@@ -267,7 +268,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
     } catch (error) {
         toast({
             title: "خطأ في إنشاء الفاتورة",
-            description: "لم يتمكن النظام من إنشاء الفاتورة. يرجى المحاولة مرة أخرى.",
+            description: (error as Error).message,
             variant: "destructive",
         });
     }
@@ -322,7 +323,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
           <CardDescription>
             الموظف: <span className="font-semibold text-primary">{activeSession.user?.name || activeSession.userId}</span> | 
             وقت البدء: {new Date(activeSession.openingTime).toLocaleTimeString('ar-SA')} | 
-            الرصيد الافتتاحي: <span dangerouslySetInnerHTML={{ __html: formatCurrency(activeSession.openingBalance) }}></span>
+            الرصيد الافتتاحي: <span dangerouslySetInnerHTML={{ __html: formatCurrency(activeSession.openingBalance).amount + ' ' + formatCurrency(activeSession.openingBalance).symbol }}></span>
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 pt-0">
@@ -410,7 +411,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                       <CardTitle className="text-sm font-semibold truncate">{product.name}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-2 pt-0 w-full">
-                      <p className="text-primary font-bold text-sm" dangerouslySetInnerHTML={{ __html: formatCurrency(product.price) }}></p>
+                      <p className="text-primary font-bold text-sm" dangerouslySetInnerHTML={{ __html: formatCurrency(product.price).amount + ' ' + formatCurrency(product.price).symbol }}></p>
                       <p className="text-xs text-muted-foreground">المخزون: {product.stock}</p>
                     </CardContent>
                   </Card>
@@ -444,7 +445,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                       <Image src={item.image || getPlaceholderImage(item.dataAiHint)} alt={item.name} width={48} height={48} className="rounded-md object-cover"/>
                       <div className="flex-grow">
                         <p className="font-semibold truncate text-sm">{item.name}</p>
-                        <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: formatCurrency(item.price) }}></p>
+                        <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: formatCurrency(item.price).amount + ' ' + formatCurrency(item.price).symbol }}></p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.id, -1)}>
@@ -469,7 +470,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                 <CardContent className="p-4 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span>المجموع الفرعي:</span>
-                    <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(subtotal) }}></span>
+                    <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(subtotal).amount + ' ' + formatCurrency(subtotal).symbol }}></span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span>الخصم:</span>
@@ -487,7 +488,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                    <Separator />
                   <div className="flex justify-between text-lg font-bold text-primary">
                     <span>الإجمالي للدفع:</span>
-                    <span dangerouslySetInnerHTML={{ __html: formatCurrency(totalAmount) }}></span>
+                    <span dangerouslySetInnerHTML={{ __html: formatCurrency(totalAmount).amount + ' ' + formatCurrency(totalAmount).symbol }}></span>
                   </div>
                   <Dialog>
                     <DialogTrigger asChild>
@@ -503,7 +504,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                       <div className="space-y-4 py-4">
                         <div className="text-center">
                             <p className="text-muted-foreground">المبلغ الإجمالي للدفع</p>
-                            <p className="text-3xl font-bold text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(totalAmount) }}></p>
+                            <p className="text-3xl font-bold text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(totalAmount).amount + ' ' + formatCurrency(totalAmount).symbol }}></p>
                         </div>
                         <div>
                             <Label htmlFor="posCustomer">العميل</Label>
@@ -573,7 +574,7 @@ export default function POSClientComponent({ initialData }: POSClientComponentPr
                                 <TableRow key={trx.id} className="text-xs">
                                     <TableCell className="p-1">{trx.time}</TableCell>
                                     <TableCell className="p-1">#{trx.id.slice(-3)} {trx.customerName && `(${trx.customerName.substring(0,10)}..)`}</TableCell>
-                                    <TableCell className="p-1" dangerouslySetInnerHTML={{ __html: formatCurrency(trx.total) }}></TableCell>
+                                    <TableCell className="p-1" dangerouslySetInnerHTML={{ __html: formatCurrency(trx.total).amount + ' ' + formatCurrency(trx.total).symbol }}></TableCell>
                                     <TableCell className="p-1">
                                         <Badge variant={trx.paymentMethod === 'آجل' ? 'destructive' : 'secondary'} className="text-xs">{trx.paymentMethod}</Badge>
                                     </TableCell>

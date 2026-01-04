@@ -3,10 +3,10 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { journalEntries, journalEntryLines, posSessions, companySettings } from '@/db/schema';
+import { journalEntries, journalEntryLines, posSessions, companySettings, salesInvoices } from '@/db/schema';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 const posSessionSchema = z.object({
   id: z.string().optional(),
@@ -64,12 +64,20 @@ export async function closePosSession(sessionId: string, values: PosCloseSession
         throw new Error("لا توجد جلسة مفتوحة لإغلاقها أو أن الجلسة غير صالحة.");
     }
 
-    // This is a simplified calculation. A real implementation would query all invoices for this session.
-    // For now, let's assume we can get these totals. We'll use dummy data.
-    // TODO: Fetch actual sales data for the session from sales_invoices table.
-    const cashSales = 500; // Dummy value
-    const cardSales = 350; // Dummy value
-    const deferredSales = 150; // Dummy value
+    const sessionInvoices = await db.select().from(salesInvoices).where(eq(salesInvoices.sessionId, sessionId));
+
+    const cashSales = sessionInvoices
+        .filter(inv => inv.paymentMethod === 'cash')
+        .reduce((sum, inv) => sum + parseFloat(inv.numericTotalAmount), 0);
+        
+    const cardSales = sessionInvoices
+        .filter(inv => inv.paymentMethod === 'card' || inv.paymentMethod === 'bank')
+        .reduce((sum, inv) => sum + parseFloat(inv.numericTotalAmount), 0);
+    
+    const deferredSales = sessionInvoices
+        .filter(inv => inv.paymentMethod === 'deferred')
+        .reduce((sum, inv) => sum + parseFloat(inv.numericTotalAmount), 0);
+
 
     const expectedBalance = (parseFloat(session.openingBalance) || 0) + cashSales;
     const difference = values.closingBalance - expectedBalance;
@@ -126,12 +134,12 @@ async function settlePosSession(sessionId: string, data: {
   const newEntryId = `JV-POSS-${sessionId}`;
 
   // Account IDs from settings, with fallbacks
-  const POS_CASH_ACCOUNT = accountMappings.posCashAccount || '1111';
-  const BANK_ACCOUNT = accountMappings.bankAccount || '1121'; 
-  const ACCOUNTS_RECEIVABLE = accountMappings.accountsReceivable || '1200';
-  const SALES_REVENUE = accountMappings.salesRevenue || '4000';
-  const VAT_PAYABLE = accountMappings.vatPayable || '2200';
-  const CASH_OVER_SHORT = accountMappings.cashOverShort || '5303'; 
+  const POS_CASH_ACCOUNT = accountMappings?.posCashAccount || '1111';
+  const BANK_ACCOUNT = accountMappings?.bankAccount || '1121'; 
+  const ACCOUNTS_RECEIVABLE = accountMappings?.accountsReceivable || '1200';
+  const SALES_REVENUE = accountMappings?.salesRevenue || '4000';
+  const VAT_PAYABLE = accountMappings?.vatPayable || '2200';
+  const CASH_OVER_SHORT = accountMappings?.cashOverShort || '5303'; 
 
   await db.transaction(async (tx) => {
     await tx.insert(journalEntries).values({
@@ -148,7 +156,9 @@ async function settlePosSession(sessionId: string, data: {
 
     // --- Debit Side ---
     // 1. Debit POS cash account with closing balance
-    lines.push({ journalEntryId: newEntryId, accountId: POS_CASH_ACCOUNT, debit: String(data.closingBalance), credit: '0', description: 'إثبات المبلغ المقفول في الصندوق' });
+    if (data.closingBalance > 0) {
+        lines.push({ journalEntryId: newEntryId, accountId: POS_CASH_ACCOUNT, debit: String(data.closingBalance), credit: '0', description: 'إثبات المبلغ المقفول في الصندوق' });
+    }
     // 2. Debit Bank account for card sales
     if (data.cardSales > 0) {
         lines.push({ journalEntryId: newEntryId, accountId: BANK_ACCOUNT, debit: String(data.cardSales), credit: '0', description: 'إثبات مبيعات البطاقات' });
@@ -164,11 +174,17 @@ async function settlePosSession(sessionId: string, data: {
 
     // --- Credit Side ---
     // 1. Credit POS cash account with opening balance (as it's now part of the closing balance)
-    lines.push({ journalEntryId: newEntryId, accountId: POS_CASH_ACCOUNT, debit: '0', credit: String(data.openingBalance), description: 'عكس الرصيد الافتتاحي' });
+    if(data.openingBalance > 0) {
+        lines.push({ journalEntryId: newEntryId, accountId: POS_CASH_ACCOUNT, debit: '0', credit: String(data.openingBalance), description: 'عكس الرصيد الافتتاحي' });
+    }
     // 2. Credit Sales Revenue
-    lines.push({ journalEntryId: newEntryId, accountId: SALES_REVENUE, debit: '0', credit: String(totalBeforeTax), description: 'إثبات إيرادات المبيعات' });
+    if (totalBeforeTax > 0) {
+        lines.push({ journalEntryId: newEntryId, accountId: SALES_REVENUE, debit: '0', credit: String(totalBeforeTax), description: 'إثبات إيرادات المبيعات' });
+    }
     // 3. Credit VAT Payable
-    lines.push({ journalEntryId: newEntryId, accountId: VAT_PAYABLE, debit: '0', credit: String(vatAmount), description: 'إثبات ضريبة القيمة المضافة' });
+    if (vatAmount > 0) {
+        lines.push({ journalEntryId: newEntryId, accountId: VAT_PAYABLE, debit: '0', credit: String(vatAmount), description: 'إثبات ضريبة القيمة المضافة' });
+    }
     // 4. Credit Cash Over/Short if there was an overage (difference is positive)
     if (data.difference > 0) {
         lines.push({ journalEntryId: newEntryId, accountId: CASH_OVER_SHORT, debit: '0', credit: String(data.difference), description: 'تسجيل زيادة في الصندوق' });

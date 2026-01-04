@@ -263,6 +263,8 @@ export const salesInvoices = pgTable('sales_invoices', {
   notes: text('notes'),
   discountType: varchar('discount_type', { length: 20 }).default('amount'), // 'amount' or 'percentage'
   discountValue: numeric('discount_value', { precision: 10, scale: 2 }).default('0'),
+  sessionId: varchar('session_id', { length: 256 }),
+  paymentMethod: varchar('payment_method', { length: 50 }),
 });
 
 export const salesInvoiceItems = pgTable('sales_invoice_items', {

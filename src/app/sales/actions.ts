@@ -31,6 +31,8 @@ const invoiceSchema = z.object({
   source: z.enum(["POS", "Manual"]).optional().default("Manual"),
   discountType: z.enum(['amount', 'percentage']).optional(),
   discountValue: z.coerce.number().min(0).optional(),
+  sessionId: z.string().optional(),
+  paymentMethod: z.string().optional(),
 });
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
