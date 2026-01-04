@@ -583,6 +583,19 @@ export const cashExpenses = pgTable('cash_expenses', {
     status: varchar('status', { length: 50 }).notNull().default('مسودة'),
 });
 
+export const cashReceipts = pgTable('cash_receipts', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    date: timestamp('date').notNull(),
+    cashAccountId: varchar('cash_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    revenueAccountId: varchar('revenue_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
+    payerName: varchar('payer_name', { length: 256 }).notNull(),
+    customerId: varchar('customer_id', { length: 256 }).references(() => customers.id),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    referenceNumber: varchar('reference_number', { length: 256 }),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
 // --- Projects ---
 
 export const projects = pgTable('projects', {
@@ -893,3 +906,4 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
     
 
     
+

@@ -1,6 +1,6 @@
 
 
-import { LayoutDashboard, BookUser, BookOpen, FileArchive, UserCheck, Landmark, ArrowUpCircle, ArrowDownCircle, ArrowDownSquare, BookCopy, Package, Truck, SlidersHorizontal, ShoppingCart, Briefcase, Users, Cog, GanttChartSquare, CreditCardIcon, BarChart2, Settings, Shield, Settings2, Building2, Mail, CircleHelpIcon, FolderOpen, FileWarning, FileEdit, UserX, ClipboardSignature, FileText } from 'lucide-react';
+import { LayoutDashboard, BookUser, BookOpen, FileArchive, UserCheck, Landmark, ArrowUpCircle, ArrowDownCircle, ArrowDownSquare, BookCopy, Package, Truck, SlidersHorizontal, ShoppingCart, Briefcase, Users, Cog, GanttChartSquare, CreditCardIcon, BarChart2, Settings, Shield, Settings2, Building2, Mail, CircleHelpIcon, FolderOpen, FileWarning, FileEdit, UserX, ClipboardSignature, FileText, ArrowUpSquare } from 'lucide-react';
 import type { SidebarMenuItemProps } from '@/components/ui/sidebar';
 
 interface NavItem {
@@ -33,6 +33,7 @@ export const allNavItems: NavItem[] = [
             label: "الخزينة والبنوك", icon: Landmark, permissionKey: "accounting.view",
             subItems: [
                 { href: "/bank-receipts", label: "المقبوضات البنكية", icon: ArrowUpCircle, permissionKey: "accounting.create" },
+                { href: "/cash-receipts", label: "المقبوضات النقدية", icon: ArrowUpSquare, permissionKey: "accounting.create" },
                 { href: "/bank-expenses", label: "المصروفات البنكية", icon: ArrowDownCircle, permissionKey: "accounting.create" },
                 { href: "/cash-expenses", label: "المصروفات النقدية", icon: ArrowDownSquare, permissionKey: "accounting.create" },
                 { href: "/checkbook-register", label: "دفتر الشيكات", icon: BookCopy, permissionKey: "accounting.view" },
