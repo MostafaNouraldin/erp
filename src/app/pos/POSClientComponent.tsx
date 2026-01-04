@@ -20,7 +20,7 @@ import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; 
 import { useCurrency } from '@/hooks/use-currency';
-import { useAuth } from '@/hooks/auth-context';
+import { useAuth } from '@/hooks/use-auth';
 import { addSalesInvoice } from '@/app/sales/actions';
 import { startPosSession, closePosSession, getActiveSession } from './actions';
 import type { PosSessionStartValues, PosCloseSessionValues } from './actions';
