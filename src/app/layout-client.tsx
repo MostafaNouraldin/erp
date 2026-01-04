@@ -74,30 +74,43 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
     }
 
     const navItems = allNavItems
-      .filter(item => {
-        // A user can see a parent item if they have permission for AT LEAST ONE of its children.
-        const canSeeAnySubItem = item.subItems?.some(sub => auth.hasPermission(sub.permissionKey));
-
-        // An item is visible if it doesn't have a permission key, or it's a parent with visible children, or the user has direct permission.
-        return !item.permissionKey || auth.hasPermission(item.permissionKey) || canSeeAnySubItem;
-      })
       .map(item => {
+        if (!auth.hasPermission(item.permissionKey)) {
+          return null;
+        }
+
         if (item.subItems) {
+            const visibleSubItems = item.subItems.filter(sub => {
+                const hasSubSubPermission = sub.subItems ? sub.subItems.some(grandchild => auth.hasPermission(grandchild.permissionKey)) : false;
+                if (sub.subItems && !hasSubSubPermission) return false;
+
+                if (auth.isSuperAdmin && sub.href === '/subscription') {
+                    return false;
+                }
+                return auth.hasPermission(sub.permissionKey);
+            }).map(sub => {
+                if (sub.subItems) {
+                    return {
+                        ...sub,
+                        subItems: sub.subItems.filter(grandchild => auth.hasPermission(grandchild.permissionKey))
+                    }
+                }
+                return sub;
+            }).filter(sub => sub.href || (sub.subItems && sub.subItems.length > 0));
+
+            if (visibleSubItems.length === 0 && !item.href) {
+                return null;
+            }
+
             return {
                 ...item,
-                subItems: item.subItems.filter(sub => {
-                    // Hide subscription link for super admins
-                    if (auth.isSuperAdmin && sub.href === '/subscription') {
-                        return false;
-                    }
-                    return auth.hasPermission(sub.permissionKey);
-                })
+                subItems: visibleSubItems
             };
         }
+        
         return item;
       })
-      // Finally, filter out any parent items that now have no visible sub-items (unless they are a direct link themselves)
-      .filter(item => item.href || (item.subItems && item.subItems.length > 0));
+      .filter(Boolean);
 
 
     return (
@@ -108,7 +121,7 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
                     <SidebarContent>
                         <SidebarMenu>
                             {navItems.map((item) => (
-                                <SidebarMenuItem key={item.label} item={item} />
+                               item && <SidebarMenuItem key={item.label} item={item} />
                             ))}
                         </SidebarMenu>
                     </SidebarContent>
@@ -119,7 +132,7 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
                                 <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
                                     <p className="font-semibold text-foreground">{companySettings?.name}</p>
                                 </div>
-                                <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-border hover:bg-sidebar-primary/10">
+                                <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden bg-background text-foreground border-border hover:bg-accent">
                                   <Link href="/subscription">
                                     إدارة الاشتراك
                                   </Link>
