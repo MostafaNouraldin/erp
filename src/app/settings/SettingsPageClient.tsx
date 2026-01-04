@@ -282,7 +282,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                 </CardHeader>
             </Card>
 
-            <Tabs defaultValue="company" className="w-full mt-6">
+            <Tabs defaultValue="company" className="w-full mt-6" dir="rtl">
                 <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto">
                     <TabsTrigger value="company" className="flex-shrink-0"><Building className="inline-block me-2 h-4 w-4" /> معلومات الشركة</TabsTrigger>
                     <TabsTrigger value="financial" className="flex-shrink-0"><FileSliders className="inline-block me-2 h-4 w-4" /> المالية والضرائب</TabsTrigger>
@@ -329,7 +329,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                         </TabsContent>
                         <TabsContent value="email">
                             <Card className="shadow-md">
-                                <CardHeader><CardTitle>إعدادات خادم البريد الإلكتروني (SMTP)</CardTitle><CardDescription>تستخدم هذه الإعدادات لإرسال رسائل البريد الإلكتروني من النظام، مثل إشعارات تفعيل الحسابات.</CardDescription></CardHeader>
+                                <CardHeader><CardTitle>إعدادات خادم البريد الإلكتروني (SMTP)</CardTitle><FormDescription>تستخدم هذه الإعدادات لإرسال رسائل البريد الإلكتروني من النظام، مثل إشعارات تفعيل الحسابات.</FormDescription></CardHeader>
                                 <CardContent className="space-y-4">
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField control={settingsForm.control} name="smtpHost" render={({ field }) => ( <FormItem><FormLabel>خادم SMTP</FormLabel><FormControl><Input placeholder="smtp.example.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
