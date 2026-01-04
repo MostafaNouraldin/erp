@@ -92,7 +92,10 @@ const DashboardClient: FC<DashboardClientProps> = ({ initialData }) => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" dangerouslySetInnerHTML={{ __html: formatCurrency(data.totalRevenue) }}></div>
+            <div className="text-2xl font-bold">
+                {formatCurrency(data.totalRevenue).amount}
+                <span className="font-saudi-riyal text-lg ms-1">{formatCurrency(data.totalRevenue).symbol}</span>
+            </div>
             <p className="text-xs text-muted-foreground">
               من الفواتير المدفوعة
             </p>
@@ -152,7 +155,7 @@ const DashboardClient: FC<DashboardClientProps> = ({ initialData }) => {
                     tickMargin={10}
                     axisLine={false}
                   />
-                  <YAxis tickFormatter={(value) => formatCurrency(value as number).replace(/<[^>]*>/g, '')} />
+                  <YAxis tickFormatter={(value) => formatCurrency(value as number).amount} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <ChartLegend content={<ChartLegendContent />} />
                   <Bar dataKey="total" fill="var(--color-total)" radius={4} />
@@ -211,7 +214,10 @@ const DashboardClient: FC<DashboardClientProps> = ({ initialData }) => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">قيمة المخزون (بالتكلفة)</span>
-              <span className="font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(data.inventorySummary.totalValue) }}></span>
+              <span className="font-semibold">
+                {formatCurrency(data.inventorySummary.totalValue).amount}
+                <span className="font-saudi-riyal text-xs ms-1">{formatCurrency(data.inventorySummary.totalValue).symbol}</span>
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">أصناف قاربت على النفاد</span>

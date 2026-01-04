@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ShoppingBag, Upload, AlertTriangle } from 'lucide-react';
 import type { Module } from '@/types/saas';
-import { submitSubscriptionRequest } from './actions';
+import { submitSubscriptionRequest } from '../subscribe/actions';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { availableCurrencies } from '@/contexts/currency-context';
@@ -62,7 +62,8 @@ export default function SubscribePage() {
   const router = useRouter();
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [companySettings, setCompanySettings] = useState<CompanySettings>({});
-  const { formatCurrency, updateCurrency } = useCurrency();
+  const { updateCurrency, formatCurrency } = useCurrency();
+
 
   useEffect(() => {
     async function fetchSettings() {
@@ -157,13 +158,13 @@ export default function SubscribePage() {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-muted/30 p-4" dir="rtl">
+    <div className="flex flex-col items-center min-h-screen bg-muted/5 p-4" dir="rtl">
         <div className="my-8">
             <AppLogo logoUrl={companySettings.companyLogo} companyName={companySettings.companyName}/>
         </div>
       <Card className="w-full max-w-4xl shadow-2xl">
         <CardHeader className="text-center space-y-2">
-           <CardTitle className="text-2xl">طلب اشتراك جديد في نظام {companySettings.companyName || 'المستقبل ERP'}</CardTitle>
+          <CardTitle className="text-2xl">طلب اشتراك جديد في نظام {companySettings.companyName || 'المستقبل ERP'}</CardTitle>
           <CardDescription>املأ النموذج أدناه لبدء استخدام النظام وتخصيص اشتراكك.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -243,7 +244,10 @@ export default function SubscribePage() {
                                                     <div className="space-y-0.5">
                                                         <FormLabel className="text-sm font-medium">{module.name}</FormLabel>
                                                         <p className="text-xs text-muted-foreground">{module.description}</p>
-                                                        <p className="text-xs font-semibold text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly) }}></p>
+                                                        <p className="text-xs font-semibold text-primary">
+                                                          {formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly).amount}
+                                                          <span className="font-saudi-riyal text-sm ms-1">{formatCurrency(0).symbol}</span>
+                                                        </p>
                                                     </div>
                                                     <FormControl><Checkbox checked={field.value?.includes(module.key)} onCheckedChange={(checked) => { return checked ? field.onChange([...field.value, module.key]) : field.onChange(field.value?.filter((value) => value !== module.key)); }} /></FormControl>
                                                 </FormItem>
@@ -257,7 +261,10 @@ export default function SubscribePage() {
                      <Card className="bg-primary/5 border-primary/20 sticky top-4">
                         <CardHeader><CardTitle className="text-lg">ملخص الطلب</CardTitle></CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-primary text-center" dangerouslySetInnerHTML={{ __html: formatCurrency(form.getValues("totalAmount")) }}></div>
+                            <div className="text-3xl font-bold text-primary text-center">
+                                {formatCurrency(form.getValues("totalAmount")).amount}
+                                <span className="font-saudi-riyal text-2xl ms-2">{formatCurrency(0).symbol}</span>
+                            </div>
                             <p className="text-center text-muted-foreground">/{billingCycle === "monthly" ? "شهرياً" : "سنوياً"}</p>
                         </CardContent>
                     </Card>

@@ -18,10 +18,15 @@ export const availableCurrencies: Currency[] = [
   { code: "EGP", name: "جنيه مصري", symbol: "E£" },
 ];
 
+interface FormattedCurrency {
+  amount: string;
+  symbol: string;
+}
+
 interface CurrencyContextProps {
   selectedCurrency: Currency;
   updateCurrency: (currencyCode: string) => void;
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (amount: number) => FormattedCurrency;
 }
 
 const defaultCurrency = availableCurrencies[0]; 
@@ -35,7 +40,7 @@ export const CurrencyContext = createContext<CurrencyContextProps>({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
-    return `${formatted} <span class="font-saudi-riyal">${symbol}</span>`;
+    return { amount: formatted, symbol };
   },
 });
 
@@ -78,14 +83,14 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
     loadCurrencyPreference();
   }, [user, isAuthLoading, updateCurrency]);
 
-  const formatCurrency = (amount: number): string => {
+  const formatCurrency = (amount: number): FormattedCurrency => {
     const { symbol } = selectedCurrency;
     const formatted = new Intl.NumberFormat('ar-SA', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
     
-    return `${formatted} <span class="font-saudi-riyal">${symbol}</span>`;
+    return { amount: formatted, symbol };
   };
 
   // Do not render children until the currency has been loaded to prevent hydration mismatches
