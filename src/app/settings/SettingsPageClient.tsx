@@ -454,7 +454,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                      <FormField control={settingsForm.control} name="themePrimaryColor" render={({ field }) => (
                                         <FormItem className="max-w-xs"><FormLabel>اللون الأساسي للنظام</FormLabel>
                                             <div className="flex items-center gap-2">
-                                                <FormControl><Input type="color" {...field} className="bg-background p-1 h-10 w-14" /></FormControl>
+                                                <FormControl><Input type="color" value={field.value || ''} onChange={field.onChange} className="bg-background p-1 h-10 w-14" /></FormControl>
                                                 <Input value={field.value || ''} onChange={field.onChange} placeholder="e.g., 221 83 53" className="bg-background text-left" dir="ltr"/>
                                             </div>
                                             <FormDescription className="text-xs text-muted-foreground">أدخل قيم HSL (Hue Saturation Lightness) بدون رموز. مثال: 221 83 53</FormDescription>
@@ -592,3 +592,4 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
     
 
     
+
