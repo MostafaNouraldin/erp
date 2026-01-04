@@ -1,4 +1,5 @@
 
+
 // This is now a true Server Component that fetches data and passes it to the client.
 import { connectToTenantDb } from '@/db';
 import { suppliers, purchaseOrders, purchaseOrderItems, supplierInvoices, supplierInvoiceItems, goodsReceivedNotes, goodsReceivedNoteItems, purchaseReturns, purchaseReturnItems, products } from '@/db/schema';
