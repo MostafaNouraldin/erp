@@ -114,10 +114,10 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
                     </SidebarContent>
                     <SidebarFooter>
                     {!auth.isSuperAdmin && (
-                        <Card className="bg-transparent border-0 shadow-none">
+                        <Card>
                             <CardContent className="p-2 text-xs">
                                 <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
-                                    <p className="font-semibold text-sidebar-primary">{companySettings?.name}</p>
+                                    <p className="font-semibold text-foreground">{companySettings?.name}</p>
                                 </div>
                                 <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-border hover:bg-sidebar-primary/10">
                                   <Link href="/subscription">
