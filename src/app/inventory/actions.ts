@@ -294,3 +294,5 @@ export async function addStockRequisition(values: StockRequisitionFormValues) {
     });
     revalidatePath('/inventory');
 }
+
+    

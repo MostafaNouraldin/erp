@@ -51,8 +51,8 @@ export default async function InventoryPage() {
             categories: categoriesResult,
             suppliers: suppliersResult,
             warehouses: warehousesResult,
-            stockRequisitions: requisitionsWithItems,
-            stockIssueVouchers: issueVouchersWithItems,
+            stockRequisitions: requisitionsWithItems.map(r => ({...r, requestDate: new Date(r.requestDate), requiredByDate: new Date(r.requiredByDate)})),
+            stockIssueVouchers: issueVouchersWithItems.map(v => ({...v, date: new Date(v.date)})),
             goodsReceivedNotes: goodsReceivedNotesWithItems,
             inventoryMovements: inventoryMovementsResult.map(log => ({...log, date: new Date(log.date)})),
         };
@@ -76,3 +76,5 @@ export default async function InventoryPage() {
         );
     }
 }
+
+    
