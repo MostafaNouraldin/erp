@@ -870,24 +870,77 @@ useEffect(() => {
           </Card>
         </TabsContent>
 
-        {/* Other Tabs */}
-        <TabsContent value="invoices">
-          {/* Invoice content as before */}
-        </TabsContent>
         <TabsContent value="customers">
-          {/* Customer content as before */}
+             <Card className="shadow-lg">
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>قائمة العملاء</CardTitle>
+                      <Dialog open={showManageCustomerDialog} onOpenChange={(isOpen) => { setShowManageCustomerDialog(isOpen); if (!isOpen) setCustomerToEdit(null); }}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="shadow-sm" onClick={() => { setCustomerToEdit(null); customerForm.reset(); setShowManageCustomerDialog(true); }}>
+                            <PlusCircle className="me-2 h-4 w-4" /> إضافة عميل جديد
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-lg" dir="rtl">
+                            <DialogHeader>
+                                <DialogTitle>{customerToEdit ? 'تعديل بيانات عميل' : 'إضافة عميل جديد'}</DialogTitle>
+                            </DialogHeader>
+                             <Form {...customerForm}>
+                                <form onSubmit={customerForm.handleSubmit(handleCustomerSubmit)} className="space-y-4 py-4">
+                                     <FormField control={customerForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم العميل</FormLabel><FormControl><Input placeholder="اسم العميل أو الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={customerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" placeholder="example@customer.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        <FormField control={customerForm.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                     </div>
+                                      <FormField control={customerForm.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان العميل" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                      <FormField control={customerForm.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للعميل" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                    <DialogFooter>
+                                      <Button type="submit">{customerToEdit ? 'حفظ التعديلات' : 'إضافة العميل'}</Button>
+                                      <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                                    </DialogFooter>
+                                </form>
+                             </Form>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    <CardDescription>عرض وتعديل بيانات جميع العملاء.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead>البريد الإلكتروني</TableHead><TableHead>الهاتف</TableHead><TableHead>الرصيد</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {customers.map((customer) => (
+                                <TableRow key={customer.id}>
+                                    <TableCell>{customer.name}</TableCell><TableCell>{customer.email}</TableCell><TableCell>{customer.phone}</TableCell>
+                                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(customer.balance) }}></TableCell>
+                                    <TableCell className="text-center">
+                                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewCustomerDetails(customer)}><Eye className="h-4 w-4" /></Button>
+                                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setCustomerToEdit(customer); setShowManageCustomerDialog(true); }}><Edit className="h-4 w-4" /></Button>
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent dir="rtl">
+                                                <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف العميل "{customer.name}"؟</AlertDialogDescription></AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteCustomer(customer.id)}>حذف</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </TabsContent>
-        <TabsContent value="quotations">
-          {/* Quotation content as before */}
-        </TabsContent>
-        <TabsContent value="salesOrders">
-          {/* Sales order content as before */}
-        </TabsContent>
-
       </Tabs>
     </div>
   );
 }
+
 
 
 
