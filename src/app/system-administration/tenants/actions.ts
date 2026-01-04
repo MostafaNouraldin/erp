@@ -19,6 +19,7 @@ const tenantSchema = z.object({
   subscribedModules: z.array(z.object({
     moduleId: z.string(),
     subscribed: z.boolean(),
+    key: z.string().optional(), // This field is used internally by react-hook-form but wasn't in the schema
   })).default([]),
   billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
 });
