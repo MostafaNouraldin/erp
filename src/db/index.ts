@@ -17,24 +17,28 @@ if (!process.env.DATABASE_URL) {
 // we don't create new connections on every reload.
 const globalForDb = globalThis as unknown as {
   conn: postgres.Sql | undefined;
+  drizzleDb: ReturnType<typeof drizzle> | undefined;
 };
 
-const conn = globalForDb.conn ?? postgres(databaseUrl);
-if (process.env.NODE_ENV !== 'production') globalForDb.conn = conn;
-
-const db = drizzle(conn, { schema });
-// --- End Singleton Pattern ---
-
-
-/**
- * Provides a unified database connection.
- * In this simplified setup, it always returns the main database connection.
- * @param _tenantId - The tenant ID (ignored in this setup).
- * @returns A Drizzle instance connected to the database.
- */
+// A function that manages a single, shared connection.
 export async function connectToTenantDb(_tenantId?: string) {
-  return { db };
+  if (!globalForDb.conn) {
+    console.log("Creating new database connection...");
+    globalForDb.conn = postgres(databaseUrl);
+  }
+
+  if (!globalForDb.drizzleDb) {
+    console.log("Creating new Drizzle instance...");
+    globalForDb.drizzleDb = drizzle(globalForDb.conn, { schema });
+  }
+
+  return { db: globalForDb.drizzleDb };
 }
 
 // Export a mainDb alias for any legacy code that might still use it.
-export const mainDb = db;
+// This will now correctly use the singleton managed by connectToTenantDb.
+// Note: Direct usage of this might be less safe if the connection isn't established yet.
+// It's better to call `await connectToTenantDb()` everywhere.
+// However, we can initialize it once here to be safe.
+const { db: mainDb } = await connectToTenantDb();
+export { mainDb };
