@@ -42,12 +42,12 @@ export async function getDashboardData() {
         `);
 
         const latestActivitiesResult = await db.execute(sql`
-            (SELECT 'فاتورة مبيعات جديدة' as description, id, created_at FROM sales_invoices ORDER BY created_at DESC LIMIT 1)
+            (SELECT 'فاتورة مبيعات جديدة' as description, id, date as activity_date FROM sales_invoices ORDER BY date DESC LIMIT 1)
             UNION ALL
-            (SELECT 'أمر شراء جديد' as description, id, created_at FROM purchase_orders ORDER BY created_at DESC LIMIT 1)
+            (SELECT 'أمر شراء جديد' as description, id, date as activity_date FROM purchase_orders ORDER BY date DESC LIMIT 1)
             UNION ALL
-            (SELECT 'طلب إجازة جديد' as description, id, created_at FROM leave_requests ORDER BY created_at DESC LIMIT 1)
-            ORDER BY created_at DESC;
+            (SELECT 'طلب إجازة جديد' as description, id, "requestDate" as activity_date FROM leave_requests ORDER BY "requestDate" DESC LIMIT 1)
+            ORDER BY activity_date DESC;
         `);
 
         const iconMap: { [key: string]: string } = {
@@ -58,7 +58,7 @@ export async function getDashboardData() {
 
         const latestActivities = (latestActivitiesResult as any[]).map(act => ({
             description: `${act.description} #${act.id}`,
-            time: act.created_at.toISOString(),
+            time: act.activity_date.toISOString(),
             icon: iconMap[act.description] || 'FileClock'
         }));
 
