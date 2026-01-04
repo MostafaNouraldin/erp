@@ -29,7 +29,7 @@ async function getSettingsData(tenantId: string) {
             data: {
                 users: usersData.map(u => ({ ...u, password: '' })), // Don't send password hash to client
                 roles: rolesData,
-                settings: settingsData?.settings as SettingsFormValues || {},
+                settings: (settingsData?.settings as SettingsFormValues) || {},
                 departments: departmentsData,
                 jobTitles: jobTitlesData,
                 leaveTypes: leaveTypesData,
@@ -62,4 +62,3 @@ export default async function SettingsServerPage() {
 
     return <SettingsPage initialData={result.data as { users: UserFormValues[], roles: Role[], settings: SettingsFormValues, departments: Department[], jobTitles: JobTitle[], leaveTypes: LeaveType[], allowanceTypes: AllowanceType[], deductionTypes: DeductionType[], accounts: Account[] }} />;
 }
-

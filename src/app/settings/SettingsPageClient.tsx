@@ -8,7 +8,7 @@ import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save, Briefcase, CalendarDays, HeartPulse, User, Mail } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save, Briefcase, CalendarDays, HeartPulse, User, Mail, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +25,7 @@ import type { UserFormValues, RoleFormValues, SettingsFormValues, Department, Jo
 import { availableCurrencies } from '@/contexts/currency-context';
 import { useCurrency } from '@/hooks/use-currency';
 import { Textarea } from '@/components/ui/textarea';
+import Image from 'next/image';
 
 
 const permissionGroups = {
@@ -73,6 +74,7 @@ const settingsSchema = z.object({
   companyEmail: z.string().email({ message: "بريد إلكتروني غير صالح" }).optional().or(z.literal('')),
   companyPhone: z.string().optional(),
   companyVatNumber: z.string().optional(),
+  companyLogo: z.string().optional(),
   defaultCurrency: z.string().optional(),
   vatRate: z.coerce.number().min(0).max(100).optional(),
   themePrimaryColor: z.string().optional(),
@@ -129,6 +131,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
     const { toast } = useToast();
     const { updateCurrency } = useCurrency();
+    const [logoPreview, setLogoPreview] = useState<string | null>(initialData.settings.companyLogo || null);
 
     const userForm = useForm<UserFormValues>({ resolver: zodResolver(userSchema), defaultValues: { name: "", email: "", roleId: "", status: "نشط", password: "", avatar_url: ""}, });
     const roleForm = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema), defaultValues: { name: "", description: "", permissions: []}, });
@@ -140,6 +143,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         companyEmail: initialData.settings.companyEmail || '',
         companyPhone: initialData.settings.companyPhone || '',
         companyVatNumber: initialData.settings.companyVatNumber || '',
+        companyLogo: initialData.settings.companyLogo || '',
         defaultCurrency: initialData.settings.defaultCurrency || 'SAR',
         vatRate: initialData.settings.vatRate ?? 15,
         themePrimaryColor: initialData.settings.themePrimaryColor || '',
@@ -206,7 +210,10 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
             if (values.defaultCurrency) {
               updateCurrency(values.defaultCurrency);
             }
-            if (values.themePrimaryColor) { const [h, s, l] = values.themePrimaryColor.split(' ').map(Number); document.documentElement.style.setProperty('--primary', `${h} ${s}% ${l}%`); }
+            if (values.themePrimaryColor) {
+              const [h, s, l] = values.themePrimaryColor.split(' ').map(Number);
+              document.documentElement.style.setProperty('--primary', `${h} ${s}% ${l}%`);
+            }
         } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
     }
     
@@ -270,6 +277,25 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
     };
 
+    const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            try {
+                const dataUri = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                setLogoPreview(dataUri);
+                settingsForm.setValue('companyLogo', dataUri);
+            } catch (error) {
+                toast({ title: "خطأ في رفع الشعار", description: "لم يتمكن النظام من معالجة ملف الصورة.", variant: "destructive" });
+            }
+        }
+    };
+
+
     return (
         <div className="container mx-auto py-6" dir="rtl">
             <Card className="shadow-lg">
@@ -306,6 +332,16 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                         <FormField control={settingsForm.control} name="companyPhone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                                         <div className="md:col-span-2">
                                             <FormField control={settingsForm.control} name="companyAddress" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Textarea {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                        </div>
+                                         <div className="md:col-span-2">
+                                            <FormField control={settingsForm.control} name="companyLogo" render={({ field }) => ( 
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">شعار الشركة <Upload className="h-4 w-4"/></FormLabel>
+                                                    <FormControl><Input type="file" accept="image/*" onChange={handleLogoUpload} className="bg-background"/></FormControl>
+                                                    {logoPreview && <Image src={logoPreview} alt="معاينة الشعار" width={128} height={128} className="mt-2 rounded-md border object-contain p-2"/>}
+                                                    <FormMessage/>
+                                                </FormItem> 
+                                            )}/>
                                         </div>
                                      </div>
                                 </CardContent>
@@ -454,8 +490,8 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                      <FormField control={settingsForm.control} name="themePrimaryColor" render={({ field }) => (
                                         <FormItem className="max-w-xs"><FormLabel>اللون الأساسي للنظام</FormLabel>
                                             <div className="flex items-center gap-2">
-                                                <FormControl><Input type="color" value={field.value || ''} onChange={field.onChange} className="bg-background p-1 h-10 w-14" /></FormControl>
-                                                <Input value={field.value || ''} onChange={field.onChange} placeholder="e.g., 221 83 53" className="bg-background text-left" dir="ltr"/>
+                                                <FormControl><Input type="color" value={field.value ? `#${hslToHex(field.value)}` : '#3b82f6'} onChange={(e) => field.onChange(hexToHsl(e.target.value))} className="bg-background p-1 h-10 w-14" /></FormControl>
+                                                <Input value={field.value || ''} onChange={(e) => field.onChange(e.target.value)} placeholder="e.g., 221 83 53" className="bg-background text-left" dir="ltr"/>
                                             </div>
                                             <FormDescription className="text-xs text-muted-foreground">أدخل قيم HSL (Hue Saturation Lightness) بدون رموز. مثال: 221 83 53</FormDescription>
                                         <FormMessage/></FormItem> )} />
@@ -589,7 +625,56 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
         </div>
     );
 }
+
+// Helper functions for color conversion
+function hexToHsl(hex: string): string {
+    hex = hex.replace(/^#/, '');
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    h = Math.round(h * 360);
+    s = Math.round(s * 100);
+    l = Math.round(l * 100);
+    return `${h} ${s} ${l}`;
+}
+
+function hslToHex(hsl: string): string {
+    const [h, s, l] = hsl.split(' ').map(Number);
+    const s_norm = s / 100;
+    const l_norm = l / 100;
+
+    const c = (1 - Math.abs(2 * l_norm - 1)) * s_norm;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = l_norm - c / 2;
+    let r = 0, g = 0, b = 0;
+
+    if (0 <= h && h < 60) { [r, g, b] = [c, x, 0]; }
+    else if (60 <= h && h < 120) { [r, g, b] = [x, c, 0]; }
+    else if (120 <= h && h < 180) { [r, g, b] = [0, c, x]; }
+    else if (180 <= h && h < 240) { [r, g, b] = [0, x, c]; }
+    else if (240 <= h && h < 300) { [r, g, b] = [x, 0, c]; }
+    else if (300 <= h && h < 360) { [r, g, b] = [c, 0, x]; }
+    
+    const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+    return `${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
     
 
     
+
 

@@ -38,6 +38,7 @@ const settingsSchema = z.object({
   companyEmail: z.string().email({ message: "بريد إلكتروني غير صالح" }).optional().or(z.literal('')),
   companyPhone: z.string().optional().default(''),
   companyVatNumber: z.string().optional().default(''),
+  companyLogo: z.string().optional().default(''),
   defaultCurrency: z.string().optional().default('SAR'),
   vatRate: z.coerce.number().min(0).max(100).optional(),
   themePrimaryColor: z.string().optional().default(''),
