@@ -403,18 +403,25 @@ SidebarInput.displayName = "SidebarInput"
 
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & { asChild?: boolean; }
->(({ className, asChild, ...props }, ref) => {
-  const Comp = asChild ? Slot : "div";
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => {
   return (
-    <Comp
+    <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex h-16 items-center gap-3 p-3 group-data-[collapsible=icon]:justify-center border-b border-sidebar-border", className)}
+      className={cn(
+        "flex h-auto flex-col items-center gap-3 p-3 group-data-[collapsible=icon]:h-16 group-data-[collapsible=icon]:py-2 border-b border-sidebar-border",
+        className
+      )}
       {...props}
-    />
-  )
-})
+    >
+      <AppLogo />
+      <span className="hidden w-full text-center text-sm font-semibold text-foreground group-data-[collapsible=expanded]:block">
+        نسيج للحلول المتكاملة
+      </span>
+    </div>
+  );
+});
 SidebarHeader.displayName = "SidebarHeader"
 
 const SidebarFooter = React.forwardRef<
@@ -589,6 +596,23 @@ const SidebarMenuItem = React.forwardRef<
         <span className="truncate">{item.label}</span>
       </>
     );
+     // Calculate the dynamic max-height for the collapsible sub-menu
+    const getSubMenuHeight = (items: NavItem['subItems']) => {
+      if (!items) return 0;
+      let height = 0;
+      const mainItemHeight = 36; // Approx height for a sub-item button
+      const nestedItemHeight = 32; // Approx height for a nested sub-item button
+
+      items.forEach(item => {
+        height += mainItemHeight;
+        if (item.subItems) {
+          height += item.subItems.length * nestedItemHeight;
+        }
+      });
+      return height;
+    };
+    const subMenuHeight = getSubMenuHeight(item.subItems);
+
 
     return (
       <li ref={ref} data-sidebar="menu-item" className={cn("group/menu-item relative flex flex-col", className)} {...props}>
@@ -608,7 +632,7 @@ const SidebarMenuItem = React.forwardRef<
             "group-data-[collapsible=icon]:hidden"
           )}
           style={{
-             maxHeight: isExpanded && sidebarState === "expanded" && !isMobile ? `${item.subItems.reduce((acc, sub) => acc + 36 + ((sub.subItems?.length || 0) * 32), 0)}px` : "0px",
+             maxHeight: isExpanded && sidebarState === "expanded" && !isMobile ? `${subMenuHeight}px` : "0px",
           }}
         >
           {isExpanded && sidebarState === "expanded" && !isMobile && (
