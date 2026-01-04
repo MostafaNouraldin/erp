@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ShoppingBag, Upload, AlertTriangle } from 'lucide-react';
 import type { Module } from '@/types/saas';
-import { submitSubscriptionRequest } from './actions';
+import { submitSubscriptionRequest } from '../subscribe/actions';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { availableCurrencies } from '@/contexts/currency-context';
