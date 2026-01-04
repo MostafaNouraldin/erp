@@ -1,5 +1,6 @@
-
 // src/hooks/auth-context.tsx
+"use client";
+
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import type { Role } from '@/types/saas'; // Import Role type
 
@@ -27,7 +28,7 @@ interface AuthContextProps {
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 interface AuthProviderProps {
-    children: ReactNode;
+    children: React.ReactNode;
 }
 
 // This should come from a central API in a real app
@@ -100,10 +101,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if(user?.roleId === "ROLE001") return true; // Tenant Admin also has all permissions for their tenant
         return permissions.includes(permissionKey);
     };
-
-    if (isLoading) {
-        return null; 
-    }
 
     const value: AuthContextProps = {
         user,
