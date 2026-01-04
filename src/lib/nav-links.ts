@@ -1,4 +1,5 @@
 
+
 import { LayoutDashboard, BookUser, BookOpen, FileArchive, UserCheck, Landmark, ArrowUpCircle, ArrowDownCircle, ArrowDownSquare, BookCopy, Package, Truck, SlidersHorizontal, ShoppingCart, Briefcase, Users, Cog, GanttChartSquare, CreditCardIcon, BarChart2, Settings, Shield, Settings2, Building2, Mail, CircleHelpIcon, FolderOpen, FileWarning, FileEdit, UserX, ClipboardSignature, FileText } from 'lucide-react';
 import type { SidebarMenuItemProps } from '@/components/ui/sidebar';
 
@@ -77,15 +78,6 @@ export const allNavItems: NavItem[] = [
     permissionKey: "hr.view",
     subItems: [
         { href: "/hr-payroll", label: "الموظفين والرواتب", icon: Users, permissionKey: "hr.view"},
-        { 
-            label: "النماذج", icon: FolderOpen, permissionKey: "hr.view",
-            subItems: [
-                { href: "/hr-payroll?tab=forms&subTab=warningNotice", label: "لفت النظر", icon: FileWarning, permissionKey: "hr.view" },
-                { href: "/hr-payroll?tab=forms&subTab=adminDecision", label: "القرارات الإدارية", icon: FileEdit, permissionKey: "hr.view" },
-                { href: "/hr-payroll?tab=forms&subTab=resignation", label: "الاستقالات", icon: UserX, permissionKey: "hr.view" },
-                { href: "/hr-payroll?tab=forms&subTab=disciplinaryWarning", label: "الإنذارات التأديبية", icon: ClipboardSignature, permissionKey: "hr.view" },
-            ]
-        },
     ]
   },
   { href: "/production", label: "الإنتاج", icon: Cog, module: "Production", permissionKey: "production.view" },
