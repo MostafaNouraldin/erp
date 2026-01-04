@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Tenant, TenantSubscribedModule, Module } from '@/types/saas';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { addTenant, updateTenant, deleteTenant } from './actions';
+import { Textarea } from '@/components/ui/textarea';
 
 const tenantSchema = z.object({
   id: z.string().optional(),
@@ -368,3 +369,5 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     </div>
   );
 }
+
+    
