@@ -1,5 +1,6 @@
 
 
+
 // src/app/sales/actions.ts
 'use server';
 
@@ -29,6 +30,8 @@ const invoiceSchema = z.object({
   orderId: z.string().optional(),
   isDeferredPayment: z.boolean().optional().default(false),
   source: z.enum(["POS", "Manual"]).optional().default("Manual"),
+  discountType: z.enum(['amount', 'percentage']).optional(),
+  discountValue: z.coerce.number().min(0).optional(),
 });
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
@@ -114,16 +117,27 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
   const db = await getDb();
   const settings = await getCompanySettings(db);
   const newInvoiceId = `INV-C${Date.now()}`;
-  const totalAmount = invoiceData.items.reduce((sum, item) => sum + item.total, 0);
+  const totalAmount = invoiceData.numericTotalAmount; // Total after discount
 
   // Constants for accounting
   const VAT_RATE = (settings.vatRate ?? 15) / 100;
   const accountsReceivableAccount = "1200";
   const salesRevenueAccount = "4000";
   const vatPayableAccount = "2200";
+  const salesDiscountAccount = "4200";
 
-  const totalBeforeTax = totalAmount / (1 + VAT_RATE);
-  const vatAmount = totalAmount - totalBeforeTax;
+  const subtotal = invoiceData.items.reduce((sum, item) => sum + item.total, 0);
+  let discountAmount = 0;
+  if(invoiceData.discountType === 'percentage' && invoiceData.discountValue) {
+    discountAmount = subtotal * (invoiceData.discountValue / 100);
+  } else if (invoiceData.discountValue) {
+    discountAmount = invoiceData.discountValue;
+  }
+
+  const totalAfterDiscount = subtotal - discountAmount;
+  const vatAmount = totalAfterDiscount * VAT_RATE;
+  const finalTotal = totalAfterDiscount + vatAmount;
+  
 
   await db.transaction(async (tx) => {
     // 1. Check stock availability
@@ -141,7 +155,9 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
     await tx.insert(salesInvoices).values({
       id: newInvoiceId,
       ...invoiceData,
-      numericTotalAmount: String(totalAmount),
+      numericTotalAmount: String(finalTotal), // Save the final total
+      discountType: invoiceData.discountType || 'amount',
+      discountValue: String(invoiceData.discountValue || 0),
     });
 
     // 3. Insert sales invoice items
@@ -176,24 +192,31 @@ export async function addSalesInvoice(invoiceData: InvoiceFormValues) {
         const newEntryId = `JV-SI-${newInvoiceId}`;
         const customer = await tx.query.customers.findFirst({ where: eq(customers.id, invoiceData.customerId) });
         
+        const journalLines = [
+            // Debit Accounts Receivable for the final total amount
+            { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: String(finalTotal), credit: '0', description: `فاتورة للعميل ${customer?.name}` },
+            // Credit Sales Revenue for the subtotal
+            { journalEntryId: newEntryId, accountId: salesRevenueAccount, debit: '0', credit: String(subtotal), description: `إيراد من فاتورة ${newInvoiceId}` },
+            // Credit VAT Payable for the VAT amount
+            { journalEntryId: newEntryId, accountId: vatPayableAccount, debit: '0', credit: String(vatAmount), description: `ضريبة القيمة المضافة لفاتورة ${newInvoiceId}` },
+        ];
+
+        // If there is a discount, add it as a debit to the sales discount account
+        if (discountAmount > 0) {
+            journalLines.push({ journalEntryId: newEntryId, accountId: salesDiscountAccount, debit: String(discountAmount), credit: '0', description: `خصم على فاتورة ${newInvoiceId}` });
+        }
+        
         await tx.insert(journalEntries).values({
             id: newEntryId,
             date: invoiceData.date,
             description: `فاتورة مبيعات رقم ${newInvoiceId} للعميل ${customer?.name || invoiceData.customerId}`,
-            totalAmount: String(totalAmount),
+            totalAmount: String(finalTotal),
             status: "مرحل", // Sales invoices are posted immediately
             sourceModule: "SalesInvoice",
             sourceDocumentId: newInvoiceId,
         });
 
-        await tx.insert(journalEntryLines).values([
-            // Debit Accounts Receivable for the full amount
-            { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: String(totalAmount), credit: '0', description: `فاتورة للعميل ${customer?.name}` },
-            // Credit Sales Revenue for the amount before tax
-            { journalEntryId: newEntryId, accountId: salesRevenueAccount, debit: '0', credit: String(totalBeforeTax), description: `إيراد من فاتورة ${newInvoiceId}` },
-            // Credit VAT Payable for the VAT amount
-            { journalEntryId: newEntryId, accountId: vatPayableAccount, debit: '0', credit: String(vatAmount), description: `ضريبة القيمة المضافة لفاتورة ${newInvoiceId}` },
-        ]);
+        await tx.insert(journalEntryLines).values(journalLines);
     }
 
   });
@@ -210,15 +233,22 @@ export async function updateSalesInvoice(invoiceData: InvoiceFormValues) {
   if (!invoiceData.id) {
     throw new Error("Invoice ID is required for updating.");
   }
-  // In a real app, you'd handle reversing old stock changes and applying new ones.
-  // This simplified version doesn't handle stock updates on edit.
-  const totalAmount = invoiceData.items.reduce((sum, item) => sum + item.total, 0);
+  
+  const subtotal = invoiceData.items.reduce((sum, item) => sum + item.total, 0);
+  let finalTotal = subtotal;
+  if (invoiceData.discountType === 'percentage' && invoiceData.discountValue) {
+      finalTotal = subtotal - (subtotal * (invoiceData.discountValue / 100));
+  } else if (invoiceData.discountValue) {
+      finalTotal = subtotal - invoiceData.discountValue;
+  }
 
   await db.transaction(async (tx) => {
     await tx.update(salesInvoices)
       .set({
         ...invoiceData,
-        numericTotalAmount: String(totalAmount),
+        numericTotalAmount: String(finalTotal),
+        discountType: invoiceData.discountType || 'amount',
+        discountValue: String(invoiceData.discountValue || 0),
       })
       .where(eq(salesInvoices.id, invoiceData.id!));
 

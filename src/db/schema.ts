@@ -261,6 +261,8 @@ export const salesInvoices = pgTable('sales_invoices', {
   isDeferredPayment: boolean('is_deferred_payment').default(false),
   source: varchar('source', { length: 50 }),
   notes: text('notes'),
+  discountType: varchar('discount_type', { length: 20 }).default('amount'), // 'amount' or 'percentage'
+  discountValue: numeric('discount_value', { precision: 10, scale: 2 }).default('0'),
 });
 
 export const salesInvoiceItems = pgTable('sales_invoice_items', {
@@ -771,7 +773,6 @@ export const purchaseReturnItems = pgTable('purchase_return_items', {
     itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
     description: text('description'),
     quantity: integer('quantity').notNull(),
-    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
     reason: text('reason'),
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });

@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { connectToTenantDb } from '@/db';
 import { customers, salesInvoices, salesInvoiceItems, suppliers, supplierInvoices, supplierInvoiceItems as dbSupplierInvoiceItems, products } from '@/db/schema';
@@ -26,6 +27,8 @@ export default async function AccountsPayableReceivablePage() {
                 paidAmount: parseFloat(invoice.paidAmount ?? '0'),
                 status: invoice.status as "مدفوع" | "غير مدفوع" | "متأخر" | "مدفوع جزئياً",
                 isDeferredPayment: invoice.isDeferredPayment,
+                discountType: invoice.discountType as 'amount' | 'percentage' | undefined,
+                discountValue: invoice.discountValue ? parseFloat(invoice.discountValue) : 0,
                 items: items.map(item => ({
                     ...item,
                     unitPrice: parseFloat(item.unitPrice),

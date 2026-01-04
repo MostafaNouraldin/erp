@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import { connectToTenantDb } from '@/db';
@@ -26,6 +27,8 @@ const salesInvoiceSchema = z.object({
   numericTotalAmount: z.number().optional(), 
   paidAmount: z.coerce.number().optional(),
   source: z.enum(["POS", "Manual"]).optional().default("Manual"),
+  discountType: z.enum(['amount', 'percentage']).optional(),
+  discountValue: z.coerce.number().min(0).optional(),
 });
 type SalesInvoiceFormValues = z.infer<typeof salesInvoiceSchema>;
 
@@ -67,6 +70,8 @@ export async function addSalesInvoice(invoiceData: SalesInvoiceFormValues) {
       ...invoiceData,
       numericTotalAmount: String(invoiceData.numericTotalAmount),
        paidAmount: String(invoiceData.paidAmount || 0),
+       discountType: invoiceData.discountType || 'amount',
+       discountValue: String(invoiceData.discountValue || 0),
     });
     if (invoiceData.items.length > 0) {
       await tx.insert(salesInvoiceItems).values(
@@ -93,6 +98,8 @@ export async function updateSalesInvoice(invoiceData: SalesInvoiceFormValues) {
             ...invoiceData,
             numericTotalAmount: String(invoiceData.numericTotalAmount),
             paidAmount: String(invoiceData.paidAmount || 0),
+            discountType: invoiceData.discountType || 'amount',
+            discountValue: String(invoiceData.discountValue || 0),
         }).where(eq(salesInvoices.id, invoiceData.id));
         await tx.delete(salesInvoiceItems).where(eq(salesInvoiceItems.invoiceId, invoiceData.id));
         if (invoiceData.items.length > 0) {

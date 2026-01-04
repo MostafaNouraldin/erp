@@ -1,11 +1,12 @@
 
 
+
 // This is now a true Server Component that fetches data and passes it to the client.
 import React from 'react';
 import { connectToTenantDb } from '@/db';
 import { customers as customersSchema, salesInvoices as salesInvoicesSchema, salesInvoiceItems as salesInvoiceItemsSchema, products, quotations, quotationItems, salesOrders, salesOrderItems, salesReturns, salesReturnItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import SalesClientComponent from './SalesClientComponent'; // We will create this component
+import SalesClientComponent from './SalesClientComponent';
 
 // This is now a true Server Component that fetches data and passes it to the client component.
 export default async function SalesPage() {
@@ -46,6 +47,8 @@ export default async function SalesPage() {
                 numericTotalAmount: parseFloat(invoice.numericTotalAmount),
                 status: invoice.status as "مدفوع" | "غير مدفوع" | "متأخر",
                 source: invoice.source as "POS" | "Manual" | null,
+                discountType: invoice.discountType as 'amount' | 'percentage' | null,
+                discountValue: invoice.discountValue ? parseFloat(invoice.discountValue) : null,
                 items: items.map(item => ({
                     ...item,
                     unitPrice: parseFloat(item.unitPrice),

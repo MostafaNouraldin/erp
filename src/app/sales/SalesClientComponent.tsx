@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -67,6 +68,8 @@ export interface Invoice {
   notes?: string | null;
   isDeferredPayment?: boolean | null;
   source?: "POS" | "Manual" | null;
+  discountType?: 'amount' | 'percentage' | null;
+  discountValue?: number | null;
 }
 
 interface SalesReturnItem {
@@ -181,6 +184,8 @@ const invoiceSchema = z.object({
   orderId: z.string().optional(),
   isDeferredPayment: z.boolean().optional().default(false),
   source: z.enum(["POS", "Manual"]).optional().default("Manual"),
+  discountType: z.enum(['amount', 'percentage']).optional().default('amount'),
+  discountValue: z.coerce.number().min(0).optional().default(0),
 });
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
@@ -299,7 +304,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
 
   const invoiceForm = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
-    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual" },
+    defaultValues: { customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual", discountType: 'amount', discountValue: 0 },
   });
   const { fields: invoiceItemsFields, append: appendInvoiceItem, remove: removeInvoiceItem, replace: replaceInvoiceItems } = useFieldArray({
     control: invoiceForm.control, name: "items",
@@ -361,7 +366,7 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
                 items: invoiceToEdit.items.length > 0 ? invoiceToEdit.items : [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}],
             });
         } else {
-            invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual" });
+            invoiceForm.reset({ customerId: '', date: new Date(), dueDate: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0}], status: "غير مدفوع", numericTotalAmount: 0, isDeferredPayment: false, source: "Manual", discountType: 'amount', discountValue: 0 });
         }
     }
 }, [invoiceToEdit, invoiceForm, showCreateInvoiceDialog]);
@@ -475,8 +480,14 @@ useEffect(() => {
   };
 
   const handleInvoiceSubmit = async (values: InvoiceFormValues) => {
-    const totalAmount = calculateItemTotals(values.items);
-    const finalValues = {...values, numericTotalAmount: totalAmount};
+    const subtotal = calculateItemTotals(values.items);
+    let finalTotal = subtotal;
+    if (values.discountType === 'percentage' && values.discountValue) {
+        finalTotal = subtotal - (subtotal * (values.discountValue / 100));
+    } else if (values.discountValue) {
+        finalTotal = subtotal - values.discountValue;
+    }
+    const finalValues = {...values, numericTotalAmount: finalTotal};
 
     try {
         if (invoiceToEdit) {
