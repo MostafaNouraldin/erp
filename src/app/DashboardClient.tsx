@@ -7,8 +7,15 @@ import { DollarSign, Users, ShoppingCart, Activity, Package, FilePlus, FileCheck
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, ResponsiveContainer } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
-import { useCurrency } from "@/hooks/use-currency"; // Import useCurrency
-import { useEffect, useMemo } from "react";
+import { useCurrency } from "@/hooks/use-currency";
+import { useMemo } from "react";
+import React from "react";
+
+interface ActivityItem {
+  description: string;
+  time: string;
+  icon: string;
+}
 
 interface DashboardClientProps {
   totalRevenue: number;
@@ -22,7 +29,20 @@ interface DashboardClientProps {
   };
   salesChartData: { month: string; total: number }[];
   expenseChartData: { name: string; value: number }[];
+  hrSummary: {
+    totalEmployees: number;
+    attendancePercentage: number;
+    pendingLeaves: number;
+  };
+  latestActivities: ActivityItem[];
 }
+
+const iconMap: { [key: string]: React.ElementType } = {
+  FilePlus,
+  FileCheck,
+  FileClock,
+};
+
 
 export default function DashboardClient({
   totalRevenue,
@@ -31,7 +51,9 @@ export default function DashboardClient({
   totalActivity,
   inventorySummary,
   salesChartData,
-  expenseChartData
+  expenseChartData,
+  hrSummary,
+  latestActivities,
 }: DashboardClientProps) {
   const { formatCurrency } = useCurrency();
 
@@ -212,15 +234,15 @@ export default function DashboardClient({
           <CardContent className="grid gap-4">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">إجمالي الموظفين</span>
-              <span className="font-semibold">152</span>
+              <span className="font-semibold">{hrSummary.totalEmployees}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">نسبة الحضور</span>
-              <span className="font-semibold">98.5%</span>
+              <span className="font-semibold">{hrSummary.attendancePercentage}%</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">طلبات إجازة معلقة</span>
-              <span className="font-semibold">5</span>
+              <span className="font-semibold">{hrSummary.pendingLeaves}</span>
             </div>
             <Button variant="outline" className="w-full">
               إدارة الموظفين
@@ -233,33 +255,20 @@ export default function DashboardClient({
              <CardDescription>تتبع آخر الإجراءات في النظام.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <FilePlus className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">تم إنشاء فاتورة جديدة #INV00125</p>
-                <p className="text-xs text-muted-foreground">بواسطة: أحمد خالد - قبل دقيقتين</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <FileCheck className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">تم تأكيد طلب شراء #PO0087</p>
-                <p className="text-xs text-muted-foreground">بواسطة: النظام - قبل 5 دقائق</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <FileClock className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">طلب إجازة معلق من: سارة عبدالله</p>
-                <p className="text-xs text-muted-foreground">قسم المبيعات - قبل 10 دقائق</p>
-              </div>
-            </div>
+             {latestActivities.map((activity, index) => {
+              const Icon = iconMap[activity.icon] || FileClock;
+              return (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{activity.description}</p>
+                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                  </div>
+                </div>
+              );
+            })}
              <Button variant="outline" className="w-full mt-2">
               عرض كل الأنشطة
             </Button>
@@ -269,5 +278,3 @@ export default function DashboardClient({
     </div>
   );
 }
-
-    

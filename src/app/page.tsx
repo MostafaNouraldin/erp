@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { connectToTenantDb } from "@/db";
-import { salesInvoices, customers, products, journalEntries, journalEntryLines, chartOfAccounts } from "@/db/schema";
-import { sql, and, eq, like, between } from 'drizzle-orm';
+import { salesInvoices, customers, products, journalEntries, journalEntryLines, chartOfAccounts, employees, leaveRequests, purchaseOrders } from "@/db/schema";
+import { sql, and, eq, like, between, desc } from 'drizzle-orm';
 import { CurrencyProvider } from "@/contexts/currency-context";
 import DashboardClient from "./DashboardClient";
 
@@ -83,6 +83,46 @@ async function getDashboardData() {
           value: Number(row.total),
       }));
 
+    // HR Performance Data
+    const totalEmployeesResult = await db.select({ count: sql<number>`count(*)` }).from(employees);
+    const pendingLeavesResult = await db.select({ count: sql<number>`count(*)` }).from(leaveRequests).where(eq(leaveRequests.status, 'مقدمة'));
+    
+    const hrSummary = {
+      totalEmployees: totalEmployeesResult[0].count || 0,
+      attendancePercentage: 98.5, // Static for now
+      pendingLeaves: pendingLeavesResult[0].count || 0,
+    };
+
+    // Latest Activities Data
+    const latestInvoices = await db.select({ id: salesInvoices.id, date: salesInvoices.date, type: sql<string>`'فاتورة مبيعات'` }).from(salesInvoices).orderBy(desc(salesInvoices.date)).limit(3);
+    const latestPOs = await db.select({ id: purchaseOrders.id, date: purchaseOrders.date, type: sql<string>`'أمر شراء'` }).from(purchaseOrders).orderBy(desc(purchaseOrders.date)).limit(3);
+    const latestLeaves = await db.select({ id: leaveRequests.id, date: leaveRequests.startDate, type: sql<string>`'طلب إجازة'` }).from(leaveRequests).orderBy(desc(leaveRequests.startDate)).limit(3);
+
+    const allActivities = [...latestInvoices, ...latestPOs, ...latestLeaves]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3);
+      
+    const latestActivities = allActivities.map(activity => {
+      let description = '';
+      let icon = 'FileClock';
+      if (activity.type === 'فاتورة مبيعات') {
+        description = `تم إنشاء فاتورة مبيعات جديدة #${activity.id}`;
+        icon = 'FilePlus';
+      } else if (activity.type === 'أمر شراء') {
+        description = `تم إنشاء أمر شراء جديد #${activity.id}`;
+        icon = 'FileCheck';
+      } else if (activity.type === 'طلب إجازة') {
+        description = `طلب إجازة جديد برقم #${activity.id}`;
+        icon = 'FileClock';
+      }
+      return {
+        description,
+        time: new Date(activity.date).toLocaleDateString('ar-SA'),
+        icon
+      };
+    });
+
+
     return {
       success: true,
       data: {
@@ -92,7 +132,9 @@ async function getDashboardData() {
         totalActivity,
         inventorySummary,
         salesChartData,
-        expenseChartData
+        expenseChartData,
+        hrSummary,
+        latestActivities,
       }
     };
   } catch (error) {
@@ -159,6 +201,8 @@ export default async function DashboardPage() {
         inventorySummary={result.data.inventorySummary}
         salesChartData={result.data.salesChartData}
         expenseChartData={result.data.expenseChartData}
+        hrSummary={result.data.hrSummary}
+        latestActivities={result.data.latestActivities}
       />
      </CurrencyProvider>
   );
