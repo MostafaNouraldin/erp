@@ -112,5 +112,4 @@ export default async function PurchasesPage() {
         );
     }
 }
-
     

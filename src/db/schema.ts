@@ -775,6 +775,7 @@ export const purchaseReturnItems = pgTable('purchase_return_items', {
     quantity: integer('quantity').notNull(),
     reason: text('reason'),
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
 });
 
 // --- POS ---

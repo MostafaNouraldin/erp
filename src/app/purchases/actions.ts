@@ -500,7 +500,7 @@ export async function approvePurchaseReturn(returnId: string) {
              const product = await tx.query.products.findFirst({ where: eq(products.id, item.itemId), columns: { quantity: true, name: true }});
             if (!product || product.quantity < item.quantity) {
                 // This check might be too strict for returns, but it's a safe default.
-                throw new Error(`الكمية المراد إرجاعها للمنتج: ${product?.name || item.itemId} غير متوفرة في المخزون. الكمية الحالية: ${product?.quantity || 0}`);
+                throw new Error(`الكمية المراد إرجاعها للمنتج: ${product?.name || item.itemId} غير متوفرة في المخزون. الكمية الحالية: ${product?.quantity || 0}.`);
             }
             await tx.update(products)
                 .set({ quantity: sql`${products.quantity} - ${item.quantity}` })
