@@ -26,18 +26,18 @@ const allAvailableModules: Module[] = [
 export default async function TenantsPage() {
     const { db } = await connectToTenantDb(); 
     try {
-        const tenantsData = await db.select().from(tenants);
-        const subscriptionsData = await db.select().from(tenantModuleSubscriptions);
+        const tenantsData = await db.query.tenants.findMany({
+            with: {
+                subscriptions: true,
+            },
+        });
 
         const subscriptionsMap: Record<string, TenantSubscribedModule[]> = {};
-        subscriptionsData.forEach(sub => {
-            if (!subscriptionsMap[sub.tenantId]) {
-                subscriptionsMap[sub.tenantId] = [];
-            }
-            subscriptionsMap[sub.tenantId].push({
+        tenantsData.forEach(tenant => {
+            subscriptionsMap[tenant.id] = tenant.subscriptions.map(sub => ({
                 moduleId: sub.moduleKey,
                 subscribed: sub.subscribed,
-            });
+            }));
         });
 
         const initialData = {
@@ -70,3 +70,4 @@ export default async function TenantsPage() {
         );
     }
 }
+

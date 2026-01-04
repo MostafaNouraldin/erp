@@ -19,6 +19,11 @@ export const tenants = pgTable('tenants', {
     vatNumber: varchar('vat_number', { length: 50 }),
 });
 
+export const tenantsRelations = relations(tenants, ({ many }) => ({
+  subscriptions: many(tenantModuleSubscriptions),
+}));
+
+
 export const mainRoles = pgTable('roles', {
     id: varchar('id', { length: 256 }).primaryKey(),
     name: varchar('name', { length: 256 }).notNull().unique(),
@@ -866,3 +871,4 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
 }));
 
     
+
