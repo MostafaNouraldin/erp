@@ -12,6 +12,7 @@ const subscriptionRequestSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   vatNumber: z.string().optional(),
+  country: z.string().optional(),
   selectedModules: z.array(z.string()).min(1, "يجب اختيار وحدة واحدة على الأقل"),
   billingCycle: z.enum(["monthly", "yearly"]),
   totalAmount: z.coerce.number(),
@@ -41,6 +42,7 @@ export async function submitSubscriptionRequest(values: SubscriptionRequestFormV
     paymentMethod: values.paymentMethod,
     paymentProof: values.paymentProof,
     status: 'pending',
+    country: values.country,
   });
 
   // Revalidating the path here can be slow if the target page has heavy data fetching.

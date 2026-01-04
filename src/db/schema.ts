@@ -17,6 +17,7 @@ export const tenants = pgTable('tenants', {
     phone: varchar('phone', { length: 50 }),
     address: text('address'),
     vatNumber: varchar('vat_number', { length: 50 }),
+    country: varchar('country', { length: 10 }), // Added country field
 });
 
 export const tenantsRelations = relations(tenants, ({ many }) => ({
@@ -83,6 +84,7 @@ export const subscriptionRequests = pgTable('subscription_requests', {
     paymentProof: text('payment_proof').notNull(), // Store image as base64 data URI
     status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, approved, rejected
     createdAt: timestamp('created_at').defaultNow(),
+    country: varchar('country', { length: 10 }),
 });
 
 export const companySettings = pgTable('company_settings', {
@@ -340,27 +342,6 @@ export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
-export const purchaseReturns = pgTable('purchase_returns', {
-    id: varchar('id', { length: 256 }).primaryKey(),
-    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
-    date: timestamp('date').notNull(),
-    originalInvoiceId: varchar('original_invoice_id', { length: 256 }),
-    notes: text('notes'),
-    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
-    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
-});
-
-export const purchaseReturnItems = pgTable('purchase_return_items', {
-    id: serial('id').primaryKey(),
-    returnId: varchar('return_id', { length: 256 }).notNull().references(() => purchaseReturns.id, { onDelete: 'cascade' }),
-    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
-    description: text('description'),
-    quantity: integer('quantity').notNull(),
-    reason: text('reason'),
-    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
-    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
-});
-
 
 // --- HR & Payroll ---
 
@@ -368,23 +349,19 @@ export const departments = pgTable('departments', {
     id: varchar('id', { length: 256 }).primaryKey(),
     name: varchar('name', { length: 256 }).notNull().unique(),
 });
-
 export const jobTitles = pgTable('job_titles', {
     id: varchar('id', { length: 256 }).primaryKey(),
     name: varchar('name', { length: 256 }).notNull().unique(),
 });
-
 export const leaveTypes = pgTable('leave_types', {
     id: varchar('id', { length: 256 }).primaryKey(),
     name: varchar('name', { length: 256 }).notNull().unique(),
 });
-
 export const allowanceTypes = pgTable('allowance_types', {
     id: varchar('id', { length: 256 }).primaryKey(),
     name: varchar('name', { length: 256 }).notNull().unique(),
     expenseAccountId: varchar('expense_account_id', { length: 256 }).notNull().references(() => chartOfAccounts.id),
 });
-
 export const deductionTypes = pgTable('deduction_types', {
     id: varchar('id', { length: 256 }).primaryKey(),
     name: varchar('name', { length: 256 }).notNull().unique(),
@@ -399,7 +376,6 @@ export const employeeAllowances = pgTable('employee_allowances', {
     amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
     type: varchar('type', { length: 50 }).notNull(), // ثابت, متغير, مرة واحدة
 });
-
 export const employeeDeductions = pgTable('employee_deductions', {
     id: serial('id').primaryKey(),
     employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
@@ -796,7 +772,29 @@ export const stockRequisitionItems = pgTable('stock_requisition_items', {
     justification: text('justification'),
 });
 
-// --- POS ---
+export const purchaseReturns = pgTable('purchase_returns', {
+    id: varchar('id', { length: 256 }).primaryKey(),
+    supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
+    date: timestamp('date').notNull(),
+    originalInvoiceId: varchar('original_invoice_id', { length: 256 }),
+    notes: text('notes'),
+    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('مسودة'),
+});
+
+export const purchaseReturnItems = pgTable('purchase_return_items', {
+    id: serial('id').primaryKey(),
+    returnId: varchar('return_id', { length: 256 }).notNull().references(() => purchaseReturns.id, { onDelete: 'cascade' }),
+    itemId: varchar('item_id', { length: 256 }).notNull().references(() => products.id),
+    description: text('description'),
+    quantity: integer('quantity').notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+    reason: text('reason'),
+    total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+});
+
+
+-- POS
 export const posSessions = pgTable('pos_sessions', {
     id: varchar('id', { length: 256 }).primaryKey(),
     userId: varchar('user_id', { length: 256 }).notNull().references(() => users.id),
@@ -811,13 +809,14 @@ export const posSessions = pgTable('pos_sessions', {
     status: varchar('status', { length: 50 }).notNull(), // 'open', 'closed'
 });
 
+// Inventory Log
 export const inventoryMovementLog = pgTable('inventory_movement_log', {
     id: serial('id').primaryKey(),
     productId: varchar('product_id', { length: 256 }).notNull().references(() => products.id),
     quantity: integer('quantity').notNull(),
     type: varchar('type', { length: 10 }).notNull(), // 'IN' or 'OUT'
     date: timestamp('date').defaultNow().notNull(),
-    sourceType: varchar('source_type', { length: 50 }), // 'Sales', 'Purchase', 'Adjustment'
+    sourceType: varchar('source_type', { length: 50 }), // e.g., 'Sales', 'Purchase', 'Adjustment'
     sourceId: varchar('source_id', { length: 256 }),
 });
 
@@ -915,4 +914,6 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
     
 
     
+
+
 

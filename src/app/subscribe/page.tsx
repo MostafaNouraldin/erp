@@ -219,10 +219,7 @@ export default function SubscribePage() {
                                                         <div className="space-y-0.5">
                                                             <FormLabel className="text-sm font-medium">{module.name}</FormLabel>
                                                             <p className="text-xs text-muted-foreground">{module.description}</p>
-                                                            <p className="text-xs font-semibold text-primary">
-                                                                <span dangerouslySetInnerHTML={{ __html: formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly).amount }} />
-                                                                <span className="font-saudi-riyal text-xs ms-1">{formatCurrency(0).symbol}</span>
-                                                            </p>
+                                                            <p className="text-xs font-semibold text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly).amount + ' ' + formatCurrency(0).symbol }}></p>
                                                         </div>
                                                     </div>
                                                 </FormItem>
@@ -272,10 +269,7 @@ export default function SubscribePage() {
                                     <Card className="bg-primary/5 border-primary/20">
                                         <CardHeader><CardTitle className="text-lg">ملخص الطلب</CardTitle></CardHeader>
                                         <CardContent>
-                                            <div className="text-4xl font-bold text-primary text-center">
-                                                <span dangerouslySetInnerHTML={{ __html: formatCurrency(form.getValues("totalAmount")).amount }} />
-                                                <span className="font-saudi-riyal text-2xl ms-2">{formatCurrency(0).symbol}</span>
-                                            </div>
+                                            <div className="text-4xl font-bold text-primary text-center" dangerouslySetInnerHTML={{ __html: formatCurrency(form.getValues("totalAmount")).amount + ' <span class="font-saudi-riyal text-2xl ms-2">'+formatCurrency(0).symbol+'</span>' }}></div>
                                             <p className="text-center text-muted-foreground mt-1">/{billingCycle === "monthly" ? "شهرياً" : "سنوياً"}</p>
                                         </CardContent>
                                     </Card>

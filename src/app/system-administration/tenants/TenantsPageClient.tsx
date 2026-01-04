@@ -30,6 +30,7 @@ const tenantSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   vatNumber: z.string().optional(),
+  country: z.string().optional(),
   isActive: z.boolean().default(true),
   subscriptionEndDate: z.date().optional(),
   subscribedModules: z.array(z.object({
@@ -81,6 +82,7 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
       phone: "",
       address: "",
       vatNumber: "",
+      country: "SA",
       subscribedModules: [],
       billingCycle: "yearly",
       subscriptionEndDate: undefined,
@@ -115,6 +117,7 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
       phone: "",
       address: "",
       vatNumber: "",
+      country: "SA",
       subscribedModules: initialFormModules,
       billingCycle: "yearly",
       subscriptionEndDate: undefined,
@@ -209,6 +212,15 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                             <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني (للفواتير)</FormLabel><FormControl><Input type="email" placeholder="billing@company.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                             <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                              <FormField control={form.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                             <FormField control={form.control} name="country" render={({ field }) => ( <FormItem><FormLabel>الدولة</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                        <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الدولة"/></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="SA">المملكة العربية السعودية</SelectItem>
+                                            <SelectItem value="EG">مصر</SelectItem>
+                                            <SelectItem value="Other">دولة أخرى (بالدولار الأمريكي)</SelectItem>
+                                        </SelectContent>
+                                    </Select><FormMessage/></FormItem> )}/>
                             <div className="md:col-span-2">
                                 <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                             </div>

@@ -14,6 +14,7 @@ const tenantSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   vatNumber: z.string().optional(),
+  country: z.string().optional(),
   isActive: z.boolean().default(true),
   subscriptionEndDate: z.date().optional(),
   subscribedModules: z.array(z.object({
@@ -23,7 +24,7 @@ const tenantSchema = z.object({
   billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
   // New fields for admin creation
   adminName: z.string().optional(),
-  adminEmail: z.string().email().optional().or(z.literal('')),
+  adminEmail: z.string().email("بريد إلكتروني غير صالح للمدير").optional().or(z.literal('')),
   adminPassword: z.string().optional(),
 });
 
@@ -70,6 +71,7 @@ export async function addTenant(values: TenantFormValues) {
             vatNumber: values.vatNumber,
             isActive: values.isActive,
             subscriptionEndDate: effectiveSubscriptionEndDate,
+            country: values.country,
         });
 
         // 2. Create the primary admin user for the tenant
@@ -115,6 +117,7 @@ export async function updateTenant(values: TenantFormValues) {
             vatNumber: values.vatNumber,
             isActive: values.isActive,
             subscriptionEndDate: values.subscriptionEndDate,
+            country: values.country,
         }).where(eq(tenants.id, tenantId));
 
         // Delete old subscriptions and insert new ones
