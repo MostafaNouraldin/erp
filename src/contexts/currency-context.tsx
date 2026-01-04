@@ -44,8 +44,9 @@ interface CurrencyProviderProps {
 }
 
 export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(defaultCurrency);
+  const [isCurrencyLoading, setIsCurrencyLoading] = useState(true);
 
   const updateCurrency = useCallback((currencyCode: string) => {
     const newCurrency = availableCurrencies.find(c => c.code === currencyCode) || defaultCurrency;
@@ -54,6 +55,9 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
 
   useEffect(() => {
     async function loadCurrencyPreference() {
+      if (isAuthLoading) return; // Wait for auth to be resolved
+
+      setIsCurrencyLoading(true);
       if (user?.tenantId) {
         try {
           const settings = await getCompanySettings(user.tenantId);
@@ -69,9 +73,10 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
       } else {
         setSelectedCurrency(defaultCurrency);
       }
+      setIsCurrencyLoading(false);
     }
     loadCurrencyPreference();
-  }, [user, updateCurrency]);
+  }, [user, isAuthLoading, updateCurrency]);
 
   const formatCurrency = (amount: number): string => {
     const { symbol } = selectedCurrency;
@@ -82,6 +87,11 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
     
     return `${formatted} <span class="font-saudi-riyal">${symbol}</span>`;
   };
+
+  // Do not render children until the currency has been loaded to prevent hydration mismatches
+  if(isCurrencyLoading && !isAuthLoading && user){
+     return null;
+  }
 
   return (
     <CurrencyContext.Provider value={{ selectedCurrency, updateCurrency, formatCurrency }}>

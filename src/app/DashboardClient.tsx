@@ -1,16 +1,15 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, FC } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Users, ShoppingCart, Activity, Package, FilePlus, FileCheck, FileClock } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, ResponsiveContainer } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
-import { useCurrency } from "@/hooks/use-currency";
-import { Skeleton } from '@/components/ui/skeleton';
-import { getDashboardData } from './actions'; // We'll create this action
+import { availableCurrencies, Currency } from "@/contexts/currency-context";
+
 
 interface ActivityItem {
   description: string;
@@ -38,6 +37,11 @@ interface DashboardData {
   latestActivities: ActivityItem[];
 }
 
+interface DashboardClientProps {
+  initialData: DashboardData;
+  defaultCurrency: string;
+}
+
 const iconMap: { [key: string]: React.ElementType } = {
   FilePlus,
   FileCheck,
@@ -45,26 +49,22 @@ const iconMap: { [key: string]: React.ElementType } = {
 };
 
 
-export default function DashboardClient() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const { formatCurrency } = useCurrency();
+const DashboardClient: FC<DashboardClientProps> = ({ initialData, defaultCurrency }) => {
+  const [data] = useState<DashboardData>(initialData);
+  
+  const selectedCurrency = useMemo(() => {
+    return availableCurrencies.find(c => c.code === defaultCurrency) || availableCurrencies[0];
+  }, [defaultCurrency]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result = await getDashboardData();
-        if (result.success) {
-          setData(result.data);
-        } else {
-          setError(result.error || "An unknown error occurred");
-        }
-      } catch (e: any) {
-        setError(e.message);
-      }
-    };
-    fetchData();
-  }, []);
+  const formatCurrency = (amount: number): string => {
+    const { symbol } = selectedCurrency;
+    const formatted = new Intl.NumberFormat('ar-SA', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+    
+    return `${formatted} <span class="font-saudi-riyal">${symbol}</span>`;
+  };
 
   const salesChartConfig = {
     total: {
@@ -96,38 +96,6 @@ export default function DashboardClient() {
     });
     return config;
   }, [expensePieChartData]);
-
-  if (error) {
-    return (
-        <div className="container mx-auto py-10 px-4 text-center" dir="rtl">
-            <h1 className="text-2xl font-bold mb-4 text-destructive">خطأ في تحميل لوحة التحكم</h1>
-            <p>{error}</p>
-        </div>
-    );
-  }
-
-  if (!data) {
-    return (
-        <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                 <Skeleton className="col-span-4 h-96" />
-                 <Skeleton className="col-span-4 lg:col-span-3 h-96" />
-            </div>
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Skeleton className="h-64" />
-                <Skeleton className="h-64" />
-                <Skeleton className="h-64" />
-            </div>
-        </div>
-    );
-  }
-
 
   return (
     <div className="flex flex-col gap-6" dir="rtl">
@@ -321,4 +289,6 @@ export default function DashboardClient() {
       </div>
     </div>
   );
-}
+};
+
+export default DashboardClient;

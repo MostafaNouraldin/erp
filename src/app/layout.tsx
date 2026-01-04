@@ -27,6 +27,7 @@ import { allNavItems } from "@/lib/nav-links";
 import NotificationsPopover from "@/components/notifications-popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getCompanySettingsForLayout } from "./actions"; // Import the new server action
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 const cairo = Cairo({
@@ -38,7 +39,8 @@ const cairo = Cairo({
 function AppLayout({ children }: { children: React.ReactNode }) {
     const auth = useAuth();
     const pathname = usePathname();
-    const [companySettings, setCompanySettings] = useState({ name: "نسيج للحلول المتكاملة", logo: "" });
+    const [companySettings, setCompanySettings] = useState<{ name: string; logo: string } | null>(null);
+    const [isSettingsLoading, setIsSettingsLoading] = useState(true);
 
     const [mounted, setMounted] = useState(false);
 
@@ -48,34 +50,56 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             document.documentElement.lang = 'ar';
             document.documentElement.dir = 'rtl';
         }
-        
+    }, []);
+
+    useEffect(() => {
         async function fetchSettings() {
-            if(auth.user?.tenantId) {
-                const settings = await getCompanySettingsForLayout(auth.user.tenantId);
-                if(settings) {
-                    setCompanySettings({ name: settings.companyName || "نسيج للحلول المتكاملة", logo: settings.companyLogo || "" });
+            if(auth.isAuthenticated && auth.user?.tenantId) {
+                setIsSettingsLoading(true);
+                try {
+                    const settings = await getCompanySettingsForLayout(auth.user.tenantId);
+                    if(settings) {
+                        setCompanySettings({ name: settings.companyName || "نسيج للحلول المتكاملة", logo: settings.companyLogo || "" });
+                    } else {
+                         setCompanySettings({ name: "نسيج للحلول المتكاملة", logo: "" });
+                    }
+                } catch (e) {
+                     setCompanySettings({ name: "نسيج للحلول المتكاملة", logo: "" });
+                } finally {
+                    setIsSettingsLoading(false);
                 }
+            } else {
+                 setIsSettingsLoading(false);
             }
         }
-        if(auth.isAuthenticated) {
-            fetchSettings();
+        if(!auth.isLoading) {
+           fetchSettings();
         }
+    }, [auth.isAuthenticated, auth.user?.tenantId, auth.isLoading]);
 
-    }, [auth.isAuthenticated, auth.user?.tenantId]);
-
-    // If loading auth state from localStorage, don't render anything yet
-    if (!mounted || auth.isLoading) {
-        return null;
+    if (!mounted || auth.isLoading || (auth.isAuthenticated && isSettingsLoading)) {
+        return (
+            <div className="flex min-h-screen w-full bg-background">
+                <div className="w-64 border-r p-4 hidden md:block">
+                    <Skeleton className="h-10 w-full mb-4" />
+                    <Skeleton className="h-8 w-full mb-2" />
+                    <Skeleton className="h-8 w-full mb-2" />
+                    <Skeleton className="h-8 w-5/6" />
+                </div>
+                <div className="flex-1 p-6">
+                    <Skeleton className="h-12 w-full mb-6" />
+                    <Skeleton className="h-64 w-full" />
+                </div>
+            </div>
+        );
     }
     
-    // Allow access to login and subscribe pages without authentication
     const isPublicPage = pathname === '/login' || pathname === '/subscribe';
 
     if (!auth.isAuthenticated && !isPublicPage) {
         return <LoginPage />;
     }
     
-    // If authenticated, redirect away from public pages
     if (auth.isAuthenticated && isPublicPage) {
         if (typeof window !== 'undefined') {
             window.location.href = '/';
@@ -83,7 +107,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         return null;
     }
     
-    // Render children directly for public pages if not authenticated
     if (!auth.isAuthenticated && isPublicPage) {
         return <>{children}</>;
     }
@@ -92,12 +115,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     const navItems = allNavItems
       .filter(item => {
         const moduleKey = item.module;
-        // Super admin should not see tenant-specific settings like 'Subscription'
         if (auth.isSuperAdmin && item.href === '/subscription') {
              return false;
         }
-
-        // Regular users should not see 'System Administration'
         if (!auth.isSuperAdmin && item.module === 'SystemAdministration') {
             return false;
         }
@@ -123,7 +143,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex min-h-screen w-full">
                     <Sidebar collapsible="icon" side="right" className="shadow-lg">
                         <SidebarHeader>
-                            <AppLogo companyName={companySettings.name} logoUrl={companySettings.logo} />
+                            <AppLogo companyName={companySettings?.name} logoUrl={companySettings?.logo} />
                             <div className="hidden group-data-[collapsible=icon]:hidden">
                             </div>
                         </SidebarHeader>
@@ -139,8 +159,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                             <Card className="bg-transparent border-0 shadow-none">
                                 <CardContent className="p-2 text-xs">
                                     <div className="mb-1 hidden group-data-[collapsible=icon]:hidden">
-                                        <p className="font-semibold text-sidebar-primary">{companySettings.name}</p>
-                                        {/* Subscription end date logic can be added back here if needed */}
+                                        <p className="font-semibold text-sidebar-primary">{companySettings?.name}</p>
                                     </div>
                                     <Button asChild variant="outline" size="sm" className="w-full hidden group-data-[collapsible=icon]:hidden bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-border hover:bg-sidebar-primary/10">
                                       <Link href="/subscription">
@@ -206,8 +225,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                                                     <DropdownMenuItem disabled>
                                                         <div className="flex flex-col space-y-0.5 text-right text-xs w-full">
                                                             <p className="text-muted-foreground">الشركة الحالية:</p>
-                                                            <p className="font-medium">{companySettings.name}</p>
-                                                            {/* Subscription end date logic can be added here if needed */}
+                                                            <p className="font-medium">{companySettings?.name}</p>
                                                         </div>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
@@ -270,5 +288,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    
