@@ -1,5 +1,4 @@
 
-
 import React, { Suspense } from 'react';
 import DashboardClient from "./DashboardClient";
 import { Skeleton } from '@/components/ui/skeleton';
