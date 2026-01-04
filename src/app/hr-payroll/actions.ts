@@ -315,7 +315,7 @@ export async function postPayrollToGL(payrollId: string) {
         }
         
         // 4. Credit Salaries Payable with the Net Salary
-        const netSalary = payroll.netSalary || 0;
+        const netSalary = payroll.netSalary ? parseFloat(payroll.netSalary) : 0;
         if (netSalary > 0) {
              entryLines.push({
                 journalEntryId: newEntryId, accountId: salariesPayableAccount, debit: '0', credit: String(netSalary), description: `صافي الراتب المستحق - ${employee?.name}`
@@ -551,3 +551,5 @@ export async function deleteDisciplinaryWarning(id: string) {
   await db.delete(disciplinaryWarnings).where(eq(disciplinaryWarnings.id, id));
   revalidatePath('/hr-payroll');
 }
+
+    
