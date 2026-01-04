@@ -238,14 +238,8 @@ export async function addPayroll(values: PayrollFormValues) {
     
     // Mark overtime as paid
     if (approvedOvertime.length > 0) {
-        await db.update(overtime).set({ status: 'paid' }).where(
-            and(
-                eq(overtime.employeeId, values.employeeId),
-                eq(overtime.status, 'approved'),
-                gte(overtime.date, startDate),
-                lte(overtime.date, endDate)
-            )
-        );
+        const overtimeIds = approvedOvertime.map(ot => ot.id);
+        await db.update(overtime).set({ status: 'paid' }).where(sql`id IN ${overtimeIds}`);
     }
     
     revalidatePath('/hr-payroll');

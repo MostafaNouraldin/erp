@@ -457,6 +457,7 @@ export const overtime = pgTable('overtime', {
     status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, approved, rejected, paid
 });
 
+
 export const leaveRequests = pgTable('leave_requests', {
     id: varchar('id', { length: 256 }).primaryKey(),
     employeeId: varchar('employee_id', { length: 256 }).notNull().references(() => employees.id, { onDelete: 'cascade' }),
@@ -890,3 +891,4 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
     
 
     
+
