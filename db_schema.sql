@@ -23,6 +23,7 @@ DROP TABLE IF EXISTS "project_budget_items";
 DROP TABLE IF EXISTS "project_resources";
 DROP TABLE IF EXISTS "project_tasks";
 DROP TABLE IF EXISTS "projects";
+DROP TABLE IF EXISTS "cash_receipts";
 DROP TABLE IF EXISTS "cash_expenses";
 DROP TABLE IF EXISTS "bank_receipts";
 DROP TABLE IF EXISTS "bank_expenses";
@@ -152,7 +153,9 @@ CREATE TABLE "customers" (
 	"email" varchar(256),
 	"phone" varchar(256),
 	"type" varchar(256),
+    "opening_balance" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"balance" numeric(10, 2) DEFAULT '0' NOT NULL,
+    "credit_limit" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"address" text,
 	"vat_number" varchar(256)
 );
@@ -293,9 +296,14 @@ CREATE TABLE "sales_invoices" (
 	"date" timestamp NOT NULL,
 	"due_date" timestamp NOT NULL,
 	"numeric_total_amount" numeric(10, 2) NOT NULL,
+    "paid_amount" numeric(10, 2) DEFAULT '0',
 	"status" varchar(50) NOT NULL,
     "is_deferred_payment" boolean DEFAULT false,
     "source" varchar(50),
+    "discount_type" varchar(20) DEFAULT 'amount',
+    "discount_value" numeric(10, 2) DEFAULT '0',
+    "session_id" varchar(256),
+    "payment_method" varchar(50),
 	"notes" text
 );
 
@@ -329,7 +337,6 @@ CREATE TABLE "sales_return_items" (
     "total" numeric(10, 2) NOT NULL,
     "reason" text
 );
-
 
 CREATE TABLE "purchase_orders" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
@@ -373,6 +380,26 @@ CREATE TABLE "supplier_invoice_items" (
     "total" numeric(10, 2) NOT NULL
 );
 
+CREATE TABLE "purchase_returns" (
+    "id" varchar(256) PRIMARY KEY NOT NULL,
+    "supplier_id" varchar(256) NOT NULL,
+    "date" timestamp NOT NULL,
+    "original_invoice_id" varchar(256),
+    "notes" text,
+    "total_amount" numeric(10, 2) NOT NULL,
+    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+);
+
+CREATE TABLE "purchase_return_items" (
+    "id" serial PRIMARY KEY NOT NULL,
+    "return_id" varchar(256) NOT NULL,
+    "item_id" varchar(256) NOT NULL,
+    "description" text,
+    "quantity" integer NOT NULL,
+    "unit_price" numeric(10, 2) NOT NULL,
+    "reason" text,
+    "total" numeric(10, 2) NOT NULL
+);
 
 -- HR & Payroll
 CREATE TABLE "departments" (
@@ -588,6 +615,18 @@ CREATE TABLE "cash_expenses" (
     "status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
+CREATE TABLE "cash_receipts" (
+    "id" varchar(256) PRIMARY KEY NOT NULL,
+    "date" timestamp NOT NULL,
+    "cash_account_id" varchar(256) NOT NULL,
+    "revenue_account_id" varchar(256) NOT NULL,
+    "payer_name" varchar(256) NOT NULL,
+    "customer_id" varchar(256),
+    "description" text NOT NULL,
+    "amount" numeric(10, 2) NOT NULL,
+    "reference_number" varchar(256),
+    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+);
 
 -- Projects
 CREATE TABLE "projects" (
@@ -782,28 +821,6 @@ CREATE TABLE "stock_requisition_items" (
     "justification" text
 );
 
-CREATE TABLE "purchase_returns" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "supplier_id" varchar(256) NOT NULL,
-    "date" timestamp NOT NULL,
-    "original_invoice_id" varchar(256),
-    "notes" text,
-    "total_amount" numeric(10, 2) NOT NULL,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
-);
-
-CREATE TABLE "purchase_return_items" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "return_id" varchar(256) NOT NULL,
-    "item_id" varchar(256) NOT NULL,
-    "description" text,
-    "quantity" integer NOT NULL,
-    "unit_price" numeric(10, 2) NOT NULL,
-    "reason" text,
-    "total" numeric(10, 2) NOT NULL
-);
-
-
 -- POS
 CREATE TABLE "pos_sessions" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
@@ -889,6 +906,12 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+ ALTER TABLE "sales_orders" ADD CONSTRAINT "sales_orders_quote_id_quotations_id_fk" FOREIGN KEY ("quote_id") REFERENCES "quotations"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
  ALTER TABLE "sales_order_items" ADD CONSTRAINT "sales_order_items_so_id_sales_orders_id_fk" FOREIGN KEY ("so_id") REFERENCES "sales_orders"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
@@ -896,6 +919,12 @@ END $$;
 
 DO $$ BEGIN
  ALTER TABLE "sales_order_items" ADD CONSTRAINT "sales_order_items_item_id_products_id_fk" FOREIGN KEY ("item_id") REFERENCES "products"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "sales_invoices" ADD CONSTRAINT "sales_invoices_order_id_sales_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "sales_orders"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -919,7 +948,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
- ALTER TABLE "sales_returns" ADD CONSTRAINT "sales_returns_invoice_id_sales_invoices_id_fk" FOREIGN KEY ("invoice_id") REFERENCES "sales_invoices"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "sales_returns" ADD CONSTRAINT "sales_returns_invoice_id_sales_invoices_id_fk" FOREIGN KEY ("invoice_id") REFERENCES "sales_invoices"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -956,6 +985,12 @@ END $$;
 
 DO $$ BEGIN
  ALTER TABLE "supplier_invoices" ADD CONSTRAINT "supplier_invoices_supplier_id_suppliers_id_fk" FOREIGN KEY ("supplier_id") REFERENCES "suppliers"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "supplier_invoices" ADD CONSTRAINT "supplier_invoices_po_id_purchase_orders_id_fk" FOREIGN KEY ("po_id") REFERENCES "purchase_orders"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -1124,6 +1159,24 @@ END $$;
 
 DO $$ BEGIN
  ALTER TABLE "cash_expenses" ADD CONSTRAINT "cash_expenses_expense_account_id_chart_of_accounts_id_fk" FOREIGN KEY ("expense_account_id") REFERENCES "chart_of_accounts"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "cash_receipts" ADD CONSTRAINT "cash_receipts_cash_account_id_chart_of_accounts_id_fk" FOREIGN KEY ("cash_account_id") REFERENCES "chart_of_accounts"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "cash_receipts" ADD CONSTRAINT "cash_receipts_revenue_account_id_chart_of_accounts_id_fk" FOREIGN KEY ("revenue_account_id") REFERENCES "chart_of_accounts"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "cash_receipts" ADD CONSTRAINT "cash_receipts_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
