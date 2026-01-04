@@ -12,7 +12,7 @@ export interface Currency {
 }
 
 export const availableCurrencies: Currency[] = [
-  { code: "SAR", name: "ريال سعودي", symbol: "⃁" },
+  { code: "SAR", name: "ريال سعودي", symbol: "﷼" },
   { code: "USD", name: "دولار أمريكي", symbol: "$" },
   { code: "EUR", name: "يورو", symbol: "€" },
   { code: "EGP", name: "جنيه مصري", symbol: "E£" },
