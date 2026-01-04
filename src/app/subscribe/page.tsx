@@ -108,7 +108,7 @@ export default function SubscribePage() {
     const total = selectedModules.reduce((acc, moduleKey) => {
       const module = allAvailableModules.find(m => m.key === moduleKey);
       if (!module) return acc;
-      const prices = module.prices[currencyCode] || module.prices['USD'];
+      const prices = module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD'];
       return acc + (billingCycle === 'monthly' ? prices.monthly : prices.yearly);
     }, 0);
     form.setValue("totalAmount", total);
@@ -166,7 +166,7 @@ export default function SubscribePage() {
         </div>
       <Card className="w-full max-w-4xl shadow-2xl">
         <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl">طلب اشتراك جديد في نظام المستقبل ERP</CardTitle>
+          <CardTitle className="text-2xl">طلب اشتراك جديد في نظام {companySettings.companyName || 'المستقبل ERP'}</CardTitle>
           <CardDescription>املأ النموذج أدناه لبدء استخدام النظام وتخصيص اشتراكك.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -246,7 +246,7 @@ export default function SubscribePage() {
                                                     <div className="space-y-0.5">
                                                         <FormLabel className="text-sm font-medium">{module.name}</FormLabel>
                                                         <p className="text-xs text-muted-foreground">{module.description}</p>
-                                                        <p className="text-xs font-semibold text-primary">{formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode] || module.prices['USD']).monthly : (module.prices[currencyCode] || module.prices['USD']).yearly)}/{billingCycle === 'monthly' ? 'شهر' : 'سنة'}</p>
+                                                        <p className="text-xs font-semibold text-primary">{formatCurrency(billingCycle === 'monthly' ? (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).monthly : (module.prices[currencyCode as keyof typeof module.prices] || module.prices['USD']).yearly)}/{billingCycle === 'monthly' ? 'شهر' : 'سنة'}</p>
                                                     </div>
                                                     <FormControl><Checkbox checked={field.value?.includes(module.key)} onCheckedChange={(checked) => { return checked ? field.onChange([...field.value, module.key]) : field.onChange(field.value?.filter((value) => value !== module.key)); }} /></FormControl>
                                                 </FormItem>
