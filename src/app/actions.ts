@@ -46,7 +46,7 @@ export async function getDashboardData() {
             UNION ALL
             (SELECT 'أمر شراء جديد' as description, id, date as activity_date FROM purchase_orders ORDER BY date DESC LIMIT 1)
             UNION ALL
-            (SELECT 'طلب إجازة جديد' as description, id, "requestDate" as activity_date FROM leave_requests ORDER BY "requestDate" DESC LIMIT 1)
+            (SELECT 'طلب إجازة جديد' as description, id, start_date as activity_date FROM leave_requests ORDER BY start_date DESC LIMIT 1)
             ORDER BY activity_date DESC;
         `);
 
