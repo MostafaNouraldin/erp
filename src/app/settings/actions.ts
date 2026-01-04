@@ -33,19 +33,19 @@ const roleSchema = z.object({
 export type RoleFormValues = z.infer<typeof roleSchema>;
 
 const settingsSchema = z.object({
-  companyName: z.string().optional(),
-  companyAddress: z.string().optional(),
-  companyEmail: z.string().email().optional().or(z.literal('')),
-  companyPhone: z.string().optional(),
-  companyVatNumber: z.string().optional(),
-  defaultCurrency: z.string().optional(),
+  companyName: z.string().optional().default(''),
+  companyAddress: z.string().optional().default(''),
+  companyEmail: z.string().email({ message: "بريد إلكتروني غير صالح" }).optional().or(z.literal('')),
+  companyPhone: z.string().optional().default(''),
+  companyVatNumber: z.string().optional().default(''),
+  defaultCurrency: z.string().optional().default('SAR'),
   vatRate: z.coerce.number().min(0).max(100).optional(),
-  themePrimaryColor: z.string().optional(),
-  smtpHost: z.string().optional(),
+  themePrimaryColor: z.string().optional().default(''),
+  smtpHost: z.string().optional().default(''),
   smtpPort: z.coerce.number().optional(),
-  smtpUser: z.string().optional(),
-  smtpPass: z.string().optional(),
-  smtpSecure: z.boolean().optional(),
+  smtpUser: z.string().optional().default(''),
+  smtpPass: z.string().optional().default(''),
+  smtpSecure: z.boolean().optional().default(true),
 });
 export type SettingsFormValues = z.infer<typeof settingsSchema>;
 
@@ -284,5 +284,7 @@ export async function deleteDeductionType(id: string) {
     await db.delete(deductionTypes).where(eq(deductionTypes.id, id));
     revalidatePath('/settings');
 }
+
+    
 
     
