@@ -169,6 +169,8 @@ export async function updateTenant(values: TenantFormValues) {
 
 export async function deleteTenant(tenantId: string) {
     const db = await getMainDb();
+    // In a real app with cascading deletes or proper foreign keys, this would be simpler.
+    // For now, we delete from each related table manually.
     await db.transaction(async (tx) => {
         await tx.delete(users).where(eq(users.tenantId, tenantId));
         await tx.delete(tenantModuleSubscriptions).where(eq(tenantModuleSubscriptions.tenantId, tenantId));

@@ -41,7 +41,7 @@ export async function approveSubscriptionRequest(requestId: number) {
 
   const newTenantId = `T${String(Date.now()).slice(-4)}${String(Math.floor(Math.random() * 90) + 10)}`;
   const adminPassword = randomBytes(8).toString('hex');
-  const passwordHash = `hashed_${adminPassword}`; 
+  const passwordHash = `hashed_${adminPassword}`; // Unsafe placeholder, use bcrypt in production
   const TENANT_ADMIN_ROLE_ID = "ROLE001";
 
   let subscriptionEndDate = new Date();
@@ -85,10 +85,12 @@ export async function approveSubscriptionRequest(requestId: number) {
       subscribed: true,
     }));
     // Also add base modules
-    subscriptions.push({ tenantId: newTenantId, moduleKey: 'Dashboard', subscribed: true });
-    subscriptions.push({ tenantId: newTenantId, moduleKey: 'Settings', subscribed: true });
-     subscriptions.push({ tenantId: newTenantId, moduleKey: 'Help', subscribed: true });
-     subscriptions.push({ tenantId: newTenantId, moduleKey: 'Subscription', subscribed: true });
+    const baseModules = ['Dashboard', 'Settings', 'Help', 'Subscription'];
+    for (const modKey of baseModules) {
+        if (!subscriptions.some(s => s.moduleKey === modKey)) {
+            subscriptions.push({ tenantId: newTenantId, moduleKey: modKey, subscribed: true });
+        }
+    }
 
 
     if (subscriptions.length > 0) {
