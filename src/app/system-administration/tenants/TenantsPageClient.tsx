@@ -32,7 +32,7 @@ const tenantSchema = z.object({
   vatNumber: z.string().optional(),
   country: z.string().optional(),
   isActive: z.boolean().default(true),
-  subscriptionEndDate: z.date().optional(),
+  subscriptionEndDate: z.date().optional().nullable(),
   subscribedModules: z.array(z.object({
     key: z.string().optional(),
     moduleId: z.string(),
@@ -207,13 +207,13 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                     <CardHeader><CardTitle className="text-base">معلومات الشركة</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="id" render={({ field }) => ( <FormItem><FormLabel>معرف الشركة (Tenant ID)</FormLabel><FormControl><Input placeholder="مثال: T002" {...field} className="bg-background" disabled={!!tenantToEdit}/></FormControl><FormMessage/></FormItem> )}/>
-                            <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input placeholder="اسم الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                            <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني (للفواتير)</FormLabel><FormControl><Input type="email" placeholder="billing@company.com" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                            <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
-                             <FormField control={form.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={form.control} name="id" render={({ field }) => ( <FormItem><FormLabel>معرف الشركة (Tenant ID)</FormLabel><FormControl><Input placeholder="مثال: T002" {...field} value={field.value || ''} className="bg-background" disabled={!!tenantToEdit}/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم الشركة</FormLabel><FormControl><Input placeholder="اسم الشركة" {...field} value={field.value || ''} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني (للفواتير)</FormLabel><FormControl><Input type="email" placeholder="billing@company.com" {...field} value={field.value || ''} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="رقم الهاتف" {...field} value={field.value || ''} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                             <FormField control={form.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input placeholder="الرقم الضريبي للشركة" {...field} value={field.value || ''} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                              <FormField control={form.control} name="country" render={({ field }) => ( <FormItem><FormLabel>الدولة</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                    <Select onValueChange={field.onChange} value={field.value || 'SA'} dir="rtl">
                                         <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الدولة"/></SelectTrigger></FormControl>
                                         <SelectContent>
                                             <SelectItem value="SA">المملكة العربية السعودية</SelectItem>
@@ -222,7 +222,7 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                                         </SelectContent>
                                     </Select><FormMessage/></FormItem> )}/>
                             <div className="md:col-span-2">
-                                <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان الشركة" {...field} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input placeholder="عنوان الشركة" {...field} value={field.value || ''} className="bg-background"/></FormControl><FormMessage/></FormItem> )}/>
                             </div>
                         </div>
                     </CardContent>
@@ -233,10 +233,10 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                         <CardHeader><CardTitle className="text-base">حساب المدير الأساسي</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="adminName" render={({ field }) => ( <FormItem><FormLabel>اسم المدير</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
-                                <FormField control={form.control} name="adminEmail" render={({ field }) => ( <FormItem><FormLabel>بريد المدير الإلكتروني</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={form.control} name="adminName" render={({ field }) => ( <FormItem><FormLabel>اسم المدير</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={form.control} name="adminEmail" render={({ field }) => ( <FormItem><FormLabel>بريد المدير الإلكتروني</FormLabel><FormControl><Input type="email" {...field} value={field.value || ''} /></FormControl><FormMessage/></FormItem> )}/>
                                 <div className="md:col-span-2">
-                                <FormField control={form.control} name="adminPassword" render={({ field }) => ( <FormItem><FormLabel>كلمة المرور</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={form.control} name="adminPassword" render={({ field }) => ( <FormItem><FormLabel>كلمة المرور</FormLabel><FormControl><Input type="password" {...field} value={field.value || ''} /></FormControl><FormMessage/></FormItem> )}/>
                                 </div>
                              </div>
                         </CardContent>
@@ -259,7 +259,7 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                         )}/>
                         <FormField control={form.control} name="subscriptionEndDate" render={({ field }) => (
                             <FormItem className="flex flex-col"><FormLabel>تاريخ انتهاء الاشتراك (اختياري)</FormLabel>
-                            <DatePickerWithPresets mode="single" selectedDate={field.value} onDateChange={field.onChange} />
+                            <DatePickerWithPresets mode="single" selectedDate={field.value ?? undefined} onDateChange={field.onChange} />
                             <DialogDescriptionComponent className="text-xs text-muted-foreground">
                                 إذا ترك فارغاً، سيتم حسابه بناءً على دورة الفوترة من تاريخ الإنشاء/التجديد.
                             </DialogDescriptionComponent>
