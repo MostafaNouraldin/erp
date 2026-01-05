@@ -27,7 +27,7 @@ import { useCurrency } from '@/hooks/use-currency';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 const permissionGroups = {
@@ -225,7 +225,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
     const handleSettingsSubmit = async (values: SettingsFormValues) => {
         try {
-            await saveCompanySettings('T001', values, isNewTenant); 
+            await saveCompanySettings(user?.tenantId || 'T001', values, isNewTenant); 
             toast({ title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح." });
             if (values.defaultCurrency) {
               updateCurrency(values.defaultCurrency);
@@ -720,5 +720,3 @@ function hslToHex(hsl: string): string {
     const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
-
-    

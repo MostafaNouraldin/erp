@@ -21,6 +21,8 @@ import NotificationsPopover from "@/components/notifications-popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCompanySettingsForLayout } from './actions';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 interface AppLayoutClientProps {
   children: React.ReactNode;
@@ -34,6 +36,7 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
     const [companySettings, setCompanySettings] = useState<{ name: string; logo: string } | null>(null);
 
     const isPublicPage = pathname === '/login' || pathname === '/subscribe';
+    const isSetupPage = pathname === '/settings';
 
     useEffect(() => {
         setMounted(true);
@@ -44,29 +47,23 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
     }, []);
 
     useEffect(() => {
-        if (auth.isLoading) return;
-
+      if (!auth.isLoading) {
         if (auth.isAuthenticated) {
-            // Redirect authenticated users away from public pages
-            if (isPublicPage) {
-                router.replace('/');
-            }
-            // Redirect new, unconfigured users to the settings page
-            else if (auth.user?.isConfigured === false && pathname !== '/settings') {
-                router.replace('/settings');
-            }
+          if (isPublicPage) {
+            router.replace('/');
+          } else if (auth.user?.isConfigured === false && !isSetupPage) {
+            router.replace('/settings');
+          }
+        } else if (!isPublicPage) {
+          router.replace('/login');
         }
-        
-        // If user is not authenticated and not on a public page, show login
-        if (!auth.isAuthenticated && !isPublicPage) {
-            router.replace('/login');
-        }
+      }
+    }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router, isPublicPage, isSetupPage]);
 
-    }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router, isPublicPage]);
 
     useEffect(() => {
         const fetchSettings = async () => {
-            if (auth.isAuthenticated && auth.user && auth.user.tenantId && !auth.isSuperAdmin) {
+            if (auth.isAuthenticated && auth.user?.tenantId && !auth.isSuperAdmin) {
                 const settings = await getCompanySettingsForLayout(auth.user.tenantId);
                 setCompanySettings({
                     name: settings?.companyName || "اسم الشركة",
@@ -106,7 +103,7 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
     }
     
     // While redirecting, show nothing to prevent flashes of content
-    if ((auth.isAuthenticated && isPublicPage) || (auth.isAuthenticated && !auth.user?.isConfigured && pathname !== '/settings')) {
+    if ((auth.isAuthenticated && isPublicPage) || (auth.isAuthenticated && auth.user?.isConfigured === false && !isSetupPage)) {
         return null;
     }
     
@@ -115,6 +112,8 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
         return <>{children}</>;
     }
     
+    const isNewUnconfiguredUser = auth.isAuthenticated && auth.user?.isConfigured === false;
+    
 
     const navItems = allNavItems
       .map(item => {
@@ -122,7 +121,7 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
             return null;
         }
         
-        if (auth.user && !auth.user.isConfigured && !['/settings', '/help'].includes(item.href || '')) {
+        if (isNewUnconfiguredUser && !['/settings', '/help'].includes(item.href || '')) {
           const hasSettingsSubItem = item.subItems?.some(sub => sub.href === '/settings');
           if (!hasSettingsSubItem) return null;
         }
@@ -137,7 +136,7 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
 
         if (item.subItems) {
             const visibleSubItems = item.subItems.filter(sub => {
-                if (auth.user && !auth.user.isConfigured && sub.href !== '/settings' && sub.href !== '/help') {
+                if (isNewUnconfiguredUser && sub.href !== '/settings' && sub.href !== '/help') {
                    return false;
                 }
                 const hasSubSubPermission = sub.subItems ? sub.subItems.some(grandchild => auth.hasPermission(grandchild.permissionKey as string)) : false;
@@ -284,6 +283,15 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
                         </div>
                     </header>
                     <SidebarInset className="p-4 md:p-6">
+                        {isNewUnconfiguredUser && (
+                            <Alert className="mb-6 border-blue-500 text-blue-800 dark:text-blue-300">
+                                <Info className="h-4 w-4" />
+                                <AlertTitle className="font-bold">مرحباً بك في نظام المستقبل!</AlertTitle>
+                                <AlertDescription>
+                                    هذه هي خطوتك الأولى. يرجى إكمال معلومات شركتك الأساسية في قسم "معلومات الشركة" أدناه لحفظ الإعدادات والبدء في استخدام النظام.
+                                </AlertDescription>
+                            </Alert>
+                        )}
                         {children}
                     </SidebarInset>
                 </div>
