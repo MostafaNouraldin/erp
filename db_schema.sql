@@ -85,6 +85,7 @@ CREATE TABLE "tenants" (
 	"phone" varchar(50),
 	"address" text,
 	"vat_number" varchar(50),
+    "country" varchar(10),
 	CONSTRAINT "tenants_email_unique" UNIQUE("email")
 );
 
@@ -128,7 +129,8 @@ CREATE TABLE "subscription_requests" (
 	"payment_method" varchar(100) NOT NULL,
 	"payment_proof" text NOT NULL,
 	"status" varchar(50) DEFAULT 'pending' NOT NULL,
-	"created_at" timestamp DEFAULT now()
+	"created_at" timestamp DEFAULT now(),
+    "country" varchar(10)
 );
 
 CREATE TABLE "company_settings" (
@@ -820,6 +822,7 @@ CREATE TABLE "stock_requisition_items" (
     "quantity_requested" integer NOT NULL,
     "justification" text
 );
+
 
 -- POS
 CREATE TABLE "pos_sessions" (

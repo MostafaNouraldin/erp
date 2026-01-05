@@ -1,4 +1,5 @@
 
+
 import { pgTable, text, varchar, serial, numeric, integer, timestamp, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -805,7 +806,7 @@ export const posSessions = pgTable('pos_sessions', {
     cashSales: numeric('cash_sales', { precision: 10, scale: 2 }),
     cardSales: numeric('card_sales', { precision: 10, scale: 2 }),
     difference: numeric('difference', { precision: 10, scale: 2 }),
-    status: varchar('status', { length: 50 }).notNull(), // 'open', 'closed'
+    status: varchar('status', { length: 50 }).notNull(),
 });
 
 // Inventory Log

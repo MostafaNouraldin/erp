@@ -27,6 +27,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, addQuotation, updateQuotation, deleteQuotation, addSalesOrder, updateSalesOrder, deleteSalesOrder, addSalesReturn, approveSalesReturn, deleteSalesReturn, addCustomer, updateCustomer, deleteCustomer, updateCustomerInvoicePayment } from './actions';
 import type { Product } from '@/db/schema';
 import { useCurrency } from '@/hooks/use-currency';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 
 
 export interface SalesOrderItem {
@@ -731,7 +733,7 @@ useEffect(() => {
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">المبيعات</h1>
         <div className="flex gap-2">
-            <Dialog open={showCreateQuotationDialog} onOpenChange={(isOpen) => { setShowCreateQuotationDialog(isOpen); if(!isOpen) setQuotationToEdit(null); }}>
+            <Dialog open={showCreateQuotationDialog} onOpenChange={setShowCreateQuotationDialog}>
               <DialogTrigger asChild>
                 <Button className="shadow-md hover:shadow-lg transition-shadow" onClick={() => {setQuotationToEdit(null); quotationForm.reset(); setShowCreateQuotationDialog(true);}}>
                     <PlusCircle className="me-2 h-4 w-4" /> إنشاء عرض سعر جديد
@@ -929,7 +931,7 @@ useEffect(() => {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>قائمة العملاء</CardTitle>
-                <Dialog open={showManageCustomerDialog} onOpenChange={(isOpen) => { setShowManageCustomerDialog(isOpen); if(!isOpen) setCustomerToEdit(null);}}>
+                <Dialog open={showManageCustomerDialog} onOpenChange={setShowManageCustomerDialog}>
                     <DialogTrigger asChild>
                       <Button className="shadow-md" onClick={() => {setCustomerToEdit(null); customerForm.reset(); setShowManageCustomerDialog(true);}}>
                         <PlusCircle className="me-2 h-4 w-4" /> إضافة عميل جديد
