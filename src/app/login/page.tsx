@@ -53,21 +53,21 @@ export default function LoginPage() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { isSuperAdmin: false, tenantId: "T001", email: "manager@example.com", password: "password" },
+    defaultValues: { isSuperAdmin: false, tenantId: "T001", email: "manager@example.com", password: "" },
   });
 
   const isSuperAdminLogin = form.watch("isSuperAdmin");
 
   useEffect(() => {
+    // Reset only relevant fields, leave password for the user to enter.
     if (isSuperAdminLogin) {
-        form.setValue("tenantId", ""); // Clear tenantId when switching to super admin
+        form.setValue("tenantId", ""); 
         form.setValue("email", "super@admin.com");
-        form.setValue("password", "superadmin_password");
     } else {
         form.setValue("tenantId", "T001");
         form.setValue("email", "manager@example.com");
-        form.setValue("password", "password");
     }
+     form.setValue("password", ""); // Clear password on mode switch
   }, [isSuperAdminLogin, form]);
 
 
@@ -105,7 +105,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto">
-             <AppLogo logoUrl={companySettings.companyLogo} companyName={companySettings.companyName} />
+             <AppLogo logoUrl={companySettings.logo} companyName={companySettings.name} />
           </div>
           <CardTitle className="text-2xl">تسجيل الدخول إلى النظام</CardTitle>
           <CardDescription>أدخل بيانات الاعتماد الخاصة بك للوصول إلى حسابك.</CardDescription>
