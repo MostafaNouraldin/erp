@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { getCompanySettingsForLayout } from '../actions';
 
 const loginSchema = z.object({
   isSuperAdmin: z.boolean().default(false),
@@ -27,19 +28,28 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-type CompanySettings = { companyName?: string, companyLogo?: string };
+type CompanySettings = { companyName?: string, companyLogo?: string | null };
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [companySettings, setCompanySettings] = useState<CompanySettings>({});
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    async function fetchBranding() {
+        // Fetch default branding for the login page, assuming 'T001' or a system default.
+        const settings = await getCompanySettingsForLayout('T001'); 
+        if(settings) {
+            setCompanySettings(settings);
+        } else {
+            setCompanySettings({ companyName: "نسيج للحلول المتكاملة", companyLogo: "" });
+        }
+    }
+    fetchBranding();
+  }, []);
   
-  // Login page should use default system branding, not tenant-specific branding
-  const companySettings: CompanySettings = {
-      companyName: "نسيج للحلول المتكاملة",
-      companyLogo: "" // Or a default system logo path
-  };
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),

@@ -48,11 +48,8 @@ function getTenantIdFromCookie(): string | null {
 }
 
 // A helper function to check if the logged-in user is a super admin
-// In a real app, this would be more robust, likely involving decoding a JWT or session cookie
 function isSuperAdminRequest(): boolean {
     const headersList = headers();
-    // This is a placeholder. In a real scenario, you'd inspect a session or token.
-    // We'll check for a hypothetical cookie or header that indicates super admin status.
     const userCookie = headersList.get('cookie') || '';
     return userCookie.includes('"roleId":"ROLE_SUPER_ADMIN"');
 }
@@ -65,19 +62,26 @@ export default async function RootLayout({
 }>) {
   let companySettings: { name: string; logo: string } | null = null;
   const isSuperAdmin = isSuperAdminRequest();
+  const tenantId = getTenantIdFromCookie();
   
   if (isSuperAdmin) {
     companySettings = { name: "نسيج للحلول المتكاملة", logo: "" };
+  } else if (tenantId) {
+    const settings = await getCompanySettingsForLayout(tenantId);
+    companySettings = {
+        name: settings?.companyName || "اسم الشركة",
+        logo: settings?.companyLogo || ""
+    };
   } else {
-    const tenantId = getTenantIdFromCookie();
-    if (tenantId) {
-        const settings = await getCompanySettingsForLayout(tenantId);
-        companySettings = {
-            name: settings?.companyName || "اسم الشركة",
-            logo: settings?.companyLogo || ""
-        };
-    }
+    // For public pages like login/subscribe, fetch default system branding if needed.
+    // Assuming 'T001' is the main tenant or a template tenant for system branding.
+    const settings = await getCompanySettingsForLayout('T001');
+    companySettings = {
+        name: settings?.companyName || "نسيج للحلول المتكاملة",
+        logo: settings?.companyLogo || ""
+    };
   }
+
 
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>

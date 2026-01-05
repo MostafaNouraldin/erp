@@ -54,24 +54,26 @@ const subscriptionRequestSchema = z.object({
 });
 
 type SubscriptionRequestFormValues = z.infer<typeof subscriptionRequestSchema>;
-type CompanySettings = { companyName?: string, companyLogo?: string };
+type CompanySettings = { companyName?: string, companyLogo?: string | null };
 
 export default function SubscribePage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [companySettings, setCompanySettings] = useState<CompanySettings>({});
   const { toast } = useToast();
   const router = useRouter();
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
-  const [companySettings, setCompanySettings] = useState<CompanySettings>({});
   const { updateCurrency, formatCurrency } = useCurrency();
 
   useEffect(() => {
-    async function fetchSettings() {
-        const settings = await getCompanySettingsForLayout('T001'); // Using main tenant for public page
+    async function fetchBranding() {
+        const settings = await getCompanySettingsForLayout('T001'); // Use default system branding
         if(settings) {
             setCompanySettings(settings);
+        } else {
+             setCompanySettings({ companyName: "نسيج للحلول المتكاملة", companyLogo: "" });
         }
     }
-    fetchSettings();
+    fetchBranding();
   }, []);
 
   const form = useForm<SubscriptionRequestFormValues>({
