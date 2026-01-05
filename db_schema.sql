@@ -85,7 +85,7 @@ CREATE TABLE "tenants" (
 	"phone" varchar(50),
 	"address" text,
 	"vat_number" varchar(50),
-    "country" varchar(10),
+	"country" varchar(10),
 	CONSTRAINT "tenants_email_unique" UNIQUE("email")
 );
 
@@ -130,7 +130,7 @@ CREATE TABLE "subscription_requests" (
 	"payment_proof" text NOT NULL,
 	"status" varchar(50) DEFAULT 'pending' NOT NULL,
 	"created_at" timestamp DEFAULT now(),
-    "country" varchar(10)
+	"country" varchar(10)
 );
 
 CREATE TABLE "company_settings" (
@@ -823,7 +823,6 @@ CREATE TABLE "stock_requisition_items" (
     "justification" text
 );
 
-
 -- POS
 CREATE TABLE "pos_sessions" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
@@ -1006,6 +1005,30 @@ END $$;
 
 DO $$ BEGIN
  ALTER TABLE "supplier_invoice_items" ADD CONSTRAINT "supplier_invoice_items_item_id_products_id_fk" FOREIGN KEY ("item_id") REFERENCES "products"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "purchase_returns" ADD CONSTRAINT "purchase_returns_supplier_id_suppliers_id_fk" FOREIGN KEY ("supplier_id") REFERENCES "suppliers"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "purchase_returns" ADD CONSTRAINT "purchase_returns_original_invoice_id_supplier_invoices_id_fk" FOREIGN KEY ("original_invoice_id") REFERENCES "supplier_invoices"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "purchase_return_items" ADD CONSTRAINT "purchase_return_items_return_id_purchase_returns_id_fk" FOREIGN KEY ("return_id") REFERENCES "purchase_returns"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "purchase_return_items" ADD CONSTRAINT "purchase_return_items_item_id_products_id_fk" FOREIGN KEY ("item_id") REFERENCES "products"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -1330,12 +1353,6 @@ END $$;
 
 DO $$ BEGIN
  ALTER TABLE "stock_requisition_items" ADD CONSTRAINT "stock_requisition_items_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE no action ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
- ALTER TABLE "purchase_returns" ADD CONSTRAINT "purchase_returns_supplier_id_suppliers_id_fk" FOREIGN KEY ("supplier_id") REFERENCES "suppliers"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

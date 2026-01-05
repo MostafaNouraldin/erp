@@ -343,7 +343,6 @@ export const supplierInvoiceItems = pgTable('supplier_invoice_items', {
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
 });
 
-
 export const purchaseReturns = pgTable('purchase_returns', {
     id: varchar('id', { length: 256 }).primaryKey(),
     supplierId: varchar('supplier_id', { length: 256 }).notNull().references(() => suppliers.id),
@@ -900,5 +899,3 @@ export const posSessionsRelations = relations(posSessions, ({ one }) => ({
     references: [users.id],
   }),
 }));
-
-    

@@ -852,7 +852,14 @@ useEffect(() => {
         </TabsContent>
          <TabsContent value="salesOrders">
             <Card className="shadow-lg">
-                <CardHeader><CardTitle>أوامر البيع</CardTitle></CardHeader>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle>أوامر البيع</CardTitle>
+                        <Button variant="outline" onClick={() => {setSalesOrderToEdit(null); salesOrderForm.reset(); setShowCreateSalesOrderDialog(true);}}>
+                            <PlusCircle className="me-2 h-4 w-4"/> أمر بيع جديد
+                        </Button>
+                    </div>
+                </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader><TableRow><TableHead>رقم الأمر</TableHead><TableHead>العميل</TableHead><TableHead>التاريخ</TableHead><TableHead>الإجمالي</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
