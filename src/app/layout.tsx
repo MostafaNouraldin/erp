@@ -12,7 +12,7 @@ import { getCompanySettingsForLayout } from './actions';
 import { connectToTenantDb } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { decode } from 'jsonwebtoken';
+import { decodeJwt } from 'jose';
 
 
 const cairo = Cairo({
@@ -38,7 +38,7 @@ function getTenantIdFromCookie(): string | null {
     if (authCookie) {
         const token = authCookie.split('=')[1];
         try {
-            const decoded = decode(token) as { tenantId?: string };
+            const decoded = decodeJwt(token) as { tenantId?: string };
             return decoded?.tenantId || null;
         } catch (e) {
             return null;
