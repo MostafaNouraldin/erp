@@ -854,7 +854,7 @@ useEffect(() => {
         <DialogContent className="max-w-4xl" dir="rtl">
           <DialogHeader>
             <DialogTitle>ملف العميل: {selectedCustomerForDetails?.name}</DialogTitle>
-            <DialogDescription>عرض شامل لبيانات العميل المالية والتعاملات.</DialogDescription>
+            <DialogDescriptionComponent>عرض شامل لبيانات العميل المالية والتعاملات.</DialogDescriptionComponent>
           </DialogHeader>
             {selectedCustomerForDetails && (
               <div id="printable-customer-statement" className="space-y-4 printable-area">
@@ -908,3 +908,4 @@ useEffect(() => {
     </div>
   );
 }
+
