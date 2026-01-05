@@ -31,6 +31,7 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
     const pathname = usePathname();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
+    const isPublicPage = pathname === '/login' || pathname === '/subscribe';
 
     useEffect(() => {
         setMounted(true);
@@ -41,10 +42,17 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
     }, []);
 
     useEffect(() => {
-        if (!auth.isLoading && auth.isAuthenticated && auth.user && !auth.user.isConfigured && pathname !== '/settings') {
-            router.replace('/settings');
+        if (!auth.isLoading) {
+            // Redirect authenticated users away from public pages (login, subscribe)
+            if (auth.isAuthenticated && isPublicPage) {
+                router.replace('/');
+            }
+            // Redirect new, unconfigured users to the settings page
+            else if (auth.isAuthenticated && auth.user && !auth.user.isConfigured && pathname !== '/settings') {
+                router.replace('/settings');
+            }
         }
-    }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router]);
+    }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router, isPublicPage]);
 
     if (!mounted || auth.isLoading) {
         return (
@@ -63,25 +71,23 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
         );
     }
     
-    const isPublicPage = pathname === '/login' || pathname === '/subscribe';
-
+    // If user is not authenticated and not on a public page, show login
     if (!auth.isAuthenticated && !isPublicPage) {
         return <LoginPage />;
     }
     
+    // If user is authenticated but on a public page (while redirecting), show nothing
     if (auth.isAuthenticated && isPublicPage) {
-        if (typeof window !== 'undefined') {
-            router.replace('/');
-        }
         return null;
     }
     
+    // If user is not authenticated but on a public page, show the page content
     if (!auth.isAuthenticated && isPublicPage) {
         return <>{children}</>;
     }
     
+    // If user is new and unconfigured (while redirecting), show loading message
     if (auth.isAuthenticated && !auth.user?.isConfigured && pathname !== '/settings') {
-      // While redirecting, show a loading state or nothing to prevent flashing content
       return (
          <div className="flex items-center justify-center min-h-screen w-full bg-background">
             <p>...جاري التوجيه إلى صفحة الإعدادات</p>
