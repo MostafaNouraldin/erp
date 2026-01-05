@@ -20,17 +20,19 @@ import { allNavItems } from "@/lib/nav-links";
 import NotificationsPopover from "@/components/notifications-popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getCompanySettingsForLayout } from './actions';
 
 interface AppLayoutClientProps {
   children: React.ReactNode;
-  companySettings: { name: string; logo: string } | null;
 }
 
-export default function AppLayoutClient({ children, companySettings }: AppLayoutClientProps) {
+export default function AppLayoutClient({ children }: AppLayoutClientProps) {
     const auth = useAuth();
     const pathname = usePathname();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
+    const [companySettings, setCompanySettings] = useState<{ name: string; logo: string } | null>(null);
+
     const isPublicPage = pathname === '/login' || pathname === '/subscribe';
 
     useEffect(() => {
@@ -42,19 +44,46 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
     }, []);
 
     useEffect(() => {
-        if (!auth.isLoading) {
-            // Redirect authenticated users away from public pages (login, subscribe)
-            if (auth.isAuthenticated && isPublicPage) {
+        if (auth.isLoading) return;
+
+        if (auth.isAuthenticated) {
+            // Redirect authenticated users away from public pages
+            if (isPublicPage) {
                 router.replace('/');
             }
             // Redirect new, unconfigured users to the settings page
-            else if (auth.isAuthenticated && auth.user && !auth.user.isConfigured && pathname !== '/settings') {
+            else if (auth.user?.isConfigured === false && pathname !== '/settings') {
                 router.replace('/settings');
             }
         }
+        
+        // If user is not authenticated and not on a public page, show login
+        if (!auth.isAuthenticated && !isPublicPage) {
+            router.replace('/login');
+        }
+
     }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router, isPublicPage]);
 
-    if (!mounted || auth.isLoading) {
+    useEffect(() => {
+        const fetchSettings = async () => {
+            if (auth.isAuthenticated && auth.user && auth.user.tenantId && !auth.isSuperAdmin) {
+                const settings = await getCompanySettingsForLayout(auth.user.tenantId);
+                setCompanySettings({
+                    name: settings?.companyName || "اسم الشركة",
+                    logo: settings?.companyLogo || ""
+                });
+            } else {
+                 setCompanySettings({ name: "نسيج للحلول المتكاملة", logo: "" });
+            }
+        };
+
+        if(!auth.isLoading) {
+            fetchSettings();
+        }
+    }, [auth.isAuthenticated, auth.user, auth.isSuperAdmin, auth.isLoading]);
+
+
+    if (!mounted || auth.isLoading || (auth.isAuthenticated && !companySettings)) {
         return (
             <div className="flex min-h-screen w-full bg-background">
                 <div className="w-64 border-r p-4 hidden md:block">
@@ -76,8 +105,8 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
         return <LoginPage />;
     }
     
-    // If user is authenticated but on a public page (while redirecting), show nothing
-    if (auth.isAuthenticated && isPublicPage) {
+    // While redirecting, show nothing to prevent flashes of content
+    if ((auth.isAuthenticated && isPublicPage) || (auth.isAuthenticated && !auth.user?.isConfigured && pathname !== '/settings')) {
         return null;
     }
     
@@ -86,14 +115,6 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
         return <>{children}</>;
     }
     
-    // If user is new and unconfigured (while redirecting), show loading message
-    if (auth.isAuthenticated && !auth.user?.isConfigured && pathname !== '/settings') {
-      return (
-         <div className="flex items-center justify-center min-h-screen w-full bg-background">
-            <p>...جاري التوجيه إلى صفحة الإعدادات</p>
-         </div>
-      );
-    }
 
     const navItems = allNavItems
       .map(item => {
@@ -101,7 +122,7 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
             return null;
         }
         
-        if (!auth.user?.isConfigured && !['/settings', '/help'].includes(item.href || '')) {
+        if (auth.user && !auth.user.isConfigured && !['/settings', '/help'].includes(item.href || '')) {
           const hasSettingsSubItem = item.subItems?.some(sub => sub.href === '/settings');
           if (!hasSettingsSubItem) return null;
         }
@@ -116,7 +137,7 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
 
         if (item.subItems) {
             const visibleSubItems = item.subItems.filter(sub => {
-                if (!auth.user?.isConfigured && sub.href !== '/settings' && sub.href !== '/help') {
+                if (auth.user && !auth.user.isConfigured && sub.href !== '/settings' && sub.href !== '/help') {
                    return false;
                 }
                 const hasSubSubPermission = sub.subItems ? sub.subItems.some(grandchild => auth.hasPermission(grandchild.permissionKey as string)) : false;

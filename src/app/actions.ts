@@ -89,12 +89,11 @@ export async function getDashboardData() {
     }
 }
 
-export async function getCompanySettingsForLayout(tenantId: string) {
-  const { db } = await connectToTenantDb();
+export async function getCompanySettingsForLayout(tenantId?: string | null) {
+  if (!tenantId) return null;
+  const { db } = await connectToTenantDb(tenantId);
   const result = await db.query.companySettings.findFirst({
     where: eq(companySettings.id, tenantId),
   });
   return result?.settings as { companyName?: string; companyLogo?: string } | undefined;
 }
-
-    

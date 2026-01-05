@@ -18,7 +18,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { getCompanySettingsForLayout } from '../actions';
 
 const loginSchema = z.object({
   isSuperAdmin: z.boolean().default(false),
@@ -35,7 +34,12 @@ export default function LoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
-  const [companySettings, setCompanySettings] = useState<CompanySettings>({});
+  
+  // Login page should use default system branding, not tenant-specific branding
+  const companySettings: CompanySettings = {
+      companyName: "نسيج للحلول المتكاملة",
+      companyLogo: "" // Or a default system logo path
+  };
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -43,16 +47,6 @@ export default function LoginPage() {
   });
 
   const isSuperAdminLogin = form.watch("isSuperAdmin");
-
-  useEffect(() => {
-    async function fetchSettings() {
-        const settings = await getCompanySettingsForLayout('T001'); // Using main tenant for public page
-        if(settings) {
-            setCompanySettings(settings);
-        }
-    }
-    fetchSettings();
-  }, []);
 
   useEffect(() => {
     if (isSuperAdminLogin) {
@@ -77,7 +71,7 @@ export default function LoginPage() {
           title: "تم تسجيل الدخول بنجاح",
           description: `مرحباً بك، ${result.user.name}!`,
         });
-        router.push('/');
+        // The layout client will handle redirection
       } else {
         toast({
           title: "خطأ في تسجيل الدخول",
