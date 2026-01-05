@@ -381,5 +381,3 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     </div>
   );
 }
-
-    

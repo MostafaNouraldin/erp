@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -215,7 +214,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
 
   const [goodsReceivedNotes, setGoodsReceivedNotesData] = useState<GoodsReceivedNoteFormValues[]>(initialData.goodsReceivedNotes);
   const [showManageGoodsReceivedNoteDialog, setShowManageGoodsReceivedNoteDialog] = useState(false);
-  const [goodsReceivedNoteToEdit, setGoodsReceivedNoteToEdit] = useState<GoodsReceivedNoteFormValues | null>(null);
+  const [grnToEdit, setGrnToEdit] = useState<GoodsReceivedNoteFormValues | null>(null);
 
   const [stockRequisitions, setStockRequisitions] = useState<StockRequisitionFormValues[]>(initialData.stockRequisitions);
   const [showManageStockRequisitionDialog, setShowManageStockRequisitionDialog] = useState(false);
@@ -393,7 +392,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
         await addGoodsReceivedNote(values);
         toast({ title: "تم الإنشاء", description: "تم إنشاء إذن الإضافة بنجاح." });
         setShowManageGoodsReceivedNoteDialog(false);
-        setGoodsReceivedNoteToEdit(null);
+        setGrnToEdit(null);
     } catch(e) {
         toast({ title: "خطأ", description: "لم يتم إنشاء إذن الإضافة.", variant: "destructive" });
     }
@@ -664,7 +663,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="بحث باسم المنتج أو المصدر..." className="pr-10 w-full sm:w-64 bg-background" />
                 </div>
-                 <DatePickerWithPresets mode="range"/>
+                 <DatePickerWithPresets mode="range" />
               </div>
               <div className="overflow-x-auto">
                 <Table>
@@ -816,7 +815,3 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     </div>
   );
 }
-
-
-
-    

@@ -637,7 +637,10 @@ export default function ProductionClientComponent({initialData}: ProductionClien
                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل القائمة" onClick={() => {setBomToEdit(bom); setShowManageBomDialog(true);}}> <Edit className="h-4 w-4" /> </Button>
                            <AlertDialog>
                                 <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="حذف القائمة"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
-                                <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف قائمة المواد للمنتج "{products.find(p=>p.id === bom.productId)?.name || bom.productId}" (إصدار {bom.version})؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>تراجع</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteBom(bom.id!)} className={buttonVariants({variant:"destructive"})}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                                <AlertDialogContent dir="rtl">
+                                  <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف قائمة المواد للمنتج "{products.find(p=>p.id === bom.productId)?.name || bom.productId}" (إصدار {bom.version})؟</AlertDialogDescription></AlertDialogHeader>
+                                  <AlertDialogFooter><AlertDialogCancel>تراجع</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteBom(bom.id!)} className={buttonVariants({variant:"destructive"})}>تأكيد الحذف</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
                             </AlertDialog>
                         </TableCell>
                       </TableRow>
