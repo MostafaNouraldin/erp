@@ -24,7 +24,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, addQuotation, updateQuotation, deleteQuotation, addSalesOrder, updateSalesOrder, deleteSalesOrder, addSalesReturn, approveSalesReturn, deleteSalesReturn, addCustomer, updateCustomer, deleteCustomer } from './actions';
+import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, addQuotation, updateQuotation, deleteQuotation, addSalesOrder, updateSalesOrder, deleteSalesOrder, addSalesReturn, approveSalesReturn, deleteSalesReturn, addCustomer, updateCustomer, deleteCustomer, updateCustomerInvoicePayment } from './actions';
 import type { Product } from '@/db/schema';
 import { useCurrency } from '@/hooks/use-currency';
 
@@ -62,7 +62,8 @@ export interface Invoice {
   date: Date;
   dueDate: Date;
   numericTotalAmount: number; 
-  status: "مدفوع" | "غير مدفوع" | "متأخر";
+  paidAmount?: number;
+  status: "مدفوع" | "غير مدفوع" | "متأخر" | "مدفوع جزئياً";
   items: InvoiceItem[];
   notes?: string | null;
   isDeferredPayment?: boolean | null;
@@ -179,7 +180,7 @@ const invoiceSchema = z.object({
   items: z.array(invoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   notes: z.string().optional(),
   numericTotalAmount: z.coerce.number().default(0),
-  status: z.enum(["مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
+  status: z.enum(["مدفوع", "غير مدفوع", "متأخر", "مدفوع جزئياً"]).default("غير مدفوع"),
   orderId: z.string().optional(),
   isDeferredPayment: z.boolean().optional().default(false),
   source: z.enum(["POS", "Manual"]).optional().default("Manual"),
@@ -187,6 +188,12 @@ const invoiceSchema = z.object({
   discountValue: z.coerce.number().min(0).optional().default(0),
 });
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
+
+const customerPaymentSchema = z.object({
+  paymentAmount: z.coerce.number().min(0.01, "مبلغ الدفع يجب أن يكون أكبر من صفر."),
+});
+type CustomerPaymentFormValues = z.infer<typeof customerPaymentSchema>;
+
 
 const customerSchema = z.object({
   id: z.string().optional(),
@@ -273,6 +280,10 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
   const [showManageCustomerDialog, setShowManageCustomerDialog] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<CustomerFormValues | null>(null);
 
+  const [showRecordCustomerPaymentDialog, setShowRecordCustomerPaymentDialog] = useState(false);
+  const [customerInvoiceToPay, setCustomerInvoiceToPay] = useState<any | null>(null);
+
+
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
 
@@ -309,6 +320,8 @@ export default function SalesClientComponent({ initialData }: SalesClientCompone
     control: invoiceForm.control, name: "items",
   });
   
+  const customerPaymentForm = useForm<CustomerPaymentFormValues>({ resolver: zodResolver(customerPaymentSchema) });
+
   const salesReturnForm = useForm<SalesReturnFormValues>({
     resolver: zodResolver(salesReturnSchema),
     defaultValues: { customerId: '', date: new Date(), items: [{itemId: '', description: '', quantity:1, unitPrice:0, total:0, reason: ''}], status: "مسودة", numericTotalAmount: 0 },
@@ -390,6 +403,12 @@ useEffect(() => {
       customerForm.reset({ name: "", email: "", phone: "", type: "فرد", balance: 0, openingBalance: 0, creditLimit: 0, address: "", vatNumber: "" });
     }
   }, [customerToEdit, customerForm, showManageCustomerDialog]);
+
+  useEffect(() => {
+    if (customerInvoiceToPay) {
+      customerPaymentForm.reset({ paymentAmount: customerInvoiceToPay.numericTotalAmount - (customerInvoiceToPay.paidAmount || 0) });
+    }
+  }, [customerInvoiceToPay, customerPaymentForm]);
 
 
   const handlePrintInvoice = (invoice: Invoice) => {
@@ -537,6 +556,20 @@ useEffect(() => {
         toast({ title: "تم الحذف", description: "تم حذف الفاتورة بنجاح.", variant: "destructive" });
     } catch (error) {
         toast({ title: "خطأ", description: "لم يتم حذف الفاتورة.", variant: "destructive" });
+    }
+  };
+
+  const handleCustomerPaymentSubmit = async (paymentValues: CustomerPaymentFormValues) => {
+    if (!customerInvoiceToPay) return;
+    try {
+        const newPaidAmount = (customerInvoiceToPay.paidAmount || 0) + paymentValues.paymentAmount;
+        const newStatus = newPaidAmount >= customerInvoiceToPay.numericTotalAmount ? "مدفوع" as const : "مدفوع جزئياً" as const;
+        await updateCustomerInvoicePayment(customerInvoiceToPay.id, newPaidAmount, newStatus);
+        toast({ title: "تم تسجيل الدفعة", description: "تم تسجيل دفعة لفاتورة العميل بنجاح." });
+        setShowRecordCustomerPaymentDialog(false);
+        setCustomerInvoiceToPay(null);
+    } catch(error) {
+        toast({ title: "خطأ", description: "لم يتم تسجيل الدفعة.", variant: "destructive" });
     }
   };
 
@@ -847,6 +880,50 @@ useEffect(() => {
                 </CardContent>
             </Card>
         </TabsContent>
+        
+        <TabsContent value="invoices">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>فواتير المبيعات</CardTitle>
+                <Button variant="outline" onClick={() => {setInvoiceToEdit(null); invoiceForm.reset(); setShowCreateInvoiceDialog(true);}}>
+                    <PlusCircle className="me-2 h-4 w-4"/> فاتورة جديدة
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader><TableRow><TableHead>رقم الفاتورة</TableHead><TableHead>العميل</TableHead><TableHead>التاريخ</TableHead><TableHead>الإجمالي</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {invoices.map(inv => (
+                    <TableRow key={inv.id}>
+                      <TableCell>{inv.id}</TableCell>
+                      <TableCell>{customers.find(c => c.id === inv.customerId)?.name || "عميل نقدي"}</TableCell>
+                      <TableCell>{formatDate(inv.date)}</TableCell>
+                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(inv.numericTotalAmount).amount + ' ' + formatCurrency(inv.numericTotalAmount).symbol }}></TableCell>
+                      <TableCell><Badge variant={inv.status === 'مدفوع' ? 'default' : 'destructive'}>{getInvoiceStatusText(inv)}</Badge></TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" onClick={() => handlePrintInvoice(inv)}><Printer className="h-4 w-4"/></Button>
+                        <Button variant="ghost" size="icon" onClick={() => { setInvoiceToEdit(inv); setShowCreateInvoiceDialog(true);}}><Edit className="h-4 w-4"/></Button>
+                        <Button variant="ghost" size="icon" className="text-green-600" onClick={() => { setCustomerInvoiceToPay(inv); setShowRecordCustomerPaymentDialog(true); }}><DollarSign className="h-4 w-4" /></Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                          <AlertDialogContent dir="rtl">
+                            <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الفاتورة رقم "{inv.id}"؟</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteInvoice(inv.id)}>تأكيد الحذف</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
          <TabsContent value="customers">
           <Card className="shadow-lg">
             <CardHeader>
@@ -913,6 +990,31 @@ useEffect(() => {
         </TabsContent>
         {/* Other tabs omitted for brevity */}
       </Tabs>
+
+      {/* Record Customer Payment Dialog */}
+      <Dialog open={showRecordCustomerPaymentDialog} onOpenChange={setShowRecordCustomerPaymentDialog}>
+          <DialogContent className="sm:max-w-md" dir="rtl">
+              <DialogHeader>
+                  <DialogTitle>تسجيل دفعة من عميل</DialogTitle>
+                  <DialogDescriptionComponent>
+                      فاتورة رقم: {customerInvoiceToPay?.id} | المبلغ الإجمالي: {formatCurrency(customerInvoiceToPay?.numericTotalAmount || 0).amount} | المدفوع: {formatCurrency(customerInvoiceToPay?.paidAmount || 0).amount}
+                  </DialogDescriptionComponent>
+              </DialogHeader>
+              <Form {...customerPaymentForm}>
+                  <form onSubmit={customerPaymentForm.handleSubmit(handleCustomerPaymentSubmit)} className="space-y-4 py-4">
+                      <FormField control={customerPaymentForm.control} name="paymentAmount" render={({ field }) => (
+                          <FormItem><FormLabel>مبلغ الدفعة</FormLabel>
+                          <FormControl><Input type="number" {...field} className="bg-background" /></FormControl>
+                          <FormMessage /></FormItem>
+                      )} />
+                      <DialogFooter>
+                          <Button type="submit">تسجيل الدفعة</Button>
+                          <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                      </DialogFooter>
+                  </form>
+              </Form>
+          </DialogContent>
+      </Dialog>
       <Dialog open={showCustomerDetailsDialog} onOpenChange={setShowCustomerDetailsDialog}>
         <DialogContent className="max-w-4xl" dir="rtl">
           <DialogHeader>

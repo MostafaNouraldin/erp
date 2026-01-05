@@ -4,7 +4,7 @@
 
 import { connectToTenantDb } from '@/db';
 import { bankExpenses, journalEntries, journalEntryLines, salesInvoices, salesInvoiceItems, supplierInvoices, supplierInvoiceItems, companySettings, customers, products, inventoryMovementLog } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 

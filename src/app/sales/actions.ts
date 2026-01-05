@@ -40,7 +40,7 @@ const invoiceSchema = z.object({
   items: z.array(invoiceItemSchema).min(1, "يجب إضافة صنف واحد على الأقل"),
   notes: z.string().optional(),
   numericTotalAmount: z.coerce.number().default(0),
-  status: z.enum(["مدفوع", "غير مدفوع", "متأخر"]).default("غير مدفوع"),
+  status: z.enum(["مدفوع", "غير مدفوع", "متأخر", "مدفوع جزئياً"]).default("غير مدفوع"),
   orderId: z.string().optional(),
   isDeferredPayment: z.boolean().optional().default(false),
   source: z.enum(["POS", "Manual"]).optional().default("Manual"),
@@ -342,6 +342,54 @@ export async function deleteSalesInvoice(invoiceId: string) {
     revalidatePath('/sales');
     revalidatePath('/accounts-payable-receivable');
 }
+
+
+export async function updateCustomerInvoicePayment(
+  invoiceId: string,
+  newPaidAmount: number,
+  newStatus: 'مدفوع' | 'مدفوع جزئياً'
+) {
+  const db = await getDb();
+  await db.transaction(async (tx) => {
+    const invoice = await tx.query.salesInvoices.findFirst({ where: eq(salesInvoices.id, invoiceId) });
+    if (!invoice) throw new Error("Invoice not found.");
+
+    const paymentAmount = newPaidAmount - parseFloat(invoice.paidAmount ?? '0');
+
+    await tx.update(salesInvoices)
+      .set({
+        paidAmount: String(newPaidAmount),
+        status: newStatus,
+      })
+      .where(eq(salesInvoices.id, invoiceId));
+
+    if (paymentAmount > 0) {
+        const newEntryId = `JV-PAY-C-${invoiceId}`;
+        const accountsReceivableAccount = "1200"; // حساب الذمم المدينة
+        const cashAccount = "1011"; // حساب النقدية
+
+        await tx.insert(journalEntries).values({
+            id: newEntryId,
+            date: new Date(),
+            description: `سداد فاتورة عميل رقم ${invoiceId}`,
+            totalAmount: String(paymentAmount),
+            status: "مرحل",
+            sourceModule: "CustomerPayment",
+            sourceDocumentId: invoiceId,
+        });
+
+        await tx.insert(journalEntryLines).values([
+            { journalEntryId: newEntryId, accountId: cashAccount, debit: String(paymentAmount), credit: '0', description: `تحصيل نقدي لفاتورة ${invoiceId}` },
+            { journalEntryId: newEntryId, accountId: accountsReceivableAccount, debit: '0', credit: String(paymentAmount), description: `تخفيض رصيد العميل لفاتورة ${invoiceId}` },
+        ]);
+    }
+  });
+
+  revalidatePath('/sales');
+  revalidatePath('/accounts-payable-receivable');
+  revalidatePath('/general-ledger');
+}
+
 
 // Quotation Actions
 export async function addQuotation(values: QuotationFormValues) {
