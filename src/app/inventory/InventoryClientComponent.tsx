@@ -238,7 +238,7 @@ export default function InventoryClientComponent({ initialData }: { initialData:
   useEffect(() => { if (categoryToEdit) { categoryForm.reset(categoryToEdit); } else { categoryForm.reset({ name: "", description: "" }); }}, [categoryToEdit, categoryForm, showManageCategoryDialog]);
   useEffect(() => { if (warehouseToEdit) { warehouseForm.reset(warehouseToEdit); } else { warehouseForm.reset({ name: "", location: "" }); }}, [warehouseToEdit, warehouseForm, showManageWarehouseDialog]);
   useEffect(() => { if (stockIssueToEdit) stockIssueVoucherForm.reset(stockIssueToEdit); else stockIssueVoucherForm.reset({ date: new Date(), warehouseId: "", recipient: "", reason: "", items: [{ productId: "", quantityIssued: 1, notes: ""}], status: "مسودة", notes: ""});}, [stockIssueToEdit, stockIssueVoucherForm, showManageStockIssueDialog]);
-  useEffect(() => { if (goodsReceivedNoteToEdit) goodsReceivedNoteForm.reset(goodsReceivedNoteToEdit); else goodsReceivedNoteForm.reset({ poId: '', supplierId: '', grnDate: new Date(), items: [{ itemId: "", description: "", orderedQuantity: 0, receivedQuantity:0 }], status: "مستلم جزئياً", notes: ""});}, [goodsReceivedNoteToEdit, goodsReceivedNoteForm, showManageGoodsReceivedNoteDialog]);
+  useEffect(() => { if (grnToEdit) goodsReceivedNoteForm.reset(grnToEdit); else goodsReceivedNoteForm.reset({ poId: '', supplierId: '', grnDate: new Date(), items: [{ itemId: "", description: "", orderedQuantity: 0, receivedQuantity:0 }], status: "مستلم جزئياً", notes: ""});}, [grnToEdit, goodsReceivedNoteForm, showManageGoodsReceivedNoteDialog]);
   useEffect(() => { if (stockRequisitionToEdit) stockRequisitionForm.reset({...stockRequisitionToEdit, requestDate: new Date(stockRequisitionToEdit.requestDate), requiredByDate: new Date(stockRequisitionToEdit.requiredByDate) }); else stockRequisitionForm.reset({ requestDate: new Date(), requestingDepartmentOrPerson: "", requiredByDate: new Date(), items: [{ productId: "", quantityRequested: 1, justification: ""}], status: "جديد", overallJustification: ""});}, [stockRequisitionToEdit, stockRequisitionForm, showManageStockRequisitionDialog]);
 
   useEffect(() => {
@@ -544,8 +544,8 @@ export default function InventoryClientComponent({ initialData }: { initialData:
                       <TableRow key={prod.id} className={prod.quantity <= prod.reorderLevel && prod.reorderLevel > 0 ? "bg-destructive/10" : ""}>
                         <TableCell>{prod.sku}</TableCell><TableCell className="font-medium">{prod.name}</TableCell><TableCell>{prod.category}</TableCell>
                         <TableCell>{prod.quantity} {prod.unit}</TableCell>
-                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(prod.costPrice) }}></TableCell>
-                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(prod.sellingPrice) }}></TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(prod.costPrice).amount + ' ' + formatCurrency(prod.costPrice).symbol }}></TableCell>
+                        <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(prod.sellingPrice).amount + ' ' + formatCurrency(prod.sellingPrice).symbol }}></TableCell>
                         <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل المنتج" onClick={() => { setProductToEdit(prod); setShowManageProductDialog(true); }}><Edit className="h-4 w-4" /></Button>
                           <AlertDialog>
@@ -815,3 +815,5 @@ export default function InventoryClientComponent({ initialData }: { initialData:
     </div>
   );
 }
+
+    
