@@ -56,18 +56,28 @@ export async function login(values: z.infer<typeof loginSchema>): Promise<{ succ
     // Exclude password hash from the user object returned to the client
     const { passwordHash, ...userToReturn } = user;
 
-    const tenantId = user.tenantId || values.tenantId || 'main';
+    // Use tenantId from user record first, fallback to form value (for initial login maybe)
+    const tenantId = user.tenantId; // Always rely on the user's assigned tenantId
 
-    let isConfigured = true; // Super admins are always "configured"
+    let isConfigured = true;
+    let subscriptionEndDate = null;
+    let isActive = true;
+
     if (!isSuperAdmin && tenantId) {
         const tenantInfo = await db.query.tenants.findFirst({
             where: eq(tenants.id, tenantId),
-            columns: { isConfigured: true }
+            columns: { isConfigured: true, subscriptionEndDate: true, isActive: true }
         });
         isConfigured = tenantInfo?.isConfigured ?? false;
+        subscriptionEndDate = tenantInfo?.subscriptionEndDate;
+        isActive = tenantInfo?.isActive ?? false;
+    } else if (!isSuperAdmin && !tenantId) {
+        // This is a user without a tenant, which is an invalid state for a non-superadmin
+        return { success: false, error: "هذا الحساب غير مرتبط بأي شركة." };
     }
 
-    return { success: true, user: {...userToReturn, tenantId, isConfigured } };
+
+    return { success: true, user: {...userToReturn, tenantId, isConfigured, subscriptionEndDate, isActive } };
 
   } catch (error: any) {
     console.error("Login action error:", error);

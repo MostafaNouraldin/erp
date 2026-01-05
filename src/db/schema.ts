@@ -89,6 +89,19 @@ export const subscriptionRequests = pgTable('subscription_requests', {
     country: varchar('country', { length: 10 }),
 });
 
+export const subscriptionRenewalRequests = pgTable('subscription_renewal_requests', {
+    id: serial('id').primaryKey(),
+    tenantId: varchar('tenant_id', { length: 256 }).notNull().references(() => tenants.id),
+    userId: varchar('user_id', { length: 256 }).notNull().references(() => mainUsers.id),
+    selectedModules: jsonb('selected_modules'),
+    billingCycle: varchar('billing_cycle', { length: 50 }).notNull(),
+    totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
+    paymentProof: text('payment_proof'),
+    status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, approved, rejected
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+
 export const companySettings = pgTable('company_settings', {
     id: varchar('id', { length: 256 }).primaryKey(), // Usually the tenantId
     settings: jsonb('settings').notNull().default('{}'), // Store all settings as a single JSON object

@@ -97,7 +97,7 @@ export async function addTenant(values: TenantFormValues) {
             }));
         
         // Ensure basic modules are always added for new tenants
-        const basicModules = ['Dashboard', 'Settings', 'Help'];
+        const basicModules = ['Dashboard', 'Settings', 'Help', 'Subscription'];
         for (const modKey of basicModules) {
             if (!subscriptions.some(s => s.moduleKey === modKey)) {
                 subscriptions.push({

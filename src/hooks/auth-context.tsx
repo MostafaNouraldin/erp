@@ -4,7 +4,6 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import type { Role } from '@/types/saas'; // Import Role type
-import { tenants } from '@/db/schema';
 
 // Define a more specific user type if possible
 export interface User {
@@ -14,7 +13,9 @@ export interface User {
     email: string;
     avatar_url: string | null;
     tenantId?: string; 
-    isConfigured?: boolean; // Add isConfigured flag
+    isConfigured?: boolean;
+    subscriptionEndDate?: string | null;
+    isActive?: boolean;
 }
 
 interface AuthContextProps {

@@ -6,11 +6,11 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarHeader, SidebarContent
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserCircle, Settings, LogOut, CreditCardIcon } from "lucide-react";
+import { UserCircle, Settings, LogOut, CreditCardIcon, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,7 +18,7 @@ import LoginPage from './login/page';
 import { usePathname, useRouter } from "next/navigation";
 import { allNavItems } from "@/lib/nav-links";
 import NotificationsPopover from "@/components/notifications-popover";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCompanySettingsForLayout } from './actions';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -37,6 +37,7 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
 
     const isPublicPage = pathname === '/login' || pathname === '/subscribe';
     const isSetupPage = pathname === '/settings';
+    const isSubscriptionPage = pathname === '/subscription';
 
     useEffect(() => {
         setMounted(true);
@@ -47,17 +48,17 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
     }, []);
 
     useEffect(() => {
-      if (!auth.isLoading) {
-        if (auth.isAuthenticated) {
-          if (isPublicPage) {
-            router.replace('/');
-          } else if (auth.user?.isConfigured === false && !isSetupPage) {
-            router.replace('/settings');
-          }
-        } else if (!isPublicPage) {
-          router.replace('/login');
+        if (!auth.isLoading) {
+            if (auth.isAuthenticated && auth.user) {
+                if (isPublicPage) {
+                    router.replace('/');
+                } else if (auth.user.isConfigured === false && !isSetupPage) {
+                    router.replace('/settings');
+                }
+            } else if (!isPublicPage) {
+                router.replace('/login');
+            }
         }
-      }
     }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router, isPublicPage, isSetupPage]);
 
 
@@ -69,7 +70,7 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
                     name: settings?.companyName || "اسم الشركة",
                     logo: settings?.companyLogo || ""
                 });
-            } else {
+            } else if (auth.isSuperAdmin) {
                  setCompanySettings({ name: "نسيج للحلول المتكاملة", logo: "" });
             }
         };
@@ -113,38 +114,25 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
     }
     
     const isNewUnconfiguredUser = auth.isAuthenticated && auth.user?.isConfigured === false;
+    const isSubscriptionExpired = auth.isAuthenticated && !auth.isSuperAdmin && auth.user?.subscriptionEndDate && new Date(auth.user.subscriptionEndDate) < new Date();
     
-
-    const navItems = allNavItems
+    const navItems = useMemo(() => allNavItems
       .map(item => {
-        if (item.module === "SystemAdministration" && !auth.isSuperAdmin) {
-            return null;
-        }
-        
-        if (isNewUnconfiguredUser && !['/settings', '/help'].includes(item.href || '')) {
-          const hasSettingsSubItem = item.subItems?.some(sub => sub.href === '/settings');
-          if (!hasSettingsSubItem) return null;
-        }
+        if (item.module === "SystemAdministration" && !auth.isSuperAdmin) return null;
+        if (isNewUnconfiguredUser && !['/settings', '/help'].includes(item.href || '')) return null;
+        if (isSubscriptionExpired && !['/subscription', '/settings', '/help'].includes(item.href || '')) return null;
 
-        if (!auth.isSuperAdmin && item.href === '/system-administration/tenants') {
-            return null;
-        }
-        
-        if (!auth.hasPermission(item.permissionKey as string)) {
-          return null;
-        }
+        if (!auth.hasPermission(item.permissionKey as string)) return null;
 
         if (item.subItems) {
             const visibleSubItems = item.subItems.filter(sub => {
-                if (isNewUnconfiguredUser && sub.href !== '/settings' && sub.href !== '/help') {
-                   return false;
-                }
+                if (isNewUnconfiguredUser && !['/settings', '/help'].includes(sub.href || '')) return false;
+                if (isSubscriptionExpired && !['/subscription', '/settings', '/help'].includes(sub.href || '')) return false;
+
                 const hasSubSubPermission = sub.subItems ? sub.subItems.some(grandchild => auth.hasPermission(grandchild.permissionKey as string)) : false;
                 if (sub.subItems && !hasSubSubPermission) return false;
 
-                if (auth.isSuperAdmin && sub.href === '/subscription') {
-                    return false;
-                }
+                if (auth.isSuperAdmin && sub.href === '/subscription') return false;
                 return auth.hasPermission(sub.permissionKey as string);
             }).map(sub => {
                 if (sub.subItems) {
@@ -156,19 +144,13 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
                 return sub;
             }).filter(sub => sub.href || (sub.subItems && sub.subItems.length > 0));
 
-            if (visibleSubItems.length === 0 && !item.href) {
-                return null;
-            }
+            if (visibleSubItems.length === 0 && !item.href) return null;
 
-            return {
-                ...item,
-                subItems: visibleSubItems
-            };
+            return { ...item, subItems: visibleSubItems };
         }
-        
         return item;
       })
-      .filter(Boolean);
+      .filter(Boolean), [auth, isNewUnconfiguredUser, isSubscriptionExpired]);
 
 
     return (
@@ -283,12 +265,21 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
                         </div>
                     </header>
                     <SidebarInset className="p-4 md:p-6">
-                        {isNewUnconfiguredUser && (
+                        {isNewUnconfiguredUser && !isSetupPage && (
                             <Alert className="mb-6 border-blue-500 text-blue-800 dark:text-blue-300">
                                 <Info className="h-4 w-4" />
                                 <AlertTitle className="font-bold">مرحباً بك في نظام المستقبل!</AlertTitle>
                                 <AlertDescription>
                                     هذه هي خطوتك الأولى. يرجى إكمال معلومات شركتك الأساسية في قسم "معلومات الشركة" أدناه لحفظ الإعدادات والبدء في استخدام النظام.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {isSubscriptionExpired && !isSubscriptionPage && (
+                            <Alert variant="destructive" className="mb-6">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>انتهى اشتراكك!</AlertTitle>
+                                <AlertDescription>
+                                    لقد انتهت صلاحية اشتراكك. تم إيقاف الوصول إلى معظم وحدات النظام. يرجى <Link href="/subscription" className="font-bold underline">تجديد اشتراكك</Link> لاستعادة الوصول الكامل.
                                 </AlertDescription>
                             </Alert>
                         )}

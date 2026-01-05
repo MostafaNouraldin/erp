@@ -7,11 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Shield, Clock, CalendarDays, ShoppingBag, PlusCircle } from "lucide-react";
+import { Shield, Clock, CalendarDays, ShoppingBag, PlusCircle, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { Tenant, Module } from '@/types/saas';
 import { useCurrency } from '@/hooks/use-currency';
+import { useAuth } from '@/hooks/use-auth';
+import { createRenewalRequest } from './actions';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 
 interface SubscriptionClientProps {
   initialData: {
@@ -23,10 +27,12 @@ interface SubscriptionClientProps {
 
 export default function SubscriptionClient({ initialData }: SubscriptionClientProps) {
   const { tenant, subscribedModules, allAvailableModules } = initialData;
+  const { user } = useAuth();
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedNewModules, setSelectedNewModules] = useState<string[]>([]);
+  const [paymentProof, setPaymentProof] = useState<string | null>(null);
   
   const availableForSubscription = allAvailableModules.filter(mod => mod.isRentable && !subscribedModules.some(sub => sub.key === mod.key));
 
@@ -58,15 +64,53 @@ export default function SubscriptionClient({ initialData }: SubscriptionClientPr
     }, 0);
     return totalCost;
   };
+  
+  const handlePaymentProofUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+        try {
+            const dataUri = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            setPaymentProof(dataUri);
+        } catch (error) {
+            toast({ title: "خطأ في رفع الصورة", variant: "destructive" });
+        }
+    }
+  };
 
-  const handleRenewalSubmit = () => {
-    // In a real application, this would trigger a backend process
-    // to create an invoice and handle payment.
-    toast({
-        title: "تم إرسال طلب الترقية",
-        description: `سيتم إنشاء فاتورة بالمبلغ المطلوب: ${formatCurrency(calculateUpgradeCost()).amount}`,
-    });
-    setSelectedNewModules([]); // Reset selection
+
+  const handleRenewalSubmit = async () => {
+    if (!user || !user.tenantId) {
+      toast({ title: "خطأ", description: "لم يتم تحديد المستخدم أو الشركة.", variant: "destructive"});
+      return;
+    }
+    if (!paymentProof) {
+        toast({ title: "خطأ", description: "يرجى رفع إثبات الدفع.", variant: "destructive"});
+        return;
+    }
+    const totalAmount = calculateUpgradeCost();
+    try {
+        await createRenewalRequest({
+            tenantId: user.tenantId,
+            userId: user.id,
+            selectedModules: selectedNewModules,
+            billingCycle: billingCycle,
+            totalAmount: totalAmount,
+            paymentProof: paymentProof,
+        });
+        toast({
+            title: "تم إرسال طلب الترقية",
+            description: `سيتم مراجعة طلبك وإصدار فاتورة بالمبلغ: ${formatCurrency(totalAmount).amount}`,
+        });
+        setSelectedNewModules([]);
+        setPaymentProof(null);
+    } catch(e: any) {
+        toast({ title: "خطأ", description: e.message, variant: "destructive"});
+    }
   };
 
   return (
@@ -182,7 +226,7 @@ export default function SubscriptionClient({ initialData }: SubscriptionClientPr
                                     const prices = mod.prices[formatCurrency(0).symbol as keyof typeof mod.prices] || mod.prices.USD;
                                     return (
                                         <div key={mod.key} className="flex items-center justify-between rounded-lg border p-3">
-                                            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                                            <div className="flex items-start space-x-3 rtl:space-x-reverse">
                                                 <Checkbox 
                                                     id={`module-${mod.key}`}
                                                     onCheckedChange={(checked) => handleModuleSelectionChange(mod.key, checked)}
@@ -206,11 +250,16 @@ export default function SubscriptionClient({ initialData }: SubscriptionClientPr
                                 <span className="text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(calculateUpgradeCost()).amount }}></span>
                             </h3>
                         </div>
+                         <div>
+                            <Label className="font-semibold mb-2 block">إثبات الدفع</Label>
+                            <Input type="file" accept="image/*" onChange={handlePaymentProofUpload} className="bg-background"/>
+                            {paymentProof && <img src={paymentProof} alt="معاينة إثبات الدفع" className="mt-2 rounded-md border object-contain max-h-40"/>}
+                        </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" onClick={handleRenewalSubmit} disabled={selectedNewModules.length === 0}>
+                        <Button type="button" onClick={handleRenewalSubmit} disabled={selectedNewModules.length === 0 || !paymentProof}>
                             <ShoppingBag className="me-2 h-4 w-4" />
-                            تأكيد وإصدار فاتورة
+                            تأكيد وإرسال الطلب
                         </Button>
                         <DialogClose asChild>
                             <Button type="button" variant="outline">إلغاء</Button>
