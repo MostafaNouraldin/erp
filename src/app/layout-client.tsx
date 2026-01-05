@@ -41,10 +41,10 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
     }, []);
 
     useEffect(() => {
-        if (auth.isAuthenticated && !auth.user?.isConfigured && pathname !== '/settings') {
+        if (!auth.isLoading && auth.isAuthenticated && auth.user && !auth.user.isConfigured && pathname !== '/settings') {
             router.replace('/settings');
         }
-    }, [auth.isAuthenticated, auth.user, pathname, router]);
+    }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router]);
 
     if (!mounted || auth.isLoading) {
         return (
@@ -71,13 +71,22 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
     
     if (auth.isAuthenticated && isPublicPage) {
         if (typeof window !== 'undefined') {
-            window.location.href = '/';
+            router.replace('/');
         }
         return null;
     }
     
     if (!auth.isAuthenticated && isPublicPage) {
         return <>{children}</>;
+    }
+    
+    if (auth.isAuthenticated && !auth.user?.isConfigured && pathname !== '/settings') {
+      // While redirecting, show a loading state or nothing to prevent flashing content
+      return (
+         <div className="flex items-center justify-center min-h-screen w-full bg-background">
+            <p>...جاري التوجيه إلى صفحة الإعدادات</p>
+         </div>
+      );
     }
 
     const navItems = allNavItems
@@ -86,8 +95,9 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
             return null;
         }
         
-        if (auth.isAuthenticated && !auth.user?.isConfigured && item.href !== '/settings') {
-            return null;
+        if (!auth.user?.isConfigured && !['/settings', '/help'].includes(item.href || '')) {
+          const hasSettingsSubItem = item.subItems?.some(sub => sub.href === '/settings');
+          if (!hasSettingsSubItem) return null;
         }
 
         if (!auth.isSuperAdmin && item.href === '/system-administration/tenants') {
@@ -100,6 +110,9 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
 
         if (item.subItems) {
             const visibleSubItems = item.subItems.filter(sub => {
+                if (!auth.user?.isConfigured && sub.href !== '/settings' && sub.href !== '/help') {
+                   return false;
+                }
                 const hasSubSubPermission = sub.subItems ? sub.subItems.some(grandchild => auth.hasPermission(grandchild.permissionKey as string)) : false;
                 if (sub.subItems && !hasSubSubPermission) return false;
 

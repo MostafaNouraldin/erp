@@ -38,6 +38,7 @@ export const mainUsers = pgTable('users', {
     name: varchar('name', { length: 256 }).notNull(),
     email: varchar('email', { length: 256 }).notNull().unique(),
     roleId: varchar('role_id', { length: 256 }).notNull().references(() => mainRoles.id),
+    tenantId: varchar('tenant_id', { length: 256 }).references(() => tenants.id, { onDelete: 'cascade' }),
     status: varchar('status', { length: 50 }).notNull().default('نشط'),
     passwordHash: text('password_hash').notNull(),
     avatar_url: text('avatar_url'),
@@ -793,6 +794,7 @@ export const stockRequisitionItems = pgTable('stock_requisition_items', {
     quantityRequested: integer('quantity_requested').notNull(),
     justification: text('justification'),
 });
+
 
 // -- POS --
 export const posSessions = pgTable('pos_sessions', {

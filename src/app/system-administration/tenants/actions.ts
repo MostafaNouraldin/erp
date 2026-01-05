@@ -17,7 +17,7 @@ const tenantSchema = z.object({
   country: z.string().optional(),
   isActive: z.boolean().default(true),
   isConfigured: z.boolean().default(false),
-  subscriptionEndDate: z.date().optional(),
+  subscriptionEndDate: z.date().optional().nullable(),
   subscribedModules: z.array(z.object({
     moduleId: z.string(),
     subscribed: z.boolean(),
@@ -84,6 +84,7 @@ export async function addTenant(values: TenantFormValues) {
             roleId: TENANT_ADMIN_ROLE_ID,
             status: 'نشط',
             passwordHash: passwordHash,
+            tenantId: newTenantId,
         });
 
         // 3. Subscribe the tenant to the selected modules
@@ -94,6 +95,18 @@ export async function addTenant(values: TenantFormValues) {
                 moduleKey: mod.moduleId,
                 subscribed: true,
             }));
+        
+        // Ensure basic modules are always added for new tenants
+        const basicModules = ['Dashboard', 'Settings', 'Help'];
+        for (const modKey of basicModules) {
+            if (!subscriptions.some(s => s.moduleKey === modKey)) {
+                subscriptions.push({
+                    tenantId: newTenantId,
+                    moduleKey: modKey,
+                    subscribed: true,
+                });
+            }
+        }
         
         if (subscriptions.length > 0) {
             await tx.insert(tenantModuleSubscriptions).values(subscriptions);
@@ -145,10 +158,11 @@ export async function updateTenant(values: TenantFormValues) {
 export async function deleteTenant(tenantId: string) {
     const db = await getMainDb();
     await db.transaction(async (tx) => {
+        // This is a simplified deletion. In a real-world scenario, you might want to soft delete
+        // or archive data instead. Also, deleting users associated with the tenant might be needed.
+        await tx.delete(users).where(eq(users.tenantId, tenantId));
         await tx.delete(tenantModuleSubscriptions).where(eq(tenantModuleSubscriptions.tenantId, tenantId));
         await tx.delete(tenants).where(eq(tenants.id, tenantId));
     });
     revalidatePath('/system-administration/tenants');
 }
-
-    

@@ -1,5 +1,5 @@
 
-"use server";
+'use server';
 
 import { connectToTenantDb } from '@/db';
 import { users, tenants } from '@/db/schema';
@@ -56,17 +56,16 @@ export async function login(values: z.infer<typeof loginSchema>): Promise<{ succ
     // Exclude password hash from the user object returned to the client
     const { passwordHash, ...userToReturn } = user;
 
-    const tenantId = isSuperAdmin ? 'main' : values.tenantId || 'T001';
+    const tenantId = user.tenantId || values.tenantId || 'main';
 
-    let isConfigured = true;
-    if (!isSuperAdmin) {
+    let isConfigured = true; // Super admins are always "configured"
+    if (!isSuperAdmin && tenantId) {
         const tenantInfo = await db.query.tenants.findFirst({
             where: eq(tenants.id, tenantId),
             columns: { isConfigured: true }
         });
         isConfigured = tenantInfo?.isConfigured ?? false;
     }
-
 
     return { success: true, user: {...userToReturn, tenantId, isConfigured } };
 
