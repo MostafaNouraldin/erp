@@ -392,6 +392,17 @@ CREATE TABLE "purchase_returns" (
     "status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
+CREATE TABLE "purchase_return_items" (
+    "id" serial PRIMARY KEY NOT NULL,
+    "return_id" varchar(256) NOT NULL,
+    "item_id" varchar(256) NOT NULL,
+    "description" text,
+    "quantity" integer NOT NULL,
+    "unit_price" numeric(10, 2) NOT NULL,
+    "reason" text,
+    "total" numeric(10, 2) NOT NULL
+);
+
 -- HR & Payroll
 CREATE TABLE "departments" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
@@ -812,6 +823,7 @@ CREATE TABLE "stock_requisition_items" (
     "justification" text
 );
 
+
 -- POS
 CREATE TABLE "pos_sessions" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
@@ -1015,6 +1027,7 @@ DO $$ BEGIN
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
+
 
 DO $$ BEGIN
  ALTER TABLE "allowance_types" ADD CONSTRAINT "allowance_types_expense_account_id_chart_of_accounts_id_fk" FOREIGN KEY ("expense_account_id") REFERENCES "chart_of_accounts"("id") ON DELETE no action ON UPDATE no action;
@@ -1341,18 +1354,6 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
- ALTER TABLE "purchase_return_items" ADD CONSTRAINT "purchase_return_items_return_id_purchase_returns_id_fk" FOREIGN KEY ("return_id") REFERENCES "purchase_returns"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
- ALTER TABLE "purchase_return_items" ADD CONSTRAINT "purchase_return_items_item_id_products_id_fk" FOREIGN KEY ("item_id") REFERENCES "products"("id") ON DELETE no action ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
  ALTER TABLE "pos_sessions" ADD CONSTRAINT "pos_sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
@@ -1382,3 +1383,5 @@ INSERT INTO users (id, name, email, role_id, password_hash) VALUES
 ('user002', 'المحاسب العام', 'accountant@example.com', 'ROLE002', 'hashed_password'),
 ('user003', 'مسؤول المبيعات', 'sales@example.com', 'ROLE003', 'hashed_password')
 ON CONFLICT (id) DO NOTHING;
+
+  
