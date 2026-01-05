@@ -731,7 +731,6 @@ useEffect(() => {
     <div className="container mx-auto py-6" dir="rtl">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">المبيعات</h1>
-        {/* The main action buttons are now inside their respective tabs */}
       </div>
 
       <Tabs defaultValue="quotations" className="w-full" dir="rtl">
@@ -764,13 +763,12 @@ useEffect(() => {
                                 <PlusCircle className="me-2 h-4 w-4" /> إنشاء عرض سعر
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-xl" dir="rtl">
-                          {/* Quotation Form Dialog Content */}
+                        <DialogContent className="sm:max-w-2xl" dir="rtl">
                           <DialogHeader>
                             <DialogTitle>{quotationToEdit ? 'تعديل عرض سعر' : 'إنشاء عرض سعر جديد'}</DialogTitle>
                           </DialogHeader>
                           <Form {...quotationForm}>
-                            <form onSubmit={quotationForm.handleSubmit(handleQuotationSubmit)} className="space-y-4">
+                            <form onSubmit={quotationForm.handleSubmit(handleQuotationSubmit)} className="space-y-4 py-4">
                               {/* Form fields here */}
                               <DialogFooter>
                                 <Button type="submit">{quotationToEdit ? 'حفظ التعديلات' : 'حفظ عرض السعر'}</Button>
@@ -799,8 +797,12 @@ useEffect(() => {
                                     <PlusCircle className="me-2 h-4 w-4"/> أمر بيع جديد
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="sm:max-w-xl" dir="rtl">
-                                {/* Sales Order Form Dialog Content */}
+                            <DialogContent className="sm:max-w-2xl" dir="rtl">
+                               <DialogHeader><DialogTitle>{salesOrderToEdit ? 'تعديل أمر بيع' : 'إنشاء أمر بيع جديد'}</DialogTitle></DialogHeader>
+                                <Form {...salesOrderForm}><form onSubmit={salesOrderForm.handleSubmit(handleSalesOrderSubmit)} className="space-y-4 py-4">
+                                    {/* Sales Order Form Fields */}
+                                <DialogFooter><Button type="submit">{salesOrderToEdit ? 'حفظ التعديلات' : 'حفظ أمر البيع'}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+                                </form></Form>
                             </DialogContent>
                         </Dialog>
                     </div>
@@ -823,7 +825,6 @@ useEffect(() => {
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-2xl" dir="rtl">
-                        {/* Invoice Form Dialog Content */}
                          <DialogHeader><DialogTitle>{invoiceToEdit ? 'تعديل فاتورة' : 'إنشاء فاتورة جديدة'}</DialogTitle></DialogHeader>
                           <Form {...invoiceForm}><form onSubmit={invoiceForm.handleSubmit(handleInvoiceSubmit)} className="space-y-4 py-4"><ScrollArea className="h-[60vh] p-2">
                              {/* Invoice Form Fields */}
@@ -989,10 +990,10 @@ useEffect(() => {
         </DialogContent>
       </Dialog>
       <Dialog open={showPrintInvoiceDialog} onOpenChange={setShowPrintInvoiceDialog}>
+            <DialogHeader>
+                <DialogTitle>طباعة فاتورة ضريبية</DialogTitle>
+            </DialogHeader>
             <DialogContent className="max-w-4xl print-hidden" dir="rtl">
-                <DialogHeader>
-                    <DialogTitle>طباعة فاتورة ضريبية</DialogTitle>
-                </DialogHeader>
                 {selectedInvoiceForPrint && isClient && (
                     <div className="printable-area bg-background text-foreground font-cairo text-sm p-8" data-ai-hint="tax invoice">
                         <header className="flex justify-between items-start pb-4 mb-6 border-b">
@@ -1069,5 +1070,3 @@ useEffect(() => {
     </div>
   );
 }
-
-    
