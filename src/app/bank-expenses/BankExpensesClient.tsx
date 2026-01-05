@@ -355,3 +355,5 @@ export default function BankExpensesClient({ initialData }: ClientComponentProps
     </div>
   );
 }
+
+    

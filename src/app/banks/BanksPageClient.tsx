@@ -202,7 +202,7 @@ export default function BanksPageClient({ initialBankAccounts }: ClientComponent
                     <TableCell>{account.accountNumber}</TableCell>
                     <TableCell>{account.iban || "-"}</TableCell>
                     <TableCell>{account.currency}</TableCell>
-                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(account.balance) }}></TableCell>
+                    <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(account.balance).amount + ' ' + formatCurrency(account.balance).symbol }}></TableCell>
                     <TableCell><Badge variant={account.isActive ? "default" : "outline"}>{account.isActive ? "نشط" : "غير نشط"}</Badge></TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="عرض كشف الحساب">
@@ -241,5 +241,7 @@ export default function BanksPageClient({ initialBankAccounts }: ClientComponent
     </div>
   );
 }
+
+    
 
     
