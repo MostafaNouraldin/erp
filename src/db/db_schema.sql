@@ -1,11 +1,13 @@
--- This script is generated based on the Drizzle ORM schema defined in src/db/schema.ts
--- It is intended for database initialization and reference.
+-- Al-Mustaqbal ERP - Full Database Schema
+-- Version: 1.0
+-- Generated on: [Current Date]
 
--- Drop tables in reverse order of foreign key dependencies to avoid errors
+-- This script will drop existing tables and recreate the entire schema.
+-- Make sure to back up any important data before running this.
+
+-- Drop tables in reverse order of creation to avoid foreign key constraint issues.
 DROP TABLE IF EXISTS "inventory_movement_log";
 DROP TABLE IF EXISTS "pos_sessions";
-DROP TABLE IF EXISTS "purchase_return_items";
-DROP TABLE IF EXISTS "purchase_returns";
 DROP TABLE IF EXISTS "stock_requisition_items";
 DROP TABLE IF EXISTS "stock_requisitions";
 DROP TABLE IF EXISTS "goods_received_note_items";
@@ -49,6 +51,8 @@ DROP TABLE IF EXISTS "allowance_types";
 DROP TABLE IF EXISTS "leave_types";
 DROP TABLE IF EXISTS "job_titles";
 DROP TABLE IF EXISTS "departments";
+DROP TABLE IF EXISTS "purchase_return_items";
+DROP TABLE IF EXISTS "purchase_returns";
 DROP TABLE IF EXISTS "supplier_invoice_items";
 DROP TABLE IF EXISTS "supplier_invoices";
 DROP TABLE IF EXISTS "purchase_order_items";
@@ -77,14 +81,16 @@ DROP TABLE IF EXISTS "roles";
 DROP TABLE IF EXISTS "tenants";
 
 
--- Main Schema Tables (System Administration & Core)
-COMMENT ON TABLE "tenants" IS 'Stores information about each tenant (company) using the system.';
+-- =============================================
+-- SECTION 1: SYSTEM ADMINISTRATION & CORE TABLES
+-- =============================================
+
 CREATE TABLE "tenants" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
 	"email" varchar(256) NOT NULL,
 	"is_active" boolean DEFAULT true,
-    "is_configured" boolean DEFAULT false NOT NULL, -- Crucial for onboarding flow
+    "is_configured" boolean DEFAULT false NOT NULL,
 	"subscription_end_date" timestamp,
 	"created_at" timestamp DEFAULT now(),
 	"phone" varchar(50),
@@ -93,8 +99,8 @@ CREATE TABLE "tenants" (
     "country" varchar(10),
 	CONSTRAINT "tenants_email_unique" UNIQUE("email")
 );
+COMMENT ON TABLE "tenants" IS 'Stores information about each tenant (company) using the system.';
 
-COMMENT ON TABLE "roles" IS 'Defines user roles and their associated permissions.';
 CREATE TABLE "roles" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
@@ -102,8 +108,8 @@ CREATE TABLE "roles" (
 	"permissions" jsonb DEFAULT '[]'::jsonb,
 	CONSTRAINT "roles_name_unique" UNIQUE("name")
 );
+COMMENT ON TABLE "roles" IS 'Defines user roles and their associated permissions.';
 
-COMMENT ON TABLE "users" IS 'Stores user accounts for all tenants.';
 CREATE TABLE "users" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
@@ -115,16 +121,17 @@ CREATE TABLE "users" (
 	"created_at" timestamp DEFAULT now(),
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
+COMMENT ON TABLE "users" IS 'Stores user accounts for all tenants.';
 
-COMMENT ON TABLE "tenant_module_subscriptions" IS 'Maps tenants to their subscribed modules.';
 CREATE TABLE "tenant_module_subscriptions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"tenant_id" varchar(256) NOT NULL,
 	"module_key" varchar(100) NOT NULL,
 	"subscribed" boolean DEFAULT false NOT NULL
 );
+CREATE UNIQUE INDEX "tenant_module_unique_idx" ON "tenant_module_subscriptions" ("tenant_id","module_key");
+COMMENT ON TABLE "tenant_module_subscriptions" IS 'Maps which modules each tenant is subscribed to.';
 
-COMMENT ON TABLE "subscription_requests" IS 'Stores new subscription requests from potential clients.';
 CREATE TABLE "subscription_requests" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"company_name" varchar(256) NOT NULL,
@@ -141,14 +148,14 @@ CREATE TABLE "subscription_requests" (
 	"created_at" timestamp DEFAULT now(),
     "country" varchar(10)
 );
+COMMENT ON TABLE "subscription_requests" IS 'Stores new subscription requests from potential clients.';
 
-COMMENT ON TABLE "company_settings" IS 'Stores tenant-specific settings like company info, theme, etc., as a JSON object.';
 CREATE TABLE "company_settings" (
-	"id" varchar(256) PRIMARY KEY NOT NULL, -- Usually the tenantId
+	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"settings" jsonb DEFAULT '{}'::jsonb NOT NULL
 );
+COMMENT ON TABLE "company_settings" IS 'Stores tenant-specific settings like company name, logo, currency, etc.';
 
-COMMENT ON TABLE "notifications" IS 'Stores user-specific notifications.';
 CREATE TABLE "notifications" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar(256) NOT NULL,
@@ -157,10 +164,34 @@ CREATE TABLE "notifications" (
 	"is_read" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
+COMMENT ON TABLE "notifications" IS 'Stores system notifications for users.';
 
+-- =============================================
+-- SECTION 2: TENANT-SPECIFIC CORE TABLES
+-- =============================================
 
--- Tenant-Specific Tables
-COMMENT ON TABLE "customers" IS 'Stores customer information.';
+CREATE TABLE "chart_of_accounts" (
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	"type" varchar(50) NOT NULL,
+	"parent_id" varchar(256),
+	"balance" numeric(15, 2) DEFAULT '0'
+);
+COMMENT ON TABLE "chart_of_accounts" IS 'The chart of accounts for the tenant.';
+
+CREATE TABLE "bank_accounts" (
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"bank_name" varchar(256) NOT NULL,
+	"account_number" varchar(256) NOT NULL,
+	"iban" varchar(256),
+	"account_type" varchar(50) NOT NULL,
+	"currency" varchar(10) NOT NULL,
+	"balance" numeric(15, 2) DEFAULT '0' NOT NULL,
+	"branch_name" varchar(256),
+	"is_active" boolean DEFAULT true NOT NULL
+);
+COMMENT ON TABLE "bank_accounts" IS 'Stores tenant''s bank account details.';
+
 CREATE TABLE "customers" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
@@ -173,8 +204,8 @@ CREATE TABLE "customers" (
 	"address" text,
 	"vat_number" varchar(256)
 );
+COMMENT ON TABLE "customers" IS 'Stores customer information.';
 
-COMMENT ON TABLE "suppliers" IS 'Stores supplier information.';
 CREATE TABLE "suppliers" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
@@ -185,8 +216,8 @@ CREATE TABLE "suppliers" (
 	"contact_person" varchar(256),
 	"notes" text
 );
+COMMENT ON TABLE "suppliers" IS 'Stores supplier information.';
 
-COMMENT ON TABLE "employees" IS 'Stores employee records.';
 CREATE TABLE "employees" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
@@ -216,8 +247,8 @@ CREATE TABLE "employees" (
     "sick_leave_balance" integer DEFAULT 0,
     "emergency_leave_balance" integer DEFAULT 0
 );
+COMMENT ON TABLE "employees" IS 'Stores employee profiles and HR information.';
 
-COMMENT ON TABLE "products" IS 'Stores product and item information.';
 CREATE TABLE "products" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"sku" varchar(256) NOT NULL,
@@ -237,38 +268,20 @@ CREATE TABLE "products" (
     "is_raw_material" boolean DEFAULT false,
 	CONSTRAINT "products_sku_unique" UNIQUE("sku")
 );
+COMMENT ON TABLE "products" IS 'Stores product and inventory item details.';
 
-COMMENT ON TABLE "categories" IS 'Stores product categories.';
 CREATE TABLE "categories" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
 	"description" text
 );
+COMMENT ON TABLE "categories" IS 'Product categories.';
 
-COMMENT ON TABLE "chart_of_accounts" IS 'The chart of accounts for the general ledger.';
-CREATE TABLE "chart_of_accounts" (
-	"id" varchar(256) PRIMARY KEY NOT NULL,
-	"name" varchar(256) NOT NULL,
-	"type" varchar(50) NOT NULL, -- e.g., 'رئيسي', 'فرعي', 'تحليلي'
-	"parent_id" varchar(256),
-	"balance" numeric(15, 2) DEFAULT '0'
-);
+-- =============================================
+-- SECTION 3: TRANSACTIONAL TABLES
+-- =============================================
 
-COMMENT ON TABLE "bank_accounts" IS 'Stores company bank account details.';
-CREATE TABLE "bank_accounts" (
-	"id" varchar(256) PRIMARY KEY NOT NULL,
-	"bank_name" varchar(256) NOT NULL,
-	"account_number" varchar(256) NOT NULL,
-	"iban" varchar(256),
-	"account_type" varchar(50) NOT NULL, -- e.g., 'جارى', 'توفير'
-	"currency" varchar(10) NOT NULL, -- e.g., 'SAR', 'USD'
-	"balance" numeric(15, 2) DEFAULT '0' NOT NULL,
-	"branch_name" varchar(256),
-	"is_active" boolean DEFAULT true NOT NULL
-);
-
--- Sales & Purchases
-COMMENT ON TABLE "quotations" IS 'Stores sales quotations issued to customers.';
+-- Sales Cycle Tables
 CREATE TABLE "quotations" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"customer_id" varchar(256) NOT NULL,
@@ -289,7 +302,6 @@ CREATE TABLE "quotation_items" (
 	"total" numeric(10, 2) NOT NULL
 );
 
-COMMENT ON TABLE "sales_orders" IS 'Stores sales orders confirmed by customers.';
 CREATE TABLE "sales_orders" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"quote_id" varchar(256),
@@ -311,7 +323,6 @@ CREATE TABLE "sales_order_items" (
 	"total" numeric(10, 2) NOT NULL
 );
 
-COMMENT ON TABLE "sales_invoices" IS 'Stores sales invoices issued to customers.';
 CREATE TABLE "sales_invoices" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"order_id" varchar(256),
@@ -340,7 +351,6 @@ CREATE TABLE "sales_invoice_items" (
 	"total" numeric(10, 2) NOT NULL
 );
 
-COMMENT ON TABLE "sales_returns" IS 'Stores sales returns from customers.';
 CREATE TABLE "sales_returns" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "customer_id" varchar(256) NOT NULL,
@@ -362,7 +372,7 @@ CREATE TABLE "sales_return_items" (
     "reason" text
 );
 
-COMMENT ON TABLE "purchase_orders" IS 'Stores purchase orders sent to suppliers.';
+-- Purchase Cycle Tables
 CREATE TABLE "purchase_orders" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"supplier_id" varchar(256) NOT NULL,
@@ -383,7 +393,6 @@ CREATE TABLE "purchase_order_items" (
 	"total" numeric(10, 2) NOT NULL
 );
 
-COMMENT ON TABLE "supplier_invoices" IS 'Stores invoices received from suppliers.';
 CREATE TABLE "supplier_invoices" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "po_id" varchar(256),
@@ -406,7 +415,6 @@ CREATE TABLE "supplier_invoice_items" (
     "total" numeric(10, 2) NOT NULL
 );
 
-COMMENT ON TABLE "purchase_returns" IS 'Stores purchase returns to suppliers.';
 CREATE TABLE "purchase_returns" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "supplier_id" varchar(256) NOT NULL,
@@ -428,29 +436,24 @@ CREATE TABLE "purchase_return_items" (
     "total" numeric(10, 2) NOT NULL
 );
 
--- HR & Payroll
-COMMENT ON TABLE "departments" IS 'List of company departments.';
+-- HR & Payroll Tables
 CREATE TABLE "departments" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "name" varchar(256) NOT NULL UNIQUE
 );
-COMMENT ON TABLE "job_titles" IS 'List of company job titles.';
 CREATE TABLE "job_titles" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "name" varchar(256) NOT NULL UNIQUE
 );
-COMMENT ON TABLE "leave_types" IS 'Types of leave (e.g., Annual, Sick).';
 CREATE TABLE "leave_types" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "name" varchar(256) NOT NULL UNIQUE
 );
-COMMENT ON TABLE "allowance_types" IS 'Types of employee allowances and their linked expense accounts.';
 CREATE TABLE "allowance_types" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "name" varchar(256) NOT NULL UNIQUE,
     "expense_account_id" varchar(256) NOT NULL
 );
-COMMENT ON TABLE "deduction_types" IS 'Types of employee deductions and their linked liability accounts.';
 CREATE TABLE "deduction_types" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "name" varchar(256) NOT NULL UNIQUE,
@@ -576,8 +579,7 @@ CREATE TABLE "disciplinary_warnings" (
 );
 
 
--- Accounting
-COMMENT ON TABLE "journal_entries" IS 'Header table for journal entries.';
+-- Accounting Tables
 CREATE TABLE "journal_entries" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"date" timestamp NOT NULL,
@@ -588,7 +590,6 @@ CREATE TABLE "journal_entries" (
 	"source_document_id" varchar(256)
 );
 
-COMMENT ON TABLE "journal_entry_lines" IS 'Detail lines for journal entries.';
 CREATE TABLE "journal_entry_lines" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"journal_entry_id" varchar(256) NOT NULL,
@@ -598,7 +599,6 @@ CREATE TABLE "journal_entry_lines" (
 	"description" text
 );
 
-COMMENT ON TABLE "checks" IS 'Stores information about issued checks.';
 CREATE TABLE "checks" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "check_number" varchar(100) NOT NULL,
@@ -613,7 +613,6 @@ CREATE TABLE "checks" (
     "status" varchar(50) DEFAULT 'صادر' NOT NULL
 );
 
-COMMENT ON TABLE "bank_expenses" IS 'Stores records of expenses paid from bank accounts.';
 CREATE TABLE "bank_expenses" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "date" timestamp NOT NULL,
@@ -626,7 +625,6 @@ CREATE TABLE "bank_expenses" (
     "status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
-COMMENT ON TABLE "bank_receipts" IS 'Stores records of receipts deposited into bank accounts.';
 CREATE TABLE "bank_receipts" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "date" timestamp NOT NULL,
@@ -640,7 +638,6 @@ CREATE TABLE "bank_receipts" (
     "status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
-COMMENT ON TABLE "cash_expenses" IS 'Stores records of expenses paid from cash tills.';
 CREATE TABLE "cash_expenses" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "date" timestamp NOT NULL,
@@ -653,7 +650,6 @@ CREATE TABLE "cash_expenses" (
     "status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
-COMMENT ON TABLE "cash_receipts" IS 'Stores records of cash receipts.';
 CREATE TABLE "cash_receipts" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "date" timestamp NOT NULL,
@@ -667,7 +663,7 @@ CREATE TABLE "cash_receipts" (
     "status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
--- Projects
+-- Projects Tables
 CREATE TABLE "projects" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "name" varchar(256) NOT NULL,
@@ -710,7 +706,7 @@ CREATE TABLE "project_budget_items" (
     "notes" text
 );
 
--- Production
+-- Production Tables
 CREATE TABLE "work_orders" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "product_id" varchar(256) NOT NULL,
@@ -764,7 +760,7 @@ CREATE TABLE "quality_checks" (
     "notes" text
 );
 
--- Inventory Control
+-- Inventory Control Tables
 CREATE TABLE "warehouses" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "name" varchar(256) NOT NULL,
@@ -861,7 +857,7 @@ CREATE TABLE "stock_requisition_items" (
 );
 
 
--- POS
+-- POS Table
 CREATE TABLE "pos_sessions" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "user_id" varchar(256) NOT NULL,
@@ -876,20 +872,20 @@ CREATE TABLE "pos_sessions" (
     "status" varchar(50) NOT NULL
 );
 
--- Inventory Log
+-- Inventory Log Table
 CREATE TABLE "inventory_movement_log" (
     "id" serial PRIMARY KEY NOT NULL,
     "product_id" varchar(256) NOT NULL,
     "quantity" integer NOT NULL,
-    "type" varchar(10) NOT NULL, -- 'IN' or 'OUT'
+    "type" varchar(10) NOT NULL,
     "date" timestamp DEFAULT now() NOT NULL,
-    "source_type" varchar(50), -- e.g., 'Sales', 'Purchase', 'Adjustment'
+    "source_type" varchar(50),
     "source_id" varchar(256)
 );
 
-
--- FOREIGN KEY CONSTRAINTS
--- We add them at the end to avoid order-of-creation issues.
+-- =============================================
+-- SECTION 4: FOREIGN KEY CONSTRAINTS
+-- =============================================
 
 DO $$ BEGIN
  ALTER TABLE "users" ADD CONSTRAINT "users_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE no action ON UPDATE no action;
@@ -1064,7 +1060,6 @@ DO $$ BEGIN
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
-
 
 DO $$ BEGIN
  ALTER TABLE "allowance_types" ADD CONSTRAINT "allowance_types_expense_account_id_chart_of_accounts_id_fk" FOREIGN KEY ("expense_account_id") REFERENCES "chart_of_accounts"("id") ON DELETE no action ON UPDATE no action;
@@ -1402,11 +1397,11 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
-CREATE UNIQUE INDEX IF NOT EXISTS "tenant_module_unique_idx" ON "tenant_module_subscriptions" ("tenant_id","module_key");
 
--- Insert initial data
--- This data is for the MAIN database and will be used by all tenants initially.
--- In a tenant-specific schema, this initial data (like Chart of Accounts) would be run for each new tenant.
+-- =============================================
+-- SECTION 5: INITIAL DATA
+-- =============================================
+
 INSERT INTO roles (id, name, description, permissions) VALUES
 ('ROLE_SUPER_ADMIN', 'Super Admin', 'صلاحيات كاملة على النظام وإدارة الشركات.', '["admin.manage_tenants", "admin.manage_modules", "admin.manage_billing", "admin.manage_requests", "settings.view", "help.view"]'),
 ('ROLE001', 'مدير النظام', 'صلاحيات كاملة على النظام.', '["dashboard.view", "accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles", "settings.manage_subscription", "projects.view", "projects.create", "projects.edit", "projects.delete", "production.view", "production.create", "production.edit", "production.delete", "pos.use", "help.view"]'),
@@ -1421,3 +1416,8 @@ INSERT INTO users (id, name, email, role_id, password_hash) VALUES
 ('user002', 'المحاسب العام', 'accountant@example.com', 'ROLE002', 'hashed_password'),
 ('user003', 'مسؤول المبيعات', 'sales@example.com', 'ROLE003', 'hashed_password')
 ON CONFLICT (id) DO NOTHING;
+
+-- You can add initial chart of accounts data here if needed for tenant setup.
+-- Example:
+-- INSERT INTO chart_of_accounts (id, name, type, parent_id) VALUES ('1000', 'الأصول', 'رئيسي', NULL);
+-- ...
