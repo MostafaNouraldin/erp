@@ -1,8 +1,6 @@
--- Drop tables in reverse order of creation to avoid foreign key constraint issues
+-- Drop tables in reverse order of creation to handle dependencies
 DROP TABLE IF EXISTS "inventory_movement_log";
 DROP TABLE IF EXISTS "pos_sessions";
-DROP TABLE IF EXISTS "purchase_return_items";
-DROP TABLE IF EXISTS "purchase_returns";
 DROP TABLE IF EXISTS "stock_requisition_items";
 DROP TABLE IF EXISTS "stock_requisitions";
 DROP TABLE IF EXISTS "goods_received_note_items";
@@ -13,12 +11,11 @@ DROP TABLE IF EXISTS "inventory_transfers";
 DROP TABLE IF EXISTS "inventory_adjustments";
 DROP TABLE IF EXISTS "stocktakes";
 DROP TABLE IF EXISTS "warehouses";
+DROP TABLE IF EXISTS "quality_checks";
 DROP TABLE IF EXISTS "bill_of_material_items";
 DROP TABLE IF EXISTS "bills_of_material";
 DROP TABLE IF EXISTS "work_order_production_logs";
-DROP TABLE IF EXISTS "quality_checks";
 DROP TABLE IF EXISTS "work_orders";
-DROP TABLE IF EXISTS "production_plans";
 DROP TABLE IF EXISTS "project_budget_items";
 DROP TABLE IF EXISTS "project_resources";
 DROP TABLE IF EXISTS "project_tasks";
@@ -46,6 +43,8 @@ DROP TABLE IF EXISTS "allowance_types";
 DROP TABLE IF EXISTS "leave_types";
 DROP TABLE IF EXISTS "job_titles";
 DROP TABLE IF EXISTS "departments";
+DROP TABLE IF EXISTS "purchase_return_items";
+DROP TABLE IF EXISTS "purchase_returns";
 DROP TABLE IF EXISTS "supplier_invoice_items";
 DROP TABLE IF EXISTS "supplier_invoices";
 DROP TABLE IF EXISTS "purchase_order_items";
@@ -58,13 +57,13 @@ DROP TABLE IF EXISTS "sales_order_items";
 DROP TABLE IF EXISTS "sales_orders";
 DROP TABLE IF EXISTS "quotation_items";
 DROP TABLE IF EXISTS "quotations";
-DROP TABLE IF EXISTS "products";
+DROP TABLE IF EXISTS "bank_accounts";
+DROP TABLE IF EXISTS "chart_of_accounts";
 DROP TABLE IF EXISTS "categories";
+DROP TABLE IF EXISTS "products";
 DROP TABLE IF EXISTS "employees";
 DROP TABLE IF EXISTS "suppliers";
 DROP TABLE IF EXISTS "customers";
-DROP TABLE IF EXISTS "bank_accounts";
-DROP TABLE IF EXISTS "chart_of_accounts";
 DROP TABLE IF EXISTS "notifications";
 DROP TABLE IF EXISTS "company_settings";
 DROP TABLE IF EXISTS "subscription_requests";
@@ -73,19 +72,19 @@ DROP TABLE IF EXISTS "users";
 DROP TABLE IF EXISTS "roles";
 DROP TABLE IF EXISTS "tenants";
 
-
--- Main Schema Tables (System Administration & Core)
+-- System Administration & Settings Tables
 CREATE TABLE "tenants" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
 	"email" varchar(256) NOT NULL,
 	"is_active" boolean DEFAULT true,
+	"is_configured" boolean DEFAULT false NOT NULL,
 	"subscription_end_date" timestamp,
 	"created_at" timestamp DEFAULT now(),
 	"phone" varchar(50),
 	"address" text,
 	"vat_number" varchar(50),
-    "country" varchar(10),
+	"country" varchar(10),
 	CONSTRAINT "tenants_email_unique" UNIQUE("email")
 );
 
@@ -130,7 +129,7 @@ CREATE TABLE "subscription_requests" (
 	"payment_proof" text NOT NULL,
 	"status" varchar(50) DEFAULT 'pending' NOT NULL,
 	"created_at" timestamp DEFAULT now(),
-    "country" varchar(10)
+	"country" varchar(10)
 );
 
 CREATE TABLE "company_settings" (
@@ -147,17 +146,16 @@ CREATE TABLE "notifications" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 
-
--- Tenant-Specific Tables
+-- Core Tenant-Specific Tables
 CREATE TABLE "customers" (
 	"id" varchar(256) PRIMARY KEY NOT NULL,
 	"name" varchar(256) NOT NULL,
 	"email" varchar(256),
 	"phone" varchar(256),
 	"type" varchar(256),
-    "opening_balance" numeric(10, 2) DEFAULT '0' NOT NULL,
+	"opening_balance" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"balance" numeric(10, 2) DEFAULT '0' NOT NULL,
-    "credit_limit" numeric(10, 2) DEFAULT '0' NOT NULL,
+	"credit_limit" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"address" text,
 	"vat_number" varchar(256)
 );
@@ -187,20 +185,20 @@ CREATE TABLE "employees" (
 	"email" varchar(256),
 	"phone" varchar(50),
 	"avatar_url" text,
-    "data_ai_hint" varchar(256),
+	"data_ai_hint" varchar(256),
 	"nationality" varchar(100),
 	"id_number" varchar(50),
 	"bank_name" varchar(256),
 	"iban" varchar(256),
 	"social_insurance_number" varchar(100),
-    "medical_insurance_provider" varchar(256),
-    "medical_insurance_policy_number" varchar(100),
-    "medical_insurance_class" varchar(100),
-    "medical_insurance_start_date" timestamp,
-    "medical_insurance_end_date" timestamp,
-    "annual_leave_balance" integer DEFAULT 0,
-    "sick_leave_balance" integer DEFAULT 0,
-    "emergency_leave_balance" integer DEFAULT 0
+	"medical_insurance_provider" varchar(256),
+	"medical_insurance_policy_number" varchar(100),
+	"medical_insurance_class" varchar(100),
+	"medical_insurance_start_date" timestamp,
+	"medical_insurance_end_date" timestamp,
+	"annual_leave_balance" integer DEFAULT 0,
+	"sick_leave_balance" integer DEFAULT 0,
+	"emergency_leave_balance" integer DEFAULT 0
 );
 
 CREATE TABLE "products" (
@@ -218,8 +216,8 @@ CREATE TABLE "products" (
 	"barcode" varchar(256),
 	"supplier_id" varchar(256),
 	"image" text,
-    "data_ai_hint" varchar(256),
-    "is_raw_material" boolean DEFAULT false,
+	"data_ai_hint" varchar(256),
+	"is_raw_material" boolean DEFAULT false,
 	CONSTRAINT "products_sku_unique" UNIQUE("sku")
 );
 
@@ -298,15 +296,15 @@ CREATE TABLE "sales_invoices" (
 	"date" timestamp NOT NULL,
 	"due_date" timestamp NOT NULL,
 	"numeric_total_amount" numeric(10, 2) NOT NULL,
-    "paid_amount" numeric(10, 2) DEFAULT '0',
+	"paid_amount" numeric(10, 2) DEFAULT '0',
 	"status" varchar(50) NOT NULL,
-    "is_deferred_payment" boolean DEFAULT false,
-    "source" varchar(50),
-    "discount_type" varchar(20) DEFAULT 'amount',
-    "discount_value" numeric(10, 2) DEFAULT '0',
-    "session_id" varchar(256),
-    "payment_method" varchar(50),
-	"notes" text
+	"is_deferred_payment" boolean DEFAULT false,
+	"source" varchar(50),
+	"notes" text,
+	"discount_type" varchar(20) DEFAULT 'amount',
+	"discount_value" numeric(10, 2) DEFAULT '0',
+	"session_id" varchar(256),
+	"payment_method" varchar(50)
 );
 
 CREATE TABLE "sales_invoice_items" (
@@ -320,24 +318,24 @@ CREATE TABLE "sales_invoice_items" (
 );
 
 CREATE TABLE "sales_returns" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "customer_id" varchar(256) NOT NULL,
-    "invoice_id" varchar(256),
-    "date" timestamp NOT NULL,
-    "numeric_total_amount" numeric(10, 2) NOT NULL,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"customer_id" varchar(256) NOT NULL,
+	"invoice_id" varchar(256),
+	"date" timestamp NOT NULL,
+	"numeric_total_amount" numeric(10, 2) NOT NULL,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "sales_return_items" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "return_id" varchar(256) NOT NULL,
-    "item_id" varchar(256) NOT NULL,
-    "description" text NOT NULL,
-    "quantity" integer NOT NULL,
-    "unit_price" numeric(10, 2) NOT NULL,
-    "total" numeric(10, 2) NOT NULL,
-    "reason" text
+	"id" serial PRIMARY KEY NOT NULL,
+	"return_id" varchar(256) NOT NULL,
+	"item_id" varchar(256) NOT NULL,
+	"description" text NOT NULL,
+	"quantity" integer NOT NULL,
+	"unit_price" numeric(10, 2) NOT NULL,
+	"total" numeric(10, 2) NOT NULL,
+	"reason" text
 );
 
 CREATE TABLE "purchase_orders" (
@@ -361,84 +359,94 @@ CREATE TABLE "purchase_order_items" (
 );
 
 CREATE TABLE "supplier_invoices" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "po_id" varchar(256),
-    "supplier_id" varchar(256) NOT NULL,
-    "invoice_date" timestamp NOT NULL,
-    "due_date" timestamp NOT NULL,
-    "total_amount" numeric(10, 2) NOT NULL,
-    "paid_amount" numeric(10, 2) DEFAULT '0' NOT NULL,
-    "status" varchar(50) NOT NULL,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"po_id" varchar(256),
+	"supplier_id" varchar(256) NOT NULL,
+	"invoice_date" timestamp NOT NULL,
+	"due_date" timestamp NOT NULL,
+	"total_amount" numeric(10, 2) NOT NULL,
+	"paid_amount" numeric(10, 2) DEFAULT '0' NOT NULL,
+	"status" varchar(50) NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "supplier_invoice_items" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "invoice_id" varchar(256) NOT NULL,
-    "item_id" varchar(256) NOT NULL,
-    "description" text,
-    "quantity" integer NOT NULL,
-    "unit_price" numeric(10, 2) NOT NULL,
-    "total" numeric(10, 2) NOT NULL
+	"id" serial PRIMARY KEY NOT NULL,
+	"invoice_id" varchar(256) NOT NULL,
+	"item_id" varchar(256) NOT NULL,
+	"description" text,
+	"quantity" integer NOT NULL,
+	"unit_price" numeric(10, 2) NOT NULL,
+	"total" numeric(10, 2) NOT NULL
 );
 
 CREATE TABLE "purchase_returns" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "supplier_id" varchar(256) NOT NULL,
-    "date" timestamp NOT NULL,
-    "original_invoice_id" varchar(256),
-    "notes" text,
-    "total_amount" numeric(10, 2) NOT NULL,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"supplier_id" varchar(256) NOT NULL,
+	"date" timestamp NOT NULL,
+	"original_invoice_id" varchar(256),
+	"notes" text,
+	"total_amount" numeric(10, 2) NOT NULL,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
 CREATE TABLE "purchase_return_items" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "return_id" varchar(256) NOT NULL,
-    "item_id" varchar(256) NOT NULL,
-    "description" text,
-    "quantity" integer NOT NULL,
-    "unit_price" numeric(10, 2) NOT NULL,
-    "reason" text,
-    "total" numeric(10, 2) NOT NULL
+	"id" serial PRIMARY KEY NOT NULL,
+	"return_id" varchar(256) NOT NULL,
+	"item_id" varchar(256) NOT NULL,
+	"description" text,
+	"quantity" integer NOT NULL,
+	"unit_price" numeric(10, 2) NOT NULL,
+	"reason" text,
+	"total" numeric(10, 2) NOT NULL
 );
 
 -- HR & Payroll
 CREATE TABLE "departments" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "name" varchar(256) NOT NULL UNIQUE
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	CONSTRAINT "departments_name_unique" UNIQUE("name")
 );
+
 CREATE TABLE "job_titles" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "name" varchar(256) NOT NULL UNIQUE
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	CONSTRAINT "job_titles_name_unique" UNIQUE("name")
 );
+
 CREATE TABLE "leave_types" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "name" varchar(256) NOT NULL UNIQUE
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	CONSTRAINT "leave_types_name_unique" UNIQUE("name")
 );
+
 CREATE TABLE "allowance_types" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "name" varchar(256) NOT NULL UNIQUE,
-    "expense_account_id" varchar(256) NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	"expense_account_id" varchar(256) NOT NULL,
+	CONSTRAINT "allowance_types_name_unique" UNIQUE("name")
 );
+
 CREATE TABLE "deduction_types" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "name" varchar(256) NOT NULL UNIQUE,
-    "liability_account_id" varchar(256) NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	"liability_account_id" varchar(256) NOT NULL,
+	CONSTRAINT "deduction_types_name_unique" UNIQUE("name")
 );
 
 CREATE TABLE "employee_allowances" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" varchar(256) NOT NULL,
-    "type_id" varchar(256) NOT NULL,
+	"type_id" varchar(256) NOT NULL,
 	"description" varchar(256) NOT NULL,
 	"amount" numeric(10, 2) NOT NULL,
 	"type" varchar(50) NOT NULL
 );
+
 CREATE TABLE "employee_deductions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" varchar(256) NOT NULL,
-    "type_id" varchar(256) NOT NULL,
+	"type_id" varchar(256) NOT NULL,
 	"description" varchar(256) NOT NULL,
 	"amount" numeric(10, 2) NOT NULL,
 	"type" varchar(50) NOT NULL
@@ -458,16 +466,16 @@ CREATE TABLE "payrolls" (
 );
 
 CREATE TABLE "employee_settlements" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "date" timestamp NOT NULL,
-    "employee_id" varchar(256) NOT NULL,
-    "settlement_type" varchar(100) NOT NULL,
-    "account_id" varchar(256) NOT NULL,
-    "amount" numeric(10, 2) NOT NULL,
-    "description" text NOT NULL,
-    "payment_method" varchar(100) NOT NULL,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL,
-    "reference" varchar(256)
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"date" timestamp NOT NULL,
+	"employee_id" varchar(256) NOT NULL,
+	"settlement_type" varchar(100) NOT NULL,
+	"account_id" varchar(256) NOT NULL,
+	"amount" numeric(10, 2) NOT NULL,
+	"description" text NOT NULL,
+	"payment_method" varchar(100) NOT NULL,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL,
+	"reference" varchar(256)
 );
 
 CREATE TABLE "attendance_records" (
@@ -478,18 +486,18 @@ CREATE TABLE "attendance_records" (
 	"check_out" timestamp,
 	"status" varchar(50) DEFAULT 'حاضر' NOT NULL,
 	"notes" text,
-    "hours" varchar(10)
+	"hours" varchar(10)
 );
 
 CREATE TABLE "overtime" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "employee_id" varchar(256) NOT NULL,
-    "date" timestamp NOT NULL,
-    "hours" numeric(5, 2) NOT NULL,
-    "rate" numeric(4, 2) DEFAULT '1.5' NOT NULL,
-    "amount" numeric(10, 2),
-    "notes" text,
-    "status" varchar(50) DEFAULT 'pending' NOT NULL
+	"id" serial PRIMARY KEY NOT NULL,
+	"employee_id" varchar(256) NOT NULL,
+	"date" timestamp NOT NULL,
+	"hours" numeric(5, 2) NOT NULL,
+	"rate" numeric(4, 2) DEFAULT '1.5' NOT NULL,
+	"amount" numeric(10, 2),
+	"notes" text,
+	"status" varchar(50) DEFAULT 'pending' NOT NULL
 );
 
 CREATE TABLE "leave_requests" (
@@ -504,47 +512,46 @@ CREATE TABLE "leave_requests" (
 );
 
 CREATE TABLE "warning_notices" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "employee_id" varchar(256) NOT NULL,
-    "date" timestamp NOT NULL,
-    "reason" varchar(256) NOT NULL,
-    "details" text NOT NULL,
-    "issuing_manager" varchar(256) NOT NULL,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"employee_id" varchar(256) NOT NULL,
+	"date" timestamp NOT NULL,
+	"reason" varchar(256) NOT NULL,
+	"details" text NOT NULL,
+	"issuing_manager" varchar(256) NOT NULL,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
 CREATE TABLE "administrative_decisions" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "employee_id" varchar(256) NOT NULL,
-    "decision_date" timestamp NOT NULL,
-    "decision_type" varchar(256) NOT NULL,
-    "details" text NOT NULL,
-    "issuing_authority" varchar(256) NOT NULL,
-    "effective_date" timestamp NOT NULL,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"employee_id" varchar(256) NOT NULL,
+	"decision_date" timestamp NOT NULL,
+	"decision_type" varchar(256) NOT NULL,
+	"details" text NOT NULL,
+	"issuing_authority" varchar(256) NOT NULL,
+	"effective_date" timestamp NOT NULL,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
 CREATE TABLE "resignations" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "employee_id" varchar(256) NOT NULL,
-    "submission_date" timestamp NOT NULL,
-    "last_working_date" timestamp NOT NULL,
-    "reason" text NOT NULL,
-    "manager_notified_date" timestamp,
-    "status" varchar(50) DEFAULT 'مقدمة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"employee_id" varchar(256) NOT NULL,
+	"submission_date" timestamp NOT NULL,
+	"last_working_date" timestamp NOT NULL,
+	"reason" text NOT NULL,
+	"manager_notified_date" timestamp,
+	"status" varchar(50) DEFAULT 'مقدمة' NOT NULL
 );
 
 CREATE TABLE "disciplinary_warnings" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "employee_id" varchar(256) NOT NULL,
-    "warning_date" timestamp NOT NULL,
-    "warning_type" varchar(100) NOT NULL,
-    "violation_details" text NOT NULL,
-    "action_taken" text,
-    "issuing_manager" varchar(256) NOT NULL,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"employee_id" varchar(256) NOT NULL,
+	"warning_date" timestamp NOT NULL,
+	"warning_type" varchar(100) NOT NULL,
+	"violation_details" text NOT NULL,
+	"action_taken" text,
+	"issuing_manager" varchar(256) NOT NULL,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
-
 
 -- Accounting
 CREATE TABLE "journal_entries" (
@@ -567,293 +574,287 @@ CREATE TABLE "journal_entry_lines" (
 );
 
 CREATE TABLE "checks" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "check_number" varchar(100) NOT NULL,
-    "issue_date" timestamp NOT NULL,
-    "due_date" timestamp NOT NULL,
-    "bank_account_id" varchar(256) NOT NULL,
-    "beneficiary_name" varchar(256) NOT NULL,
-    "amount" numeric(10, 2) NOT NULL,
-    "currency" varchar(10) DEFAULT 'SAR' NOT NULL,
-    "purpose" text NOT NULL,
-    "notes" text,
-    "status" varchar(50) DEFAULT 'صادر' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"check_number" varchar(100) NOT NULL,
+	"issue_date" timestamp NOT NULL,
+	"due_date" timestamp NOT NULL,
+	"bank_account_id" varchar(256) NOT NULL,
+	"beneficiary_name" varchar(256) NOT NULL,
+	"amount" numeric(10, 2) NOT NULL,
+	"currency" varchar(10) DEFAULT 'SAR' NOT NULL,
+	"purpose" text NOT NULL,
+	"notes" text,
+	"status" varchar(50) DEFAULT 'صادر' NOT NULL
 );
 
 CREATE TABLE "bank_expenses" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "date" timestamp NOT NULL,
-    "bank_account_id" varchar(256) NOT NULL,
-    "expense_account_id" varchar(256) NOT NULL,
-    "beneficiary" varchar(256) NOT NULL,
-    "description" text NOT NULL,
-    "amount" numeric(10, 2) NOT NULL,
-    "reference_number" varchar(256),
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"date" timestamp NOT NULL,
+	"bank_account_id" varchar(256) NOT NULL,
+	"expense_account_id" varchar(256) NOT NULL,
+	"beneficiary" varchar(256) NOT NULL,
+	"description" text NOT NULL,
+	"amount" numeric(10, 2) NOT NULL,
+	"reference_number" varchar(256),
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
 CREATE TABLE "bank_receipts" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "date" timestamp NOT NULL,
-    "bank_account_id" varchar(256) NOT NULL,
-    "revenue_account_id" varchar(256) NOT NULL,
-    "payer_name" varchar(256) NOT NULL,
-    "customer_id" varchar(256),
-    "description" text NOT NULL,
-    "amount" numeric(10, 2) NOT NULL,
-    "reference_number" varchar(256),
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"date" timestamp NOT NULL,
+	"bank_account_id" varchar(256) NOT NULL,
+	"revenue_account_id" varchar(256) NOT NULL,
+	"payer_name" varchar(256) NOT NULL,
+	"customer_id" varchar(256),
+	"description" text NOT NULL,
+	"amount" numeric(10, 2) NOT NULL,
+	"reference_number" varchar(256),
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
 CREATE TABLE "cash_expenses" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "date" timestamp NOT NULL,
-    "cash_account_id" varchar(256) NOT NULL,
-    "expense_account_id" varchar(256) NOT NULL,
-    "beneficiary" varchar(256) NOT NULL,
-    "description" text NOT NULL,
-    "amount" numeric(10, 2) NOT NULL,
-    "voucher_number" varchar(256),
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"date" timestamp NOT NULL,
+	"cash_account_id" varchar(256) NOT NULL,
+	"expense_account_id" varchar(256) NOT NULL,
+	"beneficiary" varchar(256) NOT NULL,
+	"description" text NOT NULL,
+	"amount" numeric(10, 2) NOT NULL,
+	"voucher_number" varchar(256),
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
 CREATE TABLE "cash_receipts" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "date" timestamp NOT NULL,
-    "cash_account_id" varchar(256) NOT NULL,
-    "revenue_account_id" varchar(256) NOT NULL,
-    "payer_name" varchar(256) NOT NULL,
-    "customer_id" varchar(256),
-    "description" text NOT NULL,
-    "amount" numeric(10, 2) NOT NULL,
-    "reference_number" varchar(256),
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"date" timestamp NOT NULL,
+	"cash_account_id" varchar(256) NOT NULL,
+	"revenue_account_id" varchar(256) NOT NULL,
+	"payer_name" varchar(256) NOT NULL,
+	"customer_id" varchar(256),
+	"description" text NOT NULL,
+	"amount" numeric(10, 2) NOT NULL,
+	"reference_number" varchar(256),
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
 -- Projects
 CREATE TABLE "projects" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "name" varchar(256) NOT NULL,
-    "client_id" varchar(256) NOT NULL,
-    "start_date" timestamp NOT NULL,
-    "end_date" timestamp NOT NULL,
-    "budget" numeric(15, 2) DEFAULT '0' NOT NULL,
-    "status" varchar(50) DEFAULT 'مخطط له' NOT NULL,
-    "progress" integer DEFAULT 0,
-    "manager_id" varchar(256) NOT NULL,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	"client_id" varchar(256) NOT NULL,
+	"start_date" timestamp NOT NULL,
+	"end_date" timestamp NOT NULL,
+	"budget" numeric(15, 2) DEFAULT '0' NOT NULL,
+	"status" varchar(50) DEFAULT 'مخطط له' NOT NULL,
+	"progress" integer DEFAULT 0,
+	"manager_id" varchar(256) NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "project_tasks" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "project_id" varchar(256) NOT NULL,
-    "name" varchar(256) NOT NULL,
-    "assignee_id" varchar(256) NOT NULL,
-    "due_date" timestamp NOT NULL,
-    "status" varchar(50) DEFAULT 'مخطط لها' NOT NULL,
-    "priority" varchar(50) DEFAULT 'متوسطة' NOT NULL,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"project_id" varchar(256) NOT NULL,
+	"name" varchar(256) NOT NULL,
+	"assignee_id" varchar(256) NOT NULL,
+	"due_date" timestamp NOT NULL,
+	"status" varchar(50) DEFAULT 'مخطط لها' NOT NULL,
+	"priority" varchar(50) DEFAULT 'متوسطة' NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "project_resources" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "project_id" varchar(256) NOT NULL,
-    "employee_id" varchar(256) NOT NULL,
-    "role" varchar(256) NOT NULL,
-    "allocation" integer DEFAULT 100,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"project_id" varchar(256) NOT NULL,
+	"employee_id" varchar(256) NOT NULL,
+	"role" varchar(256) NOT NULL,
+	"allocation" integer DEFAULT 100,
+	"notes" text
 );
 
 CREATE TABLE "project_budget_items" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "project_id" varchar(256) NOT NULL,
-    "item" varchar(256) NOT NULL,
-    "allocated" numeric(15, 2) DEFAULT '0' NOT NULL,
-    "spent" numeric(15, 2) DEFAULT '0' NOT NULL,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"project_id" varchar(256) NOT NULL,
+	"item" varchar(256) NOT NULL,
+	"allocated" numeric(15, 2) DEFAULT '0' NOT NULL,
+	"spent" numeric(15, 2) DEFAULT '0' NOT NULL,
+	"notes" text
 );
 
 -- Production
 CREATE TABLE "work_orders" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "product_id" varchar(256) NOT NULL,
-    "quantity" integer NOT NULL,
-    "produced_quantity" integer DEFAULT 0,
-    "start_date" timestamp NOT NULL,
-    "end_date" timestamp NOT NULL,
-    "status" varchar(50) DEFAULT 'مجدول' NOT NULL,
-    "progress" integer DEFAULT 0,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"product_id" varchar(256) NOT NULL,
+	"quantity" integer NOT NULL,
+	"produced_quantity" integer DEFAULT 0,
+	"start_date" timestamp NOT NULL,
+	"end_date" timestamp NOT NULL,
+	"status" varchar(50) DEFAULT 'مجدول' NOT NULL,
+	"progress" integer DEFAULT 0,
+	"notes" text
 );
 
 CREATE TABLE "work_order_production_logs" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "work_order_id" varchar(256) NOT NULL,
-    "date" timestamp NOT NULL,
-    "quantity_produced" integer NOT NULL,
-    "notes" text
+	"id" serial PRIMARY KEY NOT NULL,
+	"work_order_id" varchar(256) NOT NULL,
+	"date" timestamp NOT NULL,
+	"quantity_produced" integer NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "bills_of_material" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "product_id" varchar(256) NOT NULL,
-    "version" varchar(50) NOT NULL,
-    "last_updated" timestamp
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"product_id" varchar(256) NOT NULL,
+	"version" varchar(50) NOT NULL,
+	"last_updated" timestamp
 );
 
 CREATE TABLE "bill_of_material_items" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "bom_id" varchar(256) NOT NULL,
-    "material_id" varchar(256) NOT NULL,
-    "quantity" numeric(10, 4) NOT NULL
+	"id" serial PRIMARY KEY NOT NULL,
+	"bom_id" varchar(256) NOT NULL,
+	"material_id" varchar(256) NOT NULL,
+	"quantity" numeric(10, 4) NOT NULL
 );
 
 CREATE TABLE "production_plans" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "name" varchar(256) NOT NULL,
-    "start_date" timestamp NOT NULL,
-    "end_date" timestamp NOT NULL,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	"start_date" timestamp NOT NULL,
+	"end_date" timestamp NOT NULL,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "quality_checks" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "work_order_id" varchar(256) NOT NULL,
-    "check_point" varchar(256) NOT NULL,
-    "result" varchar(50) NOT NULL,
-    "date" timestamp NOT NULL,
-    "inspector_id" varchar(256) NOT NULL,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"work_order_id" varchar(256) NOT NULL,
+	"check_point" varchar(256) NOT NULL,
+	"result" varchar(50) NOT NULL,
+	"date" timestamp NOT NULL,
+	"inspector_id" varchar(256) NOT NULL,
+	"notes" text
 );
 
 -- Inventory Control
 CREATE TABLE "warehouses" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "name" varchar(256) NOT NULL,
-    "location" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"name" varchar(256) NOT NULL,
+	"location" text
 );
 
 CREATE TABLE "stocktakes" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "stocktake_date" timestamp NOT NULL,
-    "warehouse_id" varchar(256) NOT NULL,
-    "responsible_person" varchar(256) NOT NULL,
-    "status" varchar(50) DEFAULT 'مجدول' NOT NULL,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"stocktake_date" timestamp NOT NULL,
+	"warehouse_id" varchar(256) NOT NULL,
+	"responsible_person" varchar(256) NOT NULL,
+	"status" varchar(50) DEFAULT 'مجدول' NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "inventory_adjustments" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "date" timestamp NOT NULL,
-    "product_id" varchar(256) NOT NULL,
-    "type" varchar(50) NOT NULL,
-    "quantity" integer NOT NULL,
-    "reason" varchar(256) NOT NULL,
-    "notes" text,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"date" timestamp NOT NULL,
+	"product_id" varchar(256) NOT NULL,
+	"type" varchar(50) NOT NULL,
+	"quantity" integer NOT NULL,
+	"reason" varchar(256) NOT NULL,
+	"notes" text,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL
 );
 
 CREATE TABLE "inventory_transfers" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "date" timestamp NOT NULL,
-    "from_warehouse_id" varchar(256) NOT NULL,
-    "to_warehouse_id" varchar(256) NOT NULL,
-    "product_id" varchar(256) NOT NULL,
-    "quantity" integer NOT NULL,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL,
-    "notes" text
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"date" timestamp NOT NULL,
+	"from_warehouse_id" varchar(256) NOT NULL,
+	"to_warehouse_id" varchar(256) NOT NULL,
+	"product_id" varchar(256) NOT NULL,
+	"quantity" integer NOT NULL,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "stock_issue_vouchers" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "date" timestamp NOT NULL,
-    "warehouse_id" varchar(256) NOT NULL,
-    "recipient" varchar(256) NOT NULL,
-    "reason" text NOT NULL,
-    "notes" text,
-    "status" varchar(50) DEFAULT 'مسودة' NOT NULL,
-    "issued_by" varchar(256)
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"date" timestamp NOT NULL,
+	"warehouse_id" varchar(256) NOT NULL,
+	"recipient" varchar(256) NOT NULL,
+	"reason" text NOT NULL,
+	"notes" text,
+	"status" varchar(50) DEFAULT 'مسودة' NOT NULL,
+	"issued_by" varchar(256)
 );
 
 CREATE TABLE "stock_issue_voucher_items" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "voucher_id" varchar(256) NOT NULL,
-    "product_id" varchar(256) NOT NULL,
-    "quantity_issued" integer NOT NULL,
-    "notes" text
+	"id" serial PRIMARY KEY NOT NULL,
+	"voucher_id" varchar(256) NOT NULL,
+	"product_id" varchar(256) NOT NULL,
+	"quantity_issued" integer NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "goods_received_notes" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "po_id" varchar(256),
-    "supplier_id" varchar(256) NOT NULL,
-    "grn_date" timestamp NOT NULL,
-    "notes" text,
-    "status" varchar(50) NOT NULL,
-    "received_by" varchar(256)
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"po_id" varchar(256),
+	"supplier_id" varchar(256) NOT NULL,
+	"grn_date" timestamp NOT NULL,
+	"notes" text,
+	"status" varchar(50) NOT NULL,
+	"received_by" varchar(256)
 );
 
 CREATE TABLE "goods_received_note_items" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "grn_id" varchar(256) NOT NULL,
-    "item_id" varchar(256) NOT NULL,
-    "description" text,
-    "ordered_quantity" integer,
-    "received_quantity" integer NOT NULL,
-    "notes" text
+	"id" serial PRIMARY KEY NOT NULL,
+	"grn_id" varchar(256) NOT NULL,
+	"item_id" varchar(256) NOT NULL,
+	"description" text,
+	"ordered_quantity" integer,
+	"received_quantity" integer NOT NULL,
+	"notes" text
 );
 
 CREATE TABLE "stock_requisitions" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "request_date" timestamp NOT NULL,
-    "requesting_department_or_person" varchar(256) NOT NULL,
-    "required_by_date" timestamp NOT NULL,
-    "overall_justification" text,
-    "status" varchar(50) DEFAULT 'جديد' NOT NULL,
-    "approved_by" varchar(256),
-    "approval_date" timestamp
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"request_date" timestamp NOT NULL,
+	"requesting_department_or_person" varchar(256) NOT NULL,
+	"required_by_date" timestamp NOT NULL,
+	"overall_justification" text,
+	"status" varchar(50) DEFAULT 'جديد' NOT NULL,
+	"approved_by" varchar(256),
+	"approval_date" timestamp
 );
 
 CREATE TABLE "stock_requisition_items" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "requisition_id" varchar(256) NOT NULL,
-    "product_id" varchar(256) NOT NULL,
-    "quantity_requested" integer NOT NULL,
-    "justification" text
+	"id" serial PRIMARY KEY NOT NULL,
+	"requisition_id" varchar(256) NOT NULL,
+	"product_id" varchar(256) NOT NULL,
+	"quantity_requested" integer NOT NULL,
+	"justification" text
 );
 
-
--- POS
 CREATE TABLE "pos_sessions" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "user_id" varchar(256) NOT NULL,
-    "opening_time" timestamp NOT NULL,
-    "closing_time" timestamp,
-    "opening_balance" numeric(10, 2) NOT NULL,
-    "closing_balance" numeric(10, 2),
-    "expected_balance" numeric(10, 2),
-    "cash_sales" numeric(10, 2),
-    "card_sales" numeric(10, 2),
-    "difference" numeric(10, 2),
-    "status" varchar(50) NOT NULL
+	"id" varchar(256) PRIMARY KEY NOT NULL,
+	"user_id" varchar(256) NOT NULL,
+	"opening_time" timestamp NOT NULL,
+	"closing_time" timestamp,
+	"opening_balance" numeric(10, 2) NOT NULL,
+	"closing_balance" numeric(10, 2),
+	"expected_balance" numeric(10, 2),
+	"cash_sales" numeric(10, 2),
+	"card_sales" numeric(10, 2),
+	"difference" numeric(10, 2),
+	"status" varchar(50) NOT NULL
 );
 
--- Inventory Log
 CREATE TABLE "inventory_movement_log" (
-    "id" serial PRIMARY KEY NOT NULL,
-    "product_id" varchar(256) NOT NULL,
-    "quantity" integer NOT NULL,
-    "type" varchar(10) NOT NULL, -- 'IN' or 'OUT'
-    "date" timestamp DEFAULT now() NOT NULL,
-    "source_type" varchar(50), -- e.g., 'Sales', 'Purchase', 'Adjustment'
-    "source_id" varchar(256)
+	"id" serial PRIMARY KEY NOT NULL,
+	"product_id" varchar(256) NOT NULL,
+	"quantity" integer NOT NULL,
+	"type" varchar(10) NOT NULL,
+	"date" timestamp DEFAULT now() NOT NULL,
+	"source_type" varchar(50),
+	"source_id" varchar(256)
 );
 
-
--- FOREIGN KEY CONSTRAINTS
--- We add them at the end to avoid order-of-creation issues.
-
+-- Foreign Key Constraints
 DO $$ BEGIN
  ALTER TABLE "users" ADD CONSTRAINT "users_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
@@ -903,13 +904,13 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
- ALTER TABLE "sales_orders" ADD CONSTRAINT "sales_orders_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "sales_orders" ADD CONSTRAINT "sales_orders_quote_id_quotations_id_fk" FOREIGN KEY ("quote_id") REFERENCES "quotations"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
 DO $$ BEGIN
- ALTER TABLE "sales_orders" ADD CONSTRAINT "sales_orders_quote_id_quotations_id_fk" FOREIGN KEY ("quote_id") REFERENCES "quotations"("id") ON DELETE set null ON UPDATE no action;
+ ALTER TABLE "sales_orders" ADD CONSTRAINT "sales_orders_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -987,13 +988,13 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
- ALTER TABLE "supplier_invoices" ADD CONSTRAINT "supplier_invoices_supplier_id_suppliers_id_fk" FOREIGN KEY ("supplier_id") REFERENCES "suppliers"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "supplier_invoices" ADD CONSTRAINT "supplier_invoices_po_id_purchase_orders_id_fk" FOREIGN KEY ("po_id") REFERENCES "purchase_orders"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
 DO $$ BEGIN
- ALTER TABLE "supplier_invoices" ADD CONSTRAINT "supplier_invoices_po_id_purchase_orders_id_fk" FOREIGN KEY ("po_id") REFERENCES "purchase_orders"("id") ON DELETE set null ON UPDATE no action;
+ ALTER TABLE "supplier_invoices" ADD CONSTRAINT "supplier_invoices_supplier_id_suppliers_id_fk" FOREIGN KEY ("supplier_id") REFERENCES "suppliers"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -1017,6 +1018,12 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+ ALTER TABLE "purchase_returns" ADD CONSTRAINT "purchase_returns_original_invoice_id_supplier_invoices_id_fk" FOREIGN KEY ("original_invoice_id") REFERENCES "supplier_invoices"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
  ALTER TABLE "purchase_return_items" ADD CONSTRAINT "purchase_return_items_return_id_purchase_returns_id_fk" FOREIGN KEY ("return_id") REFERENCES "purchase_returns"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
@@ -1027,7 +1034,6 @@ DO $$ BEGIN
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
-
 
 DO $$ BEGIN
  ALTER TABLE "allowance_types" ADD CONSTRAINT "allowance_types_expense_account_id_chart_of_accounts_id_fk" FOREIGN KEY ("expense_account_id") REFERENCES "chart_of_accounts"("id") ON DELETE no action ON UPDATE no action;
@@ -1364,24 +1370,3 @@ DO $$ BEGIN
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
-
-CREATE UNIQUE INDEX "tenant_module_unique_idx" ON "tenant_module_subscriptions" ("tenant_id","module_key");
-
--- Insert initial data
--- You might want to populate some base data here, e.g., default roles or settings.
-INSERT INTO roles (id, name, description, permissions) VALUES
-('ROLE_SUPER_ADMIN', 'Super Admin', 'صلاحيات كاملة على النظام وإدارة الشركات.', '["admin.manage_tenants", "admin.manage_modules", "admin.manage_billing", "admin.manage_requests"]'),
-('ROLE001', 'مدير النظام', 'صلاحيات كاملة على النظام.', '["accounting.view", "accounting.create", "accounting.edit", "accounting.delete", "accounting.approve", "sales.view", "sales.create", "sales.edit", "sales.delete", "sales.send_quote", "inventory.view", "inventory.create", "inventory.edit", "inventory.delete", "inventory.adjust_stock", "hr.view", "hr.create_employee", "hr.edit_employee", "hr.run_payroll", "reports.view_financial", "reports.view_sales", "reports.view_inventory", "reports.view_hr", "settings.view", "settings.edit_general", "settings.manage_users", "settings.manage_roles", "projects.view", "projects.create", "projects.edit", "projects.delete", "production.view", "production.create", "production.edit", "production.delete", "pos.use"]'),
-('ROLE002', 'محاسب', 'صلاحيات على وحدات الحسابات والمالية.', '["accounting.view", "accounting.create", "accounting.edit", "reports.view_financial"]'),
-('ROLE003', 'موظف مبيعات', 'صلاحيات على وحدة المبيعات وعروض الأسعار.', '["sales.view", "sales.create", "reports.view_sales"]'),
-('ROLE004', 'مدير مخزون', 'صلاحيات على وحدة المخزون والمستودعات.', '["inventory.view", "inventory.create", "inventory.edit", "reports.view_inventory", "inventory.adjust_stock"]')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO users (id, name, email, role_id, password_hash) VALUES
-('super_admin', 'Super Admin', 'super@admin.com', 'ROLE_SUPER_ADMIN', 'hashed_superadmin_password'),
-('user001', 'مدير الشركة', 'manager@example.com', 'ROLE001', 'hashed_password'),
-('user002', 'المحاسب العام', 'accountant@example.com', 'ROLE002', 'hashed_password'),
-('user003', 'مسؤول المبيعات', 'sales@example.com', 'ROLE003', 'hashed_password')
-ON CONFLICT (id) DO NOTHING;
-
-  
