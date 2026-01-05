@@ -58,7 +58,7 @@ export async function getDashboardData() {
 
         const latestActivities = (latestActivitiesResult as any[]).map(act => ({
             description: `${act.description} #${act.id}`,
-            time: act.activity_date.toISOString(),
+            time: new Date(act.activity_date).toISOString(),
             icon: iconMap[act.description] || 'FileClock'
         }));
 
