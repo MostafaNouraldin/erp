@@ -11,6 +11,8 @@ export interface Module {
       yearly: number;
     }
   };
+  priceMonthly: number; // For generic access, should be deprecated in favor of prices
+  priceYearly: number; // For generic access, should be deprecated in favor of prices
 }
 
 export interface Tenant {
@@ -25,6 +27,7 @@ export interface Tenant {
   phone?: string;
   address?: string;
   vatNumber?: string;
+  isConfigured?: boolean;
 }
 
 export interface TenantSubscribedModule {

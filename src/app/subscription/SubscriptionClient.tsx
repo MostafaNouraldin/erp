@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,16 +17,18 @@ interface SubscriptionClientProps {
   initialData: {
     tenant: Tenant;
     subscribedModules: Module[];
-    availableForSubscription: Module[];
+    allAvailableModules: Module[];
   }
 }
 
 export default function SubscriptionClient({ initialData }: SubscriptionClientProps) {
-  const { tenant, subscribedModules, availableForSubscription } = initialData;
+  const { tenant, subscribedModules, allAvailableModules } = initialData;
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
   const [selectedNewModules, setSelectedNewModules] = useState<string[]>([]);
+  
+  const availableForSubscription = allAvailableModules.filter(mod => mod.isRentable && !subscribedModules.some(sub => sub.key === mod.key));
 
   const calculateRemainingDays = () => {
     if (!tenant.subscriptionEndDate) return "غير محدد";
@@ -37,21 +39,22 @@ export default function SubscriptionClient({ initialData }: SubscriptionClientPr
     return diffDays > 0 ? `${diffDays} يوم` : "منتهي";
   };
 
-  const handleModuleSelectionChange = (moduleId: string, checked: boolean | string) => {
+  const handleModuleSelectionChange = (moduleKey: string, checked: boolean | string) => {
     const isChecked = typeof checked === 'string' ? checked === 'true' : !!checked;
     setSelectedNewModules(prev => {
         if (isChecked) {
-            return [...prev, moduleId];
+            return [...prev, moduleKey];
         } else {
-            return prev.filter(id => id !== moduleId);
+            return prev.filter(key => key !== moduleKey);
         }
     });
   };
   
-  const calculateRenewalCost = () => {
+  const calculateUpgradeCost = () => {
     const selectedModulesData = availableForSubscription.filter(mod => selectedNewModules.includes(mod.key));
     const totalCost = selectedModulesData.reduce((sum, mod) => {
-        return sum + (billingCycle === 'monthly' ? mod.priceMonthly : mod.priceYearly);
+        const prices = mod.prices[formatCurrency(0).symbol as keyof typeof mod.prices] || mod.prices.USD;
+        return sum + (billingCycle === 'monthly' ? prices.monthly : prices.yearly);
     }, 0);
     return totalCost;
   };
@@ -60,8 +63,8 @@ export default function SubscriptionClient({ initialData }: SubscriptionClientPr
     // In a real application, this would trigger a backend process
     // to create an invoice and handle payment.
     toast({
-        title: "تم إرسال طلب التجديد/الترقية",
-        description: `سيتم إنشاء فاتورة بالمبلغ المطلوب: ${formatCurrency(calculateRenewalCost())}`,
+        title: "تم إرسال طلب الترقية",
+        description: `سيتم إنشاء فاتورة بالمبلغ المطلوب: ${formatCurrency(calculateUpgradeCost()).amount}`,
     });
     setSelectedNewModules([]); // Reset selection
   };
@@ -175,29 +178,32 @@ export default function SubscriptionClient({ initialData }: SubscriptionClientPr
                         <div>
                             <Label className="font-semibold mb-2 block">اختر الوحدات الجديدة للإضافة:</Label>
                              <div className="space-y-2">
-                                {availableForSubscription.length > 0 ? availableForSubscription.map(mod => (
-                                    <div key={mod.key} className="flex items-center justify-between rounded-lg border p-3">
-                                        <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                                            <Checkbox 
-                                                id={`module-${mod.key}`}
-                                                onCheckedChange={(checked) => handleModuleSelectionChange(mod.key, checked)}
-                                            />
-                                            <div className="space-y-0.5">
-                                                <Label htmlFor={`module-${mod.key}`} className="font-medium cursor-pointer">{mod.name}</Label>
-                                                <p className="text-xs text-muted-foreground">{mod.description}</p>
+                                {availableForSubscription.length > 0 ? availableForSubscription.map(mod => {
+                                    const prices = mod.prices[formatCurrency(0).symbol as keyof typeof mod.prices] || mod.prices.USD;
+                                    return (
+                                        <div key={mod.key} className="flex items-center justify-between rounded-lg border p-3">
+                                            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                                                <Checkbox 
+                                                    id={`module-${mod.key}`}
+                                                    onCheckedChange={(checked) => handleModuleSelectionChange(mod.key, checked)}
+                                                />
+                                                <div className="space-y-0.5">
+                                                    <Label htmlFor={`module-${mod.key}`} className="font-medium cursor-pointer">{mod.name}</Label>
+                                                    <p className="text-xs text-muted-foreground">{mod.description}</p>
+                                                </div>
                                             </div>
+                                            <div className="text-sm font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(billingCycle === 'monthly' ? prices.monthly : prices.yearly).amount }}></div>
                                         </div>
-                                        <div className="text-sm font-semibold" dangerouslySetInnerHTML={{ __html: formatCurrency(billingCycle === 'monthly' ? mod.priceMonthly : mod.priceYearly) }}></div>
-                                    </div>
-                                )) : (
+                                    )
+                                }) : (
                                     <p className="text-muted-foreground text-center p-4">أنت مشترك في جميع الوحدات المتاحة حالياً.</p>
                                 )}
                             </div>
                         </div>
                         <div className="pt-4 border-t">
                             <h3 className="text-lg font-bold flex justify-between">
-                                <span>التكلفة الإجمالية للتجديد:</span>
-                                <span className="text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(calculateRenewalCost()) }}></span>
+                                <span>التكلفة الإجمالية للترقية:</span>
+                                <span className="text-primary" dangerouslySetInnerHTML={{ __html: formatCurrency(calculateUpgradeCost()).amount }}></span>
                             </h3>
                         </div>
                     </div>
