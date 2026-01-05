@@ -85,11 +85,15 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
         if (item.module === "SystemAdministration" && !auth.isSuperAdmin) {
             return null;
         }
-
-        if (auth.user && !auth.user.isConfigured && item.href !== '/settings') {
+        
+        if (auth.isAuthenticated && !auth.user?.isConfigured && item.href !== '/settings') {
             return null;
         }
 
+        if (!auth.isSuperAdmin && item.href === '/system-administration/tenants') {
+            return null;
+        }
+        
         if (!auth.hasPermission(item.permissionKey as string)) {
           return null;
         }
@@ -217,13 +221,17 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
                                                 <DropdownMenuSeparator />
                                             </>
                                         )}
-                                        <DropdownMenuItem>
-                                            <UserCircle className="me-2 h-4 w-4" />
-                                            <span>الملف الشخصي</span>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/settings">
+                                                <UserCircle className="me-2 h-4 w-4" />
+                                                <span>الملف الشخصي</span>
+                                            </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            <Settings className="me-2 h-4 w-4" />
-                                            <span>الإعدادات</span>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/settings">
+                                                <Settings className="me-2 h-4 w-4" />
+                                                <span>الإعدادات</span>
+                                            </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem onClick={auth.logout}>
