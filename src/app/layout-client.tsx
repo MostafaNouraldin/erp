@@ -18,9 +18,8 @@ import LoginPage from './login/page';
 import { usePathname, useRouter } from "next/navigation";
 import { allNavItems } from "@/lib/nav-links";
 import NotificationsPopover from "@/components/notifications-popover";
-import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCompanySettingsForLayout } from './actions';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
@@ -45,14 +44,14 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
     const navItems = useMemo(() => allNavItems
       .map(item => {
         if (item.module === "SystemAdministration" && !auth.isSuperAdmin) return null;
-        if (isNewUnconfiguredUser && !['/settings', '/help'].includes(item.href || '')) return null;
+        if (isNewUnconfiguredUser && !['/settings', '/help', '/subscription'].includes(item.href || '')) return null;
         if (isSubscriptionExpired && !['/subscription', '/settings', '/help'].includes(item.href || '')) return null;
 
         if (!auth.hasPermission(item.permissionKey as string)) return null;
 
         if (item.subItems) {
             const visibleSubItems = item.subItems.filter(sub => {
-                if (isNewUnconfiguredUser && !['/settings', '/help'].includes(sub.href || '')) return false;
+                if (isNewUnconfiguredUser && !['/settings', '/help', '/subscription'].includes(sub.href || '')) return false;
                 if (isSubscriptionExpired && !['/subscription', '/settings', '/help'].includes(sub.href || '')) return false;
 
                 const hasSubSubPermission = sub.subItems ? sub.subItems.some(grandchild => auth.hasPermission(grandchild.permissionKey as string)) : false;
@@ -119,7 +118,10 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
         );
     }
     
-    // If user is not authenticated and not on a public page, show login
+    if (!auth.isAuthenticated && isPublicPage) {
+        return <>{children}</>;
+    }
+
     if (!auth.isAuthenticated && !isPublicPage) {
         return <LoginPage />;
     }
@@ -127,11 +129,6 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
     // While redirecting, show nothing to prevent flashes of content
     if ((auth.isAuthenticated && isPublicPage) || (auth.isAuthenticated && auth.user?.isConfigured === false && !isSetupPage)) {
         return null;
-    }
-    
-    // If user is not authenticated but on a public page, show the page content
-    if (!auth.isAuthenticated && isPublicPage) {
-        return <>{children}</>;
     }
     
     return (

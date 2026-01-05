@@ -56,8 +56,7 @@ export async function login(values: z.infer<typeof loginSchema>): Promise<{ succ
     // Exclude password hash from the user object returned to the client
     const { passwordHash, ...userToReturn } = user;
 
-    // Use tenantId from user record first, fallback to form value (for initial login maybe)
-    const tenantId = user.tenantId; // Always rely on the user's assigned tenantId
+    const tenantId = user.tenantId;
 
     let isConfigured = true;
     let subscriptionEndDate = null;
@@ -72,7 +71,6 @@ export async function login(values: z.infer<typeof loginSchema>): Promise<{ succ
         subscriptionEndDate = tenantInfo?.subscriptionEndDate;
         isActive = tenantInfo?.isActive ?? false;
     } else if (!isSuperAdmin && !tenantId) {
-        // This is a user without a tenant, which is an invalid state for a non-superadmin
         return { success: false, error: "هذا الحساب غير مرتبط بأي شركة." };
     }
 

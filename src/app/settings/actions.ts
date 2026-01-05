@@ -107,20 +107,19 @@ export type Account = {
 };
 
 
-async function getDb() {
-    const { db } = await connectToTenantDb();
+async function getDb(tenantId?: string) {
+    const { db } = await connectToTenantDb(tenantId);
     return db;
 }
 
 
 // --- User Actions ---
 export async function addUser(values: UserFormValues) {
-    const db = await getDb();
+    const db = await getDb(); // Defaults to main DB, needs tenant context
     if (!values.password) {
         throw new Error("Password is required for a new user.");
     }
     const newId = `USER${Date.now()}`;
-    // const passwordHash = await bcrypt.hash(values.password, 10); // Real implementation
     const passwordHash = `hashed_${values.password}`; // Unsafe placeholder
 
     await db.insert(users).values({
@@ -139,7 +138,6 @@ export async function updateUser(values: UserFormValues) {
     const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     
-    // Do not update password if it's not provided
     const updateData: any = {
         name: values.name,
         email: values.email,
@@ -149,7 +147,6 @@ export async function updateUser(values: UserFormValues) {
     };
 
     if (values.password) {
-        // const passwordHash = await bcrypt.hash(values.password, 10);
         updateData.passwordHash = `hashed_${values.password}`; // Unsafe placeholder
     }
 
@@ -184,7 +181,6 @@ export async function updateRole(values: RoleFormValues) {
 
 export async function deleteRole(id: string) {
     const db = await getDb();
-    // Check if any user is assigned this role
     const userWithRole = await db.query.users.findFirst({
         where: eq(users.roleId, id),
     });
@@ -197,7 +193,7 @@ export async function deleteRole(id: string) {
 
 // --- General Settings Actions ---
 export async function getCompanySettings(tenantId: string) {
-  const db = await getDb();
+  const db = await getDb(tenantId);
   const result = await db.query.companySettings.findFirst({
     where: eq(companySettings.id, tenantId),
   });
@@ -205,17 +201,20 @@ export async function getCompanySettings(tenantId: string) {
 }
 
 export async function saveCompanySettings(tenantId: string, settings: SettingsFormValues, isFirstTime: boolean = false) {
-  const db = await getDb();
-  
-  await db.transaction(async (tx) => {
-    await tx.insert(companySettings)
+  const db = await getDb(tenantId);
+  const mainDb = await getDb(); // For updating tenants table
+
+  await mainDb.transaction(async (tx) => {
+    // This action needs to happen in the specific tenant's DB
+    const tenantDb = (await connectToTenantDb(tenantId)).db;
+    await tenantDb.insert(companySettings)
       .values({ id: tenantId, settings })
       .onConflictDoUpdate({
         target: companySettings.id,
         set: { settings },
       });
 
-    // If this is the first time setup, mark the tenant as configured
+    // This action happens in the main DB
     if (isFirstTime) {
       await tx.update(tenants).set({ isConfigured: true }).where(eq(tenants.id, tenantId));
     }
@@ -228,7 +227,7 @@ export async function saveCompanySettings(tenantId: string, settings: SettingsFo
 
 // --- HR Settings Actions ---
 export async function addDepartment(values: Department) {
-    const db = await getDb();
+    const db = await getDb(); // These should be tenant-specific
     await db.insert(departments).values({ ...values, id: `DEP${Date.now()}` });
     revalidatePath('/settings');
 }
@@ -311,5 +310,3 @@ export async function deleteDeductionType(id: string) {
     await db.delete(deductionTypes).where(eq(deductionTypes.id, id));
     revalidatePath('/settings');
 }
-
-    

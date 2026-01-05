@@ -28,6 +28,15 @@ const tenantSchema = z.object({
   adminName: z.string().optional(),
   adminEmail: z.string().email("بريد إلكتروني غير صالح للمدير").optional().or(z.literal('')),
   adminPassword: z.string().optional(),
+}).refine(data => {
+    // Make admin fields required only when creating a new tenant (id is not present)
+    if (!data.id) {
+        return !!data.adminName && !!data.adminEmail && !!data.adminPassword;
+    }
+    return true;
+}, {
+    message: "بيانات المدير (الاسم، البريد الإلكتروني، كلمة المرور) مطلوبة عند إنشاء شركة جديدة.",
+    path: ["adminName"], // Show error message under one of the fields
 });
 
 type TenantFormValues = z.infer<typeof tenantSchema>;
