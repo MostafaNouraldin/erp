@@ -13,36 +13,20 @@ if (!mainDatabaseUrl) {
   throw new Error("DATABASE_URL environment variable is not set.");
 }
 
-// Extend the global type to include our custom client property
-declare global {
-  // eslint-disable-next-line no-var
-  var postgresClient: Sql | undefined;
-}
-
-let client: Sql;
-
-// This is the correct pattern for managing DB connections in a serverless/edge environment like Vercel with Next.js.
-// We cache the connection on `globalThis` to avoid creating a new connection on every hot-reload in development.
-if (process.env.NODE_ENV === 'production') {
-  client = postgres(mainDatabaseUrl);
-} else {
-  if (!globalThis.postgresClient) {
-    globalThis.postgresClient = postgres(mainDatabaseUrl);
-  }
-  client = globalThis.postgresClient;
-}
-
-const db = drizzle(client, { schema });
-
-/**
- * Connects to the tenant's database. In our single-DB architecture, this
- * simply returns the main database connection.
- * @param tenantId - The ID of the tenant (currently unused in this architecture).
- * @returns An object containing the Drizzle instance.
- */
+// This approach is tailored for serverless environments with limited connection pooling, like Supabase's free tier.
+// It creates a new connection instance on-demand and ensures it closes quickly after being idle.
 export async function connectToTenantDb(tenantId?: string | null) {
-  // In our current single-DB architecture, we don't need to switch connections.
-  // We simply return the globally managed Drizzle instance.
-  // The postgres.js driver handles connection pooling automatically.
+  const connectionString = mainDatabaseUrl;
+  
+  // The postgres.js library is efficient. Creating a new instance is cheap.
+  // The key is the idle_timeout to ensure connections are closed promptly.
+  const client = postgres(connectionString, {
+    // max: 1, // Restrict the pool size for this instance.
+    idle_timeout: 10, // Seconds until idle connections are closed. Aggressive for free tiers.
+    onclose: () => console.log(`Connection for tenant ${tenantId || 'main'} closed.`),
+  });
+
+  const db = drizzle(client, { schema });
+  
   return { db };
 }
