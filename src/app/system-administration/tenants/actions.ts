@@ -3,7 +3,7 @@
 
 import { connectToTenantDb } from '@/db';
 import { tenants, tenantModuleSubscriptions, users, subscriptionRenewalRequests } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createNotification } from '@/lib/notifications';
@@ -21,11 +21,12 @@ const tenantSchema = z.object({
   isConfigured: z.boolean().default(false),
   subscriptionEndDate: z.date().optional().nullable(),
   subscribedModules: z.array(z.object({
+    key: z.string().optional(),
     moduleId: z.string(),
     subscribed: z.boolean(),
   })).default([]),
   billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
-  // New fields for admin creation
+  // New fields for admin user creation
   adminName: z.string().optional(),
   adminEmail: z.string().email("بريد إلكتروني غير صالح للمدير").optional().or(z.literal('')),
   adminPassword: z.string().optional(),
@@ -224,8 +225,13 @@ export async function manuallyRenewSubscription(tenantId: string, duration: 'mon
 
 export async function resetTenantAdminPassword(tenantId: string) {
     const db = await getMainDb();
+    const TENANT_ADMIN_ROLE_ID = "ROLE001";
+    
     const tenantAdmin = await db.query.users.findFirst({
-        where: eq(users.tenantId, tenantId), // This assumes the first user is the admin. A role check is better.
+        where: and(
+            eq(users.tenantId, tenantId),
+            eq(users.roleId, TENANT_ADMIN_ROLE_ID)
+        ),
     });
 
     if (!tenantAdmin) {
