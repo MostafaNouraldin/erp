@@ -8,7 +8,7 @@ import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Building2, Briefcase, RefreshCw, Loader2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Building2, Briefcase, RefreshCw, Loader2, KeyRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import type { Tenant, TenantSubscribedModule, Module } from '@/types/saas';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { addTenant, updateTenant, deleteTenant, getTenantRenewalRequests, manuallyRenewSubscription } from './actions';
+import { addTenant, updateTenant, deleteTenant, getTenantRenewalRequests, manuallyRenewSubscription, resetTenantAdminPassword } from './actions';
 import { Textarea } from '@/components/ui/textarea';
 import type { SubscriptionRequest } from '../subscription-requests/SubscriptionRequestsClient';
 import { useCurrency } from '@/hooks/use-currency';
@@ -78,6 +78,8 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
   const [showManageSubscriptionDialog, setShowManageSubscriptionDialog] = useState(false);
   const [selectedTenantForSub, setSelectedTenantForSub] = useState<Tenant | null>(null);
   const [isRenewing, setIsRenewing] = useState(false);
+  
+  const [newPasswordInfo, setNewPasswordInfo] = useState<{ tenantName: string; password: string;} | null>(null);
 
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
@@ -208,6 +210,19 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     } finally {
         setIsRenewing(false);
     }
+  };
+  
+  const handleResetPassword = async (tenantId: string, tenantName: string) => {
+      try {
+        const result = await resetTenantAdminPassword(tenantId);
+        if(result.success && result.newPassword) {
+            setNewPasswordInfo({tenantName: tenantName, password: result.newPassword});
+        } else {
+            throw new Error(result.message || 'فشل في إعادة تعيين كلمة المرور.');
+        }
+      } catch (e: any) {
+         toast({ title: "خطأ", description: e.message, variant: "destructive" });
+      }
   };
 
   return (
@@ -395,6 +410,9 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إدارة الاشتراك" onClick={() => openSubscriptionDialog(tenant)}>
                         <Briefcase className="h-4 w-4" />
                        </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إعادة تعيين كلمة المرور" onClick={() => handleResetPassword(tenant.id, tenant.name)}>
+                        <KeyRound className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => openEditDialog(tenant)}>
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -458,6 +476,22 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
             </div>
             <DialogFooter>
                 <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog to show new password */}
+      <Dialog open={!!newPasswordInfo} onOpenChange={(isOpen) => !isOpen && setNewPasswordInfo(null)}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+            <DialogHeader>
+                <DialogTitle>تم إعادة تعيين كلمة المرور</DialogTitle>
+                <DialogDescriptionComponent>تم إنشاء كلمة مرور جديدة لمدير شركة "{newPasswordInfo?.tenantName}". يرجى نسخها وإرسالها للعميل بشكل آمن.</DialogDescriptionComponent>
+            </DialogHeader>
+            <div className="py-4">
+                <Input type="text" readOnly value={newPasswordInfo?.password || ""} className="text-center font-mono text-lg tracking-wider" />
+            </div>
+            <DialogFooter>
+                <DialogClose asChild><Button>حسنًا</Button></DialogClose>
             </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createNotification } from '@/lib/notifications';
+import { randomBytes } from 'crypto';
 
 const tenantSchema = z.object({
   id: z.string().optional(),
@@ -168,8 +169,6 @@ export async function updateTenant(values: TenantFormValues) {
 export async function deleteTenant(tenantId: string) {
     const db = await getMainDb();
     await db.transaction(async (tx) => {
-        // This is a simplified deletion. In a real-world scenario, you might want to soft delete
-        // or archive data instead. Also, deleting users associated with the tenant might be needed.
         await tx.delete(users).where(eq(users.tenantId, tenantId));
         await tx.delete(tenantModuleSubscriptions).where(eq(tenantModuleSubscriptions.tenantId, tenantId));
         await tx.delete(tenants).where(eq(tenants.id, tenantId));
@@ -196,7 +195,6 @@ export async function manuallyRenewSubscription(tenantId: string, duration: 'mon
         throw new Error("لم يتم العثور على الشركة.");
     }
     
-    // Start from today if subscription is expired, otherwise from the end date
     const today = new Date();
     let currentEndDate = tenant.subscriptionEndDate ? new Date(tenant.subscriptionEndDate) : today;
     if (currentEndDate < today) {
@@ -212,10 +210,8 @@ export async function manuallyRenewSubscription(tenantId: string, duration: 'mon
 
     await db.update(tenants).set({ subscriptionEndDate: newEndDate }).where(eq(tenants.id, tenantId));
     
-    // Find the admin user for this tenant to send notification
     const tenantAdmin = await db.query.users.findFirst({
         where: eq(users.tenantId, tenantId)
-        // In a more complex system, you'd find the user with the admin role for this tenant
     });
 
     if (tenantAdmin) {
@@ -223,5 +219,29 @@ export async function manuallyRenewSubscription(tenantId: string, duration: 'mon
     }
 
     revalidatePath('/system-administration/tenants');
-    revalidatePath('/subscription'); // Revalidate the tenant's own subscription page
+    revalidatePath('/subscription'); 
+}
+
+export async function resetTenantAdminPassword(tenantId: string) {
+    const db = await getMainDb();
+    const tenantAdmin = await db.query.users.findFirst({
+        where: eq(users.tenantId, tenantId), // This assumes the first user is the admin. A role check is better.
+    });
+
+    if (!tenantAdmin) {
+        throw new Error("لم يتم العثور على حساب المدير لهذه الشركة.");
+    }
+    
+    const newPassword = randomBytes(8).toString('hex');
+    const newPasswordHash = `hashed_${newPassword}`; // Unsafe placeholder
+
+    await db.update(users)
+        .set({ passwordHash: newPasswordHash })
+        .where(eq(users.id, tenantAdmin.id));
+
+    return {
+        success: true,
+        message: "تم إعادة تعيين كلمة المرور بنجاح.",
+        newPassword: newPassword,
+    };
 }

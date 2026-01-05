@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mail, Search, Filter, CheckCircle, XCircle, Eye, RefreshCw, Loader2 } from "lucide-react";
+import { Mail, Search, Filter, CheckCircle, XCircle, Eye, RefreshCw, Loader2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
@@ -28,6 +28,12 @@ export interface SubscriptionRequest {
   paymentProof?: string | null;
 }
 
+interface ApprovedInfo {
+    tenantId: string;
+    adminEmail: string;
+    generatedPassword?: string | null;
+}
+
 interface ClientProps {
   initialData: {
     requests: SubscriptionRequest[];
@@ -41,6 +47,7 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
   const [isRejecting, setIsRejecting] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [approvedInfo, setApprovedInfo] = useState<ApprovedInfo | null>(null);
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
 
@@ -72,7 +79,13 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
           title: "تمت الموافقة بنجاح!",
           description: result.message,
         });
-        // Optimistically update UI
+        if(result.tenantId && result.adminEmail) {
+            setApprovedInfo({
+                tenantId: result.tenantId,
+                adminEmail: result.adminEmail,
+                generatedPassword: result.generatedPassword
+            });
+        }
         setRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'approved' } : req));
       } else {
         throw new Error(result.message);
@@ -95,6 +108,11 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
     } finally {
         setIsRejecting(false);
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "تم النسخ", description: "تم نسخ البيانات إلى الحافظة." });
   };
 
 
@@ -234,6 +252,48 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+       {/* Dialog to show credentials after approval */}
+       <Dialog open={!!approvedInfo} onOpenChange={(isOpen) => !isOpen && setApprovedInfo(null)}>
+            <DialogContent className="sm:max-w-md" dir="rtl">
+                <DialogHeader>
+                    <DialogTitle>بيانات الدخول للشركة الجديدة</DialogTitle>
+                    <DialogDescription>
+                        يرجى نسخ هذه البيانات وإرسالها للعميل بشكل آمن.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="tenantId">معرف الشركة (Tenant ID)</Label>
+                        <div className="flex items-center gap-2">
+                            <Input id="tenantId" value={approvedInfo?.tenantId || ''} readOnly className="bg-muted"/>
+                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(approvedInfo?.tenantId || '')}><Copy className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="adminEmail">بريد المدير الإلكتروني</Label>
+                        <div className="flex items-center gap-2">
+                           <Input id="adminEmail" value={approvedInfo?.adminEmail || ''} readOnly className="bg-muted"/>
+                           <Button variant="outline" size="icon" onClick={() => copyToClipboard(approvedInfo?.adminEmail || '')}><Copy className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                    {approvedInfo?.generatedPassword && (
+                        <div className="space-y-1">
+                            <Label htmlFor="adminPassword">كلمة المرور المؤقتة</Label>
+                             <div className="flex items-center gap-2">
+                                <Input id="adminPassword" value={approvedInfo.generatedPassword} readOnly className="bg-muted font-mono"/>
+                                <Button variant="outline" size="icon" onClick={() => copyToClipboard(approvedInfo.generatedPassword!)}><Copy className="h-4 w-4"/></Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button>حسنًا</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }

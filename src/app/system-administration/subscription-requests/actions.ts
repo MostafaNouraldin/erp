@@ -74,6 +74,7 @@ export async function approveSubscriptionRequest(requestId: number) {
       roleId: TENANT_ADMIN_ROLE_ID,
       status: 'نشط',
       passwordHash: passwordHash,
+      tenantId: newTenantId,
     });
 
     // 3. Subscribe the tenant to the selected modules
@@ -83,9 +84,12 @@ export async function approveSubscriptionRequest(requestId: number) {
       moduleKey: moduleKey,
       subscribed: true,
     }));
+    // Also add base modules
     subscriptions.push({ tenantId: newTenantId, moduleKey: 'Dashboard', subscribed: true });
     subscriptions.push({ tenantId: newTenantId, moduleKey: 'Settings', subscribed: true });
-    subscriptions.push({ tenantId: newTenantId, moduleKey: 'Help', subscribed: true });
+     subscriptions.push({ tenantId: newTenantId, moduleKey: 'Help', subscribed: true });
+     subscriptions.push({ tenantId: newTenantId, moduleKey: 'Subscription', subscribed: true });
+
 
     if (subscriptions.length > 0) {
       await tx.insert(tenantModuleSubscriptions).values(subscriptions);
@@ -105,13 +109,12 @@ export async function approveSubscriptionRequest(requestId: number) {
     });
   } catch (error) {
     console.error("CRITICAL: Failed to send activation email:", error);
-    // In a real app, you might want to have a retry mechanism or log this failure for manual intervention.
-    // For now, we will still return success for the user creation part.
     return {
         success: true,
-        message: `تم إنشاء الشركة والمستخدم، لكن فشل إرسال بريد التفعيل. يرجى إرسال البيانات يدوياً.`,
+        message: `تم إنشاء الشركة والمستخدم، لكن فشل إرسال بريد التفعيل.`,
+        tenantId: newTenantId,
         adminEmail: request.email,
-        generatedPassword: adminPassword, // Provide password manually since email failed
+        generatedPassword: adminPassword,
     };
   }
 
@@ -120,9 +123,10 @@ export async function approveSubscriptionRequest(requestId: number) {
 
   return {
     success: true,
-    message: `تم إنشاء الشركة وتفعيلها بنجاح. تم إرسال بريد إلكتروني للعميل يحتوي على بيانات الدخول.`,
+    message: `تم إنشاء الشركة وتفعيلها بنجاح.`,
+    tenantId: newTenantId,
     adminEmail: request.email,
-    generatedPassword: null, // Don't return password if email is successful
+    generatedPassword: adminPassword, 
   };
 }
 
