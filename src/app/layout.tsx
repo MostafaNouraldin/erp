@@ -74,7 +74,8 @@ export default async function RootLayout({
     };
   } else {
     // For public pages like login/subscribe, fetch default system branding if needed.
-    const settings = await getCompanySettingsForLayout('T001'); // Assume T001 is a base/default tenant for branding
+    // Assuming 'T001' is a special tenant for system-wide branding or fetch from a different source.
+    const settings = await getCompanySettingsForLayout('T001'); // This might need to be a fixed/system config
     companySettings = {
         name: settings?.companyName || "نسيج للحلول المتكاملة",
         logo: settings?.companyLogo || "/default-logo.png"

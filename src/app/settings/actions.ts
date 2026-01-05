@@ -250,8 +250,7 @@ export async function saveCompanySettings(tenantId: string, settings: SettingsFo
     }
   });
 
-  revalidatePath('/settings', 'layout');
-  revalidatePath('/', 'layout'); // Revalidate layout to update company name/logo
+  revalidatePath('/', 'layout'); 
   return { success: true };
 }
 

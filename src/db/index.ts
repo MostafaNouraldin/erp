@@ -1,6 +1,6 @@
 
 import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import postgres, { Sql } from 'postgres';
 import * as schema from './schema';
 import * as dotenv from 'dotenv';
 
@@ -13,23 +13,36 @@ if (!mainDatabaseUrl) {
   throw new Error("DATABASE_URL environment variable is not set.");
 }
 
+// Extend the global type to include our custom client property
+declare global {
+  // eslint-disable-next-line no-var
+  var postgresClient: Sql | undefined;
+}
+
+let client: Sql;
+
+// This is the correct pattern for managing DB connections in a serverless/edge environment like Vercel with Next.js.
+// We cache the connection on `globalThis` to avoid creating a new connection on every hot-reload in development.
+if (process.env.NODE_ENV === 'production') {
+  client = postgres(mainDatabaseUrl);
+} else {
+  if (!globalThis.postgresClient) {
+    globalThis.postgresClient = postgres(mainDatabaseUrl);
+  }
+  client = globalThis.postgresClient;
+}
+
+const db = drizzle(client, { schema });
+
 /**
- * Creates a new Drizzle instance for a given tenant.
- * This function now creates a new connection on each call with a short idle timeout.
- * This pattern is more robust for serverless environments with low connection limits (like free Supabase tiers),
- * as it ensures connections are closed quickly after being used.
- *
- * @param tenantId The ID of the tenant. This is currently unused but kept for API compatibility.
- * @returns A Drizzle instance connected to the database.
+ * Connects to the tenant's database. In our single-DB architecture, this
+ * simply returns the main database connection.
+ * @param tenantId - The ID of the tenant (currently unused in this architecture).
+ * @returns An object containing the Drizzle instance.
  */
 export async function connectToTenantDb(tenantId?: string | null) {
-  // We will create a new client each time to ensure connections are not held open across invocations
-  // in a serverless environment. The `idle_timeout` is crucial for free tiers.
-  const client = postgres(mainDatabaseUrl, {
-    idle_timeout: 10, // Automatically close idle connections after 10 seconds
-    max: 1, // Restrict to a single connection per instance, crucial for Supabase free tier
-  });
-  
-  const db = drizzle(client, { schema });
+  // In our current single-DB architecture, we don't need to switch connections.
+  // We simply return the globally managed Drizzle instance.
+  // The postgres.js driver handles connection pooling automatically.
   return { db };
 }
