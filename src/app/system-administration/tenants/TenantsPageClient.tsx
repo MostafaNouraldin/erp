@@ -6,9 +6,9 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Building2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Building2, Briefcase, RefreshCw, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DatePickerWithPresets } from "@/components/date-picker-with-presets";
@@ -20,8 +20,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import type { Tenant, TenantSubscribedModule, Module } from '@/types/saas';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { addTenant, updateTenant, deleteTenant } from './actions';
+import { addTenant, updateTenant, deleteTenant, getTenantRenewalRequests, manuallyRenewSubscription } from './actions';
 import { Textarea } from '@/components/ui/textarea';
+import type { SubscriptionRequest } from '../subscription-requests/SubscriptionRequestsClient';
+import { useCurrency } from '@/hooks/use-currency';
 
 const tenantSchema = z.object({
   id: z.string().optional(),
@@ -68,10 +70,17 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
   const [tenants, setTenants] = useState<Tenant[]>(initialData.tenants);
   const [tenantModuleSubscriptions, setTenantModuleSubscriptions] = useState<Record<string, TenantSubscribedModule[]>>(initialData.tenantModuleSubscriptions);
   const [allAvailableModules] = useState<Module[]>(initialData.allAvailableModules);
+  const [renewalRequests, setRenewalRequests] = useState<SubscriptionRequest[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
 
   const [showManageTenantDialog, setShowManageTenantDialog] = useState(false);
   const [tenantToEdit, setTenantToEdit] = useState<TenantFormValues | null>(null);
+  const [showManageSubscriptionDialog, setShowManageSubscriptionDialog] = useState(false);
+  const [selectedTenantForSub, setSelectedTenantForSub] = useState<Tenant | null>(null);
+  const [isRenewing, setIsRenewing] = useState(false);
+
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
 
   const form = useForm<TenantFormValues>({
     resolver: zodResolver(tenantSchema),
@@ -148,6 +157,20 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
     setShowManageTenantDialog(true);
   };
 
+  const openSubscriptionDialog = async (tenant: Tenant) => {
+    setSelectedTenantForSub(tenant);
+    setShowManageSubscriptionDialog(true);
+    setIsLoadingRequests(true);
+    try {
+        const requests = await getTenantRenewalRequests(tenant.id);
+        setRenewalRequests(requests as SubscriptionRequest[]);
+    } catch (e) {
+        toast({ title: "خطأ", description: "لم يتم تحميل طلبات التجديد.", variant: "destructive"});
+    } finally {
+        setIsLoadingRequests(false);
+    }
+  };
+
 
   const handleTenantSubmit = async (values: TenantFormValues) => {
     try {
@@ -171,6 +194,19 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
       toast({ title: "تم الحذف", description: `تم حذف الشركة ${tenantId}.`, variant: "destructive" });
     } catch (e) {
        toast({ title: "خطأ", description: "لم يتم حذف الشركة.", variant: "destructive" });
+    }
+  };
+
+  const handleManualRenewal = async (tenantId: string, duration: 'monthly' | 'yearly') => {
+    setIsRenewing(true);
+    try {
+        await manuallyRenewSubscription(tenantId, duration);
+        toast({ title: "تم التجديد", description: `تم تجديد اشتراك الشركة بنجاح.` });
+        setShowManageSubscriptionDialog(false); // Close dialog on success
+    } catch (e: any) {
+        toast({ title: "خطأ في التجديد", description: e.message, variant: "destructive" });
+    } finally {
+        setIsRenewing(false);
     }
   };
 
@@ -356,6 +392,9 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
                       {tenantModuleSubscriptions[tenant.id!]?.filter(s => s.subscribed).map(s => allAvailableModules.find(m=>m.key === s.moduleId)?.name).join(', ') || 'لا يوجد'}
                     </TableCell>
                     <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="إدارة الاشتراك" onClick={() => openSubscriptionDialog(tenant)}>
+                        <Briefcase className="h-4 w-4" />
+                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent" title="تعديل" onClick={() => openEditDialog(tenant)}>
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -378,6 +417,50 @@ export default function TenantsPageClient({ initialData }: ClientProps) {
           </div>
         </CardContent>
       </Card>
+      
+      <Dialog open={showManageSubscriptionDialog} onOpenChange={(isOpen) => { if (!isOpen) setSelectedTenantForSub(null); setShowManageSubscriptionDialog(isOpen);}}>
+        <DialogContent className="sm:max-w-xl" dir="rtl">
+            <DialogHeader>
+                <DialogTitle>إدارة اشتراك: {selectedTenantForSub?.name}</DialogTitle>
+                <DialogDescriptionComponent>مراجعة طلبات التجديد وتمديد الاشتراك يدويًا.</DialogDescriptionComponent>
+            </DialogHeader>
+            <div className="py-4 space-y-6">
+                <Card>
+                    <CardHeader><CardTitle className="text-base">طلبات التجديد والترقية</CardTitle></CardHeader>
+                    <CardContent>
+                        {isLoadingRequests ? (<p>جارِ تحميل الطلبات...</p>) :
+                         renewalRequests.length > 0 ? (
+                            <Table>
+                                <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>المبلغ</TableHead><TableHead>الحالة</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {renewalRequests.map(req => (
+                                        <TableRow key={req.id}><TableCell>{new Date(req.createdAt).toLocaleDateString('ar-SA')}</TableCell><TableCell>{formatCurrency(parseFloat(req.totalAmount)).amount}</TableCell><TableCell><Badge variant={req.status === 'approved' ? 'default' : 'secondary'}>{req.status}</Badge></TableCell></TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                         ) : (<p className="text-sm text-muted-foreground text-center">لا توجد طلبات تجديد أو ترقية حالية من هذا العميل.</p>)}
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader><CardTitle className="text-base">تمديد الاشتراك يدويًا</CardTitle></CardHeader>
+                    <CardContent className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+                        <p className="text-sm">تمديد الاشتراك لمدة:</p>
+                        <div className="flex gap-2">
+                             <Button onClick={() => handleManualRenewal(selectedTenantForSub!.id, 'monthly')} disabled={isRenewing}>
+                                {isRenewing ? <Loader2 className="h-4 w-4 animate-spin"/> : "شهر واحد"}
+                            </Button>
+                            <Button onClick={() => handleManualRenewal(selectedTenantForSub!.id, 'yearly')} disabled={isRenewing}>
+                                {isRenewing ? <Loader2 className="h-4 w-4 animate-spin"/> : "سنة واحدة"}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+            <DialogFooter>
+                <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

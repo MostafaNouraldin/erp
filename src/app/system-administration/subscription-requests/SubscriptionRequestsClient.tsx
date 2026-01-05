@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { approveSubscriptionRequest, rejectSubscriptionRequest, getSubscriptionRequestDetails } from './actions';
 import { useCurrency } from '@/hooks/use-currency';
 
-interface SubscriptionRequest {
+export interface SubscriptionRequest {
   id: number;
   companyName: string;
   email: string;
@@ -211,7 +211,6 @@ export default function SubscriptionRequestsClient({ initialData }: ClientProps)
                 <div><strong>الوحدات المطلوبة:</strong> {Array.isArray(selectedRequest.selectedModules) ? selectedRequest.selectedModules.join(', ') : ''}</div>
                 <div><strong>دورة الفوترة:</strong> {selectedRequest.billingCycle === 'monthly' ? 'شهري' : 'سنوي'}</div>
                 <div className="font-semibold"><strong>المبلغ الإجمالي:</strong> <span dangerouslySetInnerHTML={{ __html: formatCurrency(parseFloat(selectedRequest.totalAmount)) }}></span></div>
-                <div><strong>طريقة الدفع:</strong> {selectedRequest.paymentMethod}</div>
                 <div>
                     <p className="font-semibold">إثبات الدفع:</p>
                     {isLoadingDetails ? (

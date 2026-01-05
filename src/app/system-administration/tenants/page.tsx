@@ -20,6 +20,7 @@ const allAvailableModules: Module[] = [
   { id: "MOD011", key: "Settings", name: "الإعدادات العامة", description: "إعدادات النظام الأساسية", isRentable: false, prices: { SAR: { monthly: 0, yearly: 0 }, EGP: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
   { id: "MOD012", key: "Help", name: "المساعدة", description: "مركز المساعدة والدعم", isRentable: false, prices: { SAR: { monthly: 0, yearly: 0 }, EGP: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
   { id: "MOD013", key: "SystemAdministration", name: "إدارة النظام", description: "إدارة الشركات والاشتراكات", isRentable: false, prices: { SAR: { monthly: 0, yearly: 0 }, EGP: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
+  { id: "MOD014", key: "Subscription", name: "الاشتراك", description: "إدارة الاشتراك والفوترة", isRentable: false, prices: { SAR: { monthly: 0, yearly: 0 }, EGP: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
 ];
 
 

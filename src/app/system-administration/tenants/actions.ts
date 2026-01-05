@@ -2,10 +2,11 @@
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { tenants, tenantModuleSubscriptions, users } from '@/db/schema';
+import { tenants, tenantModuleSubscriptions, users, subscriptionRenewalRequests } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { createNotification } from '@/lib/notifications';
 
 const tenantSchema = z.object({
   id: z.string().optional(),
@@ -165,4 +166,53 @@ export async function deleteTenant(tenantId: string) {
         await tx.delete(tenants).where(eq(tenants.id, tenantId));
     });
     revalidatePath('/system-administration/tenants');
+}
+
+export async function getTenantRenewalRequests(tenantId: string) {
+    const db = await getMainDb();
+    const requests = await db.query.subscriptionRenewalRequests.findMany({
+        where: eq(subscriptionRenewalRequests.tenantId, tenantId),
+        orderBy: (requests, { desc }) => [desc(requests.createdAt)],
+    });
+    return requests;
+}
+
+export async function manuallyRenewSubscription(tenantId: string, duration: 'monthly' | 'yearly') {
+    const db = await getMainDb();
+    const tenant = await db.query.tenants.findFirst({
+        where: eq(tenants.id, tenantId),
+    });
+
+    if (!tenant) {
+        throw new Error("لم يتم العثور على الشركة.");
+    }
+    
+    // Start from today if subscription is expired, otherwise from the end date
+    const today = new Date();
+    let currentEndDate = tenant.subscriptionEndDate ? new Date(tenant.subscriptionEndDate) : today;
+    if (currentEndDate < today) {
+        currentEndDate = today;
+    }
+
+    let newEndDate = new Date(currentEndDate);
+    if (duration === 'monthly') {
+        newEndDate.setMonth(newEndDate.getMonth() + 1);
+    } else {
+        newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+    }
+
+    await db.update(tenants).set({ subscriptionEndDate: newEndDate }).where(eq(tenants.id, tenantId));
+    
+    // Find the admin user for this tenant to send notification
+    const tenantAdmin = await db.query.users.findFirst({
+        where: eq(users.tenantId, tenantId)
+        // In a more complex system, you'd find the user with the admin role for this tenant
+    });
+
+    if (tenantAdmin) {
+        await createNotification(tenantAdmin.id, `تم تمديد اشتراك شركتكم بنجاح حتى تاريخ ${newEndDate.toLocaleDateString('ar-SA')}.`, '/subscription');
+    }
+
+    revalidatePath('/system-administration/tenants');
+    revalidatePath('/subscription'); // Revalidate the tenant's own subscription page
 }
