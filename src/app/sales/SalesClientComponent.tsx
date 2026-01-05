@@ -24,8 +24,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, addQuotation, updateQuotation, deleteQuotation, addSalesOrder, updateSalesOrder, deleteSalesOrder, addSalesReturn, approveSalesReturn, deleteSalesReturn } from './actions';
-import { addCustomer, updateCustomer, deleteCustomer } from '../customers/actions';
+import { addSalesInvoice, updateSalesInvoice, deleteSalesInvoice, addQuotation, updateQuotation, deleteQuotation, addSalesOrder, updateSalesOrder, deleteSalesOrder, addSalesReturn, approveSalesReturn, deleteSalesReturn, addCustomer, updateCustomer, deleteCustomer } from './actions';
 import type { Product } from '@/db/schema';
 import { useCurrency } from '@/hooks/use-currency';
 
@@ -848,6 +847,70 @@ useEffect(() => {
                 </CardContent>
             </Card>
         </TabsContent>
+         <TabsContent value="customers">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>قائمة العملاء</CardTitle>
+                <Dialog open={showManageCustomerDialog} onOpenChange={(isOpen) => { setShowManageCustomerDialog(isOpen); if(!isOpen) setCustomerToEdit(null);}}>
+                    <DialogTrigger asChild>
+                      <Button className="shadow-md" onClick={() => {setCustomerToEdit(null); customerForm.reset(); setShowManageCustomerDialog(true);}}>
+                        <PlusCircle className="me-2 h-4 w-4" /> إضافة عميل جديد
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-lg" dir="rtl">
+                      <DialogHeader><DialogTitle>{customerToEdit ? 'تعديل بيانات عميل' : 'إضافة عميل جديد'}</DialogTitle></DialogHeader>
+                      <Form {...customerForm}>
+                        <form onSubmit={customerForm.handleSubmit(handleCustomerSubmit)} className="space-y-4 py-4">
+                            <FormField control={customerForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>اسم العميل</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={customerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={customerForm.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                            </div>
+                            <FormField control={customerForm.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={customerForm.control} name="vatNumber" render={({ field }) => ( <FormItem><FormLabel>الرقم الضريبي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField control={customerForm.control} name="creditLimit" render={({ field }) => ( <FormItem><FormLabel>الحد الائتماني</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                            </div>
+                            <DialogFooter>
+                              <Button type="submit">{customerToEdit ? "حفظ التعديلات" : "إضافة العميل"}</Button>
+                              <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                            </DialogFooter>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader><TableRow><TableHead>الاسم</TableHead><TableHead>البريد الإلكتروني</TableHead><TableHead>الهاتف</TableHead><TableHead>الرصيد الحالي</TableHead><TableHead className="text-center">إجراءات</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {customers.map((customer) => (
+                    <TableRow key={customer.id}>
+                      <TableCell>{customer.name}</TableCell><TableCell>{customer.email}</TableCell><TableCell>{customer.phone}</TableCell>
+                      <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(customer.balance).amount + ' ' + formatCurrency(customer.balance).symbol }}></TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" onClick={() => handleViewCustomerDetails(customer)}><Eye className="h-4 w-4"/></Button>
+                        <Button variant="ghost" size="icon" onClick={() => { setCustomerToEdit(customer); setShowManageCustomerDialog(true); }}><Edit className="h-4 w-4"/></Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl">
+                                <AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف العميل "{customer.name}"؟</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteCustomer(customer.id)}>حذف</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
         {/* Other tabs omitted for brevity */}
       </Tabs>
       <Dialog open={showCustomerDetailsDialog} onOpenChange={setShowCustomerDetailsDialog}>
@@ -908,4 +971,3 @@ useEffect(() => {
     </div>
   );
 }
-
