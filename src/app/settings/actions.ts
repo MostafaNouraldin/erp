@@ -6,6 +6,9 @@ import { users, roles, companySettings, departments, jobTitles, leaveTypes, allo
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+
 // Note: In a real app, you'd use a library like 'bcrypt' for password hashing
 // For this environment, we'll store it as plain text which is NOT secure.
 // const bcrypt = require('bcrypt');
@@ -204,14 +207,41 @@ export async function saveCompanySettings(tenantId: string, settings: SettingsFo
   const db = await getDb(tenantId);
   const mainDb = await getDb(); // For updating tenants table
 
+  const logoDataUri = settings.companyLogo;
+  let logoPath: string | undefined = undefined;
+
+  // Handle logo upload: save as file, store path
+  if (logoDataUri && logoDataUri.startsWith('data:image')) {
+    try {
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        await fs.mkdir(uploadsDir, { recursive: true });
+
+        const fileExtension = logoDataUri.substring(logoDataUri.indexOf('/') + 1, logoDataUri.indexOf(';'));
+        const logoFileName = `logo_${tenantId}.${fileExtension}`;
+        const logoFilePath = path.join(uploadsDir, logoFileName);
+        
+        const base64Data = logoDataUri.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        await fs.writeFile(logoFilePath, buffer);
+        logoPath = `/uploads/${logoFileName}`; // Store the public path
+    } catch (error) {
+        console.error("Failed to save company logo:", error);
+        throw new Error("حدث خطأ أثناء حفظ شعار الشركة.");
+    }
+  }
+
+  const settingsToSave = { ...settings, companyLogo: logoPath || settings.companyLogo };
+
+
   await mainDb.transaction(async (tx) => {
     // This action needs to happen in the specific tenant's DB
     const tenantDb = (await connectToTenantDb(tenantId)).db;
     await tenantDb.insert(companySettings)
-      .values({ id: tenantId, settings })
+      .values({ id: tenantId, settings: settingsToSave })
       .onConflictDoUpdate({
         target: companySettings.id,
-        set: { settings },
+        set: { settings: settingsToSave },
       });
 
     // This action happens in the main DB
@@ -220,10 +250,11 @@ export async function saveCompanySettings(tenantId: string, settings: SettingsFo
     }
   });
 
-  revalidatePath('/settings');
+  revalidatePath('/settings', 'layout');
   revalidatePath('/', 'layout'); // Revalidate layout to update company name/logo
   return { success: true };
 }
+
 
 // --- HR Settings Actions ---
 export async function addDepartment(values: Department) {

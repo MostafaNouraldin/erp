@@ -33,12 +33,12 @@ function getTenantIdFromCookie(): string | null {
     if (!cookieHeader) return null;
 
     const cookies = cookieHeader.split('; ');
-    const authCookie = cookies.find(c => c.startsWith('auth='));
-
+    const authCookie = cookies.find(c => c.startsWith('erpUser='));
+    
     if (authCookie) {
-        const token = authCookie.split('=')[1];
         try {
-            const decoded = decodeJwt(token) as { tenantId?: string };
+            const token = authCookie.split('=')[1];
+            const decoded = JSON.parse(decodeURIComponent(token));
             return decoded?.tenantId || null;
         } catch (e) {
             return null;
@@ -65,20 +65,19 @@ export default async function RootLayout({
   const tenantId = getTenantIdFromCookie();
   
   if (isSuperAdmin) {
-    companySettings = { name: "نسيج للحلول المتكاملة", logo: "" };
+    companySettings = { name: "نسيج للحلول المتكاملة", logo: "/default-logo.png" }; // Use a default system logo path
   } else if (tenantId) {
     const settings = await getCompanySettingsForLayout(tenantId);
     companySettings = {
         name: settings?.companyName || "اسم الشركة",
-        logo: settings?.companyLogo || ""
+        logo: settings?.companyLogo || "/default-logo.png"
     };
   } else {
     // For public pages like login/subscribe, fetch default system branding if needed.
-    // Assuming 'T001' is the main tenant or a template tenant for system branding.
-    const settings = await getCompanySettingsForLayout('T001');
+    const settings = await getCompanySettingsForLayout('T001'); // Assume T001 is a base/default tenant for branding
     companySettings = {
         name: settings?.companyName || "نسيج للحلول المتكاملة",
-        logo: settings?.companyLogo || ""
+        logo: settings?.companyLogo || "/default-logo.png"
     };
   }
 

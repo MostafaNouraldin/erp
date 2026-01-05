@@ -10,11 +10,13 @@ interface AppLogoProps {
 
 export default function AppLogo({ className, logoUrl, companyName }: AppLogoProps) {
   const nameToShow = companyName || "نسيج للحلول المتكاملة";
+  // Add a cache-busting query parameter to ensure the new logo is loaded
+  const finalLogoUrl = logoUrl ? `${logoUrl}?v=${new Date().getTime()}` : null;
 
   return (
     <div className={cn("flex flex-row items-center justify-start gap-3", className)}>
-      {logoUrl ? (
-        <Image src={logoUrl} alt={nameToShow} width={40} height={40} className="h-10 w-10 object-contain" />
+      {finalLogoUrl ? (
+        <Image src={finalLogoUrl} alt={nameToShow} width={40} height={40} className="h-10 w-10 object-contain" unoptimized />
       ) : (
         <Building className="h-10 w-10 text-primary" />
       )}
