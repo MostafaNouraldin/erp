@@ -26,15 +26,15 @@ import { Info } from "lucide-react";
 
 interface AppLayoutClientProps {
   children: React.ReactNode;
+  companySettings: { name: string; logo: string } | null;
 }
 
-export default function AppLayoutClient({ children }: AppLayoutClientProps) {
+export default function AppLayoutClient({ children, companySettings }: AppLayoutClientProps) {
     const auth = useAuth();
     const pathname = usePathname();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
-    const [companySettings, setCompanySettings] = useState<{ name: string; logo: string } | null>(null);
-
+    
     const isPublicPage = pathname === '/login' || pathname === '/subscribe';
     const isSetupPage = pathname === '/settings';
     const isSubscriptionPage = pathname === '/subscription';
@@ -102,26 +102,7 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
     }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router, isPublicPage, isSetupPage]);
 
 
-    useEffect(() => {
-        const fetchSettings = async () => {
-            if (auth.isAuthenticated && auth.user?.tenantId && !auth.isSuperAdmin) {
-                const settings = await getCompanySettingsForLayout(auth.user.tenantId);
-                setCompanySettings({
-                    name: settings?.companyName || "اسم الشركة",
-                    logo: settings?.companyLogo || ""
-                });
-            } else if (auth.isSuperAdmin) {
-                 setCompanySettings({ name: "نسيج للحلول المتكاملة", logo: "" });
-            }
-        };
-
-        if(!auth.isLoading) {
-            fetchSettings();
-        }
-    }, [auth.isAuthenticated, auth.user, auth.isSuperAdmin, auth.isLoading]);
-
-
-    if (!mounted || auth.isLoading || (auth.isAuthenticated && !isPublicPage && !companySettings)) {
+    if (!mounted || auth.isLoading) {
         return (
             <div className="flex min-h-screen w-full bg-background">
                 <div className="w-64 border-r p-4 hidden md:block">

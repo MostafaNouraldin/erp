@@ -6,7 +6,14 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/currency-context";
 import { AuthProvider } from "@/hooks/auth-context";
-import AppLayoutClient from './layout-client'; // Import the new client component
+import AppLayoutClient from './layout-client';
+import { headers } from 'next/headers';
+import { getCompanySettingsForLayout } from './actions';
+import { connectToTenantDb } from '@/db';
+import { users } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { decode } from 'jsonwebtoken';
+
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -19,13 +26,59 @@ export const metadata: Metadata = {
     viewport: "width=device-width, initial-scale=1",
 };
 
-export default function RootLayout({
+// Helper function to extract tenantId from cookies
+function getTenantIdFromCookie(): string | null {
+    const headersList = headers();
+    const cookieHeader = headersList.get('cookie');
+    if (!cookieHeader) return null;
+
+    const cookies = cookieHeader.split('; ');
+    const authCookie = cookies.find(c => c.startsWith('auth='));
+
+    if (authCookie) {
+        const token = authCookie.split('=')[1];
+        try {
+            const decoded = decode(token) as { tenantId?: string };
+            return decoded?.tenantId || null;
+        } catch (e) {
+            return null;
+        }
+    }
+    return null;
+}
+
+// A helper function to check if the logged-in user is a super admin
+// In a real app, this would be more robust, likely involving decoding a JWT or session cookie
+function isSuperAdminRequest(): boolean {
+    const headersList = headers();
+    // This is a placeholder. In a real scenario, you'd inspect a session or token.
+    // We'll check for a hypothetical cookie or header that indicates super admin status.
+    const userCookie = headersList.get('cookie') || '';
+    return userCookie.includes('"roleId":"ROLE_SUPER_ADMIN"');
+}
+
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Data fetching is now moved to the Client Component via a server action call inside it.
-  // This keeps the root layout clean and static.
+  let companySettings: { name: string; logo: string } | null = null;
+  const isSuperAdmin = isSuperAdminRequest();
+  
+  if (isSuperAdmin) {
+    companySettings = { name: "نسيج للحلول المتكاملة", logo: "" };
+  } else {
+    const tenantId = getTenantIdFromCookie();
+    if (tenantId) {
+        const settings = await getCompanySettingsForLayout(tenantId);
+        companySettings = {
+            name: settings?.companyName || "اسم الشركة",
+            logo: settings?.companyLogo || ""
+        };
+    }
+  }
+
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body className={`${cairo.variable} font-sans antialiased bg-secondary/50`}>
@@ -37,7 +90,7 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               <CurrencyProvider>
-                <AppLayoutClient>
+                <AppLayoutClient companySettings={companySettings}>
                     {children}
                 </AppLayoutClient>
               </CurrencyProvider>
