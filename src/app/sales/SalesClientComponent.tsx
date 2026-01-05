@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -989,7 +988,86 @@ useEffect(() => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={showPrintInvoiceDialog} onOpenChange={setShowPrintInvoiceDialog}>
+            <DialogContent className="max-w-4xl print-hidden" dir="rtl">
+                <DialogHeader>
+                    <DialogTitle>طباعة فاتورة ضريبية</DialogTitle>
+                </DialogHeader>
+                {selectedInvoiceForPrint && isClient && (
+                    <div className="printable-area bg-background text-foreground font-cairo text-sm p-8" data-ai-hint="tax invoice">
+                        <header className="flex justify-between items-start pb-4 mb-6 border-b">
+                            <div>
+                                <AppLogo />
+                                <p className="text-xs">شركة المستقبل لتقنية المعلومات</p>
+                                <p className="text-xs">الرياض - المملكة العربية السعودية</p>
+                                <p className="text-xs">الرقم الضريبي: 300000000000003</p>
+                            </div>
+                            <div className="text-left">
+                                <h2 className="text-2xl font-bold">فاتورة ضريبية</h2>
+                                <p className="text-xs">TAX INVOICE</p>
+                                <p className="mt-2"><strong>رقم الفاتورة:</strong> {selectedInvoiceForPrint.id}</p>
+                                <p><strong>تاريخ الفاتورة:</strong> {formatDate(selectedInvoiceForPrint.date)}</p>
+                                <p><strong>تاريخ الاستحقاق:</strong> {formatDate(selectedInvoiceForPrint.dueDate)}</p>
+                            </div>
+                        </header>
+                        <section className="mb-6">
+                            <h3 className="font-semibold border-b pb-1 mb-2">بيانات العميل</h3>
+                            <p><strong>الاسم:</strong> {selectedInvoiceForPrint.customerName}</p>
+                            <p><strong>العنوان:</strong> {selectedInvoiceForPrint.customerAddress || "غير محدد"}</p>
+                            <p><strong>الرقم الضريبي:</strong> {selectedInvoiceForPrint.customerVatNumber || "غير محدد"}</p>
+                        </section>
+                        <section>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>الصنف</TableHead>
+                                        <TableHead>الكمية</TableHead>
+                                        <TableHead>سعر الوحدة</TableHead>
+                                        <TableHead className="text-left">الإجمالي</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {selectedInvoiceForPrint.items.map((item, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{item.description}</TableCell>
+                                            <TableCell>{item.quantity}</TableCell>
+                                            <TableCell dangerouslySetInnerHTML={{ __html: formatCurrency(item.unitPrice).amount + " " + formatCurrency(item.unitPrice).symbol }}></TableCell>
+                                            <TableCell className="text-left" dangerouslySetInnerHTML={{ __html: formatCurrency(item.total).amount + " " + formatCurrency(item.total).symbol }}></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </section>
+                        <section className="mt-6 flex justify-end">
+                            <div className="w-full max-w-sm space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span>المجموع الفرعي (غير شامل الضريبة):</span>
+                                    <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedInvoiceForPrint.subTotalForPrint).amount + " " + formatCurrency(selectedInvoiceForPrint.subTotalForPrint).symbol }}></span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>ضريبة القيمة المضافة (15%):</span>
+                                    <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedInvoiceForPrint.vatAmountForPrint).amount + " " + formatCurrency(selectedInvoiceForPrint.vatAmountForPrint).symbol }}></span>
+                                </div>
+                                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                                    <span>الإجمالي المستحق:</span>
+                                    <span dangerouslySetInnerHTML={{ __html: formatCurrency(selectedInvoiceForPrint.numericTotalAmount).amount + " " + formatCurrency(selectedInvoiceForPrint.numericTotalAmount).symbol }}></span>
+                                </div>
+                            </div>
+                        </section>
+                        <footer className="mt-10 pt-4 border-t text-xs text-center text-muted-foreground">
+                            <p>المبلغ كتابة: {convertAmountToWords(selectedInvoiceForPrint.numericTotalAmount)}</p>
+                            <p className="mt-4">هذا المستند معتمد من نظام المستقبل ERP</p>
+                        </footer>
+                    </div>
+                )}
+                <DialogFooter className="print-hidden">
+                    <Button onClick={() => window.print()}><Printer className="me-2 h-4 w-4" /> طباعة</Button>
+                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
 
+    
