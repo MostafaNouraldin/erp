@@ -38,84 +38,10 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
     const isPublicPage = pathname === '/login' || pathname === '/subscribe';
     const isSetupPage = pathname === '/settings';
     const isSubscriptionPage = pathname === '/subscription';
-
-    useEffect(() => {
-        setMounted(true);
-        if (typeof document !== 'undefined') {
-            document.documentElement.lang = 'ar';
-            document.documentElement.dir = 'rtl';
-        }
-    }, []);
-
-    useEffect(() => {
-        if (!auth.isLoading) {
-            if (auth.isAuthenticated && auth.user) {
-                if (isPublicPage) {
-                    router.replace('/');
-                } else if (auth.user.isConfigured === false && !isSetupPage) {
-                    router.replace('/settings');
-                }
-            } else if (!isPublicPage) {
-                router.replace('/login');
-            }
-        }
-    }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router, isPublicPage, isSetupPage]);
-
-
-    useEffect(() => {
-        const fetchSettings = async () => {
-            if (auth.isAuthenticated && auth.user?.tenantId && !auth.isSuperAdmin) {
-                const settings = await getCompanySettingsForLayout(auth.user.tenantId);
-                setCompanySettings({
-                    name: settings?.companyName || "اسم الشركة",
-                    logo: settings?.companyLogo || ""
-                });
-            } else if (auth.isSuperAdmin) {
-                 setCompanySettings({ name: "نسيج للحلول المتكاملة", logo: "" });
-            }
-        };
-
-        if(!auth.isLoading) {
-            fetchSettings();
-        }
-    }, [auth.isAuthenticated, auth.user, auth.isSuperAdmin, auth.isLoading]);
-
-
-    if (!mounted || auth.isLoading || (auth.isAuthenticated && !companySettings)) {
-        return (
-            <div className="flex min-h-screen w-full bg-background">
-                <div className="w-64 border-r p-4 hidden md:block">
-                    <Skeleton className="h-10 w-full mb-4" />
-                    <Skeleton className="h-8 w-full mb-2" />
-                    <Skeleton className="h-8 w-full mb-2" />
-                    <Skeleton className="h-8 w-5/6" />
-                </div>
-                <div className="flex-1 p-6">
-                    <Skeleton className="h-12 w-full mb-6" />
-                    <Skeleton className="h-64 w-full" />
-                </div>
-            </div>
-        );
-    }
-    
-    // If user is not authenticated and not on a public page, show login
-    if (!auth.isAuthenticated && !isPublicPage) {
-        return <LoginPage />;
-    }
-    
-    // While redirecting, show nothing to prevent flashes of content
-    if ((auth.isAuthenticated && isPublicPage) || (auth.isAuthenticated && auth.user?.isConfigured === false && !isSetupPage)) {
-        return null;
-    }
-    
-    // If user is not authenticated but on a public page, show the page content
-    if (!auth.isAuthenticated && isPublicPage) {
-        return <>{children}</>;
-    }
     
     const isNewUnconfiguredUser = auth.isAuthenticated && auth.user?.isConfigured === false;
     const isSubscriptionExpired = auth.isAuthenticated && !auth.isSuperAdmin && auth.user?.subscriptionEndDate && new Date(auth.user.subscriptionEndDate) < new Date();
-    
+
     const navItems = useMemo(() => allNavItems
       .map(item => {
         if (item.module === "SystemAdministration" && !auth.isSuperAdmin) return null;
@@ -153,6 +79,80 @@ export default function AppLayoutClient({ children }: AppLayoutClientProps) {
       .filter(Boolean), [auth, isNewUnconfiguredUser, isSubscriptionExpired]);
 
 
+    useEffect(() => {
+        setMounted(true);
+        if (typeof document !== 'undefined') {
+            document.documentElement.lang = 'ar';
+            document.documentElement.dir = 'rtl';
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!auth.isLoading) {
+            if (auth.isAuthenticated) {
+                if (isPublicPage) {
+                    router.replace('/');
+                } else if (auth.user?.isConfigured === false && !isSetupPage) {
+                    router.replace('/settings');
+                }
+            } else if (!isPublicPage) {
+                router.replace('/login');
+            }
+        }
+    }, [auth.isAuthenticated, auth.user, auth.isLoading, pathname, router, isPublicPage, isSetupPage]);
+
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            if (auth.isAuthenticated && auth.user?.tenantId && !auth.isSuperAdmin) {
+                const settings = await getCompanySettingsForLayout(auth.user.tenantId);
+                setCompanySettings({
+                    name: settings?.companyName || "اسم الشركة",
+                    logo: settings?.companyLogo || ""
+                });
+            } else if (auth.isSuperAdmin) {
+                 setCompanySettings({ name: "نسيج للحلول المتكاملة", logo: "" });
+            }
+        };
+
+        if(!auth.isLoading) {
+            fetchSettings();
+        }
+    }, [auth.isAuthenticated, auth.user, auth.isSuperAdmin, auth.isLoading]);
+
+
+    if (!mounted || auth.isLoading || (auth.isAuthenticated && !isPublicPage && !companySettings)) {
+        return (
+            <div className="flex min-h-screen w-full bg-background">
+                <div className="w-64 border-r p-4 hidden md:block">
+                    <Skeleton className="h-10 w-full mb-4" />
+                    <Skeleton className="h-8 w-full mb-2" />
+                    <Skeleton className="h-8 w-full mb-2" />
+                    <Skeleton className="h-8 w-5/6" />
+                </div>
+                <div className="flex-1 p-6">
+                    <Skeleton className="h-12 w-full mb-6" />
+                    <Skeleton className="h-64 w-full" />
+                </div>
+            </div>
+        );
+    }
+    
+    // If user is not authenticated and not on a public page, show login
+    if (!auth.isAuthenticated && !isPublicPage) {
+        return <LoginPage />;
+    }
+    
+    // While redirecting, show nothing to prevent flashes of content
+    if ((auth.isAuthenticated && isPublicPage) || (auth.isAuthenticated && auth.user?.isConfigured === false && !isSetupPage)) {
+        return null;
+    }
+    
+    // If user is not authenticated but on a public page, show the page content
+    if (!auth.isAuthenticated && isPublicPage) {
+        return <>{children}</>;
+    }
+    
     return (
         <SidebarProvider>
             <div className="flex min-h-screen w-full">
