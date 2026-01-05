@@ -1,9 +1,8 @@
 
-
 'use server';
 
 import { connectToTenantDb } from '@/db';
-import { users, roles, companySettings, departments, jobTitles, leaveTypes, allowanceTypes, deductionTypes, chartOfAccounts } from '@/db/schema';
+import { users, roles, companySettings, departments, jobTitles, leaveTypes, allowanceTypes, deductionTypes, chartOfAccounts, tenants } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -49,7 +48,7 @@ const accountMappingsSchema = z.object({
 
 
 const settingsSchema = z.object({
-  companyName: z.string().optional().default(''),
+  companyName: z.string().min(1, "اسم الشركة مطلوب"),
   companyAddress: z.string().optional().default(''),
   companyEmail: z.string().email({ message: "بريد إلكتروني غير صالح" }).optional().or(z.literal('')),
   companyPhone: z.string().optional().default(''),
@@ -205,15 +204,25 @@ export async function getCompanySettings(tenantId: string) {
   return result?.settings as SettingsFormValues | undefined;
 }
 
-export async function saveCompanySettings(tenantId: string, settings: SettingsFormValues) {
+export async function saveCompanySettings(tenantId: string, settings: SettingsFormValues, isFirstTime: boolean = false) {
   const db = await getDb();
-  await db.insert(companySettings)
-    .values({ id: tenantId, settings })
-    .onConflictDoUpdate({
-      target: companySettings.id,
-      set: { settings },
-    });
+  
+  await db.transaction(async (tx) => {
+    await tx.insert(companySettings)
+      .values({ id: tenantId, settings })
+      .onConflictDoUpdate({
+        target: companySettings.id,
+        set: { settings },
+      });
+
+    // If this is the first time setup, mark the tenant as configured
+    if (isFirstTime) {
+      await tx.update(tenants).set({ isConfigured: true }).where(eq(tenants.id, tenantId));
+    }
+  });
+
   revalidatePath('/settings');
+  revalidatePath('/', 'layout'); // Revalidate layout to update company name/logo
   return { success: true };
 }
 
@@ -302,7 +311,5 @@ export async function deleteDeductionType(id: string) {
     await db.delete(deductionTypes).where(eq(deductionTypes.id, id));
     revalidatePath('/settings');
 }
-
-    
 
     

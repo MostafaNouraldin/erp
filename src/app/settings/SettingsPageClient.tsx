@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -9,7 +8,7 @@ import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save, Briefcase, CalendarDays, HeartPulse, User, Mail, Upload } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Search, Users, Shield, Palette, Settings, Building, FileSliders, Save, Briefcase, CalendarDays, HeartPulse, User, Mail, Upload, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,6 +26,8 @@ import { availableCurrencies } from '@/contexts/currency-context';
 import { useCurrency } from '@/hooks/use-currency';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 
 const permissionGroups = {
@@ -84,7 +85,7 @@ const accountMappingsSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  companyName: z.string().optional(),
+  companyName: z.string().min(1, "اسم الشركة مطلوب"),
   companyAddress: z.string().optional(),
   companyEmail: z.string().email({ message: "بريد إلكتروني غير صالح" }).optional().or(z.literal('')),
   companyPhone: z.string().optional(),
@@ -115,6 +116,8 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ initialData }: SettingsPageProps) {
+    const { user, login } = useAuth();
+    const isNewTenant = user && !user.isConfigured;
     const [users, setUsers] = useState<UserFormValues[]>(initialData.users);
     const [roles, setRoles] = useState<Role[]>(initialData.roles);
     const [departments, setDepartments] = useState<Department[]>(initialData.departments);
@@ -222,7 +225,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
     const handleSettingsSubmit = async (values: SettingsFormValues) => {
         try {
-            await saveCompanySettings('T001', values); 
+            await saveCompanySettings('T001', values, isNewTenant); 
             toast({ title: "تم الحفظ", description: "تم حفظ الإعدادات العامة بنجاح." });
             if (values.defaultCurrency) {
               updateCurrency(values.defaultCurrency);
@@ -232,6 +235,10 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
               if(document) {
                 document.documentElement.style.setProperty('--primary', `${h} ${s}% ${l}%`);
               }
+            }
+             if (isNewTenant && user) {
+                // Update user in context to reflect configuration is complete
+                login({ ...user, isConfigured: true });
             }
         } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive"}); }
     }
@@ -317,7 +324,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
     return (
         <div className="container mx-auto py-6" dir="rtl">
-            <Card className="shadow-lg">
+            <Card className="shadow-lg mb-6">
                 <CardHeader>
                     <CardTitle className="flex items-center text-2xl md:text-3xl">
                         <Settings className="me-2 h-8 w-8 text-primary" />
@@ -326,6 +333,16 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                     <CardDescription>إدارة إعدادات النظام الرئيسية، المستخدمين، الصلاحيات، والمظهر.</CardDescription>
                 </CardHeader>
             </Card>
+
+             {isNewTenant && (
+                <Alert className="mb-6 border-blue-500 text-blue-800 dark:text-blue-300">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle className="font-bold">مرحباً بك في نظام المستقبل!</AlertTitle>
+                    <AlertDescription>
+                        هذه هي خطوتك الأولى. يرجى إكمال معلومات شركتك الأساسية في قسم "معلومات الشركة" أدناه لحفظ الإعدادات والبدء في استخدام النظام.
+                    </AlertDescription>
+                </Alert>
+            )}
 
             <Tabs defaultValue="company" className="w-full mt-6" dir="rtl">
                 <TabsList className="w-full mb-6 bg-muted p-1 rounded-md overflow-x-auto">

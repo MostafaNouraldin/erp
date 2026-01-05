@@ -2,7 +2,7 @@
 "use server";
 
 import { connectToTenantDb } from '@/db';
-import { users } from '@/db/schema';
+import { users, tenants } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -58,7 +58,17 @@ export async function login(values: z.infer<typeof loginSchema>): Promise<{ succ
 
     const tenantId = isSuperAdmin ? 'main' : values.tenantId || 'T001';
 
-    return { success: true, user: {...userToReturn, tenantId } };
+    let isConfigured = true;
+    if (!isSuperAdmin) {
+        const tenantInfo = await db.query.tenants.findFirst({
+            where: eq(tenants.id, tenantId),
+            columns: { isConfigured: true }
+        });
+        isConfigured = tenantInfo?.isConfigured ?? false;
+    }
+
+
+    return { success: true, user: {...userToReturn, tenantId, isConfigured } };
 
   } catch (error: any) {
     console.error("Login action error:", error);

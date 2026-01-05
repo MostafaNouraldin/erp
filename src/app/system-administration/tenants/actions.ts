@@ -16,6 +16,7 @@ const tenantSchema = z.object({
   vatNumber: z.string().optional(),
   country: z.string().optional(),
   isActive: z.boolean().default(true),
+  isConfigured: z.boolean().default(false),
   subscriptionEndDate: z.date().optional(),
   subscribedModules: z.array(z.object({
     moduleId: z.string(),
@@ -70,6 +71,7 @@ export async function addTenant(values: TenantFormValues) {
             address: values.address,
             vatNumber: values.vatNumber,
             isActive: values.isActive,
+            isConfigured: false, // Always false on creation
             subscriptionEndDate: effectiveSubscriptionEndDate,
             country: values.country,
         });

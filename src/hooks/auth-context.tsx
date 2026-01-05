@@ -1,8 +1,10 @@
+
 // src/hooks/auth-context.tsx
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import type { Role } from '@/types/saas'; // Import Role type
+import { tenants } from '@/db/schema';
 
 // Define a more specific user type if possible
 export interface User {
@@ -11,7 +13,8 @@ export interface User {
     roleId: string;
     email: string;
     avatar_url: string | null;
-    tenantId?: string; // Add tenantId to user object
+    tenantId?: string; 
+    isConfigured?: boolean; // Add isConfigured flag
 }
 
 interface AuthContextProps {

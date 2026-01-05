@@ -12,6 +12,7 @@ export const tenants = pgTable('tenants', {
     name: varchar('name', { length: 256 }).notNull(),
     email: varchar('email', { length: 256 }).notNull().unique(),
     isActive: boolean('is_active').default(true),
+    isConfigured: boolean('is_configured').default(false).notNull(), // New field
     subscriptionEndDate: timestamp('subscription_end_date'),
     createdAt: timestamp('created_at').defaultNow(),
     phone: varchar('phone', { length: 50 }),

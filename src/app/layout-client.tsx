@@ -15,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import LoginPage from './login/page';
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { allNavItems } from "@/lib/nav-links";
 import NotificationsPopover from "@/components/notifications-popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,6 +29,7 @@ interface AppLayoutClientProps {
 export default function AppLayoutClient({ children, companySettings }: AppLayoutClientProps) {
     const auth = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -38,6 +39,12 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
             document.documentElement.dir = 'rtl';
         }
     }, []);
+
+    useEffect(() => {
+        if (auth.isAuthenticated && !auth.user?.isConfigured && pathname !== '/settings') {
+            router.replace('/settings');
+        }
+    }, [auth.isAuthenticated, auth.user, pathname, router]);
 
     if (!mounted || auth.isLoading) {
         return (
@@ -75,8 +82,11 @@ export default function AppLayoutClient({ children, companySettings }: AppLayout
 
     const navItems = allNavItems
       .map(item => {
-        // CRITICAL SECURITY FIX: Explicitly hide System Administration for non-super admins.
         if (item.module === "SystemAdministration" && !auth.isSuperAdmin) {
+            return null;
+        }
+
+        if (auth.user && !auth.user.isConfigured && item.href !== '/settings') {
             return null;
         }
 
