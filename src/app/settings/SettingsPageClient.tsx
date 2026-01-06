@@ -61,7 +61,21 @@ const userSchema = z.object({
   status: z.enum(["نشط", "غير نشط"]).default("نشط"),
   password: z.string().optional(),
   avatar_url: z.string().url().optional().or(z.literal('')),
+}).refine(data => {
+    // If it's a new user (no id), password is required.
+    if (!data.id) {
+        return !!data.password && data.password.length >= 6;
+    }
+    // If it's an existing user, password can be empty, but if it's not, it must be at least 6 characters.
+    if (data.id && data.password && data.password.length > 0) {
+        return data.password.length >= 6;
+    }
+    return true;
+}, {
+    message: "كلمة المرور مطلوبة (6 أحرف على الأقل) للمستخدم الجديد. أو يجب أن تكون 6 أحرف على الأقل عند التغيير.",
+    path: ["password"],
 });
+
 
 const roleSchema = z.object({
     id: z.string().optional(),
@@ -202,17 +216,18 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
 
     const handleUserSubmit = async (values: UserFormValues) => {
-        if (!userToEdit && !values.password) {
-            userForm.setError("password", {type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد"});
-            return;
-        }
-
         try {
+            const dataToSend = { ...values };
+            // Don't send an empty password string for updates if it wasn't changed
+            if (userToEdit && (!dataToSend.password || dataToSend.password.length === 0)) {
+                delete dataToSend.password;
+            }
+
             if (userToEdit) {
-                await updateUser({ ...values, id: userToEdit.id! });
+                await updateUser({ ...dataToSend, id: userToEdit.id! });
                 toast({ title: "تم التعديل", description: "تم تعديل بيانات المستخدم." });
             } else {
-                await addUser(values);
+                await addUser(dataToSend);
                 toast({ title: "تمت الإضافة", description: "تمت إضافة المستخدم بنجاح." });
             }
             setShowManageUserDialog(false);
@@ -732,3 +747,5 @@ function hslToHex(hsl: string): string {
     const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
+
+    

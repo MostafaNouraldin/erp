@@ -150,7 +150,7 @@ export async function updateUser(values: UserFormValues) {
     };
 
     if (values.password && values.password.length > 0) {
-        updateData.passwordHash = `hashed_${values.password}`; // Unsafe placeholder
+        updateData.passwordHash = `hashed_${values.password}`;
     }
 
     await db.update(users).set(updateData).where(eq(users.id, values.id));
@@ -340,3 +340,5 @@ export async function deleteDeductionType(id: string) {
     await db.delete(deductionTypes).where(eq(deductionTypes.id, id));
     revalidatePath('/settings');
 }
+
+    
