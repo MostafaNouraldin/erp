@@ -218,11 +218,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
     const handleUserSubmit = async (values: UserFormValues) => {
         try {
             const dataToSend = { ...values };
-            // Don't send an empty password string for updates if it wasn't changed
-            if (userToEdit && (!dataToSend.password || dataToSend.password.length === 0)) {
-                delete dataToSend.password;
-            }
-
+            
             if (userToEdit) {
                 await updateUser({ ...dataToSend, id: userToEdit.id! });
                 toast({ title: "تم التعديل", description: "تم تعديل بيانات المستخدم." });
@@ -589,7 +585,7 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                     <DialogTrigger asChild><Button onClick={() => {setUserToEdit(null); userForm.reset(); setShowManageUserDialog(true);}}><PlusCircle className="me-2 h-4 w-4" /> إضافة مستخدم</Button></DialogTrigger>
                                     <DialogContent className="sm:max-w-lg" dir="rtl">
                                         <DialogHeader><DialogTitle>{userToEdit ? "تعديل مستخدم" : "إضافة مستخدم جديد"}</DialogTitle></DialogHeader>
-                                        <Form {...userForm}><form onSubmit={userForm.handleSubmit(handleUserSubmit)} className="space-y-4 py-4">
+                                        <Form {...userForm}><form id="userDialogForm" onSubmit={userForm.handleSubmit(handleUserSubmit)} className="space-y-4 py-4">
                                             <FormField control={userForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>الاسم الكامل</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
                                             <FormField control={userForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage/></FormItem> )}/>
                                             <FormField control={userForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>كلمة المرور {userToEdit ? '(اتركه فارغاً لعدم التغيير)' : ''}</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage/></FormItem> )}/>
@@ -598,8 +594,11 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                                     <FormControl><SelectTrigger><SelectValue placeholder="اختر دور المستخدم" /></SelectTrigger></FormControl>
                                                     <SelectContent>{roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}</SelectContent>
                                                 </Select><FormMessage/></FormItem> )}/>
-                                            <DialogFooter><Button type="submit">حفظ</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
                                         </form></Form>
+                                        <DialogFooter>
+                                            <Button type="submit" form="userDialogForm">حفظ</Button>
+                                            <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                                        </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
                             </div>
@@ -747,5 +746,7 @@ function hslToHex(hsl: string): string {
     const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
+
+    
 
     
