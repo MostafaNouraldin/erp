@@ -202,12 +202,25 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
 
     const handleUserSubmit = async (values: UserFormValues) => {
-        if (userToEdit && !values.password) { delete values.password; } else if (!userToEdit && !values.password) { userForm.setError("password", {type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد"}); return; }
+        // This logic is now simplified. The backend handles whether the password should be updated.
+        if (!userToEdit && !values.password) {
+            userForm.setError("password", {type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد"});
+            return;
+        }
+
         try {
-            if (userToEdit) { await updateUser({...values, id: userToEdit.id!}); toast({ title: "تم التعديل", description: "تم تعديل بيانات المستخدم." }); } 
-            else { await addUser(values); toast({ title: "تمت الإضافة", description: "تمت إضافة المستخدم بنجاح." }); }
-            setShowManageUserDialog(false); setUserToEdit(null);
-        } catch (error: any) { toast({ title: "خطأ", description: error.message, variant: "destructive" }); }
+            if (userToEdit) {
+                await updateUser({ ...values, id: userToEdit.id! });
+                toast({ title: "تم التعديل", description: "تم تعديل بيانات المستخدم." });
+            } else {
+                await addUser(values);
+                toast({ title: "تمت الإضافة", description: "تمت إضافة المستخدم بنجاح." });
+            }
+            setShowManageUserDialog(false);
+            setUserToEdit(null);
+        } catch (error: any) {
+            toast({ title: "خطأ", description: error.message, variant: "destructive" });
+        }
     };
 
     const handleRoleSubmit = async (values: RoleFormValues) => {
@@ -720,3 +733,5 @@ function hslToHex(hsl: string): string {
     const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
+
+    
