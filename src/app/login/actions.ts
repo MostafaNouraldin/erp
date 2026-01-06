@@ -22,7 +22,10 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
 
 export async function login(values: z.infer<typeof loginSchema>): Promise<{ success: boolean; user?: any; error?: string }> {
   try {
-    const { db } = await connectToTenantDb();
+    // Determine which database to connect to.
+    // SuperAdmins connect to the main DB (no tenantId).
+    // Regular users connect to their specific tenant DB.
+    const { db } = await connectToTenantDb(values.isSuperAdmin ? undefined : values.tenantId);
     
     const user = await db.query.users.findFirst({
       where: eq(users.email, values.email.toLowerCase()),
@@ -63,7 +66,8 @@ export async function login(values: z.infer<typeof loginSchema>): Promise<{ succ
     let isActive = true;
 
     if (!isSuperAdmin && tenantId) {
-        const tenantInfo = await db.query.tenants.findFirst({
+        const mainDbConnection = await connectToTenantDb();
+        const tenantInfo = await mainDbConnection.db.query.tenants.findFirst({
             where: eq(tenants.id, tenantId),
             columns: { isConfigured: true, subscriptionEndDate: true, isActive: true }
         });
