@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { connectToTenantDb } from '@/db';
@@ -150,7 +149,7 @@ export async function updateUser(values: UserFormValues) {
         avatar_url: values.avatar_url,
     };
 
-    if (values.password) {
+    if (values.password && values.password.length > 0) {
         updateData.passwordHash = `hashed_${values.password}`; // Unsafe placeholder
     }
 
