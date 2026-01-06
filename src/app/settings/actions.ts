@@ -141,7 +141,7 @@ export async function updateUser(values: UserFormValues) {
     const db = await getDb();
     if (!values.id) throw new Error("ID is required for update.");
     
-    const updateData: any = {
+    const updateData: Partial<typeof users.$inferInsert> = {
         name: values.name,
         email: values.email,
         roleId: values.roleId,
@@ -340,3 +340,5 @@ export async function deleteDeductionType(id: string) {
     await db.delete(deductionTypes).where(eq(deductionTypes.id, id));
     revalidatePath('/settings');
 }
+
+  
