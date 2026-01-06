@@ -61,21 +61,22 @@ const userSchema = z.object({
   status: z.enum(["نشط", "غير نشط"]).default("نشط"),
   password: z.string().optional(),
   avatar_url: z.string().url().optional().or(z.literal('')),
-}).refine(data => {
-    // Password is required for new users
+}).refine((data) => {
+    // If it's a new user (no id), password is required
     if (!data.id) {
         return !!data.password && data.password.length >= 6;
     }
-    // For existing users, password is optional, but if provided, must be >= 6 chars
-    if (data.id && data.password && data.password.length > 0) {
+    // If it's an existing user, password is optional. 
+    // But if it's provided, it must meet the length requirement.
+    if (data.id && data.password) {
         return data.password.length >= 6;
     }
+    // If it's an existing user and password is not provided, it's valid.
     return true;
 }, {
-    message: "كلمة المرور مطلوبة (6 أحرف على الأقل) للمستخدم الجديد. أو يجب أن تكون 6 أحرف على الأقل عند التغيير.",
+    message: "كلمة المرور مطلوبة للمستخدم الجديد (6 أحرف على الأقل). عند التعديل، كلمة المرور اختيارية ولكن يجب أن تكون 6 أحرف على الأقل إن أدخلت.",
     path: ["password"],
 });
-
 
 
 const roleSchema = z.object({
@@ -751,8 +752,3 @@ function hslToHex(hsl: string): string {
 }
 
     
-
-    
-
-    
-
