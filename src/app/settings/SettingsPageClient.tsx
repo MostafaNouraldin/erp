@@ -62,9 +62,11 @@ const userSchema = z.object({
   password: z.string().optional(),
   avatar_url: z.string().url().optional().or(z.literal('')),
 }).refine(data => {
+    // Password is required for new users
     if (!data.id) {
         return !!data.password && data.password.length >= 6;
     }
+    // For existing users, password is optional, but if provided, must be >= 6 chars
     if (data.id && data.password && data.password.length > 0) {
         return data.password.length >= 6;
     }
@@ -73,6 +75,7 @@ const userSchema = z.object({
     message: "كلمة المرور مطلوبة (6 أحرف على الأقل) للمستخدم الجديد. أو يجب أن تكون 6 أحرف على الأقل عند التغيير.",
     path: ["password"],
 });
+
 
 
 const roleSchema = z.object({
@@ -583,20 +586,22 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
                                     <DialogTrigger asChild><Button onClick={() => {setUserToEdit(null); userForm.reset(); setShowManageUserDialog(true);}}><PlusCircle className="me-2 h-4 w-4" /> إضافة مستخدم</Button></DialogTrigger>
                                     <DialogContent className="sm:max-w-lg" dir="rtl">
                                         <DialogHeader><DialogTitle>{userToEdit ? "تعديل مستخدم" : "إضافة مستخدم جديد"}</DialogTitle></DialogHeader>
-                                        <Form {...userForm}><form id="userDialogForm" onSubmit={userForm.handleSubmit(handleUserSubmit)} className="space-y-4 py-4">
-                                            <FormField control={userForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>الاسم الكامل</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
-                                            <FormField control={userForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage/></FormItem> )}/>
-                                            <FormField control={userForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>كلمة المرور {userToEdit ? '(اتركه فارغاً لعدم التغيير)' : ''}</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage/></FormItem> )}/>
-                                            <FormField control={userForm.control} name="roleId" render={({ field }) => ( <FormItem><FormLabel>الدور</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="اختر دور المستخدم" /></SelectTrigger></FormControl>
-                                                    <SelectContent>{roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}</SelectContent>
-                                                </Select><FormMessage/></FormItem> )}/>
-                                        </form></Form>
-                                        <DialogFooter>
-                                            <Button type="submit" form="userDialogForm">حفظ</Button>
-                                            <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-                                        </DialogFooter>
+                                        <Form {...userForm}>
+                                            <form id="userDialogForm" onSubmit={userForm.handleSubmit(handleUserSubmit)} className="space-y-4 py-4">
+                                                <FormField control={userForm.control} name="name" render={({ field }) => ( <FormItem><FormLabel>الاسم الكامل</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                                <FormField control={userForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                                <FormField control={userForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>كلمة المرور {userToEdit ? '(اتركه فارغاً لعدم التغيير)' : ''}</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage/></FormItem> )}/>
+                                                <FormField control={userForm.control} name="roleId" render={({ field }) => ( <FormItem><FormLabel>الدور</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="اختر دور المستخدم" /></SelectTrigger></FormControl>
+                                                        <SelectContent>{roles.map(role => <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>)}</SelectContent>
+                                                    </Select><FormMessage/></FormItem> )}/>
+                                                 <DialogFooter>
+                                                    <Button type="submit">حفظ</Button>
+                                                    <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                                                </DialogFooter>
+                                            </form>
+                                        </Form>
                                     </DialogContent>
                                 </Dialog>
                             </div>
@@ -750,3 +755,4 @@ function hslToHex(hsl: string): string {
     
 
     
+
