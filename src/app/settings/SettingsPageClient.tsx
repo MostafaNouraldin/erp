@@ -62,7 +62,7 @@ const userSchema = z.object({
   password: z.string().optional(),
   avatar_url: z.string().url().optional().or(z.literal('')),
 }).refine(data => {
-    // If it's a new user (no id), password is required.
+    // If it's a new user (no id), password is required and must be at least 6 characters.
     if (!data.id) {
         return !!data.password && data.password.length >= 6;
     }
@@ -746,6 +746,8 @@ function hslToHex(hsl: string): string {
     const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
+
+    
 
     
 
