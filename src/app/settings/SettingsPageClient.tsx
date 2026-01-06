@@ -202,7 +202,6 @@ export default function SettingsPage({ initialData }: SettingsPageProps) {
 
 
     const handleUserSubmit = async (values: UserFormValues) => {
-        // This logic is now simplified. The backend handles whether the password should be updated.
         if (!userToEdit && !values.password) {
             userForm.setError("password", {type: "manual", message: "كلمة المرور مطلوبة للمستخدم الجديد"});
             return;
