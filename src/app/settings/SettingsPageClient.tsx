@@ -732,5 +732,3 @@ function hslToHex(hsl: string): string {
     const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
-
-    

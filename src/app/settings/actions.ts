@@ -340,5 +340,3 @@ export async function deleteDeductionType(id: string) {
     await db.delete(deductionTypes).where(eq(deductionTypes.id, id));
     revalidatePath('/settings');
 }
-
-  

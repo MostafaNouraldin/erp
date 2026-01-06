@@ -844,7 +844,7 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
                                                 field.onChange(value);
                                                 const originalInvoice = supplierInvoices.find(inv => inv.id === value);
                                                 if (originalInvoice) {
-                                                    replaceReturnItems(originalInvoice.items);
+                                                    replaceReturnItems(originalInvoice.items.map(item => ({...item, reason: ''})));
                                                 }
                                             }} value={field.value} dir="rtl">
                                             <FormControl><SelectTrigger className="bg-background"><SelectValue placeholder="اختر الفاتورة الأصلية لتعبئة الأصناف" /></SelectTrigger></FormControl>
@@ -946,7 +946,3 @@ export default function PurchasesClientComponent({ initialData }: { initialData:
       </div>
     );
 }
-
-    
-
-    
