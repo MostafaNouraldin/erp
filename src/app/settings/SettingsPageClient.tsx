@@ -62,11 +62,9 @@ const userSchema = z.object({
   password: z.string().optional(),
   avatar_url: z.string().url().optional().or(z.literal('')),
 }).refine(data => {
-    // If it's a new user (no id), password is required and must be at least 6 characters.
     if (!data.id) {
         return !!data.password && data.password.length >= 6;
     }
-    // If it's an existing user, password can be empty, but if it's not, it must be at least 6 characters.
     if (data.id && data.password && data.password.length > 0) {
         return data.password.length >= 6;
     }
